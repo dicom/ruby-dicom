@@ -1,0 +1,70 @@
+RUBY DICOM
+======================
+
+SUMMARY
+--------
+
+This is a fairly basic library for handling DICOM files in Ruby. Digital Imaging and Communications in Medicine (DICOM) is a standard for handling, storing, printing, and transmitting information in medical imaging. It includes a file format definition and a network communications protocol. Ruby DICOM supports reading from, editing and writing to this file format.
+
+BASIC USAGE
+-----------
+
+require 'dicom'
+# Read file:
+dcm = DICOM::DObject.new("myFile.dcm")
+# Display some key information about the file:
+dcm.print_properties()
+# Print all tags to screen:
+dcm.print(true)
+# Retrieve a tag value:
+name = dcm.get_value("0010.0010")
+# Retrieve pixel data:
+pixels = dcm.get_value("7FE0.0010")
+# Load pixel data in a RMagick object and display on screen:
+image = dcm.get_image_magick()
+image[0].display
+# Load pixel data in a NArray object and display on screen:
+image = dcm.get_image_narray()
+NImage.show image[0,true,true]
+
+Tip:
+When playing around with Ruby DICOM in irb, you may be annoyed
+with all the information that is printed to screen, regardless
+if you have specified verbose as false. This is because in irb
+every variable loaded in the program is automatically printed.
+A hack to avoid this effect is to append ";0" after a command.
+Example:
+dcm = DICOM::DObject.new("myFile.dcm") ;0
+  
+COPYRIGHT
+---------
+
+Copyright 2008-2009 Christoffer Lervåg
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+ABOUT ME
+--------
+
+Name:
+Christoffer Lervåg
+
+Location:
+Oslo, Norway
+
+Email:
+chris.lervag [@nospam] @gmail.com
+Please don't hesitate to email me if have any thoughts on this project!
+
