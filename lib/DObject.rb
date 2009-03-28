@@ -1,0 +1,1246 @@
+#    Copyright 2008-2009 Christoffer Lervåg
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#--------------------------------------------------------------------------------------------------
+
+# TODO:
+# -Support for writing complex (hierarchical) DICOM files (basic write support is featured).
+# -Full support for compressed image data.
+# -Read 12 bit image data correctly.
+# -Support for color image data to get_image_narray() and get_image_magick().
+# -Complete support for Big endian (basic support is already featured).
+# -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
+# -Reading of image data in files that contain two different and unrelated images (this problem has been observed with some MR images).
+
+module DICOM
+
+  # Class for handling the DICOM contents:
+  class DObject
+
+    attr_reader :read_success, :write_success, :modality
+
+    # Initialize the DObject instance.
+    def initialize(file_name=nil, opts={})
+      # Process option values, setting defaults for the ones that are not specified:
+      @verbose = opts[:verbose]
+      @lib =  opts[:lib]  || DLibrary.new
+      # Default verbosity is true:
+      @verbose = true if @verbose == nil
+      
+      # Initialize variables that will be used for the DICOM object:
+      @names = Array.new()
+      @labels = Array.new()
+      @types = Array.new()
+      @lengths = Array.new()
+      @values = Array.new()
+      @raw = Array.new()
+      @levels = Array.new()
+      # Array that will holde any messages generated while reading the DICOM file:
+      @msg = Array.new()
+      # Array to keep track of sequences/structure of the dicom tags:
+      @sequence = Array.new()
+      # Index of last element in tag arrays:
+      @last_index=0
+      # Structural information (default values):
+      @compression = false
+      @color = false
+      @explicit = true
+      @file_endian = false
+      # Information about the DICOM object:
+      @modality = nil
+      # Control variables:
+      @read_success = false
+      # Check endianness of the system (false if little endian):
+      @sys_endian = check_sys_endian()
+      # Set format strings for packing/unpacking:
+      set_format_strings()
+      
+      # If a (valid) file name string is supplied, call the method to read the DICOM file:
+      if file_name != nil and file_name != ""
+        @file = file_name
+        read_file(file_name)
+      end
+    end # of method initialize
+
+
+    # Returns a DICOM object by reading the file specified.
+    # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
+    # For the time being, this method is called automatically when initializing the DObject class,
+    # but in the future, when write support is added, this method may have to be called manually.
+    def read_file(file_name)
+      dcm = DRead.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
+      # Store the data to the instance variables if the readout was a success:
+      if dcm.success
+        @read_success = true
+        @names = dcm.names
+        @labels = dcm.labels
+        @types = dcm.types
+        @lengths = dcm.lengths
+        @values = dcm.values
+        @raw = dcm.raw
+        @levels = dcm.levels
+        @explicit = dcm.explicit
+        @file_endian = dcm.file_endian
+        # Set format strings for packing/unpacking:
+        set_format_strings(@file_endian)
+        # Index of last element in tag arrays:
+        @last_index=@names.length-1
+        # Update status variables for this object:
+        check_properties()
+        # Set the modality of the DICOM object:
+        set_modality()
+      else
+        @read_success = false
+      end
+      # If any messages has been recorded, send these to the message handling method:
+      if dcm.msg.size != 0
+        add_msg(dcm.msg)
+      end
+    end
+    
+    
+    # Transfers necessary information from the DObject to the DWrite class, which
+    # will attempt to write this information to a valid DICOM file.
+    def write_file(file_name)
+      w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
+      w.labels = @labels
+      w.types = @types
+      w.lengths = @lengths
+      w.raw = @raw
+      w.rest_endian = @file_endian
+      w.rest_explicit = @explicit
+      w.write
+      # Write process succesful?
+      @write_success = w.success
+      # If any messages has been recorded, send these to the message handling method:
+      if w.msg.size != 0
+        add_msg(w.msg)
+      end
+    end
+    
+    
+    #################################################
+    # START OF METHODS FOR READING INFORMATION FROM DICOM OBJECT:#
+    #################################################
+
+
+    # Checks the status of the pixel data that has been read from the DICOM file: whether it exists at all and if its greyscale or color.
+    # Modifies instance variable @color if color image is detected and instance variable @compression if no pixel data is detected.
+    def check_properties()
+      # Check if pixel data is present:
+      if @labels.index("7FE0,0010") == nil
+        # No pixel data in DICOM file:
+        @compression = nil
+      else
+        @compression = @lib.get_compression(get_value("0002,0010"))
+      end
+      # Set color variable as true if our object contain a color image:
+      col_string = get_value("0028,0004")
+      if col_string != false
+        if (col_string.include? "RGB") or (col_string.include? "COLOR") or (col_string.include? "COLOUR")
+          @color = true
+        end
+      end
+    end
+
+
+    # Returns image data from the provided tag index, performing decompression of data if necessary.
+    def read_image_magick(pos, columns, rows)
+      if @compression != true
+        # Non-compressed, just return the array contained in the particular tag:
+        image_data=get_pixels(pos)
+        image = Magick::Image.new(columns,rows)
+        image.import_pixels(0, 0, columns, rows, "I", image_data)
+        return image
+      else
+        # Image data is compressed, we will attempt to unpack it using RMagick (ImageMagick):
+        begin
+          image = Magick::Image.from_blob(@raw[pos])
+          return image
+        rescue
+          add_msg("RMagick did not succeed in decoding the compressed image data. Returning false.")
+          return false
+        end
+      end
+    end
+
+
+    # Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
+		# To call this method the user needs to have performed " require 'narray' " in advance.
+    def get_image_narray()
+      # Does pixel data exist at all in the DICOM object?
+      if @compression == nil
+        add_msg("It seems pixel data is not present in this DICOM object: returning false.")
+        return false
+      end
+      # No support yet for retrieving compressed data:
+      if @compression == true
+        add_msg("Reading compressed data to a NArray object not supported yet: returning false.")
+        return false
+      end
+      # No support yet for retrieving color pixel data:
+      if @color
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: returning false.")
+        return false
+      end
+      # Gather information about the dimensions of the image data:
+      rows = get_value("0028,0010")
+      columns = get_value("0028,0011")
+      frames = get_frames()
+      image_pos = get_image_pos()
+      # Creating a NArray object using int to make sure we have a big enough range for our numbers:
+      image = NArray.int(frames,columns,rows)
+      image_temp = NArray.int(columns,rows)
+      # Handling of image data will depend on whether we have one or more frames,
+      # and if it is located in one or more tags:
+      if image_pos.size == 1
+        # All of the image data is located in one tag:
+        image_data = get_pixels(image_pos[0])
+        #image_data = get_image_data(image_pos[0])
+        (0..frames-1).each do |i|
+          (0..columns*rows-1).each do |j|
+            image_temp[j] = image_data[j+i*columns*rows]
+          end
+          image[i,true,true] = image_temp
+        end
+      else
+        # Image data is encapsulated in items:
+        (0..frames-1).each do |i|
+          image_data=get_value(image_pos[i])
+          #image_data = get_image_data(image_pos[i])
+          (0..columns*rows-1).each do |j|
+            image_temp[j] = image_data[j+i*columns*rows]
+          end
+          image[i,true,true] = image_temp
+        end
+      end
+      # Turn around the images to get the expected orientation when displaying on the screen:
+      (0..frames-1).each do |i|
+        temp_image=image[i,true,true]
+        #Transpose the images:
+        temp_image.transpose(1,0)
+        #Need to mirror the y-axis:
+        (0..temp_image.shape[0]-1).each do |j|
+          temp_image[j,0..temp_image.shape[1]-1] = temp_image[j,temp_image.shape[1]-1..0]
+        end
+        # Put the reoriented image back in the image matrixx:
+        image[i,true,true]=temp_image
+      end
+      return image
+    end # of method get_image_narray
+
+
+    # Returns an array of RMagick image objects, where the size of the array corresponds with the number of frames in the image data.
+		# To call this method the user needs to have performed " require 'RMagick' " in advance.
+    def get_image_magick()
+      # Does pixel data exist at all in the DICOM object?
+      if @compression == nil
+        add_msg("It seems pixel data is not present in this DICOM object: returning false.")
+        return false
+      end
+      # No support yet for color pixel data:
+      if @color
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: aborting.")
+        return false
+      end
+      # Gather information about the dimensions of the image data:
+      rows = get_value("0028,0010")
+      columns = get_value("0028,0011")
+      frames = get_frames()
+      image_pos = get_image_pos()
+      # Array that will hold the RMagick image objects, one image object for each frame:
+      image_arr = Array.new(frames)
+      # Handling of image data will depend on whether we have one or more frames,
+      if image_pos.size == 1
+        # All of the image data is located in one tag:
+        #image_data = get_image_data(image_pos[0])
+        #(0..frames-1).each do |i|
+         # image = Magick::Image.new(columns,rows)
+         # image.import_pixels(0, 0, columns, rows, "I", image_data)
+         # image_arr[i] = image
+        #end
+        if frames > 1
+          add_msg("Unfortunately, this method only supports reading the first image frame as of now.")
+        end
+        image = read_image_magick(image_pos[0], columns, rows)
+        image_arr[0] = image
+        #image_arr[i] = image
+      else
+        # Image data is encapsulated in items:
+        (0..frames-1).each do |i|
+          #image_data=get_image_data(image_pos[i])
+          #image = Magick::Image.new(columns,rows)
+          #image.import_pixels(0, 0, columns, rows, "I", image_data)
+          image = read_image_magick(image_pos[i], columns, rows)
+          image_arr[i] = image
+        end
+      end
+      return image_arr
+    end # of method get_image_magick
+
+
+    # Returns the number of frames present in the image data in the DICOM file.
+    def get_frames()
+      frames = get_value("0028,0008")
+      if frames == false
+        # If file does not specify number of tags, assume 1 image frame.
+        frames = 1
+      end
+      return frames.to_i
+    end
+    
+    
+    # Unpacks and returns pixel data from a specified tag position:
+    def get_pixels(pos)
+      pixels = false
+      # We need to know what kind of bith depth the pixel data is saved with:
+      bit_depth = get_value("0028,0100")
+      if bit_depth != false
+        # Load the binary pixel data:
+        bin = get_raw(pos)
+        # Number of bytes used per pixel will determine how to unpack this:
+        case bit_depth
+          when 8
+            pixels = bin.unpack(@by) # Byte/Character/Fixnum (1 byte)
+          when 16
+            pixels = bin.unpack(@us) # Unsigned short (2 bytes)
+          when 12
+            # 12 BIT SIMPLY NOT WORKING YET!
+            # This one is a bit more tricky to extract.
+            # I havent really given this priority so far as 12 bit image data is rather rare.
+            add_msg("Warning: Bit depth 12 is not working correctly at this time! Please contact the author.")
+            #pixels = Array.new(length)
+            #(length).times do |i|
+              #hex = bin.unpack('H3')
+              #hex4 = "0"+hex[0]
+              #num = hex[0].unpack('v')
+              #data[i] = num
+            #end
+          else
+            raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
+        end # of case bit_depth
+      else
+        add_msg("Error: DICOM object does not contain bit depth tag (0028,0010).")
+      end # of if bit_depth ..
+      return pixels
+    end # of method get_pixels
+
+
+    # Returns the index(es) of the tag(s) that contain image data.
+    def get_image_pos()
+      image_tag_pos = get_pos("7FE0,0010")
+      item_pos = get_pos("FFFE,E000")
+      # Proceed only if image tag actually exists:
+      if image_tag_pos == false
+        return false
+      else
+        # Check if we have item tags:
+        if item_pos == false
+          return image_tag_pos
+        else
+          # Extract item positions that occur after the image tag position:
+          late_item_pos = item_pos.select {|item| image_tag_pos[0] < item}
+          # Check if there are items appearing after the image tag.
+          if late_item_pos.size == 0
+            # None occured after the image tag position:
+            return image_tag_pos
+          else
+            # Determine which of these late item tags contain image data.
+            # Usually, there are frames+1 late items, and all except
+            # the first item contain an image frame:
+            frames = get_frames()
+            if frames != false  # note: function get_frames will never return false
+              if late_item_pos.size == frames.to_i+1
+                return late_item_pos[1..late_item_pos.size-1]
+              else
+                add_msg("Warning: Unexpected behaviour in DICOM file for method get_image_pos(). Expected number of image data items not equal to number of frames+1, returning false.")
+                return false
+              end
+            else
+              add_msg("Warning: Number of frames tag not found. Method get_image_pos() will return false.")
+              return false
+            end
+          end
+        end
+      end
+    end # of method get_image_pos
+
+
+    # Returns an array of the index(es) of the tag(s) in the DICOM file that match the supplied tag label, name or position.
+    # If no match is found, the method will return false.
+    # Additional options:
+    # :array => myArray - tells the method to search for hits in this specific array of positions instead of searching
+    #                                  through the entire DICOM obhject. If myArray is false, so will the return of this method.
+    #                                  If array is nil (not specified), then the entire DICOM object will be searched.
+    def get_pos(label, opts={})
+      # Process option value:
+      opt_array = opts[:array]
+      if opt_array == false
+        # If the supplied array option equals false, it signals that the user tries to search for a tag 
+        # in an invalid position, and as such, this method should also return false:
+        indexes = false
+      else
+        # Perform search to find indexes:
+        # Array that will contain the positions where the supplied label gives a match:
+        indexes = Array.new()
+        # Either use the supplied array, or we will create an array that contain the indices of the entire DICOM object:
+        if opt_array.is_a?(Array)
+          search_array=opt_array
+        else
+          search_array = Array.new(@names.size) {|i| i}
+        end
+        # Do the search:
+        search_array.each do |i|
+          if @labels[i] == label
+            indexes += [i]
+          elsif @names[i] == label
+            indexes += [i]
+          elsif label == i
+            indexes += [i]
+          end
+        end
+        # If no hits occured, we will return false instead of an empty array:
+        indexes = false if indexes.size == 0
+      end
+      return indexes
+    end # of method get_pos
+    
+    
+    # Dumps the binary content of the Pixel Data tag to file.
+    def image_to_file(file)
+      pos = get_image_pos()
+      if pos
+        if pos.length == 1
+          # Pixel data located in one tag:
+          pixel_data = get_raw(pos[0])
+          f = File.new(file, "wb")
+          f.write(pixel_data)
+          f.close()
+        else
+          # Pixel data located in several tags:
+          pos.each_index do |i|
+            pixel_data = get_raw(pos[i])
+            f = File.new(file + i.to_s, "wb")
+            f.write(pixel_data)
+            f.close()
+          end
+        end
+      end # of if pos =...
+    end # of method image_to_file
+
+
+    # Returns the positions of all tags inside the hierarchy of a sequence or an item.
+    # Options:
+    # :next_only => true - The method will only search immediately below the specified
+    # item or sequence (that is, in the level of parent + 1).
+    def children(tag, opts={})
+      # Process option values, setting defaults for the ones that are not specified:
+      opt_next_only = opts[:next_only] || false
+      # Retrieve position of parent tag which from which we will search:
+      pos = get_pos(tag)
+      if pos == false
+        return false
+      end
+      if pos.size > 1
+        add_msg("Warning: The supplied parent tag gives multiple hits. Search will be applied to all hits. To avoid this behaviour, specify position instead of label.")
+      end
+      # First we need to establish in which positions to perform the search:
+      below_pos = Array.new()
+      pos.each do |p|
+        parent_level = @levels[p]
+        remain_array = @levels[p+1..@levels.size-1]
+        extract = true
+        remain_array.each_index do |i| 
+          if (remain_array[i] > parent_level) and (extract == true)
+            # If search is targetted at any specific level, we can just add this position:
+            if not opt_next_only == true
+              below_pos += [p+1+i]
+            else
+              # As search is restricted to parent level + 1, do a test for this:
+              if remain_array[i] == parent_level + 1
+                below_pos += [p+1+i]
+              end
+            end
+          else
+            # If we encounter a position who's level is not deeper than the original level, we can not extract any more values:
+            extract = false
+          end
+        end
+      end
+      # Positions to search in have been established, now we can perform the actual search:
+      if below_pos.size == 0
+        return false
+      else
+        return below_pos
+      end
+    end # of method below
+
+
+    # Returns the value (processed raw data) of the DICOM tag that matches the supplied tag ID.
+		# The ID may be a tag index, tag name or tag label.
+    def get_value(id)
+      if id == nil
+        add_msg("A tag label, category name or index number must be specified when calling the get_value() method!")
+        return false
+      else
+        # Assume we have been fed a tag label:
+        pos=@labels.index(id)
+        # If this does not give a hit, assume we have been fed a tag name:
+        if pos==nil
+          pos=@names.index(id)
+        end
+        # If we still dont have a hit, check if it is a valid number within the array range:
+        if pos == nil 
+          if (id.is_a? Integer)
+            if id >= 0 and id <= @last_index
+              # The id supplied is a valid position, return its corresponding value:
+              return @values[id]
+            else
+              return false
+            end
+          else
+            return false
+          end
+        else
+          # We have a valid position, return the value:
+          return @values[pos]
+        end
+      end
+    end # of method get_value
+
+
+    # Returns the raw data of the DICOM tag that matches the supplied tag ID.
+		# The ID may be a tag index, tag name or tag label.
+    def get_raw(id)
+      if id == nil
+        add_msg("A tag label, category name or index number must be specified when calling the get_raw() method!")
+        return false
+      else
+        # Assume we have been fed a tag label:
+        pos=@labels.index(id)
+        # If this does not give a hit, assume we have been fed a tag name:
+        if pos==nil
+          pos=@names.index(id)
+        end
+        # If we still dont have a hit, check if it is a valid number within the array range:
+        if pos == nil 
+          if (id.is_a? Integer)
+            if id >= 0 and id <= @last_index
+              # The id supplied is a valid position, return its corresponding value:
+              return @raw[id]
+            else
+              return false
+            end
+          else
+            return false
+          end
+        else
+          # We have a valid position, return the value:
+          return @raw[pos]
+        end
+      end
+    end # of method get_raw
+    
+    
+    # Returns the position of (possible) parents of the specified tag in the hierarchy structure of the DICOM object.
+    def parents(tag)
+      # Get array position:
+      pos = get_pos(tag)
+      if pos == false
+        parents = false
+      else
+        # Extracting first value in array pos:
+        pos = pos[0]
+        # Get level of our tag:
+        level = @levels[pos]
+        # If tag is top level it can obviously have no parents:
+        if level == 0
+          parents = false
+        else
+          # Search backwards, and record the position every time we encounter an
+          # upwards change in the level number.
+          parents = Array.new()
+          prev_level = level
+          search_arr = @levels[0..pos-1].reverse
+          search_arr.each_index do |i|
+            if search_arr[i] < prev_level
+              parents += [search_arr.length-i-1]
+              prev_level = search_arr[i]
+            end
+          end
+          # When tag has several generations of parents, we want its top parent to be first in the returned array:
+          parents = parents.reverse
+        end # of if level == 0
+      end # of if pos == false..else
+      return parents
+    end # of method parents
+    
+    
+    ##############################################
+    ####### START OF METHODS FOR PRINTING INFORMATION:######
+    ##############################################
+
+
+    # Prints information of all tags stored in the DICOM object.
+    # This method is kept for backwards compatibility.
+    # Instead of calling print_all() you may use print(true) for the same functionality.
+    def print_all()
+      print(true)
+    end
+
+
+    # Prints the tag information of the specified tags (index, [hierarchy level, tree visualisation,] label, name, type, length, value)
+    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all tags in object.
+    # Tag(s) may be specified by position, label or name.
+    # Options:
+    # :levels => true - will make the method print the level numbers for each tag.
+    # tree => true - will make the method print a tree structure for the tags.
+    # :file => true - will make the method print to file instead of printing to screen.
+    def print(pos, opts={})
+      # Process option values, setting defaults for the ones that are not specified:
+      opt_levels = opts[:levels] || false
+      opt_tree = opts[:tree] || false
+      opt_file = opts[:file] || false   
+      # Convert to array if number:
+      if not pos.is_a?(Array) and pos != true
+        pos_valid = get_pos(pos)
+      elsif pos == true
+        # Create an array of positions which a
+        pos_valid = Array.new(@names.length)
+        # Fill in indices:
+        pos_valid.each_index do |i|
+          pos_valid[i]=i
+        end
+      else   
+        # Check that the supplied array contains valid positions:
+        pos_valid = Array.new()
+        pos.each_index do |i|
+          if pos[i] >= 0 and pos[i] <= @names.length
+            pos_valid += [pos[i]]
+          end
+        end
+      end   
+      # Continue only if we have valid positions:
+      if pos_valid == false
+        return
+      elsif pos_valid.size == 0
+        return
+      end
+      # We have valid positions and are ready to start process the tags:
+      # Extract the information to be printed from the object arrays:
+      indices = Array.new()
+      levels = Array.new()
+      labels = Array.new()
+      names = Array.new()
+      types = Array.new()
+      lengths = Array.new()
+      values = Array.new()
+      # There may be a more elegant way to do this.
+      pos_valid.each do |pos|
+        labels += [@labels[pos]]
+        levels += [@levels[pos]]
+        names += [@names[pos]]
+        types += [@types[pos]]
+        lengths += [@lengths[pos].to_s]
+        values += [@values[pos].to_s]
+      end   
+      # We have collected the data that is to be printed, now we need to do some string manipulation if hierarchy is to be displayed:
+      if opt_tree
+        # Tree structure requested.
+        front_symbol = "| "
+        tree_symbol = "|_"
+        labels.each_index do |i|
+          if levels[i] != 0
+            labels[i] = front_symbol*(levels[i]-1) + tree_symbol + labels[i]
+          end
+        end
+      end
+      # Extract the string lengths which are needed to make the formatting nice:
+      label_lengths = Array.new()
+      name_lengths = Array.new()
+      type_lengths = Array.new()
+      length_lengths = Array.new()
+      names.each_index do |i|
+        label_lengths[i] = labels[i].length
+        name_lengths[i] = names[i].length
+        type_lengths[i] = types[i].length
+        length_lengths[i] = lengths[i].to_s.length
+      end
+      # To give the printed output a nice format we need to check the string lengths of some of these arrays:
+      index_maxL = pos_valid.max.to_s.length
+      label_maxL = label_lengths.max
+      name_maxL = name_lengths.max
+      type_maxL = type_lengths.max
+      length_maxL = length_lengths.max
+      # Construct the strings, one for each line of output, where each line contain the information of one tag:
+      tags = Array.new()    
+      # Start of loop which formats the tags:
+      # (This loop is what consumes most of the computing time of this method)
+      labels.each_index do |i|
+        # Configure empty spaces:
+        s = " "
+        f0 = " "*(index_maxL-pos_valid[i].to_s.length)
+        f2 = " "*(label_maxL-labels[i].length+1)
+        f3 = " "*(name_maxL-names[i].length+1)
+        f4 = " "*(type_maxL-types[i].length+1)
+        f5 = " "*(length_maxL-lengths[i].to_s.length)
+        # Display levels?
+        if opt_levels
+          lev = levels[i].to_s + s
+        else
+          lev = ""
+        end
+        # Restrict length of value string:
+        if values[i].length > 28
+          value = (values[i])[0..27]+" ..."
+        else
+          value = (values[i])
+        end
+        # Insert descriptive text for tags that hold binary data:
+        case types[i]
+          when "OW","OB","UN"
+            value = "(Binary Data)"
+          when "SQ","()"
+            value = "(Encapsulated Elements)"            
+        end
+        tags += [f0 + pos_valid[i].to_s + s + lev + s + labels[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip]
+      end
+      # Print to either screen or file, depending on what the user requested:
+      if opt_file
+        print_file(tags)
+      else
+        print_screen(tags)
+      end # of labels.each do |i|
+    end # of method print
+    
+
+    # Prints the key structural properties of the DICOM file.
+    def print_properties()
+      # Explicitness:
+      if @explicit
+        explicit = "Explicit"
+      else
+        explicit = "Implicit"
+      end
+      # Endianness:
+      if @file_endian
+        endian = "Big Endian"
+      else
+        endian = "Little Endian"
+      end
+      # Pixel data:
+      if @compression == nil
+        pixels = "No"
+      else
+        pixels = "Yes"
+      end
+      # Colors:
+      if @color
+        image = "Colors"
+      else
+        image = "Greyscale"
+      end
+      # Compression:
+      if @compression == true
+        compression = @lib.get_uid(get_value("0002,0010").rstrip)
+      else
+        compression = "No"
+      end
+      # Bits per pixel (allocated):
+      bits = get_value("0028,0100").to_s
+      # Print the file properties:
+      puts "Key properties of DICOM object:"
+      puts "-------------------------------"
+      puts "File:           " + @file
+      puts "Modality:       " + @modality.to_s
+      puts "Value repr.:    " + explicit
+      puts "Byte order:     " + endian
+      puts "Pixel data:     " + pixels
+      if pixels == "Yes"
+        puts "Image:          " + image
+        puts "Compression:    " + compression
+        puts "Bits per pixel: " + bits
+      end
+      puts "-------------------------------"
+    end # of method print_properties
+    
+    
+    ####################################################
+    ### START OF METHODS FOR WRITING INFORMATION TO THE DICOM OBJECT:#
+    ####################################################
+    
+    
+    # Reads binary information from file and inserts it in the pixel data tag:
+    def set_image_file(file)
+      # Try to read file:
+      begin
+        f = File.new(file, "rb")
+        bin = f.read(f.stat.size)
+      rescue
+        # Reading file was not successful. Register an error message.
+        add_msg("Reading specified file was not successful for some reason. No data has been added.")
+      end
+      if bin.length > 0
+        pos = @labels.index("7FE0,0010")
+        # Modify tag:
+        set_value(bin, :label => "7FE0,0010", :create => true, :bin => true)
+      else
+        add_msg("Content of file is of zero length. Nothing to store.")
+      end # of if bin.length > 0
+    end # of method set_image_file
+    
+    
+    # Transfers pixel data from a RMagick object to the pixel data tag:
+    def set_image_magick(magick_obj)
+      # Export the RMagick object to a standard Ruby array of numbers:
+      pixel_array = magick_obj.export_pixels(x=0, y=0, columns=magick_obj.columns, rows=magick_obj.rows, map="I")
+      # Encode this array using the standard class method:
+      set_value(pixel_array, :label => "7FE0,0010", :create => true)
+    end
+    
+    
+    # Removes a tag from the DICOM object:
+    def remove_tag(tag)
+      pos = get_pos(tag)
+      if pos != nil
+        # Extract first array number:
+        pos = pos[0]
+        # Update group length:
+        if @labels[pos][5..8] != "0000"
+          change = @lengths[pos]
+          vr = @types[pos]
+          update_group_length(pos, vr, change, -1)
+        end
+        # Remove entry from arrays:
+        @labels.delete_at(pos)
+        @levels.delete_at(pos)
+        @names.delete_at(pos)
+        @types.delete_at(pos)
+        @lengths.delete_at(pos)
+        @values.delete_at(pos)
+        @raw.delete_at(pos)
+      else
+        add_msg("Tag #{tag} not found in DICOM object.")
+      end
+    end
+    
+    
+    # Sets the value of a tag, by modifying an existing tag or creating a new tag.
+    # If the supplied value is not binary, it will attempt to encode it to binary itself.
+    def set_value(value, opts={})
+      # Options:
+      label = opts[:label]
+      pos = opts[:pos]
+      create = opts[:create] # =false means no tag creation
+      bin = opts[:bin] # =true means value already encoded
+      # Abort if neither label nor position has been specified:
+      if label == nil and pos == nil
+        add_msg("Valid position not provided; can not modify or create tag. Please use keyword :pos or :label to specify.")
+        return
+      end
+      # If position is specified, check that it is valid.
+      # If label is specified, check that it doesnt correspond to multiple labels:
+      if pos != nil
+        unless pos >= 0 and pos <= @labels.length
+          # This is not a valid position:
+          pos = nil
+        end
+      else
+        pos = get_pos(label)
+        if pos == false
+          pos = nil
+        elsif pos.size > 1
+          pos = 'abort'
+          add_msg("The supplied label is found at multiple locations in the DICOM object. Will not update.")
+        end
+      end # of if pos != nil
+      # Create or modify?
+      if create == false
+        # User wants modification only. Proceed only if we have a valid position:
+        unless pos == nil
+          # Modify tag:
+          modify_tag(value, :bin => bin, :pos => pos)
+        end
+      else
+        # User wants to create (or modify if present). Only abort if multiple hits have been found.
+        unless pos == 'abort'
+          if pos == nil
+            # As we wish to create new tag, we need to find out where to insert it in the tag array:
+            # We will do this by finding the last array position of the last tag that will stay in front of this tag.
+            if @labels.size > 0
+              # Search the array:
+              index = -1
+              quit = false
+              while quit != true do
+                if index+1 >= @labels.length # We have reached end of array.
+                  quit = true
+                #elsif index+1 == @labels.length
+                  #quit = true
+                elsif label < @labels[index+1] # We are past the correct position.
+                  quit = true
+                else # Increase index in anticipation of a 'hit'.
+                  index += 1
+                end
+              end # of while
+            else
+              # We are dealing with an empty DICOM object:
+              index = nil
+            end
+            # Before we allow tag creation, do a simple check that the label seems valid:
+            if label.length == 9
+              # Create new tag:
+              create_tag(value, :bin => bin, :label => label, :lastpos => index)
+            else
+              # Label did not pass our check:
+              add_msg("The label you specified (#{label}) does not seem valid. Please use the format 'GGGG,EEEE'.")
+            end
+          else
+            # Modify existing:
+            modify_tag(value, :bin => bin, :pos => pos)
+          end
+        end
+      end # of if create == false
+    end # of method set_value
+
+
+    ##################################################
+    ############## START OF PRIVATE METHODS:################
+    ##################################################
+    private
+
+
+    # Adds a warning or error message to the instance array holding messages, and if verbose variable is true, prints the message as well.
+    def add_msg(msg)
+      if @verbose
+        puts msg
+      end
+      if (msg.is_a? String)
+        msg=[msg]
+      end
+      @msg += msg
+    end
+    
+    
+    # Checks the endianness of the system. Returns false if little endian, true if big endian.
+    def check_sys_endian()
+      x = 0xdeadbeef
+      endian_type = {
+        Array(x).pack("V*") => false, #:little
+        Array(x).pack("N*") => true   #:big 
+      }
+      return endian_type[Array(x).pack("L*")] 
+    end
+    
+    
+    # Creates a new tag:
+    def create_tag(value, opts={})
+      bin_only = opts[:bin]
+      label = opts[:label]
+      lastpos = opts[:lastpos]
+      # Fetch the VR:
+      info = @lib.get_name_vr(label)
+      vr = info[1]
+      name = info[0]
+      # Encode binary (if a binary is not provided):
+      if bin_only == true
+        # Data already encoded.
+        bin = value
+        value = nil
+      else
+        if vr != "UN"
+          # Encode:
+          bin = encode(value, vr)
+        else
+          add_msg("Error. Unable to encode tag value of unknown type!")
+        end
+      end
+      # Put this tag information into the arrays:
+      if bin
+        #if bin.length > 0
+          # 4 different scenarios: Array is empty, or: tag is put in front, inside array, or at end of array:
+          if lastpos == nil
+            # We have empty DICOM object:
+            @labels = [label]
+            @levels = [0]
+            @names = [name]
+            @types = [vr]
+            @lengths = [bin.length]
+            @values = [value]
+            @raw = [bin]
+          elsif lastpos == -1
+            # Insert in front of arrays:
+            @labels = [label] + @labels
+            @levels = [0] + @levels # NB! No support for hierarchy at this time!
+            @names = [name] + @names
+            @types = [vr] + @types
+            @lengths = [bin.length] + @lengths
+            @values = [value] + @values
+            @raw = [bin] + @raw
+          elsif lastpos == @labels.length-1
+            # Insert at end arrays:
+            @labels = @labels + [label]
+            @levels = @levels + [0] # Defaulting to level = 0
+            @names = @names + [name]
+            @types = @types + [vr]
+            @lengths = @lengths + [bin.length]
+            @values = @values + [value]
+            @raw = @raw + [bin]
+          else
+            # Insert somewhere inside the array:
+            @labels = @labels[0..lastpos] + [label] + @labels[(lastpos+1)..(@labels.length-1)]
+            @levels = @levels[0..lastpos] + [0] + @levels[(lastpos+1)..(@levels.length-1)] # Defaulting to level = 0
+            @names = @names[0..lastpos] + [name] + @names[(lastpos+1)..(@names.length-1)]
+            @types = @types[0..lastpos] + [vr] + @types[(lastpos+1)..(@types.length-1)]
+            @lengths = @lengths[0..lastpos] + [bin.length] + @lengths[(lastpos+1)..(@lengths.length-1)]
+            @values = @values[0..lastpos] + [value] + @values[(lastpos+1)..(@values.length-1)]
+            @raw = @raw[0..lastpos] + [bin] + @raw[(lastpos+1)..(@raw.length-1)]
+          end
+          # Update last index variable as we have added to our arrays:
+          @last_index += 1
+          # Update group length (as long as it was not a group length tag that was created):
+          pos = @labels.index(label)
+          if @labels[pos][5..8] != "0000"
+            change = bin.length
+            update_group_length(pos, vr, change, 1)
+          end
+        #else
+          #add_msg("Binary does not have a positive length, nothing to save.")
+        #end # of if bin.length > 0
+      else
+        add_msg("Binary is nil. Nothing to save.")
+      end
+    end # of method create_tag
+    
+    
+    # Encodes a value to binary (used for inserting values to a DICOM object).
+    def encode(value, vr)
+      # Our value needs to be inside an array to be encoded:
+      value = [value] if not value.is_a?(Array)
+      # VR will decide how to encode this value:
+      case vr
+        when "UL"
+          bin = value.pack(@ul)
+        when "SL"
+          bin = value.pack(@sl)
+        when "US"
+          bin = value.pack(@us)
+        when "SS"
+          bin = value.pack(@ss)
+        when "FL"
+          bin = value.pack(@fs)
+        when "FD"
+          bin = value.pack(@fd)
+        when "AT" # (tag label - assumes it has the format GGGGEEEE (no comma separation))
+          # Encode letter pairs indexes in following order 10 3 2:
+          # NB! This may not be encoded correctly on Big Endian files or computers.
+          old_format=value[0]
+          new_format = old_format[2..3]+old_format[0..1]+old_format[6..7]+old_format[4..5]
+          bin = [new_format].pack("H*")
+
+        # We have a number of VRs that are encoded as string:
+        when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
+          # Odd/even test (num[0]=1 if num is odd):
+          if value[0].length[0] == 1
+            # Odd (add a zero byte):
+            bin = value.pack('a*') + ["00"].pack("H*")
+          else
+            # Even:
+            bin = value.pack('a*')
+          end
+        # Image related VR's:
+        when "OW"
+          # What bit depth to use when encoding the pixel data?
+          bit_depth = get_value("0028,0100")
+          if bit_depth == false
+            # Tag not specified:
+            add_msg("Attempted to encode pixel data, but bit depth tag is missing (0028,0100).")
+          else
+            # 8,12 or 16 bits?
+            case bit_depth
+              when 8
+                bin = value.pack(@by)
+              when 12
+                # 12 bit not supported yet!
+                add_msg("Encoding 12 bit pixel values not supported yet. Please change the bit depth to 8 or 16 bits.")
+              when 16
+                bin = value.pack(@us)
+              else
+                # Unknown bit depth:
+                add_msg("Unknown bit depth #{bit_depth}. No data encoded.")
+            end # of case bit_depth
+          end # of if bit_depth..else..
+        else # Unsupported VR:
+          add_msg("Tag type #{vr} does not have a dedicated encoding option assigned. Please contact author.")
+      end # of case vr
+      return bin
+    end # of method encode
+    
+    # Modifies existing tag:
+    def modify_tag(value, opts={})
+      bin_only = opts[:bin]
+      pos = opts[:pos]
+      pos = pos[0] if pos.is_a?(Array)
+      # Fetch the VR and old length:
+      vr = @types[pos]
+      old_length = @lengths[pos]
+      # Encode binary (if a binary is not provided):
+      if bin_only == true
+        # Data already encoded.
+        bin = value
+        value = nil
+      else
+        if vr != "UN"
+          # Encode:
+          bin = encode(value, vr)
+        else
+          add_msg("Error. Unable to encode tag value of unknown type!")
+        end
+      end
+      # Update the arrays with this new information:
+      if bin
+        #if bin.length > 0
+          # Replace array entries for this tag:
+          #@types[pos] = vr # for the time being there is no logic for updating type.
+          @lengths[pos] = bin.length
+          @values[pos] = value
+          @raw[pos] = bin
+          # Update group length (as long as it was not the group length that was modified):
+          if @labels[pos][5..8] != "0000"
+            change = bin.length - old_length
+            update_group_length(pos, vr, change, 0) 
+          end
+        #else
+          #add_msg("Binary does not have a positive length, nothing to save.")
+        #end
+      else
+        add_msg("Binary is nil. Nothing to save.")
+      end
+    end # of method modify_tag
+
+
+    # Prints the selected tags to an ascii text file.
+    # The text file will be saved in the folder of the original DICOM file,
+    # with the original file name plus a .txt extension.
+    def print_file(tags)
+      File.open( @file + '.txt', 'w' ) do |output|
+        tags.each do | line |
+          output.print line + "\n"
+        end
+      end
+    end
+
+ 
+    # Prints the selected tags to screen.
+    def print_screen(tags)
+      tags.each do | tag |
+        puts tag
+      end
+    end
+    
+    
+    # Sets the modality variable of the current DICOM object, by querying the library with the object's SOP Class UID.
+    def set_modality()
+      value = get_value("0008,0016")
+      if value == false
+        @modality = "Not specified"
+      else
+        modality = @lib.get_uid(value.rstrip)
+        @modality = modality
+      end
+    end
+    
+    
+    # Sets the format strings that will be used for packing/unpacking numbers depending on endianness of file/system.
+    def set_format_strings(file_endian=@file_endian)
+      if @file_endian == @sys_endian
+        # System endian equals file endian:
+        # Native byte order.
+        @by = "C*" # Byte (1 byte)
+        @us = "S*" # Unsigned short (2 bytes)
+        @ss = "s*" # Signed short (2 bytes)
+        @ul = "I*" # Unsigned long (4 bytes)
+        @sl = "l*" # Signed long (4 bytes)
+        @fs = "e*" # Floating point single (4 bytes)
+        @fd = "E*" # Floating point double ( 8 bytes)
+      else
+        # System endian not equal to file endian:
+        # Network byte order.
+        @by = "C*"
+        @us = "n*"
+        @ss = "n*" # Not correct (gives US)
+        @ul = "N*"
+        @sl = "N*" # Not correct (gives UL)
+        @fs = "g*"
+        @fd = "G*"
+      end
+    end
+    
+    
+    # Updates the group length value when a tag has been updated, created or removed:
+    # Variable change holds the change in value length for the updated tag.
+    # (Change should be positive when a tag is removed - it will only be negative when editing a tag to a shorter value)
+    # Variable existance is -1 if tag has been removed, +1 if tag has been added and 0 if it has been updated.
+    # (Perhaps in the future this functionality might be moved to the DWrite class, it might give an easier implementation)
+    def update_group_length(pos, type, change, existance)
+      # Find position of relevant group length (if it exists):
+      gl_pos = @labels.index(@labels[pos][0..4] + "0000")
+      existance = 0 if existance == nil
+      # If it exists, calculate change:
+      if gl_pos
+        if existance == 0
+          # Tag has only been updated, so we only need to think about value change:
+          value = @values[gl_pos] + change
+        else
+          # Tag has either been created or removed. This means we need to calculate the length of its other parts.
+          if @explicit
+            # In the explicit scenario it is slightly complex to determine this value:
+            tag_length = 0
+            # VR?:
+            unless @labels[pos] == "FFFE,E000" or @labels[pos] == "FFFE,E00D" or @labels[pos] == "FFFE,E0DD"
+              tag_length += 2
+            end
+            # Length value:
+            case @types[pos]
+              when "OB","OW","SQ","UN"
+                if pos > @labels.index("7FE0,0010").to_i and @labels.index("7FE0,0010").to_i != 0
+                  tag_length += 4
+                else
+                  tag_length += 6
+                end
+              when "()"
+                tag_length += 4
+              else
+                tag_length += 2
+            end # of case
+          else
+            # In the implicit scenario it is easier:
+            tag_length = 4
+          end
+          # Update group length for creation/deletion scenario:
+          change = (4 + tag_length + change) * existance
+          value = @values[gl_pos] + change
+        end
+        # Write the new Group Length value:
+        # Encode the new value to binary:
+        bin = encode(value, "UL")
+        # Update arrays:
+        @values[gl_pos] = value
+        @raw[gl_pos] = bin
+      end # of if gl_pos
+    end # of method update_group_length
+
+
+  end # End of class
+end # End of module

@@ -1,0 +1,75 @@
+= 0.4
+
+=== 3rd February, 2009
+
+* Change of syntax: Keywords are now supplied as hash.
+* Method below() renamed to children().
+* Added method parents() which returns the position of all items/sequences that are the parent of
+  the specified tag. This method is only relevant for DICOM tags that exist inside a hierarchy.
+* Simplified the code in class Dictionary: load time is ~ 40 times faster!
+* Improved the code in class DRead: average read time is reduced by ~ 15 %.
+* Improved support for Big Endian DICOM files.
+* Added support for the "FL" (floating point single) value representation.
+* Fixed a small bug with tag 0028,3006 in Dictionary.
+* New method image_to_file() which makes it even easier than before to dump the DICOM pixel data to file.
+* Introducing DWrite class which enables writing DICOM objects to file.
+* Added several methods in DObject class to take advantage of write capability:
+  remove_tag()
+  set_value()
+  set_image_magick()
+  set_image_file()
+  write_file()
+* Introducing the Anonymizer class, which takes advantage of the new write capability in Ruby DICOM
+  to offer a fairly powerful and customizable tool for anonymizing your DICOM files.
+
+= 0.3
+
+=== 12th October, 2008
+
+* The DRead class is now able to keep track of the position of the tags inside the hierarchy of sequences and items.
+* DObject class has seen a number of improvements to allow taking advantage of this hierarchy awareness:
+* Method get_pos() now can take an array of positions as an argument when searching for tags,
+  meaning it will only search for hits amongst the positions provided.
+* Method print() has been improved with new options to visualize the tree structure of the DICOM file.
+* Method print() is able to print to file as well. The text file will be put in the same folder as the DICOM file.
+* New method below(), which lets you specify a sequence or item, and this method will return the position
+  of all tags contained in this sequence/item.
+* Method print_properties() have been updated to display more information about the DICOM object.
+
+
+= 0.2
+
+=== 10th August, 2008
+
+* Data dictionary has been upgraded and is now compliant to the official standard.
+* New DLibrary class which handles all interaction with the dictionary.
+* Dictionary can be loaded before reading files, which will considerably speed up the process if reading multiple files.
+* Reading compressed pixel data into an RMagick object is supported in principle, although it lacks proper testing at this point.
+* DRead class is more resistant to breaking if it is handed a faulty file to read, and will return an error message instead of halting execution.
+* Added option to load DICOM object in verbose or silent mode.
+
+= 0.1
+
+=== 20th July, 2008
+
+First public release.
+The library does have several known issues and lacks some features I would like it to have, but it does offer basic functionality and should be usable for people interested in working with DICOM files in Ruby. The reading algorithm has been tested succesfully with some 40 different DICOM files, so it should be fairly robust.
+
+Features:
+* Reads DICOM files
+* Retrieve tags, formatted
+* Retrieve tags, unformatted
+* Retrieve image data as NArray object
+* Retrieve image data as RMagick object
+* Print file properties
+* Print tag information
+
+
+Known issues:
+* 12 bit image data not supported
+* Color images not supported in NArray and RMagick retrieve methods
+* Unpacking compressed image data has basic support but is not properly tested yet.
+* Reading Big Endian has basic, but not full, support.
+* Reading on a Big Endian system is not tested.
+* Reading of multiple frame image data to RMagick does not work in all cases.
+* Retrieving images when file contains two or more unrelated images may not be handled correctly.
