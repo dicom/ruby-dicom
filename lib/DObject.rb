@@ -29,7 +29,8 @@ module DICOM
   # Class for handling the DICOM contents:
   class DObject
 
-    attr_reader :read_success, :write_success, :modality
+    attr_reader :read_success, :write_success, :modality,
+                      :names, :labels, :types, :lengths, :values, :raw, :levels
 
     # Initialize the DObject instance.
     def initialize(file_name=nil, opts={})
@@ -389,7 +390,7 @@ module DICOM
       opt_array = opts[:array]
       if opt_array == false
         # If the supplied array option equals false, it signals that the user tries to search for a tag 
-        # in an invalid position, and as such, this method should also return false:
+        # in an invalid position, and as such, this method will also return false:
         indexes = false
       else
         # Perform search to find indexes:
