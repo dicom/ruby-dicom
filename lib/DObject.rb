@@ -609,44 +609,27 @@ module DICOM
     end
 
 
-    # Prints the tag information of the specified tags (index, [hierarchy level, tree visualisation,] label, name, type, length, value)
-    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all tags in object.
-    # Tag(s) may be specified by position, label or name.
-    # Options:
-    # :levels => true - will make the method print the level numbers for each tag.
-    # tree => true - will make the method print a tree structure for the tags.
-    # :file => true - will make the method print to file instead of printing to screen.
+    # Prints the tag information of the specified tags: Index, [hierarchy level, tree visualisation,] label, name, type, length, value
+    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all tags.
+    # Optional arguments:
+    # :levels => true - method will print the level numbers for each tag.
+    # :tree => true -   method will print a tree structure for the tags.
+    # :file => true -    method will print to file instead of printing to screen.
     def print(pos, opts={})
       # Process option values, setting defaults for the ones that are not specified:
       opt_levels = opts[:levels] || false
       opt_tree = opts[:tree] || false
       opt_file = opts[:file] || false   
-      # Convert to array if number:
       if not pos.is_a?(Array) and pos != true
-        pos_valid = get_pos(pos)
+        # Convert to array if number:
+        pos_valid = [pos]
       elsif pos == true
-        # Create an array of positions which a
-        pos_valid = Array.new(@names.length)
-        # Fill in indices:
-        pos_valid.each_index do |i|
-          pos_valid[i]=i
-        end
+        # Create a complete array of indices:
+        pos_valid = Array.new(@names.length) {|i| i}
       else   
-        # Check that the supplied array contains valid positions:
-        pos_valid = Array.new()
-        pos.each_index do |i|
-          if pos[i] >= 0 and pos[i] <= @names.length
-            pos_valid += [pos[i]]
-          end
-        end
-      end   
-      # Continue only if we have valid positions:
-      if pos_valid == false
-        return
-      elsif pos_valid.size == 0
-        return
+        # Use the supplied array of numbers:
+        pos_valid = pos
       end
-      # We have valid positions and are ready to start process the tags:
       # Extract the information to be printed from the object arrays:
       indices = Array.new()
       levels = Array.new()
