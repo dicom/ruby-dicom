@@ -379,41 +379,48 @@ module DICOM
     end # of method get_image_pos
 
 
-    # Returns an array of the index(es) of the tag(s) in the DICOM file that match the supplied tag label, name or position.
+    # Returns an array of the index(es) of the tag(s) in the DICOM file that match the supplied tag label or name.
     # If no match is found, the method will return false.
     # Additional options:
-    # :array => myArray - tells the method to search for hits in this specific array of positions instead of searching
-    #                                  through the entire DICOM obhject. If myArray is false, so will the return of this method.
-    #                                  If array is nil (not specified), then the entire DICOM object will be searched.
-    def get_pos(label, opts={})
-      # Process option value:
-      opt_array = opts[:array]
-      if opt_array == false
+    # :array => myArray - tells the method to search for matches in this specific array of positions instead of searching
+    #                                  through the entire DICOM object. If myArray equals false, the method will return false.
+    # :partial => true - get_pos will not only search for exact matches, but will search the names and labels arrays for
+    #                             strings that contain the given search string.
+    def get_pos(query, opts={})
+      # Optional keywords:
+      keyword_array = opts[:array]
+      keyword_partial = opts[:partial]
+      indexes = Array.new()
+      if keyword_array == false
         # If the supplied array option equals false, it signals that the user tries to search for a tag 
         # in an invalid position, and as such, this method will also return false:
         indexes = false
       else
-        # Perform search to find indexes:
-        # Array that will contain the positions where the supplied label gives a match:
-        indexes = Array.new()
-        # Either use the supplied array, or we will create an array that contain the indices of the entire DICOM object:
-        if opt_array.is_a?(Array)
-          search_array=opt_array
+        # Either use the supplied array, or search the entire DICOM object:
+        if keyword_array.is_a?(Array)
+          search_array = keyword_array
         else
-          search_array = Array.new(@names.size) {|i| i}
+          search_array = Array.new(@names.length) {|i| i}
         end
-        # Do the search:
-        search_array.each do |i|
-          if @labels[i] == label
-            indexes += [i]
-          elsif @names[i] == label
-            indexes += [i]
-          elsif label == i
-            indexes += [i]
+        # Perform search:
+        if keyword_partial == true
+          # Search for partial string matches:
+          partial_indexes = search_array.all_indices_partial_match(@labels, query.upcase)
+          if partial_indexes.length > 0
+            indexes = partial_indexes
+          else
+            indexes = search_array.all_indices_partial_match(@names, query)
+          end
+        else
+          # Search for identical matches:
+          if query[4..4] == ","
+            indexes = search_array.all_indices(@labels, query.upcase)
+          else
+            indexes = search_array.all_indices(@names, query)
           end
         end
-        # If no hits occured, we will return false instead of an empty array:
-        indexes = false if indexes.size == 0
+        # Policy: If no matches found, return false instead of an empty array:
+        indexes = false if indexes.length == 0
       end
       return indexes
     end # of method get_pos
