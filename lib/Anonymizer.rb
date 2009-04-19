@@ -334,10 +334,14 @@ module DICOM
       for dir in @folders
         Find.find(dir) do |path|
           if FileTest.directory?(path)
-            if @exceptions.include?(File.basename(path))
-              Find.prune  # Don't look any further into this directory.
-            else
+            proceed = true
+            @exceptions.each do |e|
+              proceed = false if e == path
+            end
+            if proceed
               next
+            else
+              Find.prune  # Don't look any further into this directory.
             end
           else
             @files += [path]  # Store the file in our array
