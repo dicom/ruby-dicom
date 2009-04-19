@@ -69,7 +69,7 @@ module DICOM
       set_format_strings()
       
       # If a (valid) file name string is supplied, call the method to read the DICOM file:
-      if file_name != nil and file_name != ""
+      if file_name.is_a?(String) and file_name != ""
         @file = file_name
         read_file(file_name)
       end
