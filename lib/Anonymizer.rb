@@ -354,8 +354,8 @@ module DICOM
     # Analyses the write_path and the 'read' file path to determine if the have some common root.
     # If there are parts of file that exist also in write path, it will not add those parts to write_path.
     def process_write_paths()
-      # First make sure @write_path ends with a "/" (represented by decimal 47):
-      @write_path = @write_path + "/" unless @write_path[@write_path.length-1] == 47
+      # First make sure @write_path ends with a "/":
+      @write_path = @write_path + "/" unless @write_path[(@write_path.length-1)..(@write_path.length-1)] == "/"
       # Separate behaviour if we have one, or several files in our array:
       if @files.length == 1
         # One file.
