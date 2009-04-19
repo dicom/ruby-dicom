@@ -19,8 +19,7 @@ module DICOM
     def initialize(file_name=nil, opts={})
       # Process option values, setting defaults for the ones that are not specified:
       @lib =  opts[:lib] || DLibrary.new
-      @sys_endian = opts[:sys_endian] || false
-      
+      @sys_endian = opts[:sys_endian] || false     
       # Initiate the variables that are used during file reading:
       init_variables()
       
@@ -39,6 +38,9 @@ module DICOM
           @file.close()
           @file = File.new(file_name, "rb")
           @header_length = 0
+        elsif header == nil
+          # Not a valid DICOM file, return:
+          return
         end
       end
       
@@ -78,11 +80,15 @@ module DICOM
       # Apparently, some providers seems to skip this in their DICOM files.
       bin1 = @file.read(128)
       @header_length += 128
-      #filler = bin1.unpack('a' * 128).to_s
       # Next 4 bytes should spell 'DICM':
       bin2 = @file.read(4)
       @header_length += 4
-      dicm = bin2.unpack('a' * 4).to_s
+      # Check if this binary was successfully read (if not, this short file is not a valid DICOM file and we will return): 
+      if bin2
+        dicm = bin2.unpack('a' * 4).to_s
+      else
+        return nil
+      end
       if dicm != 'DICM' then
         # Header is not valid (we will still try to read it is a DICOM file though):
         @msg += ["Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."]
