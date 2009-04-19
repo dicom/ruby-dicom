@@ -394,6 +394,7 @@ module DICOM
       if keyword_array == false
         # If the supplied array option equals false, it signals that the user tries to search for a tag 
         # in an invalid position, and as such, this method will also return false:
+        add_msg("Warning: Attempted to call get_pos() with query #{query}, but since keyword :array is false I will return false.")
         indexes = false
       else
         # Either use the supplied array, or search the entire DICOM object:
