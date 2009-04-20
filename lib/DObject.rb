@@ -391,33 +391,48 @@ module DICOM
       keyword_array = opts[:array]
       keyword_partial = opts[:partial]
       indexes = Array.new()
+      # For convenience, allow query to be a one-element array (its value will be extracted):
+      if query.is_a?(Array)
+        if query.length > 1 or query.length == 0
+          add_msg("Invalid array length supplied to method get_pos.")
+          return false
+        else
+          query = query[0]
+        end
+      end
       if keyword_array == false
         # If the supplied array option equals false, it signals that the user tries to search for a tag 
         # in an invalid position, and as such, this method will also return false:
         add_msg("Warning: Attempted to call get_pos() with query #{query}, but since keyword :array is false I will return false.")
         indexes = false
       else
-        # Either use the supplied array, or search the entire DICOM object:
-        if keyword_array.is_a?(Array)
-          search_array = keyword_array
-        else
-          search_array = Array.new(@names.length) {|i| i}
-        end
-        # Perform search:
-        if keyword_partial == true
-          # Search for partial string matches:
-          partial_indexes = search_array.all_indices_partial_match(@labels, query.upcase)
-          if partial_indexes.length > 0
-            indexes = partial_indexes
+        # Check if query is a number (some methods want to have the ability to call get_pos() with a number):
+        if query.is_a?(Integer)
+          # Return the position if it is valid:
+          indexes = [query] if query >= 0 and query < @names.length
+        elsif query.is_a?(String)
+          # Either use the supplied array, or search the entire DICOM object:
+          if keyword_array.is_a?(Array)
+            search_array = keyword_array
           else
-            indexes = search_array.all_indices_partial_match(@names, query)
+            search_array = Array.new(@names.length) {|i| i}
           end
-        else
-          # Search for identical matches:
-          if query[4..4] == ","
-            indexes = search_array.all_indices(@labels, query.upcase)
+          # Perform search:
+          if keyword_partial == true
+            # Search for partial string matches:
+            partial_indexes = search_array.all_indices_partial_match(@labels, query.upcase)
+            if partial_indexes.length > 0
+              indexes = partial_indexes
+            else
+              indexes = search_array.all_indices_partial_match(@names, query)
+            end
           else
-            indexes = search_array.all_indices(@names, query)
+            # Search for identical matches:
+            if query[4..4] == ","
+              indexes = search_array.all_indices(@labels, query.upcase)
+            else
+              indexes = search_array.all_indices(@names, query)
+            end
           end
         end
         # Policy: If no matches found, return false instead of an empty array:
