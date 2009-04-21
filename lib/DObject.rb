@@ -512,69 +512,41 @@ module DICOM
     end # of method below
 
 
-    # Returns the value (processed raw data) of the DICOM tag that matches the supplied tag ID.
-		# The ID may be a tag index, tag name or tag label.
-    def get_value(id)
-      if id == nil
-        add_msg("A tag label, category name or index number must be specified when calling the get_value() method!")
-        return false
+    # Returns the value (processed raw data) of the requested DICOM data element.
+		# Data element may be specified by array position, tag or name.
+    def get_value(element)
+      value = false
+      # Retrieve array position:
+      pos = get_pos(element)
+      if pos == false
+        add_msg("Warning: Invalid data element provided to method get_value(). Returning false.")
       else
-        # Assume we have been fed a tag label:
-        pos=@labels.index(id)
-        # If this does not give a hit, assume we have been fed a tag name:
-        if pos==nil
-          pos=@names.index(id)
-        end
-        # If we still dont have a hit, check if it is a valid number within the array range:
-        if pos == nil 
-          if (id.is_a? Integer)
-            if id >= 0 and id <= @last_index
-              # The id supplied is a valid position, return its corresponding value:
-              return @values[id]
-            else
-              return false
-            end
-          else
-            return false
-          end
+        if pos.size > 1
+          add_msg("Warning: The element provided yields multiple hits in the DICOM object, and as such, a unique value can not be returned. Returning false.")
         else
-          # We have a valid position, return the value:
-          return @values[pos]
+          value = @values[pos[0]]
         end
       end
+      return value
     end # of method get_value
 
 
-    # Returns the raw data of the DICOM tag that matches the supplied tag ID.
-		# The ID may be a tag index, tag name or tag label.
-    def get_raw(id)
-      if id == nil
-        add_msg("A tag label, category name or index number must be specified when calling the get_raw() method!")
-        return false
+    # Returns the raw data of the requested DICOM data element.
+		# Data element may be specified by array position, tag or name.
+    def get_raw(element)
+      value = false
+      # Retrieve array position:
+      pos = get_pos(element)
+      if pos == false
+        add_msg("Warning: Invalid data element provided to method get_raw(). Returning false.")
       else
-        # Assume we have been fed a tag label:
-        pos=@labels.index(id)
-        # If this does not give a hit, assume we have been fed a tag name:
-        if pos==nil
-          pos=@names.index(id)
-        end
-        # If we still dont have a hit, check if it is a valid number within the array range:
-        if pos == nil 
-          if (id.is_a? Integer)
-            if id >= 0 and id <= @last_index
-              # The id supplied is a valid position, return its corresponding value:
-              return @raw[id]
-            else
-              return false
-            end
-          else
-            return false
-          end
+        if pos.size > 1
+          add_msg("Warning: The element provided yields multiple hits in the DICOM object, and as such, a unique value can not be returned. Returning false.")
         else
-          # We have a valid position, return the value:
-          return @raw[pos]
+          value = @raw[pos[0]]
         end
       end
+      return value
     end # of method get_raw
     
     
