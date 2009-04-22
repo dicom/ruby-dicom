@@ -303,7 +303,7 @@ module DICOM
     end
     
     
-    # Unpacks and returns pixel data from a specified tag position:
+    # Unpacks and returns pixel data from a specified data element array position:
     def get_pixels(pos)
       pixels = false
       # We need to know what kind of bith depth the pixel data is saved with:
@@ -479,7 +479,7 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method children(). Returning false.")
       else
         if pos.size > 1
-          add_msg("Warning: Method children() does not allow a query which yields multiple hits Please use array position instead of tag/name. Returning false.")
+          add_msg("Warning: Method children() does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
         else
           # Proceed to find the value:
           # First we need to establish in which positions to perform the search:
@@ -522,7 +522,7 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method get_value(). Returning false.")
       else
         if pos.size > 1
-          add_msg("Warning: The element provided yields multiple hits in the DICOM object, and as such, a unique value can not be returned. Returning false.")
+          add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
         else
           value = @values[pos[0]]
         end
@@ -541,7 +541,7 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method get_raw(). Returning false.")
       else
         if pos.size > 1
-          add_msg("Warning: The element provided yields multiple hits in the DICOM object, and as such, a unique value can not be returned. Returning false.")
+          add_msg("Warning: Method get_raw() does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
         else
           value = @raw[pos[0]]
         end
@@ -559,7 +559,7 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method parents(). Returning false.")
       else
         if pos.length > 1
-          add_msg("Warning: Method parents() does not allow a query which yields multiple hits Please use array position instead of tag/name. Returning false.")
+          add_msg("Warning: Method parents() does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
         else
           # Proceed to find the value:
           # Get the level of our element:
