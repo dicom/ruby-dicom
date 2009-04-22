@@ -550,37 +550,39 @@ module DICOM
     end # of method get_raw
     
     
-    # Returns the position of (possible) parents of the specified tag in the hierarchy structure of the DICOM object.
-    def parents(tag)
-      # Get array position:
-      pos = get_pos(tag)
+    # Returns the position of (possible) parents of the specified data element in the hierarchy structure of the DICOM object.
+    def parents(element)
+      value = false
+      # Retrieve array position:
+      pos = get_pos(element)
       if pos == false
-        parents = false
+        add_msg("Warning: Invalid data element provided to method parents(). Returning false.")
       else
-        # Extracting first value in array pos:
-        pos = pos[0]
-        # Get level of our tag:
-        level = @levels[pos]
-        # If tag is top level it can obviously have no parents:
-        if level == 0
-          parents = false
+        if pos.length > 1
+          add_msg("Warning: Method parents() does not allow a query which yields multiple hits Please use array position instead of tag/name. Returning false.")
         else
-          # Search backwards, and record the position every time we encounter an
-          # upwards change in the level number.
-          parents = Array.new()
-          prev_level = level
-          search_arr = @levels[0..pos-1].reverse
-          search_arr.each_index do |i|
-            if search_arr[i] < prev_level
-              parents += [search_arr.length-i-1]
-              prev_level = search_arr[i]
+          # Proceed to find the value:
+          # Get the level of our element:
+          level = @levels[pos[0]]
+          # Element can obviously only have parents if it is not a top level element:
+          unless level == 0
+            # Search backwards, and record the position every time we encounter an upwards change in the level number.
+            parents = Array.new()
+            prev_level = level
+            search_arr = @levels[0..pos[0]-1].reverse
+            search_arr.each_index do |i|
+              if search_arr[i] < prev_level
+                parents += [search_arr.length-i-1]
+                prev_level = search_arr[i]
+              end
             end
-          end
-          # When tag has several generations of parents, we want its top parent to be first in the returned array:
-          parents = parents.reverse
-        end # of if level == 0
-      end # of if pos == false..else
-      return parents
+            # When the element has several generations of parents, we want its top parent to be first in the returned array:
+            parents = parents.reverse
+            value = parents if parents.length > 0
+          end # of if level == 0
+        end # of if pos.length..else..
+      end
+      return value
     end # of method parents
     
     
