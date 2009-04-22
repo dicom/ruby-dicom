@@ -465,50 +465,50 @@ module DICOM
     end # of method image_to_file
 
 
-    # Returns the positions of all tags inside the hierarchy of a sequence or an item.
+    # Returns the positions of all data elements inside the hierarchy of a sequence or an item.
     # Options:
     # :next_only => true - The method will only search immediately below the specified
     # item or sequence (that is, in the level of parent + 1).
-    def children(tag, opts={})
+    def children(element, opts={})
       # Process option values, setting defaults for the ones that are not specified:
       opt_next_only = opts[:next_only] || false
-      # Retrieve position of parent tag which from which we will search:
-      pos = get_pos(tag)
+      value = false
+      # Retrieve array position:
+      pos = get_pos(element)
       if pos == false
-        return false
-      end
-      if pos.size > 1
-        add_msg("Warning: The supplied parent tag gives multiple hits. Search will be applied to all hits. To avoid this behaviour, specify position instead of label.")
-      end
-      # First we need to establish in which positions to perform the search:
-      below_pos = Array.new()
-      pos.each do |p|
-        parent_level = @levels[p]
-        remain_array = @levels[p+1..@levels.size-1]
-        extract = true
-        remain_array.each_index do |i| 
-          if (remain_array[i] > parent_level) and (extract == true)
-            # If search is targetted at any specific level, we can just add this position:
-            if not opt_next_only == true
-              below_pos += [p+1+i]
-            else
-              # As search is restricted to parent level + 1, do a test for this:
-              if remain_array[i] == parent_level + 1
-                below_pos += [p+1+i]
+        add_msg("Warning: Invalid data element provided to method children(). Returning false.")
+      else
+        if pos.size > 1
+          add_msg("Warning: Method children() does not allow a query which yields multiple hits Please use array position instead of tag/name. Returning false.")
+        else
+          # Proceed to find the value:
+          # First we need to establish in which positions to perform the search:
+          below_pos = Array.new()
+          pos.each do |p|
+            parent_level = @levels[p]
+            remain_array = @levels[p+1..@levels.size-1]
+            extract = true
+            remain_array.each_index do |i| 
+              if (remain_array[i] > parent_level) and (extract == true)
+                # If search is targetted at any specific level, we can just add this position:
+                if not opt_next_only == true
+                  below_pos += [p+1+i]
+                else
+                  # As search is restricted to parent level + 1, do a test for this:
+                  if remain_array[i] == parent_level + 1
+                    below_pos += [p+1+i]
+                  end
+                end
+              else
+                # If we encounter a position who's level is not deeper than the original level, we can not extract any more values:
+                extract = false
               end
             end
-          else
-            # If we encounter a position who's level is not deeper than the original level, we can not extract any more values:
-            extract = false
-          end
-        end
+          end # of pos.each do..
+          value = below_pos if below_pos.size != 0
+        end # of if pos.size..else..
       end
-      # Positions to search in have been established, now we can perform the actual search:
-      if below_pos.size == 0
-        return false
-      else
-        return below_pos
-      end
+      return value
     end # of method below
 
 
