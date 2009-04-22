@@ -50,9 +50,9 @@ module DICOM
       @levels = Array.new()
       # Array that will holde any messages generated while reading the DICOM file:
       @msg = Array.new()
-      # Array to keep track of sequences/structure of the dicom tags:
+      # Array to keep track of sequences/structure of the dicom elements:
       @sequence = Array.new()
-      # Index of last element in tag arrays:
+      # Index of last element in data element arrays:
       @last_index=0
       # Structural information (default values):
       @compression = false
@@ -96,7 +96,7 @@ module DICOM
         @file_endian = dcm.file_endian
         # Set format strings for packing/unpacking:
         set_format_strings(@file_endian)
-        # Index of last element in tag arrays:
+        # Index of last data element in element arrays:
         @last_index=@names.length-1
         # Update status variables for this object:
         check_properties()
@@ -157,10 +157,10 @@ module DICOM
     end
 
 
-    # Returns image data from the provided tag index, performing decompression of data if necessary.
+    # Returns image data from the provided element index, performing decompression of data if necessary.
     def read_image_magick(pos, columns, rows)
       if @compression != true
-        # Non-compressed, just return the array contained in the particular tag:
+        # Non-compressed, just return the array contained on the particular element:
         image_data=get_pixels(pos)
         image = Magick::Image.new(columns,rows)
         image.import_pixels(0, 0, columns, rows, "I", image_data)
@@ -205,9 +205,9 @@ module DICOM
       image = NArray.int(frames,columns,rows)
       image_temp = NArray.int(columns,rows)
       # Handling of image data will depend on whether we have one or more frames,
-      # and if it is located in one or more tags:
+      # and if it is located in one or more elements:
       if image_pos.size == 1
-        # All of the image data is located in one tag:
+        # All of the image data is located in one element:
         image_data = get_pixels(image_pos[0])
         #image_data = get_image_data(image_pos[0])
         (0..frames-1).each do |i|
@@ -265,7 +265,7 @@ module DICOM
       image_arr = Array.new(frames)
       # Handling of image data will depend on whether we have one or more frames,
       if image_pos.size == 1
-        # All of the image data is located in one tag:
+        # All of the image data is located in one element:
         #image_data = get_image_data(image_pos[0])
         #(0..frames-1).each do |i|
          # image = Magick::Image.new(columns,rows)
@@ -296,7 +296,7 @@ module DICOM
     def get_frames()
       frames = get_value("0028,0008")
       if frames == false
-        # If file does not specify number of tags, assume 1 image frame.
+        # If the DICOM object does not specify the number of frames explicitly, assume 1 image frame.
         frames = 1
       end
       return frames.to_i
@@ -333,32 +333,32 @@ module DICOM
             raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
         end # of case bit_depth
       else
-        add_msg("Error: DICOM object does not contain bit depth tag (0028,0010).")
+        add_msg("Error: DICOM object does not contain the 'Bit Depth' data element (0028,0010).")
       end # of if bit_depth ..
       return pixels
     end # of method get_pixels
 
 
-    # Returns the index(es) of the tag(s) that contain image data.
+    # Returns the index(es) of the element(s) that contain image data.
     def get_image_pos()
-      image_tag_pos = get_pos("7FE0,0010")
+      image_element_pos = get_pos("7FE0,0010")
       item_pos = get_pos("FFFE,E000")
-      # Proceed only if image tag actually exists:
-      if image_tag_pos == false
+      # Proceed only if an image element actually exists:
+      if image_element_pos == false
         return false
       else
-        # Check if we have item tags:
+        # Check if we have item elements:
         if item_pos == false
-          return image_tag_pos
+          return image_element_pos
         else
-          # Extract item positions that occur after the image tag position:
-          late_item_pos = item_pos.select {|item| image_tag_pos[0] < item}
-          # Check if there are items appearing after the image tag.
+          # Extract item positions that occur after the image element position:
+          late_item_pos = item_pos.select {|item| image_element_pos[0] < item}
+          # Check if there are items appearing after the image element.
           if late_item_pos.size == 0
-            # None occured after the image tag position:
-            return image_tag_pos
+            # None occured after the image element position:
+            return image_element_pos
           else
-            # Determine which of these late item tags contain image data.
+            # Determine which of these late item elements contain image data.
             # Usually, there are frames+1 late items, and all except
             # the first item contain an image frame:
             frames = get_frames()
@@ -370,7 +370,7 @@ module DICOM
                 return false
               end
             else
-              add_msg("Warning: Number of frames tag not found. Method get_image_pos() will return false.")
+              add_msg("Warning: 'Number of Frames' data element not found. Method get_image_pos() will return false.")
               return false
             end
           end
@@ -379,7 +379,7 @@ module DICOM
     end # of method get_image_pos
 
 
-    # Returns an array of the index(es) of the tag(s) in the DICOM file that match the supplied tag label or name.
+    # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, label or name.
     # If no match is found, the method will return false.
     # Additional options:
     # :array => myArray - tells the method to search for matches in this specific array of positions instead of searching
@@ -401,7 +401,7 @@ module DICOM
         end
       end
       if keyword_array == false
-        # If the supplied array option equals false, it signals that the user tries to search for a tag 
+        # If the supplied array option equals false, it signals that the user tries to search for an element 
         # in an invalid position, and as such, this method will also return false:
         add_msg("Warning: Attempted to call get_pos() with query #{query}, but since keyword :array is false I will return false.")
         indexes = false
@@ -442,18 +442,18 @@ module DICOM
     end # of method get_pos
     
     
-    # Dumps the binary content of the Pixel Data tag to file.
+    # Dumps the binary content of the Pixel Data element to file.
     def image_to_file(file)
       pos = get_image_pos()
       if pos
         if pos.length == 1
-          # Pixel data located in one tag:
+          # Pixel data located in one element:
           pixel_data = get_raw(pos[0])
           f = File.new(file, "wb")
           f.write(pixel_data)
           f.close()
         else
-          # Pixel data located in several tags:
+          # Pixel data located in several elements:
           pos.each_index do |i|
             pixel_data = get_raw(pos[i])
             f = File.new(file + i.to_s, "wb")
@@ -591,7 +591,7 @@ module DICOM
     ##############################################
 
 
-    # Prints information of all tags stored in the DICOM object.
+    # Prints the information of all elements stored in the DICOM object.
     # This method is kept for backwards compatibility.
     # Instead of calling print_all() you may use print(true) for the same functionality.
     def print_all()
@@ -599,11 +599,11 @@ module DICOM
     end
 
 
-    # Prints the tag information of the specified tags: Index, [hierarchy level, tree visualisation,] label, name, type, length, value
-    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all tags.
+    # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] label, name, type, length, value
+    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all elements.
     # Optional arguments:
-    # :levels => true - method will print the level numbers for each tag.
-    # :tree => true -   method will print a tree structure for the tags.
+    # :levels => true - method will print the level numbers for each element.
+    # :tree => true -   method will print a tree structure for the elements.
     # :file => true -    method will print to file instead of printing to screen.
     def print(pos, opts={})
       # Process option values, setting defaults for the ones that are not specified:
@@ -665,9 +665,9 @@ module DICOM
       name_maxL = name_lengths.max
       type_maxL = type_lengths.max
       length_maxL = length_lengths.max
-      # Construct the strings, one for each line of output, where each line contain the information of one tag:
-      tags = Array.new()    
-      # Start of loop which formats the tags:
+      # Construct the strings, one for each line of output, where each line contain the information of one data element:
+      elements = Array.new()    
+      # Start of loop which formats the element data:
       # (This loop is what consumes most of the computing time of this method)
       labels.each_index do |i|
         # Configure empty spaces:
@@ -689,20 +689,20 @@ module DICOM
         else
           value = (values[i])
         end
-        # Insert descriptive text for tags that hold binary data:
+        # Insert descriptive text for elements that hold binary data:
         case types[i]
           when "OW","OB","UN"
             value = "(Binary Data)"
           when "SQ","()"
             value = "(Encapsulated Elements)"            
         end
-        tags += [f0 + pos_valid[i].to_s + s + lev + s + labels[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip]
+        elements += [f0 + pos_valid[i].to_s + s + lev + s + labels[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip]
       end
       # Print to either screen or file, depending on what the user requested:
       if opt_file
-        print_file(tags)
+        print_file(elements)
       else
-        print_screen(tags)
+        print_screen(elements)
       end # of labels.each do |i|
     end # of method print
     
@@ -763,7 +763,7 @@ module DICOM
     ####################################################
     
     
-    # Reads binary information from file and inserts it in the pixel data tag:
+    # Reads binary information from file and inserts it in the pixel data element:
     def set_image_file(file)
       # Try to read file:
       begin
@@ -775,7 +775,7 @@ module DICOM
       end
       if bin.length > 0
         pos = @labels.index("7FE0,0010")
-        # Modify tag:
+        # Modify element:
         set_value(bin, :label => "7FE0,0010", :create => true, :bin => true)
       else
         add_msg("Content of file is of zero length. Nothing to store.")
@@ -783,7 +783,7 @@ module DICOM
     end # of method set_image_file
     
     
-    # Transfers pixel data from a RMagick object to the pixel data tag:
+    # Transfers pixel data from a RMagick object to the pixel data element:
     def set_image_magick(magick_obj)
       # Export the RMagick object to a standard Ruby array of numbers:
       pixel_array = magick_obj.export_pixels(x=0, y=0, columns=magick_obj.columns, rows=magick_obj.rows, map="I")
@@ -792,9 +792,9 @@ module DICOM
     end
     
     
-    # Removes a tag from the DICOM object:
-    def remove_tag(tag)
-      pos = get_pos(tag)
+    # Removes an element from the DICOM object:
+    def remove_tag(element)
+      pos = get_pos(element)
       if pos != nil
         # Extract first array number:
         pos = pos[0]
@@ -813,22 +813,22 @@ module DICOM
         @values.delete_at(pos)
         @raw.delete_at(pos)
       else
-        add_msg("Tag #{tag} not found in DICOM object.")
+        add_msg("Element #{element} not found in the DICOM object.")
       end
     end
     
     
-    # Sets the value of a tag, by modifying an existing tag or creating a new tag.
+    # Sets the value of a data element by modifying an existing element or creating a new one.
     # If the supplied value is not binary, it will attempt to encode it to binary itself.
     def set_value(value, opts={})
       # Options:
       label = opts[:label]
       pos = opts[:pos]
-      create = opts[:create] # =false means no tag creation
+      create = opts[:create] # =false means no element creation
       bin = opts[:bin] # =true means value already encoded
       # Abort if neither label nor position has been specified:
       if label == nil and pos == nil
-        add_msg("Valid position not provided; can not modify or create tag. Please use keyword :pos or :label to specify.")
+        add_msg("Valid position not provided; can not modify or create data element. Please use keyword :pos or :label to specify.")
         return
       end
       # If position is specified, check that it is valid.
@@ -851,15 +851,15 @@ module DICOM
       if create == false
         # User wants modification only. Proceed only if we have a valid position:
         unless pos == nil
-          # Modify tag:
+          # Modify element:
           modify_tag(value, :bin => bin, :pos => pos)
         end
       else
         # User wants to create (or modify if present). Only abort if multiple hits have been found.
         unless pos == 'abort'
           if pos == nil
-            # As we wish to create new tag, we need to find out where to insert it in the tag array:
-            # We will do this by finding the last array position of the last tag that will stay in front of this tag.
+            # As we wish to create new data element, we need to find out where to insert it in the element arrays:
+            # We will do this by finding the last array position of the last element that will stay in front of this element.
             if @labels.size > 0
               # Search the array:
               index = -1
@@ -879,9 +879,9 @@ module DICOM
               # We are dealing with an empty DICOM object:
               index = nil
             end
-            # Before we allow tag creation, do a simple check that the label seems valid:
+            # Before we allow element creation, do a simple check that the label seems valid:
             if label.length == 9
-              # Create new tag:
+              # Create new data element:
               create_tag(value, :bin => bin, :label => label, :lastpos => index)
             else
               # Label did not pass our check:
@@ -925,7 +925,7 @@ module DICOM
     end
     
     
-    # Creates a new tag:
+    # Creates a new data element:
     def create_tag(value, opts={})
       bin_only = opts[:bin]
       label = opts[:label]
@@ -944,13 +944,13 @@ module DICOM
           # Encode:
           bin = encode(value, vr)
         else
-          add_msg("Error. Unable to encode tag value of unknown type!")
+          add_msg("Error. Unable to encode data element value of unknown type!")
         end
       end
-      # Put this tag information into the arrays:
+      # Put the information of this data element into the arrays:
       if bin
         #if bin.length > 0
-          # 4 different scenarios: Array is empty, or: tag is put in front, inside array, or at end of array:
+          # 4 different scenarios: Array is empty, or: element is put in front, inside array, or at end of array:
           if lastpos == nil
             # We have empty DICOM object:
             @labels = [label]
@@ -990,7 +990,7 @@ module DICOM
           end
           # Update last index variable as we have added to our arrays:
           @last_index += 1
-          # Update group length (as long as it was not a group length tag that was created):
+          # Update group length (as long as it was not a group length element that was created):
           pos = @labels.index(label)
           if @labels[pos][5..8] != "0000"
             change = bin.length
@@ -1023,7 +1023,7 @@ module DICOM
           bin = value.pack(@fs)
         when "FD"
           bin = value.pack(@fd)
-        when "AT" # (tag label - assumes it has the format GGGGEEEE (no comma separation))
+        when "AT" # (element label - assumes it has the format GGGGEEEE (no comma separation))
           # Encode letter pairs indexes in following order 10 3 2:
           # NB! This may not be encoded correctly on Big Endian files or computers.
           old_format=value[0]
@@ -1045,8 +1045,8 @@ module DICOM
           # What bit depth to use when encoding the pixel data?
           bit_depth = get_value("0028,0100")
           if bit_depth == false
-            # Tag not specified:
-            add_msg("Attempted to encode pixel data, but bit depth tag is missing (0028,0100).")
+            # Data element not specified:
+            add_msg("Attempted to encode pixel data, but 'Bit Depth' data element is missing (0028,0100).")
           else
             # 8,12 or 16 bits?
             case bit_depth
@@ -1063,12 +1063,12 @@ module DICOM
             end # of case bit_depth
           end # of if bit_depth..else..
         else # Unsupported VR:
-          add_msg("Tag type #{vr} does not have a dedicated encoding option assigned. Please contact author.")
+          add_msg("Element type #{vr} does not have a dedicated encoding option assigned. Please contact author.")
       end # of case vr
       return bin
     end # of method encode
     
-    # Modifies existing tag:
+    # Modifies existing data element:
     def modify_tag(value, opts={})
       bin_only = opts[:bin]
       pos = opts[:pos]
@@ -1086,13 +1086,13 @@ module DICOM
           # Encode:
           bin = encode(value, vr)
         else
-          add_msg("Error. Unable to encode tag value of unknown type!")
+          add_msg("Error. Unable to encode data element value of unknown type!")
         end
       end
       # Update the arrays with this new information:
       if bin
         #if bin.length > 0
-          # Replace array entries for this tag:
+          # Replace array entries for this element:
           #@types[pos] = vr # for the time being there is no logic for updating type.
           @lengths[pos] = bin.length
           @values[pos] = value
@@ -1111,22 +1111,22 @@ module DICOM
     end # of method modify_tag
 
 
-    # Prints the selected tags to an ascii text file.
+    # Prints the selected elements to an ascii text file.
     # The text file will be saved in the folder of the original DICOM file,
     # with the original file name plus a .txt extension.
-    def print_file(tags)
+    def print_file(elements)
       File.open( @file + '.txt', 'w' ) do |output|
-        tags.each do | line |
+        elements.each do | line |
           output.print line + "\n"
         end
       end
     end
 
  
-    # Prints the selected tags to screen.
-    def print_screen(tags)
-      tags.each do | tag |
-        puts tag
+    # Prints the selected elements to screen.
+    def print_screen(elements)
+      elements.each do |element|
+        puts element
       end
     end
     
@@ -1169,10 +1169,10 @@ module DICOM
     end
     
     
-    # Updates the group length value when a tag has been updated, created or removed:
-    # Variable change holds the change in value length for the updated tag.
-    # (Change should be positive when a tag is removed - it will only be negative when editing a tag to a shorter value)
-    # Variable existance is -1 if tag has been removed, +1 if tag has been added and 0 if it has been updated.
+    # Updates the group length value when a data element has been updated, created or removed:
+    # The variable change holds the change in value length for the updated data element.
+    # (Change should be positive when a data element is removed - it will only be negative when editing an element to a shorter value)
+    # The variable existance is -1 if data element has been removed, +1 if element has been added and 0 if it has been updated.
     # (Perhaps in the future this functionality might be moved to the DWrite class, it might give an easier implementation)
     def update_group_length(pos, type, change, existance)
       # Find position of relevant group length (if it exists):
@@ -1181,36 +1181,36 @@ module DICOM
       # If it exists, calculate change:
       if gl_pos
         if existance == 0
-          # Tag has only been updated, so we only need to think about value change:
+          # Element has only been updated, so we only need to think about value change:
           value = @values[gl_pos] + change
         else
-          # Tag has either been created or removed. This means we need to calculate the length of its other parts.
+          # Element has either been created or removed. This means we need to calculate the length of its other parts.
           if @explicit
             # In the explicit scenario it is slightly complex to determine this value:
-            tag_length = 0
+            element_length = 0
             # VR?:
             unless @labels[pos] == "FFFE,E000" or @labels[pos] == "FFFE,E00D" or @labels[pos] == "FFFE,E0DD"
-              tag_length += 2
+              element_length += 2
             end
             # Length value:
             case @types[pos]
               when "OB","OW","SQ","UN"
                 if pos > @labels.index("7FE0,0010").to_i and @labels.index("7FE0,0010").to_i != 0
-                  tag_length += 4
+                  element_length += 4
                 else
-                  tag_length += 6
+                  element_length += 6
                 end
               when "()"
-                tag_length += 4
+                element_length += 4
               else
-                tag_length += 2
+                element_length += 2
             end # of case
           else
             # In the implicit scenario it is easier:
-            tag_length = 4
+            element_length = 4
           end
           # Update group length for creation/deletion scenario:
-          change = (4 + tag_length + change) * existance
+          change = (4 + element_length + change) * existance
           value = @values[gl_pos] + change
         end
         # Write the new Group Length value:
