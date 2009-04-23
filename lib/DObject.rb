@@ -643,7 +643,7 @@ module DICOM
         front_symbol = "| "
         tree_symbol = "|_"
         tags.each_index do |i|
-          if tags[i] != 0
+          if levels[i] != 0
             tags[i] = front_symbol*(levels[i]-1) + tree_symbol + tags[i]
           end
         end
