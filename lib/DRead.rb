@@ -1,19 +1,17 @@
 #    Copyright 2008-2009 Christoffer Lervåg
 
 # Some notes about this DICOM file reading class:
-# In addition to reading files that are compliant to DICOM 3 Part 10,
-# the philosophy of this library is to have maximum compatibility,
-# and thus it will read most 'DICOM' files that deviate from the standard.
-# While reading files, this class will also analyse the hierarchy of elements
-# for those DICOM files that feature sequences and items, enabling the user
-# to take advantage of this information for advanced querying of the 
-# DICOM object afterwards.
+# In addition to reading files that are compliant to DICOM 3 Part 10, the philosophy of this library
+# is to have maximum compatibility, and as such it will read most 'DICOM' files that deviate from the standard.
+# While reading files, this class will also analyse the hierarchy of elements for those DICOM files that
+# feature sequences and items, enabling the user to take advantage of this information for advanced
+# querying of the DICOM object afterwards.
 
 module DICOM
   # Class for reading the data from a DICOM file:
   class DRead
 
-    attr_reader :success,:names,:labels,:types,:lengths,:values,:raw,:levels,:explicit,:file_endian,:msg
+    attr_reader :success,:names,:tags,:types,:lengths,:values,:raw,:levels,:explicit,:file_endian,:msg
 
     # Initialize the DRead instance.
     def initialize(file_name=nil, opts={})
@@ -33,7 +31,7 @@ module DICOM
       else
         # Read and verify the DICOM header:
         header = check_header()
-        # If there was no header, we will attempt to read tags from the very start of the file:
+        # If the file didnt have the expected header, we will attempt to read data elements from the very start of the file:
         if header == false
           @file.close()
           @file = File.new(file_name, "rb")
@@ -44,11 +42,11 @@ module DICOM
         end
       end
       
-      # Run a loop to read the tags:
-      # (Tag information is stored in arrays by the method process_tag)
-      tag = true
-      while tag != false do
-        tag = process_tag()
+      # Run a loop to read the data elements:
+      # (Data element information is stored in arrays by the method process_data_element)
+      data_element = true
+      while data_element != false do
+        data_element = process_data_element()
       end
       
       # Post processing:
@@ -56,12 +54,12 @@ module DICOM
       @file.close()
       # Assume file has been read successfully:
       @success = true
-      # Check if the last tag was read out correctly (that the length of its data (@raw.last.length)
+      # Check if the last element was read out correctly (that the length of its data (@raw.last.length)
       # corresponds to that expected by the length specified in the DICOM file (@lengths.last)).
-      # We only run this test if the last tag has a positive expectation value, obviously.
+      # We only run this test if the last element has a positive expectation value, obviously.
       if @lengths.last.to_i > 0
         if @raw.last.length != @lengths.last
-          @msg += ["Error! The data content read from file does not match the length specified for the tag #{@labels.last}. It seems this is either an invalid or corrupt DICOM file. Returning."]
+          @msg += ["Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."]
           @success = false
           return
         end
@@ -93,7 +91,7 @@ module DICOM
         # Header is not valid (we will still try to read it is a DICOM file though):
         @msg += ["Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."]
         # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
-        # transfer syntax tag, and as such, we attempt to choose the most probable encoding values here:
+        # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
         @explicit = false
         return false
       else
@@ -103,127 +101,125 @@ module DICOM
     end # of method check_header
 
 
-    # Governs the process of reading tags in the DICOM file.
-    # (This method needs to be cleaned up a bit, it just isnt that easy to see whats
-    #going on here in all cases. Perhaps some day I will get the courage to have a go at it again.)
-    def process_tag()
+    # Governs the process of reading data elements from the DICOM file.
+    def process_data_element()
       #STEP 1: ------------------------------------------------------
-      # Attempt to read tag label, but abort if we have reached end of file:
-      label = read_label()
-      if label == false
-        # End of file, no more tags.
+      # Attempt to read data element tag, but abort if we have reached end of file:
+      tag = read_tag()
+      if tag == false
+        # End of file, no more elements.
         return false
       end    
       # STEP 2: ------------------------------------------------------
-      # Access library to retrieve the tag name and VR from the label we have read:
-      lib_data = @lib.get_name_vr(label)
+      # Access library to retrieve the data element name and type (VR) from the tag we just read:
+      lib_data = @lib.get_name_vr(tag)
       name = lib_data[0]
       vr = lib_data[1]
       # (Note: VR will be overwritten if the DICOM file contains VR)
       
       # STEP 3: ----------------------------------------------------
-      # Read tag VR (if it exists) and the length value:
-      tag_info = read_type_length(vr,label)
+      # Read type (VR) (if it exists) and the length value:
+      tag_info = read_type_length(vr,tag)
       type = tag_info[0]
       level_type = type
       length = tag_info[1]
       
       # STEP 4: ----------------------------------------
-      # Reading value of tag.
+      # Reading value of data element.
       # Special handling needed for items in encapsulated image data:
-      if @enc_image and label == "FFFE,E000"
-        # The first item appearing after the image tag is a 'normal' item, the rest hold image data.
+      if @enc_image and tag == "FFFE,E000"
+        # The first item appearing after the image element is a 'normal' item, the rest hold image data.
         # Note that the first item will contain data if there are multiple images, and so must be read.
         type = "OW" # how about alternatives like OB?
         # Modify name of item if this is an item that holds pixel data:
-        if @labels.last != "7FE0,0010"
+        if @tags.last != "7FE0,0010"
           name = "Pixel Data Item"
         end
       end
-      # Read the value of the tag (if it contains data, and it is not a sequence or ordinary item):
+      # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
       if length.to_i > 0 and type != "SQ" and type != "()"
-        # Read the tag data:
-        tag_data = read_data(type,length)
-        value = tag_data[0]
-        raw = tag_data[1]
+        # Read the element's value (data):
+        data = read_value(type,length)
+        value = data[0]
+        raw = data[1]
       else
-        # No tag data.
-        # Special case: Check if pixel data tag is sequenced:
-        if label == "7FE0,0010"
-          # Change name and type of pixel data tag if it does not contain data itself:
+        # Data element has no value (data).
+        # Special case: Check if pixel data element is sequenced:
+        if tag == "7FE0,0010"
+          # Change name and type of pixel data element if it does not contain data itself:
           name = "Encapsulated Pixel Data"
           level_type = "SQ"
           @enc_image = true
         end
       end # of if length.to_i > 0
-      # Set the hiearchy level of this tag:
-      set_level(level_type, length, label, name)
+      # Set the hiearchy level of this data element:
+      set_level(level_type, length, tag, name)
       # Transfer the gathered data to arrays and return true:
       @names += [name]
-      @labels += [label]
+      @tags += [tag]
       @types += [type]
       @lengths += [length]
       @values += [value]
       @raw += [raw]
       return true
-    end # of method process_tag
+    end # of method process_data_element
 
 
-    # Reads and returns TAG LABEL (4 first bytes of tag).
-    def read_label()
+    # Reads and returns the data element's TAG (4 first bytes of element).
+    def read_tag()
       bin1 = @file.read(2)
       bin2 = @file.read(2)
       # Do not proceed if we have reached end of file:
       if bin2 == nil
         return false
       end
-      # Add the length of the tag label. If this was the first label read from file, we need to add the header length too:
+      # Add the length of the data element tag. If this was the first element read from file, we need to add the header length too:
       if @integrated_lengths.length == 0
         # Increase the array with the length of the header + the 4 bytes:
         @integrated_lengths += [@header_length + 4]
       else
-        # For the remaining tags, increase the array with the integrated length of the previous tags + the 4 bytes:
+        # For the remaining elements, increase the array with the integrated length of the previous elements + the 4 bytes:
         @integrated_lengths += [@integrated_lengths[@integrated_lengths.length-1] + 4]
       end
       # Unpack the blobs:
-      label1 = bin1.unpack('h*').to_s.reverse.upcase
-      label2 = bin2.unpack('h*').to_s.reverse.upcase
+      tag1 = bin1.unpack('h*').to_s.reverse.upcase
+      tag2 = bin2.unpack('h*').to_s.reverse.upcase
       # Whether DICOM file is big or little endian, the first 0002 group is always little endian encoded.
       # In case of big endian system:
       if @sys_endian
         # Rearrange the numbers (# This has never been tested btw.):
-        label1 = label1[2..3]+label1[0..1]
-        label2 = label2[2..3]+label2[0..1]
+        tag1 = tag1[2..3]+tag1[0..1]
+        tag2 = tag2[2..3]+tag2[0..1]
       end
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-      if label1 != "0002" and @switched == false
+      if tag1 != "0002" and @switched == false
         switch_syntax()
       end
-      # Perhaps we need to rearrange the labels?:
+      # Perhaps we need to rearrange the tag strings?
       if not @endian
         # Need to rearrange the first and second part of each string:
-        label1 = label1[2..3]+label1[0..1]
-        label2 = label2[2..3]+label2[0..1]
+        tag1 = tag1[2..3]+tag1[0..1]
+        tag2 = tag2[2..3]+tag2[0..1]
       end
-      # Join the label group and label element together to the final string and return:
-      return label1+","+label2
-    end # of method read_label
+      # Join the tag group & element part together to form the final, complete string:
+      return tag1+","+tag2
+    end # of method read_tag
 
 
-    # Reads and returns TAG TYPE (2 bytes) and TAG LENGTH (Varying length).
-    def read_type_length(type,label)
+    # Reads and returns data element TYPE (VR) (2 bytes) and data element LENGTH (Varying length).
+    def read_type_length(type,tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       # *****EXPLICIT*****:
       if @explicit == true
         # Step 1: Read VR (if it exists)
-        unless label == "FFFE,E000" or label == "FFFE,E00D" or label == "FFFE,E0DD"
-          # Read tag type field (2 bytes - since we are not dealing with an item related tag):
+        unless tag == "FFFE,E000" or tag == "FFFE,E00D" or tag == "FFFE,E0DD"
+          # Read the element's type (2 bytes - since we are not dealing with an item related element):
           bin = @file.read(2)
           @integrated_lengths[@integrated_lengths.length-1] += 2
           type = bin.unpack('a*').to_s
         end
         # Step 2: Read length
-        # Three possible structures for value length here, dependent on tag type:
+        # Three possible structures for value length here, dependent on element type:
         case type
           when "OB","OW","SQ","UN"
             # 6 bytes total:
@@ -236,49 +232,48 @@ module DICOM
             length = bin.unpack(@ul)[0]
           when "()"
             # 4 bytes:
-            # For labels "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
+            # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
             bin = @file.read(4)
             @integrated_lengths[@integrated_lengths.length-1] += 4
             length = bin.unpack(@ul)[0]
           else
             # 2 bytes:
-            # For all the other tag types, value length is 2 bytes:
+            # For all the other element types, value length is 2 bytes:
             bin = @file.read(2)
             @integrated_lengths[@integrated_lengths.length-1] += 2
             length = bin.unpack(@us)[0]
         end
       else
         # *****IMPLICIT*****:
-        # No VR (retrieved from library based on the tag's label)
+        # No VR (retrieved from library based on the data element's tag)
         # Reading value length (4 bytes):
         bin = @file.read(4)
         @integrated_lengths[@integrated_lengths.length-1] += 4
         length = bin.unpack(@ul)[0]
       end
-      # For encapsulated data, the tag length will not be defined. To convey this,
+      # For encapsulated data, the element length will not be defined. To convey this,
       # the hex sequence 'ff ff ff ff' is used (-1 converted to signed long, 4294967295 converted to unsigned long).
       if length == 4294967295
         length = @undef
       elsif length%2 >0
-        # According to the DICOM standard, all tag lengths should be an even number.
+        # According to the DICOM standard, all data element lengths should be an even number.
         # If it is not, it may indicate a file that is not standards compliant or it might even not be a DICOM file.
-        @msg += ["Warning: Odd number of bytes in tag length occured. This is a violation of the DICOM standard, but program will still attempt to read the rest of the file."]
+        @msg += ["Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."]
       end
       return [type, length]
     end # of method read_type_length
 
 
-    # Reads and returns TAG DATA (Of varying length - which is determined at an earlier stage).
-    def read_data(type, length)
+    # Reads and returns data element VALUE (Of varying length - which is determined at an earlier stage).
+    def read_value(type, length)
       # Read the data:
       bin = @file.read(length)
       @integrated_lengths[@integrated_lengths.size-1] += length
       # Decoding of content will naturally depend on what kind of content (VR) we have.
       case type
 
-        # Normally the "number tags" will contain just one number, but in some cases,
-        # they contain multiple numbers. In such cases we will read each number and store
-        # them all in a string separated by "/".
+        # Normally the "number elements" will contain just one number, but in some cases, they contain 
+        # multiple numbers. In these cases we will read each number and store them all in a string separated by "/".
         # Unsigned long: (4 bytes)
         when "UL"
           if length <= 4
@@ -327,11 +322,11 @@ module DICOM
             data = bin.unpack(@fd).join("/")
           end
 
-        # The tag contains a tag label (4 bytes):
+        # The data element contains a tag as its value (4 bytes):
         when "AT"
           # Bytes read in following order: 1 0 , 3 2 (And Hex nibbles read in this order: Hh)
           # NB! This probably needs to be modified when dealing with something other than little endian.
-          # Tag label is unpacked to a string in the format GGGGEEEE.
+          # Value is unpacked to a string in the format GGGGEEEE.
           data = (bin.unpack("xHXhX2HXh").join + bin.unpack("x3HXhX2HXh").join).upcase
           #data = (bin.unpack("xHXhX2HXh").join + "," + bin.unpack("x3HXhX2HXh").join).upcase
 
@@ -340,7 +335,7 @@ module DICOM
           data = bin.unpack('a*').to_s
           
         # NB! 
-        # FOLLOWING TAG TYPES WILL NOT BE DECODED.
+        # FOLLOWING ELEMENT TYPES WILL NOT BE DECODED.
         # DECODING OF PIXEL DATA IS MOVED TO DOBJECT FOR PERFORMANCE REASONS.
         
         # Unknown information, header element is not recognised from local database:
@@ -353,7 +348,7 @@ module DICOM
         
         # Other float string, 4-byte floating point numbers
         when "OF"
-          # NB! This tag type has not been tested yet with an actual DICOM file.
+          # NB! This element type has not been tested yet with an actual DICOM file.
           #data = bin.unpack(@fs)
 
         # Image data:
@@ -363,26 +358,26 @@ module DICOM
 
         # Unknown VR:
         else
-          @msg += ["Warning: Tag type #{type} does not have a reading method assigned to it. Please contact the author."]
+          @msg += ["Warning: Element type #{type} does not have a reading method assigned to it. Please check the validity of the DICOM file."]
           #data = bin.unpack('H*')[0]
       end # of case type
       
       # Return the data:
       return [data, bin]
-    end # of method read_data
+    end # of method read_value
 
 
-    # Sets the level of the current tag in the hiearchy.
+    # Sets the level of the current element in the hiearchy.
     # The default (top) level is zero.
-    def set_level(type, length, label, name)
-      # Set the level of this tag:
+    def set_level(type, length, tag, name)
+      # Set the level of this element:
       @levels += [@current_level]
-      # Determine if there is a level change for the following tag:
-      # If tag is a sequence, the level of the following tags will be increased by one.
-      # If tag is an item, the level of the following tags will be increased by one.
+      # Determine if there is a level change for the following element:
+      # If element is a sequence, the level of the following elements will be increased by one.
+      # If element is an item, the level of the following elements will likewise be increased by one.
       # Note the following exception:
-      # If label is "Item", and it contains data (image fragment) directly, which is to say,
-      # not in its sub-tags, we should not increase the level. (This is fixed in the process_tag method.)
+      # If data element is an "Item", and it contains data (image fragment) directly, which is to say,
+      # not in its sub-elements, we should not increase the level. (This is fixed in the process_data_element method.)
       if type == "SQ"
         increase = true
       elsif name == "Item"
@@ -392,7 +387,7 @@ module DICOM
       end
       if increase == true
         @current_level = @current_level + 1
-        # If length of sequence/item is specified, we must note this length + the current tag position in the arrays:
+        # If length of sequence/item is specified, we must note this length + the current element position in the arrays:
         if length.to_i != 0
           @hierarchy += [[length,@integrated_lengths.last]]
         else
@@ -401,7 +396,7 @@ module DICOM
       end
       # Need to check whether a previous sequence or item has ended, if so the level must be decreased by one:
       # In the case of tag specification:
-      if (label == "FFFE,E00D") or (label == "FFFE,E0DD")
+      if (tag == "FFFE,E00D") or (tag == "FFFE,E0DD")
         @current_level = @current_level - 1
       end
       # In the case of sequence and item length specification:
@@ -411,7 +406,7 @@ module DICOM
       if @hierarchy.size > 0
         # Do not perform this check for Pixel Data Items or Sequence Delimitation Items:
         # (If performed, it will give false errors for the case when we have Encapsulated Pixel Data)
-        check_level_end() unless name == "Pixel Data Item" or label == "FFFE,E0DD"
+        check_level_end() unless name == "Pixel Data Item" or tag == "FFFE,E0DD"
       end
     end # of method set_level
     
@@ -419,7 +414,7 @@ module DICOM
     # Checks how far we've read in the DICOM file to determine if we have reached a point
     # where sub-levels are ending. This method is recursive, as multiple sequences/items might end at the same point.
     def check_level_end()
-      # The test is only meaningful to perform if we are not expecting an 'end of sequence/item' tag to signal the level-change.
+      # The test is only meaningful to perform if we are not expecting an 'end of sequence/item' element to signal the level-change.
       if (@hierarchy.last).is_a?(Array)
         described_length = (@hierarchy.last)[0]
         previous_length = (@hierarchy.last)[1]
@@ -439,7 +434,7 @@ module DICOM
         elsif current_diff > described_length
           # Only register this type of error one time per file to avoid a spamming effect:
           if not @hierarchy_error
-            @msg += ["Unexpected hierarchy incident: Current length difference is greater than the expected value, which should not occur. This will not pose any problems unless you intend to query the object for tags in the hierarchy."]
+            @msg += ["Unexpected hierarchy incident: Current length difference is greater than the expected value, which should not occur. This will not pose any problems unless you intend to query the object for elements based on hierarchy."]
             @hierarchy_error = true
           end
         end
@@ -471,7 +466,7 @@ module DICOM
 
     # Changes encoding variables as the file reading proceeds past the initial 0002 group of the DICOM file.
     def switch_syntax()
-      # The information read from the Transfer syntax tag (if present), needs to be processed:
+      # The information read from the Transfer syntax element (if present), needs to be processed:
       process_transfer_syntax()
       # We only plan to run this method once:
       @switched = true
@@ -487,10 +482,10 @@ module DICOM
     end
 
 
-    # Checks the Transfer Syntax UID tag and updates class variables to prepare for correct reading of DICOM file.
+    # Checks the Transfer Syntax UID element and updates class variables to prepare for correct reading of DICOM file.
     # A lot of code here is duplicated in DWrite class. Should move as much of this code as possible to DLibrary I think.
     def process_transfer_syntax()
-      ts_pos = @labels.index("0002,0010")
+      ts_pos = @tags.index("0002,0010")
       if ts_pos != nil
         ts_value = @raw[ts_pos].unpack('a*').to_s.rstrip
         valid = @lib.check_ts_validity(ts_value)
@@ -554,9 +549,9 @@ module DICOM
     # Initiates the variables that are used during file reading.
     def init_variables()
       # Variables that hold data that will be available to the DObject class.
-      # Arrays that will hold information from the tags of the DICOM file:
+      # Arrays that will hold information from the elements of the DICOM file:
       @names = Array.new()
-      @labels = Array.new()
+      @tags = Array.new()
       @types = Array.new()
       @lengths = Array.new()
       @values = Array.new()
@@ -574,11 +569,11 @@ module DICOM
       @success = false
       
       # Variables used internally when reading through the DICOM file:
-      # Array for keeping track of how many bytes have been read from the file up to and including each tag:
+      # Array for keeping track of how many bytes have been read from the file up to and including each data element:
       # (This is necessary for tracking the hiearchy in some DICOM files)
       @integrated_lengths = Array.new()
       @header_length = 0
-      # Array to keep track of the hierarchy of tags (this will be used to determine when a sequence or item is finished):
+      # Array to keep track of the hierarchy of elements (this will be used to determine when a sequence or item is finished):
       @hierarchy = Array.new()
       @hierarchy_error = false
       # Explicitness of the remaining groups after the initial 0002 group:
@@ -595,13 +590,13 @@ module DICOM
       end
       # Set which format strings to use when unpacking numbers:
       set_unpack_strings
-      # A length variable will be used at the end to check whether the last tag was read correctly, or whether the file endend unexpectedly:
+      # A length variable will be used at the end to check whether the last element was read correctly, or whether the file endend unexpectedly:
       @data_length = 0
-      # Keeping track of the tag level while reading through the file:
+      # Keeping track of the data element's level while reading through the file:
       @current_level = 0
       # This variable's string will be inserted as the length of items/sq that dont have a specified length:
       @undef = "UNDEFINED"
-      # Items contained under the pixel data tag may contain data directly, so we need a variable to keep track of this:
+      # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
       @enc_image = false
     end
 
