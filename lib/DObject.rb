@@ -30,7 +30,7 @@ module DICOM
   class DObject
 
     attr_reader :read_success, :write_success, :modality,
-                      :names, :labels, :types, :lengths, :values, :raw, :levels
+                      :names, :tags, :types, :lengths, :values, :raw, :levels
 
     # Initialize the DObject instance.
     def initialize(file_name=nil, opts={})
@@ -42,7 +42,7 @@ module DICOM
       
       # Initialize variables that will be used for the DICOM object:
       @names = Array.new()
-      @labels = Array.new()
+      @tags = Array.new()
       @types = Array.new()
       @lengths = Array.new()
       @values = Array.new()
@@ -86,7 +86,7 @@ module DICOM
       if dcm.success
         @read_success = true
         @names = dcm.names
-        @labels = dcm.labels
+        @tags = dcm.tags
         @types = dcm.types
         @lengths = dcm.lengths
         @values = dcm.values
@@ -116,7 +116,7 @@ module DICOM
     # will attempt to write this information to a valid DICOM file.
     def write_file(file_name)
       w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
-      w.labels = @labels
+      w.tags = @tags
       w.types = @types
       w.lengths = @lengths
       w.raw = @raw
@@ -141,7 +141,7 @@ module DICOM
     # Modifies instance variable @color if color image is detected and instance variable @compression if no pixel data is detected.
     def check_properties()
       # Check if pixel data is present:
-      if @labels.index("7FE0,0010") == nil
+      if @tags.index("7FE0,0010") == nil
         # No pixel data in DICOM file:
         @compression = nil
       else
@@ -379,12 +379,12 @@ module DICOM
     end # of method get_image_pos
 
 
-    # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, label or name.
+    # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, tag or name.
     # If no match is found, the method will return false.
     # Additional options:
     # :array => myArray - tells the method to search for matches in this specific array of positions instead of searching
     #                                  through the entire DICOM object. If myArray equals false, the method will return false.
-    # :partial => true - get_pos will not only search for exact matches, but will search the names and labels arrays for
+    # :partial => true - get_pos will not only search for exact matches, but will search the names and tags arrays for
     #                             strings that contain the given search string.
     def get_pos(query, opts={})
       # Optional keywords:
@@ -420,7 +420,7 @@ module DICOM
           # Perform search:
           if keyword_partial == true
             # Search for partial string matches:
-            partial_indexes = search_array.all_indices_partial_match(@labels, query.upcase)
+            partial_indexes = search_array.all_indices_partial_match(@tags, query.upcase)
             if partial_indexes.length > 0
               indexes = partial_indexes
             else
@@ -429,7 +429,7 @@ module DICOM
           else
             # Search for identical matches:
             if query[4..4] == ","
-              indexes = search_array.all_indices(@labels, query.upcase)
+              indexes = search_array.all_indices(@tags, query.upcase)
             else
               indexes = search_array.all_indices(@names, query)
             end
@@ -599,7 +599,7 @@ module DICOM
     end
 
 
-    # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] label, name, type, length, value
+    # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] tag, name, type, length, value
     # The supplied variable may be a single position, an array of positions, or true - which will make the method print all elements.
     # Optional arguments:
     # :levels => true - method will print the level numbers for each element.
@@ -623,14 +623,14 @@ module DICOM
       # Extract the information to be printed from the object arrays:
       indices = Array.new()
       levels = Array.new()
-      labels = Array.new()
+      tags = Array.new()
       names = Array.new()
       types = Array.new()
       lengths = Array.new()
       values = Array.new()
       # There may be a more elegant way to do this.
       pos_valid.each do |pos|
-        labels += [@labels[pos]]
+        tags += [@tags[pos]]
         levels += [@levels[pos]]
         names += [@names[pos]]
         types += [@types[pos]]
@@ -642,26 +642,26 @@ module DICOM
         # Tree structure requested.
         front_symbol = "| "
         tree_symbol = "|_"
-        labels.each_index do |i|
-          if levels[i] != 0
-            labels[i] = front_symbol*(levels[i]-1) + tree_symbol + labels[i]
+        tags.each_index do |i|
+          if tags[i] != 0
+            tags[i] = front_symbol*(levels[i]-1) + tree_symbol + tags[i]
           end
         end
       end
       # Extract the string lengths which are needed to make the formatting nice:
-      label_lengths = Array.new()
+      tag_lengths = Array.new()
       name_lengths = Array.new()
       type_lengths = Array.new()
       length_lengths = Array.new()
       names.each_index do |i|
-        label_lengths[i] = labels[i].length
+        tag_lengths[i] = tags[i].length
         name_lengths[i] = names[i].length
         type_lengths[i] = types[i].length
         length_lengths[i] = lengths[i].to_s.length
       end
       # To give the printed output a nice format we need to check the string lengths of some of these arrays:
       index_maxL = pos_valid.max.to_s.length
-      label_maxL = label_lengths.max
+      tag_maxL = tag_lengths.max
       name_maxL = name_lengths.max
       type_maxL = type_lengths.max
       length_maxL = length_lengths.max
@@ -669,11 +669,11 @@ module DICOM
       elements = Array.new()    
       # Start of loop which formats the element data:
       # (This loop is what consumes most of the computing time of this method)
-      labels.each_index do |i|
+      tags.each_index do |i|
         # Configure empty spaces:
         s = " "
         f0 = " "*(index_maxL-pos_valid[i].to_s.length)
-        f2 = " "*(label_maxL-labels[i].length+1)
+        f2 = " "*(tag_maxL-tags[i].length+1)
         f3 = " "*(name_maxL-names[i].length+1)
         f4 = " "*(type_maxL-types[i].length+1)
         f5 = " "*(length_maxL-lengths[i].to_s.length)
@@ -696,14 +696,14 @@ module DICOM
           when "SQ","()"
             value = "(Encapsulated Elements)"            
         end
-        elements += [f0 + pos_valid[i].to_s + s + lev + s + labels[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip]
+        elements += [f0 + pos_valid[i].to_s + s + lev + s + tags[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip]
       end
       # Print to either screen or file, depending on what the user requested:
       if opt_file
         print_file(elements)
       else
         print_screen(elements)
-      end # of labels.each do |i|
+      end # of tags.each do |i|
     end # of method print
     
 
@@ -774,7 +774,7 @@ module DICOM
         add_msg("Reading specified file was not successful for some reason. No data has been added.")
       end
       if bin.length > 0
-        pos = @labels.index("7FE0,0010")
+        pos = @tags.index("7FE0,0010")
         # Modify element:
         set_value(bin, :label => "7FE0,0010", :create => true, :bin => true)
       else
@@ -793,19 +793,19 @@ module DICOM
     
     
     # Removes an element from the DICOM object:
-    def remove_tag(element)
+    def remove(element)
       pos = get_pos(element)
       if pos != nil
         # Extract first array number:
         pos = pos[0]
         # Update group length:
-        if @labels[pos][5..8] != "0000"
+        if @tags[pos][5..8] != "0000"
           change = @lengths[pos]
           vr = @types[pos]
           update_group_length(pos, vr, change, -1)
         end
         # Remove entry from arrays:
-        @labels.delete_at(pos)
+        @tags.delete_at(pos)
         @levels.delete_at(pos)
         @names.delete_at(pos)
         @types.delete_at(pos)
@@ -813,7 +813,7 @@ module DICOM
         @values.delete_at(pos)
         @raw.delete_at(pos)
       else
-        add_msg("Element #{element} not found in the DICOM object.")
+        add_msg("The data element #{element} could not be found in the DICOM object.")
       end
     end
     
@@ -822,29 +822,29 @@ module DICOM
     # If the supplied value is not binary, it will attempt to encode it to binary itself.
     def set_value(value, opts={})
       # Options:
-      label = opts[:label]
+      tag = opts[:label]
       pos = opts[:pos]
       create = opts[:create] # =false means no element creation
       bin = opts[:bin] # =true means value already encoded
-      # Abort if neither label nor position has been specified:
-      if label == nil and pos == nil
+      # Abort if neither tag nor position has been specified:
+      if tag == nil and pos == nil
         add_msg("Valid position not provided; can not modify or create data element. Please use keyword :pos or :label to specify.")
         return
       end
       # If position is specified, check that it is valid.
-      # If label is specified, check that it doesnt correspond to multiple labels:
+      # If tag is specified, check that it doesnt correspond to multiple tags:
       if pos != nil
-        unless pos >= 0 and pos <= @labels.length
+        unless pos >= 0 and pos <= @tags.length
           # This is not a valid position:
           pos = nil
         end
       else
-        pos = get_pos(label)
+        pos = get_pos(tag)
         if pos == false
           pos = nil
         elsif pos.size > 1
           pos = 'abort'
-          add_msg("The supplied label is found at multiple locations in the DICOM object. Will not update.")
+          add_msg("The supplied tag is found at multiple locations in the DICOM object. Will not update.")
         end
       end # of if pos != nil
       # Create or modify?
@@ -852,7 +852,7 @@ module DICOM
         # User wants modification only. Proceed only if we have a valid position:
         unless pos == nil
           # Modify element:
-          modify_tag(value, :bin => bin, :pos => pos)
+          modify_element(value, :bin => bin, :pos => pos)
         end
       else
         # User wants to create (or modify if present). Only abort if multiple hits have been found.
@@ -860,16 +860,14 @@ module DICOM
           if pos == nil
             # As we wish to create new data element, we need to find out where to insert it in the element arrays:
             # We will do this by finding the last array position of the last element that will stay in front of this element.
-            if @labels.size > 0
+            if @tags.size > 0
               # Search the array:
               index = -1
               quit = false
               while quit != true do
-                if index+1 >= @labels.length # We have reached end of array.
+                if index+1 >= @tags.length # We have reached end of array.
                   quit = true
-                #elsif index+1 == @labels.length
-                  #quit = true
-                elsif label < @labels[index+1] # We are past the correct position.
+                elsif tag < @tags[index+1] # We are past the correct position.
                   quit = true
                 else # Increase index in anticipation of a 'hit'.
                   index += 1
@@ -879,17 +877,17 @@ module DICOM
               # We are dealing with an empty DICOM object:
               index = nil
             end
-            # Before we allow element creation, do a simple check that the label seems valid:
-            if label.length == 9
+            # Before we allow element creation, do a simple check that the tag seems valid:
+            if tag.length == 9
               # Create new data element:
-              create_tag(value, :bin => bin, :label => label, :lastpos => index)
+              create_element(value, :bin => bin, :label => tag, :lastpos => index)
             else
-              # Label did not pass our check:
-              add_msg("The label you specified (#{label}) does not seem valid. Please use the format 'GGGG,EEEE'.")
+              # Tag did not pass our check:
+              add_msg("The tag you specified (#{tag}) does not seem valid. Please use the format 'GGGG,EEEE'.")
             end
           else
             # Modify existing:
-            modify_tag(value, :bin => bin, :pos => pos)
+            modify_element(value, :bin => bin, :pos => pos)
           end
         end
       end # of if create == false
@@ -926,12 +924,12 @@ module DICOM
     
     
     # Creates a new data element:
-    def create_tag(value, opts={})
+    def create_element(value, opts={})
       bin_only = opts[:bin]
-      label = opts[:label]
+      tag = opts[:label]
       lastpos = opts[:lastpos]
       # Fetch the VR:
-      info = @lib.get_name_vr(label)
+      info = @lib.get_name_vr(tag)
       vr = info[1]
       name = info[0]
       # Encode binary (if a binary is not provided):
@@ -953,7 +951,7 @@ module DICOM
           # 4 different scenarios: Array is empty, or: element is put in front, inside array, or at end of array:
           if lastpos == nil
             # We have empty DICOM object:
-            @labels = [label]
+            @tags = [tag]
             @levels = [0]
             @names = [name]
             @types = [vr]
@@ -962,16 +960,16 @@ module DICOM
             @raw = [bin]
           elsif lastpos == -1
             # Insert in front of arrays:
-            @labels = [label] + @labels
+            @tags = [tag] + @tags
             @levels = [0] + @levels # NB! No support for hierarchy at this time!
             @names = [name] + @names
             @types = [vr] + @types
             @lengths = [bin.length] + @lengths
             @values = [value] + @values
             @raw = [bin] + @raw
-          elsif lastpos == @labels.length-1
+          elsif lastpos == @tags.length-1
             # Insert at end arrays:
-            @labels = @labels + [label]
+            @tags = @tags + [tag]
             @levels = @levels + [0] # Defaulting to level = 0
             @names = @names + [name]
             @types = @types + [vr]
@@ -980,7 +978,7 @@ module DICOM
             @raw = @raw + [bin]
           else
             # Insert somewhere inside the array:
-            @labels = @labels[0..lastpos] + [label] + @labels[(lastpos+1)..(@labels.length-1)]
+            @tags = @tags[0..lastpos] + [tag] + @tags[(lastpos+1)..(@tags.length-1)]
             @levels = @levels[0..lastpos] + [0] + @levels[(lastpos+1)..(@levels.length-1)] # Defaulting to level = 0
             @names = @names[0..lastpos] + [name] + @names[(lastpos+1)..(@names.length-1)]
             @types = @types[0..lastpos] + [vr] + @types[(lastpos+1)..(@types.length-1)]
@@ -991,8 +989,8 @@ module DICOM
           # Update last index variable as we have added to our arrays:
           @last_index += 1
           # Update group length (as long as it was not a group length element that was created):
-          pos = @labels.index(label)
-          if @labels[pos][5..8] != "0000"
+          pos = @tags.index(tag)
+          if @tags[pos][5..8] != "0000"
             change = bin.length
             update_group_length(pos, vr, change, 1)
           end
@@ -1002,7 +1000,7 @@ module DICOM
       else
         add_msg("Binary is nil. Nothing to save.")
       end
-    end # of method create_tag
+    end # of method create_element
     
     
     # Encodes a value to binary (used for inserting values to a DICOM object).
@@ -1023,7 +1021,7 @@ module DICOM
           bin = value.pack(@fs)
         when "FD"
           bin = value.pack(@fd)
-        when "AT" # (element label - assumes it has the format GGGGEEEE (no comma separation))
+        when "AT" # (Data element tag: Assume it has the format GGGGEEEE (no comma separation))
           # Encode letter pairs indexes in following order 10 3 2:
           # NB! This may not be encoded correctly on Big Endian files or computers.
           old_format=value[0]
@@ -1069,7 +1067,7 @@ module DICOM
     end # of method encode
     
     # Modifies existing data element:
-    def modify_tag(value, opts={})
+    def modify_element(value, opts={})
       bin_only = opts[:bin]
       pos = opts[:pos]
       pos = pos[0] if pos.is_a?(Array)
@@ -1086,29 +1084,25 @@ module DICOM
           # Encode:
           bin = encode(value, vr)
         else
-          add_msg("Error. Unable to encode data element value of unknown type!")
+          add_msg("Error. Unable to encode data element value of unknown type (Value Representation)!")
         end
       end
       # Update the arrays with this new information:
       if bin
-        #if bin.length > 0
-          # Replace array entries for this element:
-          #@types[pos] = vr # for the time being there is no logic for updating type.
-          @lengths[pos] = bin.length
-          @values[pos] = value
-          @raw[pos] = bin
-          # Update group length (as long as it was not the group length that was modified):
-          if @labels[pos][5..8] != "0000"
-            change = bin.length - old_length
-            update_group_length(pos, vr, change, 0) 
-          end
-        #else
-          #add_msg("Binary does not have a positive length, nothing to save.")
-        #end
+        # Replace array entries for this element:
+        #@types[pos] = vr # for the time being there is no logic for updating type.
+        @lengths[pos] = bin.length
+        @values[pos] = value
+        @raw[pos] = bin
+        # Update group length (as long as it was not the group length that was modified):
+        if @tags[pos][5..8] != "0000"
+          change = bin.length - old_length
+          update_group_length(pos, vr, change, 0) 
+        end
       else
         add_msg("Binary is nil. Nothing to save.")
       end
-    end # of method modify_tag
+    end # of method modify_element
 
 
     # Prints the selected elements to an ascii text file.
@@ -1176,7 +1170,7 @@ module DICOM
     # (Perhaps in the future this functionality might be moved to the DWrite class, it might give an easier implementation)
     def update_group_length(pos, type, change, existance)
       # Find position of relevant group length (if it exists):
-      gl_pos = @labels.index(@labels[pos][0..4] + "0000")
+      gl_pos = @tags.index(@tags[pos][0..4] + "0000")
       existance = 0 if existance == nil
       # If it exists, calculate change:
       if gl_pos
@@ -1189,13 +1183,13 @@ module DICOM
             # In the explicit scenario it is slightly complex to determine this value:
             element_length = 0
             # VR?:
-            unless @labels[pos] == "FFFE,E000" or @labels[pos] == "FFFE,E00D" or @labels[pos] == "FFFE,E0DD"
+            unless @tags[pos] == "FFFE,E000" or @tags[pos] == "FFFE,E00D" or @tags[pos] == "FFFE,E0DD"
               element_length += 2
             end
             # Length value:
             case @types[pos]
               when "OB","OW","SQ","UN"
-                if pos > @labels.index("7FE0,0010").to_i and @labels.index("7FE0,0010").to_i != 0
+                if pos > @tags.index("7FE0,0010").to_i and @tags.index("7FE0,0010").to_i != 0
                   element_length += 4
                 else
                   element_length += 6
