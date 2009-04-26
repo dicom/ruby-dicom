@@ -1008,6 +1008,9 @@ module DICOM
 
         # We have a number of VRs that are encoded as string:
         when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
+          # In case we are dealing with a number string element, the supplied value might be a number
+          # instead of a string, and as such, we convert to string just to make sure this will work nicely:
+          value[0] = value[0].to_s
           # Odd/even test (num[0]=1 if num is odd):
           if value[0].length[0] == 1
             # Odd (add a zero byte):
