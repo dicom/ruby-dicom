@@ -795,25 +795,29 @@ module DICOM
     # Removes an element from the DICOM object:
     def remove(element)
       pos = get_pos(element)
-      if pos != nil
-        # Extract first array number:
-        pos = pos[0]
-        # Update group length:
-        if @tags[pos][5..8] != "0000"
-          change = @lengths[pos]
-          vr = @types[pos]
-          update_group_length(pos, vr, change, -1)
+      if pos != false
+        if pos.length > 1
+          add_msg("Warning: Method remove() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT removed.")
+        else
+          # Extract first array number:
+          pos = pos[0]
+          # Update group length:
+          if @tags[pos][5..8] != "0000"
+            change = @lengths[pos]
+            vr = @types[pos]
+            update_group_length(pos, vr, change, -1)
+          end
+          # Remove entry from arrays:
+          @tags.delete_at(pos)
+          @levels.delete_at(pos)
+          @names.delete_at(pos)
+          @types.delete_at(pos)
+          @lengths.delete_at(pos)
+          @values.delete_at(pos)
+          @raw.delete_at(pos)
         end
-        # Remove entry from arrays:
-        @tags.delete_at(pos)
-        @levels.delete_at(pos)
-        @names.delete_at(pos)
-        @types.delete_at(pos)
-        @lengths.delete_at(pos)
-        @values.delete_at(pos)
-        @raw.delete_at(pos)
       else
-        add_msg("The data element #{element} could not be found in the DICOM object.")
+        add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove() has no data element to remove.")
       end
     end
     
