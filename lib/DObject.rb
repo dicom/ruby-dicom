@@ -776,7 +776,7 @@ module DICOM
       if bin.length > 0
         pos = @tags.index("7FE0,0010")
         # Modify element:
-        set_value(bin, :label => "7FE0,0010", :create => true, :bin => true)
+        set_value(bin, "7FE0,0010", :create => true, :bin => true)
       else
         add_msg("Content of file is of zero length. Nothing to store.")
       end # of if bin.length > 0
@@ -788,7 +788,7 @@ module DICOM
       # Export the RMagick object to a standard Ruby array of numbers:
       pixel_array = magick_obj.export_pixels(x=0, y=0, columns=magick_obj.columns, rows=magick_obj.rows, map="I")
       # Encode this array using the standard class method:
-      set_value(pixel_array, :label => "7FE0,0010", :create => true)
+      set_value(pixel_array, "7FE0,0010", :create => true)
     end
     
     
