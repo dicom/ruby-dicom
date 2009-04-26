@@ -836,12 +836,12 @@ module DICOM
           # Proceed to create or modify element:
           if create == false
             # Modify element:
-            modify_element(value, :bin => bin, :pos => pos[0])
+            modify_element(value, pos[0], :bin => bin)
           else
             # User wants to create an element (or modify it if it is already present).
             unless pos == false
               # The data element already exist, so we modify instead of creating:
-              modify_element(value, :bin => bin, :pos => pos)
+              modify_element(value, pos[0], :bin => bin)
             else
               # We need to create element:
               tag = @lib.get_tag(element)
@@ -923,7 +923,7 @@ module DICOM
           # Encode:
           bin = encode(value, vr)
         else
-          add_msg("Error. Unable to encode data element value of unknown type!")
+          add_msg("Error. Unable to encode data element value of unknown type (Value Representation)!")
         end
       end
       # Put the information of this data element into the arrays:
@@ -1045,10 +1045,8 @@ module DICOM
     end # of method encode
     
     # Modifies existing data element:
-    def modify_element(value, opts={})
+    def modify_element(value, pos, opts={})
       bin_only = opts[:bin]
-      pos = opts[:pos]
-      pos = pos[0] if pos.is_a?(Array)
       # Fetch the VR and old length:
       vr = @types[pos]
       old_length = @lengths[pos]
