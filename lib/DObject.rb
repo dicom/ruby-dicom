@@ -826,53 +826,53 @@ module DICOM
       bin = opts[:bin] # =true means value already encoded
       # Retrieve array position:
       pos = get_pos(element)
+      # We do not support changing multiple data elements:
+      if pos.is_a?(Array)
+        if pos.length > 1
+          add_msg("Warning: Method set_value() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT saved.")
+          return
+        end
+      end
       if pos == false and create == false
         # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
         add_msg("Warning: Invalid data element provided to method set_value(). Value NOT updated.")
+      elsif create == false
+        # Modify element:
+        modify_element(value, pos[0], :bin => bin)
       else
-        if pos.length > 1
-          add_msg("Warning: Method set_value() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT saved.")
+        # User wants to create an element (or modify it if it is already present).
+        unless pos == false
+          # The data element already exist, so we modify instead of creating:
+          modify_element(value, pos[0], :bin => bin)
         else
-          # Proceed to create or modify element:
-          if create == false
-            # Modify element:
-            modify_element(value, pos[0], :bin => bin)
+          # We need to create element:
+          tag = @lib.get_tag(element)
+          if tag == false
+            add_msg("Warning: Method set_value() could not create data element, either because data element name was not recognized in the library, or data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
           else
-            # User wants to create an element (or modify it if it is already present).
-            unless pos == false
-              # The data element already exist, so we modify instead of creating:
-              modify_element(value, pos[0], :bin => bin)
-            else
-              # We need to create element:
-              tag = @lib.get_tag(element)
-              if tag == false
-                add_msg("Warning: Method set_value() could not create data element, either because data element name was not recognised in the library, or data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
-              else
-                # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
-                # We will do this by finding the last array position of the last element that will (alphabetically/numerically) stay in front of this element.
-                if @tags.size > 0
-                  # Search the array:
-                  index = -1
-                  quit = false
-                  while quit != true do
-                    if index+1 >= @tags.length # We have reached end of array.
-                      quit = true
-                    elsif tag < @tags[index+1] # We are past the correct position.
-                      quit = true
-                    else # Increase index in anticipation of a 'hit'.
-                      index += 1
-                    end
-                  end # of while
-                else
-                  # We are dealing with an empty DICOM object:
-                  index = nil
+            # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
+            # We will do this by finding the last array position of the last element that will (alphabetically/numerically) stay in front of this element.
+            if @tags.size > 0
+              # Search the array:
+              index = -1
+              quit = false
+              while quit != true do
+                if index+1 >= @tags.length # We have reached end of array.
+                  quit = true
+                elsif tag < @tags[index+1] # We are past the correct position.
+                  quit = true
+                else # Increase index in anticipation of a 'hit'.
+                  index += 1
                 end
-                # The necessary information is gathered; create new data element:
-                create_element(value, tag, index, :bin => bin)
-              end # of if tag ==..else..
-            end # of unless pos ==..else..
-          end # of if create ==..else..
-        end # of if pos.length..else..
+              end # of while
+            else
+              # We are dealing with an empty DICOM object:
+              index = nil
+            end
+            # The necessary information is gathered; create new data element:
+            create_element(value, tag, index, :bin => bin)
+          end # of if tag ==..else..
+        end # of unless pos ==..else..
       end # of if pos ==..and create ==..else..
     end # of method set_value
 
