@@ -22,11 +22,11 @@ module DICOM
       # Array of folders to be processed for anonymization:
       @folders = Array.new
       @exceptions = Array.new
-      # Tags that will be anonymized:
+      # Data elements which will be anonymized (the array will hold a list of tag strings):
       @tags = Array.new
-      # Default values to use on anonymized tags:
+      # Default values to use on anonymized data elements:
       @values = Array.new
-      # Which tags will have enumeration applied, if requested by the user:
+      # Which data elements will have enumeration applied, if requested by the user:
       @enum = Array.new
       # We use a hash to store information from DICOM files if enumeration is desired:
       @enum_old_hash = {}
@@ -35,7 +35,7 @@ module DICOM
       @files = Array.new
       # Write paths will be determined later and put in this array:
       @write_paths = Array.new
-      # Set the default tags to be anonymized:
+      # Set the default data elements to be anonymized:
       set_defaults()
     end # of method initialize
     
@@ -60,7 +60,7 @@ module DICOM
       if tag
         if tag.is_a?(String)
           if tag.length == 9
-            # Add tag information:
+            # Add anonymization information for this tag:
             @tags += [tag]
             @values += [value]
             @enum += [enum]
@@ -158,10 +158,10 @@ module DICOM
                   value = @values[j]
                 end # of if @blank..else..
                 # Update DICOM object with new value:
-                obj.set_value(value, :create => false, :label => @tags[j])
+                obj.set_value(value, @tags[j], :create => false)
               end
               # Write DICOM file:
-              obj.write_file(@write_paths[i])
+              obj.write(@write_paths[i])
               all_write = false unless obj.write_success
             else
               all_read = false
@@ -203,7 +203,7 @@ module DICOM
       # Extract the string lengths which are needed to make the formatting nice:
       names = Array.new
       types = Array.new
-      label_lengths = Array.new
+      tag_lengths = Array.new
       name_lengths = Array.new
       type_lengths = Array.new
       value_lengths = Array.new
@@ -211,14 +211,14 @@ module DICOM
         arr = @lib.get_name_vr(@tags[i])
         names += [arr[0]]
         types += [arr[1]]
-        label_lengths[i] = @tags[i].length
+        tag_lengths[i] = @tags[i].length
         name_lengths[i] = names[i].length
         type_lengths[i] = types[i].length
         value_lengths[i] = @values[i].to_s.length unless @blank
         value_lengths[i] = "" if @blank
       end
       # To give the printed output a nice format we need to check the string lengths of some of these arrays:
-      label_maxL = label_lengths.max
+      tag_maxL = tag_lengths.max
       name_maxL = name_lengths.max
       type_maxL = type_lengths.max
       value_maxL = value_lengths.max
@@ -227,7 +227,7 @@ module DICOM
       @tags.each_index do |i|
         # Configure empty spaces:
         s = " "
-        f1 = " "*(label_maxL-@tags[i].length+1)
+        f1 = " "*(tag_maxL-@tags[i].length+1)
         f2 = " "*(name_maxL-names[i].length+1)
         f3 = " "*(type_maxL-types[i].length+1)
         f4 = " " if @blank
@@ -240,7 +240,7 @@ module DICOM
         if @blank
           value = ""
         else
-          value = @values [i]
+          value = @values[i]
         end
         tag = @tags[i]
         lines += [tag + f1 + names[i] + f2 + types[i] + f3 + value.to_s + f4 + enum.to_s ]
@@ -355,7 +355,8 @@ module DICOM
     # If there are parts of file that exist also in write path, it will not add those parts to write_path.
     def process_write_paths()
       # First make sure @write_path ends with a "/":
-      @write_path = @write_path + "/" unless @write_path[(@write_path.length-1)..(@write_path.length-1)] == "/"
+      last_character = @write_path[(@write_path.length-1)..(@write_path.length-1)]
+      @write_path = @write_path + "/" unless last_character == "/"
       # Separate behaviour if we have one, or several files in our array:
       if @files.length == 1
         # One file.
