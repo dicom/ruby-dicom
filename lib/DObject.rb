@@ -71,7 +71,7 @@ module DICOM
       # If a (valid) file name string is supplied, call the method to read the DICOM file:
       if file_name.is_a?(String) and file_name != ""
         @file = file_name
-        read_file(file_name)
+        read(file_name)
       end
     end # of method initialize
 
@@ -80,7 +80,7 @@ module DICOM
     # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
     # For the time being, this method is called automatically when initializing the DObject class,
     # but in the future, when write support is added, this method may have to be called manually.
-    def read_file(file_name)
+    def read(file_name)
       dcm = DRead.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
       # Store the data to the instance variables if the readout was a success:
       if dcm.success
@@ -114,7 +114,7 @@ module DICOM
     
     # Transfers necessary information from the DObject to the DWrite class, which
     # will attempt to write this information to a valid DICOM file.
-    def write_file(file_name)
+    def write(file_name)
       w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
       w.tags = @tags
       w.types = @types
