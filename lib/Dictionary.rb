@@ -6,7 +6,7 @@ module DICOM
   class Dictionary
 
     # Loads the image type library (Photometric Interpretation).
-    # (Tag label: 0028,0004)
+    # (Data element tag: 0028,0004)
     def load_image_types()
       return [
       ["MONOCHROME1", "grey level image description (high values=dark, low values=bright)"],
@@ -58,7 +58,7 @@ module DICOM
     def load_uid()
       return [
       ["1.2.840.10008.1.1", "Verification SOP Class", "SOP Class"],
-      # Start: Transfer syntax (Tag label: 0002,0010)
+      # Start: Transfer syntax (Data element tag: 0002,0010)
       ["1.2.840.10008.1.2", "Implicit VR Little Endian: Default Transfer Syntax for DICOM", "Transfer Syntax"],
       ["1.2.840.10008.1.2.1", "Explicit VR Little Endian", "Transfer Syntax"],
       ["1.2.840.10008.1.2.1.99", "Deflated Explicit VR Little Endian", "Transfer Syntax"],
@@ -360,8 +360,8 @@ module DICOM
     end
 
 
-    # Tag data
-    def load_tags()
+    # Data element dictionary:
+    def load_data_elements()
       return [
       # E.1 Registry of DICOM command elements
       # Group 0000
@@ -2872,15 +2872,15 @@ module DICOM
       ["60xx,1500", ["LO"], "Overlay Label"],
       ["60xx,3000", ["OB","OW"], "Overlay Data"],
       ["60xx,4000", ["LT"], "Overlay Comments"],  # RET
-      # Pixel data and structural tags:
+      # Pixel data and structural data elements:
       ["7FE0,0010", ["OW","OB"], "Pixel Data"],
       ["FFFA,FFFA", ["SQ"], "Digital Signatures Sequence"],
       ["FFFC,FFFC", ["OB"], "Data Set Trailing Padding"],
-      ["FFFE,E000", ["()"], "Item"], # VR does not exist for this tag
-      ["FFFE,E00D", ["()"], "Item Delimitation Item"], # VR does not exist for this tag
-      ["FFFE,E0DD", ["()"], "Sequence Delimitation Item"] # VR does not exist for this tag
+      ["FFFE,E000", ["()"], "Item"], # VR does not exist for this element
+      ["FFFE,E00D", ["()"], "Item Delimitation Item"], # VR does not exist for this element
+      ["FFFE,E0DD", ["()"], "Sequence Delimitation Item"] # VR does not exist for this element
       ].transpose
-    end # End of method load_tags()
+    end # End of method load_data_elements()
     
     
   end # End of class
