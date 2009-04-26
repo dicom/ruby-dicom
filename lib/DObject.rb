@@ -827,7 +827,7 @@ module DICOM
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false and create == false
-        # Since user has requested a tag is to be updated, we can not do so it element position is not valid:
+        # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
         add_msg("Warning: Invalid data element provided to method set_value(). Value NOT updated.")
       else
         if pos.length > 1
@@ -868,7 +868,7 @@ module DICOM
                   index = nil
                 end
                 # The necessary information is gathered; create new data element:
-                create_element(value, :bin => bin, :tag => tag, :lastpos => index)
+                create_element(value, tag, index, :bin => bin)
               end # of if tag ==..else..
             end # of unless pos ==..else..
           end # of if create ==..else..
@@ -907,10 +907,8 @@ module DICOM
     
     
     # Creates a new data element:
-    def create_element(value, opts={})
+    def create_element(value, tag, last_pos, opts={})
       bin_only = opts[:bin]
-      tag = opts[:tag]
-      lastpos = opts[:lastpos]
       # Fetch the VR:
       info = @lib.get_name_vr(tag)
       vr = info[1]
@@ -929,57 +927,54 @@ module DICOM
         end
       end
       # Put the information of this data element into the arrays:
-      if bin
-        #if bin.length > 0
-          # 4 different scenarios: Array is empty, or: element is put in front, inside array, or at end of array:
-          if lastpos == nil
-            # We have empty DICOM object:
-            @tags = [tag]
-            @levels = [0]
-            @names = [name]
-            @types = [vr]
-            @lengths = [bin.length]
-            @values = [value]
-            @raw = [bin]
-          elsif lastpos == -1
-            # Insert in front of arrays:
-            @tags = [tag] + @tags
-            @levels = [0] + @levels # NB! No support for hierarchy at this time!
-            @names = [name] + @names
-            @types = [vr] + @types
-            @lengths = [bin.length] + @lengths
-            @values = [value] + @values
-            @raw = [bin] + @raw
-          elsif lastpos == @tags.length-1
-            # Insert at end arrays:
-            @tags = @tags + [tag]
-            @levels = @levels + [0] # Defaulting to level = 0
-            @names = @names + [name]
-            @types = @types + [vr]
-            @lengths = @lengths + [bin.length]
-            @values = @values + [value]
-            @raw = @raw + [bin]
-          else
-            # Insert somewhere inside the array:
-            @tags = @tags[0..lastpos] + [tag] + @tags[(lastpos+1)..(@tags.length-1)]
-            @levels = @levels[0..lastpos] + [0] + @levels[(lastpos+1)..(@levels.length-1)] # Defaulting to level = 0
-            @names = @names[0..lastpos] + [name] + @names[(lastpos+1)..(@names.length-1)]
-            @types = @types[0..lastpos] + [vr] + @types[(lastpos+1)..(@types.length-1)]
-            @lengths = @lengths[0..lastpos] + [bin.length] + @lengths[(lastpos+1)..(@lengths.length-1)]
-            @values = @values[0..lastpos] + [value] + @values[(lastpos+1)..(@values.length-1)]
-            @raw = @raw[0..lastpos] + [bin] + @raw[(lastpos+1)..(@raw.length-1)]
-          end
-          # Update last index variable as we have added to our arrays:
-          @last_index += 1
-          # Update group length (as long as it was not a group length element that was created):
-          pos = @tags.index(tag)
-          if @tags[pos][5..8] != "0000"
-            change = bin.length
-            update_group_length(pos, vr, change, 1)
-          end
-        #else
-          #add_msg("Binary does not have a positive length, nothing to save.")
-        #end # of if bin.length > 0
+      if bin        
+        # 4 different scenarios: Array is empty, or: element is put in front, inside array, or at end of array:
+        # NB! No support for hierarchy at this time! Defaulting to level = 0.
+        if last_pos == nil
+          # We have empty DICOM object:
+          @tags = [tag]
+          @levels = [0]
+          @names = [name]
+          @types = [vr]
+          @lengths = [bin.length]
+          @values = [value]
+          @raw = [bin]
+        elsif last_pos == -1
+          # Insert in front of arrays:
+          @tags = [tag] + @tags
+          @levels = [0] + @levels
+          @names = [name] + @names
+          @types = [vr] + @types
+          @lengths = [bin.length] + @lengths
+          @values = [value] + @values
+          @raw = [bin] + @raw
+        elsif last_pos == @tags.length-1
+          # Insert at end arrays:
+          @tags = @tags + [tag]
+          @levels = @levels + [0]
+          @names = @names + [name]
+          @types = @types + [vr]
+          @lengths = @lengths + [bin.length]
+          @values = @values + [value]
+          @raw = @raw + [bin]
+        else
+          # Insert somewhere inside the array:
+          @tags = @tags[0..last_pos] + [tag] + @tags[(last_pos+1)..(@tags.length-1)]
+          @levels = @levels[0..last_pos] + [0] + @levels[(last_pos+1)..(@levels.length-1)]
+          @names = @names[0..last_pos] + [name] + @names[(last_pos+1)..(@names.length-1)]
+          @types = @types[0..last_pos] + [vr] + @types[(last_pos+1)..(@types.length-1)]
+          @lengths = @lengths[0..last_pos] + [bin.length] + @lengths[(last_pos+1)..(@lengths.length-1)]
+          @values = @values[0..last_pos] + [value] + @values[(last_pos+1)..(@values.length-1)]
+          @raw = @raw[0..last_pos] + [bin] + @raw[(last_pos+1)..(@raw.length-1)]
+        end
+        # Update last index variable as we have added to our arrays:
+        @last_index += 1
+        # Update group length (as long as it was not a group length element that was created):
+        pos = @tags.index(tag)
+        if @tags[pos][5..8] != "0000"
+          change = bin.length
+          update_group_length(pos, vr, change, 1)
+        end
       else
         add_msg("Binary is nil. Nothing to save.")
       end
