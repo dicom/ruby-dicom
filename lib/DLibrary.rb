@@ -66,6 +66,26 @@ module DICOM
       end
       return [name,vr]
     end
+    
+    
+    # Returns the tag that matches the supplied data element name,
+    # or if a tag is supplied, return that tag.
+    def get_tag(value)
+      tag = false
+      # Is it a tag?
+      # A tag is a string with 9 characters, where the 5th character should be a comma.
+      if value[4..4] == ',' and value.length == 9
+        # This is a tag.
+        # (Here it is possible to have some further logic to check the validity of the string as a tag.)
+        tag = value
+      else
+        # We have presumably been dealt a name. Search the dictionary to see if we can identify
+        # it along with its corresponding tag:
+        pos = @de_name.index(value)
+        tag = @de_tag[pos] unless pos == nil
+      end
+      return tag
+    end
 
 
     # Checks whether a given string is a valid transfer syntax or not.
