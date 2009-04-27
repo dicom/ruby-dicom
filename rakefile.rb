@@ -11,7 +11,7 @@ require 'rake/gempackagetask'
 spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name = "dicom"
-  s.version = "0.4"
+  s.version = "0.5"
   s.date = Time.now
   s.summary = "Library for reading, editing and writing DICOM files."
   s.require_paths = ["lib"]
