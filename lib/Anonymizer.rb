@@ -132,7 +132,7 @@ module DICOM
           # existing information associated with each tag:
           create_enum_hash() if @enumeration
           # Start the read/update/write process:
-          puts "Initiating read/update/write process..."
+          puts "Initiating read/update/write process (This may take some time)..."
           # Monitor whether every file read/write was successful:
           all_read = true
           all_write = true
