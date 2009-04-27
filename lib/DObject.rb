@@ -613,7 +613,12 @@ module DICOM
       # Process option values, setting defaults for the ones that are not specified:
       opt_levels = opts[:levels] || false
       opt_tree = opts[:tree] || false
-      opt_file = opts[:file] || false   
+      opt_file = opts[:file] || false
+      # If pos is false, abort, and inform the user:
+      if pos == false
+        add_msg("Warning: Method print() was supplied false instead of a valid position. Aborting print.")
+        return
+      end
       if not pos.is_a?(Array) and pos != true
         # Convert to array if number:
         pos_valid = [pos]
