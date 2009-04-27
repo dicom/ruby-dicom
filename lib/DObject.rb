@@ -159,6 +159,10 @@ module DICOM
 
     # Returns image data from the provided element index, performing decompression of data if necessary.
     def read_image_magick(pos, columns, rows)
+      if pos == false or columns == false or rows == false
+        add_msg("Error: Method read_image_magick() does not have enough data available to build an image object.")
+        return false
+      end
       if @compression != true
         # Non-compressed, just return the array contained on the particular element:
         image_data=get_pixels(pos)

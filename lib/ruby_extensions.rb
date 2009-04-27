@@ -1,6 +1,4 @@
-#    Copyright 2008-2009 Christoffer Lervåg
-
-# This file contains extensions to the Ruby library that is used by Ruby DICOM.
+# This file contains extensions to the Ruby library which are used by Ruby DICOM.
 
 class Array
   
