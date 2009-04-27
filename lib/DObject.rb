@@ -29,7 +29,7 @@ module DICOM
   # Class for handling the DICOM contents:
   class DObject
 
-    attr_reader :read_success, :write_success, :modality,
+    attr_reader :read_success, :write_success, :modality, :errors,
                       :names, :tags, :types, :lengths, :values, :raw, :levels
 
     # Initialize the DObject instance.
@@ -49,7 +49,7 @@ module DICOM
       @raw = Array.new()
       @levels = Array.new()
       # Array that will holde any messages generated while reading the DICOM file:
-      @msg = Array.new()
+      @errors = Array.new()
       # Array to keep track of sequences/structure of the dicom elements:
       @sequence = Array.new()
       # Index of last element in data element arrays:
@@ -900,7 +900,7 @@ module DICOM
       if (msg.is_a? String)
         msg=[msg]
       end
-      @msg += msg
+      @errors += msg
     end
     
     
