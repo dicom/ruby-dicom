@@ -1,3 +1,21 @@
+= 0.5 RC
+
+=== 27th April, 2009
+
+* There have been a change in syntax for several methods with a goal of simplification.
+* There have been a change in syntax for some methods, variables and messages in order
+  to better match the terminology used in the official DICOM documents.
+* Added a new attr_reader :errors, an array that holds any warnings issued during your
+  interaction with DObject.
+* DObject has received new attr_readers for the arrays holding information on the DICOM object.
+  See documentation for details.
+* Several methods have been cleaned up, making execution in some cases somewhat snappier.
+* Several methods have been made more robust.
+* Added new keyword :partial to the get_pos() method, which will enable search for partial string matches.
+* Fixed a bug where exception folders where ignored in the Anonymizer class.
+* Made a small change to string extraction in an attempt to make Ruby DICOM compatible with both Ruby versions 1.8 and 1.9.
+
+
 = 0.4
 
 === 3rd February, 2009
@@ -21,6 +39,7 @@
   write_file()
 * Introducing the Anonymizer class, which takes advantage of the new write capability in Ruby DICOM
   to offer a fairly powerful and customizable tool for anonymizing your DICOM files.
+
 
 = 0.3
 
@@ -48,6 +67,7 @@
 * DRead class is more resistant to breaking if it is handed a faulty file to read, and will return an error message instead of halting execution.
 * Added option to load DICOM object in verbose or silent mode.
 
+
 = 0.1
 
 === 20th July, 2008
@@ -69,7 +89,7 @@ Known issues:
 * 12 bit image data not supported
 * Color images not supported in NArray and RMagick retrieve methods
 * Unpacking compressed image data has basic support but is not properly tested yet.
-* Reading Big Endian has basic, but not full, support.
+* Reading Big Endian files has fairly good, but possibly not full, support.
 * Reading on a Big Endian system is not tested.
 * Reading of multiple frame image data to RMagick does not work in all cases.
 * Retrieving images when file contains two or more unrelated images may not be handled correctly.
