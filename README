@@ -16,14 +16,14 @@ dcm = DICOM::DObject.new("myFile.dcm")
 dcm.print_properties()
 # Print all tags to screen:
 dcm.print(true)
-# Retrieve a tag value:
+# Retrieve a data element value:
 name = dcm.get_value("0010.0010")
 # Retrieve pixel data:
 pixels = dcm.get_value("7FE0.0010")
-# Load pixel data in a RMagick object and display on screen:
+# Load pixel data to a RMagick object and display it on screen:
 image = dcm.get_image_magick()
 image[0].display
-# Load pixel data in a NArray object and display on screen:
+# Load pixel data to a NArray object and display it on screen:
 image = dcm.get_image_narray()
 NImage.show image[0,true,true]
 

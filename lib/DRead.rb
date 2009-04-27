@@ -338,7 +338,7 @@ module DICOM
         # FOLLOWING ELEMENT TYPES WILL NOT BE DECODED.
         # DECODING OF PIXEL DATA IS MOVED TO DOBJECT FOR PERFORMANCE REASONS.
         
-        # Unknown information, header element is not recognised from local database:
+        # Unknown information, header element is not recognized from local database:
         when "UN"
           #data=bin.unpack('H*')[0]
 

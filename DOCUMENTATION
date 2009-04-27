@@ -40,11 +40,14 @@ PUBLIC CLASS METHODS
 		Example 3: (Open an empty DICOM object)
 			obj = DICOM::DObject.new(nil)
 
-ACCESSORS
+ACCESSORS (read only)
 	:read_success
 		A boolean that is true if DICOM object was read successfully, and false if not.
 	:write_success
 		A boolean that is true if DICOM object was written successfully, and false if not.
+	:errors
+		An array holding any error messages, warnings or notices that have been logged
+		during your interaction with DObject.	
 	:modality
 		A string which holds the description of the modality of the DICOM object that has been read.
 		Example of use:
@@ -52,16 +55,26 @@ ACCESSORS
 			if obj.read_success
 			  puts obj.modality
 			end
+	The following accessors are the arrays that hold all the information gathered on the DICOM object.
+	As such, their length is equal to the number of tags in a DICOM object.
+	:names
+	:tags
+	:types
+	:lengths
+	:values
+	:raw
+	:levels
 
 PUBLIC INSTANCE METHODS
 
-	children(id, options={})
-		Returns the positions of all tags inside the hierarchy of a sequence or an item.
-		This is useful if you later want to get the position(s) of a certain tag,
+	children(element, options={})
+		Returns the positions of all data elements inside the hierarchy of a sequence or an item.
+		This is useful if you later want to get the position(s) of a certain element,
 		restricted to the positions inside the given sequence or item.
-		Example 1: (Return all tag positions that is contained in the following sequence)
+		Element may be an array index, element name or element tag.
+		Example 1: (Return all element positions that is contained in the following sequence)
 			pos = obj.children("3006,0082")
-		Example 2: (Return all tag positions that is contained only directly beneath the following sequence)
+		Example 2: (Return all element positions that is contained only directly beneath the following sequence)
 			pos = obj.children("3006,0082", :next_only => true)
 
 	get_frames()
@@ -70,7 +83,7 @@ PUBLIC INSTANCE METHODS
 	get_image_magick()
 		Returns an array of RMagick image objects, where the size of the array corresponds
 		with the number of frames in the image data.
-		To call this method the user needs to have performed " require 'RMagick' " in advance.
+		To call this method the user needs to have loaded the RMagick bindings in advance (require 'RMagick').
 		Example (retrieve object and display first frame):
 		require 'RMagick'
 		data = dicom.get_image_magick()
@@ -78,7 +91,7 @@ PUBLIC INSTANCE METHODS
 
 	get_image_narray()
 		Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
-		To call this method the user needs to have performed " require 'narray' " in advance.
+		To call this method the user needs to have loaded the NArray library in advance (require 'narray').
 		Example (retrieve object and display first frame):
 			require 'narray'
 			require 'nimage'
@@ -86,40 +99,45 @@ PUBLIC INSTANCE METHODS
 			NImage.show data[0,true,true]
 
 	get_image_pos()
-		Returns the index(es) of the tag(s) that contain image data.
+		Returns the index(es) of the data element(s) that contain image data.
 
-	get_pos(id, options={})
-		Returns the index(es) of the tag(s) in the DICOM file that match the supplied tag ID.
+	get_pos(string, options={})
+		Returns the index(es) of the data element(s) in the DICOM file that match
+		the supplied element tag or name.
 		Example 1: (Find all occurences of the specified tag in the object)
 			pos = obj.get_pos("3006,0080")
 		Example 2: (Find all occurences of the specified tag inside the specified sequence)
 			selection = obj.children("3006,0082")
 			pos = obj.get_pos("3006,0080", :array => selection)
+		Example 3: (Using the :partial argument to find position of all elements containing a specific string)
+			pos = obj.get_pos("0010", :partial => true)
+			pos = obj.get_pos("Name", :partial => true)
 
-	get_raw(id)
-		Returns the raw data of the DICOM tag that matches the supplied tag ID.
-		The ID may be a tag index, tag name or tag label.
+	get_raw(element)
+		Returns the raw data of the requested DICOM data element.
+		Element may be an array index, element name or element tag.
 
-	get_value(id)
-		Returns the value (processed raw data) of the DICOM tag that matches the supplied tag ID.
-		The ID may be a tag index, tag name or tag label.
+	get_value(element)
+		Returns the value (processed raw data) of the requested DICOM data element.
+		Element may be an array index, element name or element tag.
 
 	image_to_file(file)
 		Dumps the pixel data of the DICOM object directly to the specified file.
 		This is useful if you wish to extract this data to process it with another program.
 
-	parents(id)
+	parents(element)
 		Returns the positions of all parents of this tag in the hierarchy.
 		This is useful if you want to know the position of the items or sequence tags that 'hold' your tag.
+		Element may be an array index, element name or element tag.
 		Example:
 			pos = obj.parents("300C,0006")
 
-	print(id, options={})
-		Prints the information of one or many tag(s):
+	print(pos, options={})
+		Prints the information gathered on one or several/all tag(s) in the DICOM object:
 			(index, [hierarchy level,] label, name, type, length, value)
 		The method can print to both screen or to a text file. If print to file is chosen,
 		the text file will be put in the folder of the original DICOM file with a '.txt' extension.
-		The ID may be a tag name, label or position, or it might be an array of positions.
+		The argument pos may be a number (array position), an array of numbers, or true.
 		Example 1: (Print all tags to file, with both tree visualization and level numbers)
 			obj.print(true, :levels => true, :tree => true, :file => true)
 		Example 2: (Print an array of tags to screen, no level or tree visualization)
@@ -131,16 +149,19 @@ PUBLIC INSTANCE METHODS
 	print_properties()
 		Prints the key structural properties of the DICOM file to the screen.
 
-	remove_tag(tag)
-		Removes the specified tag from the DICOM object. You can use this method
-		if you are editing a DICOM object and wants to get rid of some tags.
+	remove(element)
+		Removes the specified data element from the DICOM object. You can use this method
+		if you are editing a DICOM object and wants to get rid of one or more elements.
+		Element may be an array index, element name or element tag.
 
-	set_value(value, options={})
-		This method can be used both to edit an existing tag, or to create new tags in your DICOM object.
+	set_value(value, element, options={})
+		This method can be used both to edit an existing data element, or to create
+		new data elements in your DICOM object.
+		Element may be an array index, element name or element tag.
 		Example 1: (Edit patient name)
-			obj.set_value("Anonymous", :label => "0010,0010", :create => false)
+			obj.set_value("Anonymous", "0010,0010", :create => false)
 		Example 2: (Insert binary data for a specific tag)
-			obj.set_value(data, :pos => 52, :bin => true, :create => false)
+			obj.set_value(data, 52, :bin => true, :create => false)
 
 	set_image_magick(object)
 		Inserts a RMagick image object to the pixel data tag of your DICOM object.
@@ -150,10 +171,10 @@ PUBLIC INSTANCE METHODS
 		This can be useful if you have processed some image data using a custom program
 		and just wants to put that data back into a DICOM object.
 
-	write_file(file)
+	write(file)
 		Writes the DICOM object to the specified file.
 		Example:
-			obj.write_file(myPath + "test_file.dcm")
+			obj.write(myPath + "test_file.dcm")
 
 
 CLASS Anonymizer
@@ -165,7 +186,7 @@ PUBLIC CLASS METHODS
 		Example:
 			a = DICOM::Anonymizer.new
 
-ACCESSORS
+ACCESSORS (Read & write)
 	:blank
 		A boolean that you can set if you want to all anonymization tags to be blank
 		instead of having some generic value.
