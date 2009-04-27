@@ -776,6 +776,7 @@ module DICOM
       rescue
         # Reading file was not successful. Register an error message.
         add_msg("Reading specified file was not successful for some reason. No data has been added.")
+        return
       end
       if bin.length > 0
         pos = @tags.index("7FE0,0010")
