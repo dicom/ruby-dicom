@@ -1,3 +1,5 @@
+# coding: ISO-8859-1
+
 #    Copyright 2008-2009 Christoffer Lervåg
 
 module DICOM
@@ -2881,7 +2883,7 @@ module DICOM
       ["FFFE,E0DD", ["()"], "Sequence Delimitation Item"] # VR does not exist for this element
       ].transpose
     end # End of method load_data_elements()
-    
-    
+
+
   end # End of class
 end # End of module
