@@ -17,10 +17,10 @@ module DICOM
     def initialize(file_name=nil, opts={})
       # Process option values, setting defaults for the ones that are not specified:
       @lib =  opts[:lib] || DLibrary.new
-      @sys_endian = opts[:sys_endian] || false     
+      @sys_endian = opts[:sys_endian] || false
       # Initiate the variables that are used during file reading:
       init_variables()
-      
+
       # Test if file is readable and open it to the @file variable:
       open_file(file_name)
 
@@ -41,14 +41,14 @@ module DICOM
           return
         end
       end
-      
+
       # Run a loop to read the data elements:
       # (Data element information is stored in arrays by the method process_data_element)
       data_element = true
       while data_element != false do
         data_element = process_data_element()
       end
-      
+
       # Post processing:
       # Close the file as we are finished reading it:
       @file.close()
@@ -81,9 +81,9 @@ module DICOM
       # Next 4 bytes should spell 'DICM':
       bin2 = @file.read(4)
       @header_length += 4
-      # Check if this binary was successfully read (if not, this short file is not a valid DICOM file and we will return): 
+      # Check if this binary was successfully read (if not, this short file is not a valid DICOM file and we will return):
       if bin2
-        dicm = bin2.unpack('a' * 4).to_s
+        dicm = bin2.unpack('a' * 4).join
       else
         return nil
       end
@@ -109,21 +109,21 @@ module DICOM
       if tag == false
         # End of file, no more elements.
         return false
-      end    
+      end
       # STEP 2: ------------------------------------------------------
       # Access library to retrieve the data element name and type (VR) from the tag we just read:
       lib_data = @lib.get_name_vr(tag)
       name = lib_data[0]
       vr = lib_data[1]
       # (Note: VR will be overwritten if the DICOM file contains VR)
-      
+
       # STEP 3: ----------------------------------------------------
       # Read type (VR) (if it exists) and the length value:
       tag_info = read_type_length(vr,tag)
       type = tag_info[0]
       level_type = type
       length = tag_info[1]
-      
+
       # STEP 4: ----------------------------------------
       # Reading value of data element.
       # Special handling needed for items in encapsulated image data:
@@ -182,8 +182,8 @@ module DICOM
         @integrated_lengths += [@integrated_lengths[@integrated_lengths.length-1] + 4]
       end
       # Unpack the blobs:
-      tag1 = bin1.unpack('h*').to_s.reverse.upcase
-      tag2 = bin2.unpack('h*').to_s.reverse.upcase
+      tag1 = bin1.unpack('h*')[0].reverse.upcase
+      tag2 = bin2.unpack('h*')[0].reverse.upcase
       # Whether DICOM file is big or little endian, the first 0002 group is always little endian encoded.
       # In case of big endian system:
       if @sys_endian
@@ -216,7 +216,7 @@ module DICOM
           # Read the element's type (2 bytes - since we are not dealing with an item related element):
           bin = @file.read(2)
           @integrated_lengths[@integrated_lengths.length-1] += 2
-          type = bin.unpack('a*').to_s
+          type = bin.unpack('a*').join
         end
         # Step 2: Read length
         # Three possible structures for value length here, dependent on element type:
@@ -272,7 +272,7 @@ module DICOM
       # Decoding of content will naturally depend on what kind of content (VR) we have.
       case type
 
-        # Normally the "number elements" will contain just one number, but in some cases, they contain 
+        # Normally the "number elements" will contain just one number, but in some cases, they contain
         # multiple numbers. In these cases we will read each number and store them all in a string separated by "/".
         # Unsigned long: (4 bytes)
         when "UL"
@@ -332,12 +332,12 @@ module DICOM
 
         # We have a number of VRs that are decoded as string:
         when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT' #,'VR'
-          data = bin.unpack('a*').to_s
-          
-        # NB! 
+          data = bin.unpack('a*').join
+
+        # NB!
         # FOLLOWING ELEMENT TYPES WILL NOT BE DECODED.
         # DECODING OF PIXEL DATA IS MOVED TO DOBJECT FOR PERFORMANCE REASONS.
-        
+
         # Unknown information, header element is not recognized from local database:
         when "UN"
           #data=bin.unpack('H*')[0]
@@ -345,7 +345,7 @@ module DICOM
         # Other byte string, 1-byte integers
         when "OB"
           #data = bin.unpack('H*')[0]
-        
+
         # Other float string, 4-byte floating point numbers
         when "OF"
           # NB! This element type has not been tested yet with an actual DICOM file.
@@ -361,7 +361,7 @@ module DICOM
           @msg += ["Warning: Element type #{type} does not have a reading method assigned to it. Please check the validity of the DICOM file."]
           #data = bin.unpack('H*')[0]
       end # of case type
-      
+
       # Return the data:
       return [data, bin]
     end # of method read_value
@@ -409,8 +409,8 @@ module DICOM
         check_level_end() unless name == "Pixel Data Item" or tag == "FFFE,E0DD"
       end
     end # of method set_level
-    
-    
+
+
     # Checks how far we've read in the DICOM file to determine if we have reached a point
     # where sub-levels are ending. This method is recursive, as multiple sequences/items might end at the same point.
     def check_level_end()
@@ -487,7 +487,7 @@ module DICOM
     def process_transfer_syntax()
       ts_pos = @tags.index("0002,0010")
       if ts_pos != nil
-        ts_value = @raw[ts_pos].unpack('a*').to_s.rstrip
+        ts_value = @raw[ts_pos].unpack('a*').join.rstrip
         valid = @lib.check_ts_validity(ts_value)
         if not valid
           @msg+=["Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."]
@@ -567,7 +567,7 @@ module DICOM
       @file_endian = false
       # Variable used to tell whether file was read succesfully or not:
       @success = false
-      
+
       # Variables used internally when reading through the DICOM file:
       # Array for keeping track of how many bytes have been read from the file up to and including each data element:
       # (This is necessary for tracking the hiearchy in some DICOM files)
