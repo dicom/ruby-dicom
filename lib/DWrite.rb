@@ -6,7 +6,7 @@
 # If this is unwanted behaviour, it is easy to modify the source code here to avoid this.
 #
 # It is important to note, that while the goal is to be fully DICOM compliant, no guarantees are given
-# that this is actually achieved. You are encouraged to thouroughly test your files for compatibility after creation. 
+# that this is actually achieved. You are encouraged to thouroughly test your files for compatibility after creation.
 # Please contact the author if you discover any issues with file creation.
 
 module DICOM
@@ -14,14 +14,14 @@ module DICOM
   class DWrite
     attr_writer :tags, :types, :lengths, :raw, :rest_endian, :rest_explicit
     attr_reader :success, :msg
-    
+
     # Initialize the DWrite instance.
     def initialize(file_name=nil, opts={})
       # Process option values, setting defaults for the ones that are not specified:
       @lib =  opts[:lib] || DLibrary.new
       @sys_endian = opts[:sys_endian] || false
       @file_name = file_name
-      
+
       # Create arrays used for storing data element information:
       @tags = Array.new
       @types = Array.new
@@ -35,8 +35,8 @@ module DICOM
       # Endianness of the remaining groups after the first group:
       @rest_endian = false
     end # of method initialize
-    
-    
+
+
     # Writes the DICOM information to file.
     def write()
       if @tags.size > 0
@@ -67,12 +67,12 @@ module DICOM
         @msg += ["Error. No data elements to write."]
       end # of if @tags.size > 0
     end # of method write
-    
-    
+
+
     # Following methods are private:
     private
-    
-    
+
+
     # Writes the official DICOM header:
     def write_header()
       # Fill in 128 empty bytes:
@@ -80,8 +80,8 @@ module DICOM
       # Write the string "DICM" which is central to DICOM standards compliance:
       @file.write("DICM")
     end # of write_header
-    
-    
+
+
     # Inserts group 0002 if it is missing, to ensure DICOM compliance.
     def write_meta()
       # We will check for the existance of 5 group 0002 elements, and if they are not present, we will insert them:
@@ -152,7 +152,7 @@ module DICOM
               length += 8 + @lengths[j]
             end
           end
-          j += 1 
+          j += 1
         end # of if @tags[j][0..3]..
       end # of while
       # Set group length:
@@ -175,8 +175,8 @@ module DICOM
         end
       end
     end # of method write_meta
-    
-    
+
+
     # Writes each data element to file:
     def write_data_element(i)
       # Step 1: Write tag:
@@ -191,8 +191,8 @@ module DICOM
       end
       # Should have some kind of test that the last data was written succesfully?
     end # of method write_data_element
-    
-    
+
+
     # Writes the tag (first part of the data element):
     def write_tag(i)
       # Tag is originally of the form "0002,0010".
@@ -218,8 +218,8 @@ module DICOM
       # Write to file:
       @file.write([tag_corr].pack('H*'))
     end # of method write_tag
-    
-    
+
+
     # Writes the type (VR) (if it is to be written) and length value (these two are the middle part of the data element):
     def write_type_length(i)
       # First some preprocessing:
@@ -276,15 +276,15 @@ module DICOM
         @file.write(length4)
       end # of if @explicit == true
     end # of method write_type_length
-    
-    
+
+
     # Writes the value (last part of the data element):
     def write_value(i)
       # This is pretty straightforward, just dump the binary data to the file:
       @file.write(@raw[i])
     end # of method write_value
-    
-    
+
+
     # Tests if the file is writable and opens it.
     def open_file(file)
       # Two cases: File already exists or it does not.
@@ -342,7 +342,7 @@ module DICOM
     def process_transfer_syntax()
       ts_pos = @tags.index("0002,0010")
       if ts_pos != nil
-        ts_value = @raw[ts_pos].unpack('a*').to_s.rstrip
+        ts_value = @raw[ts_pos].unpack('a*').join.rstrip
         valid = @lib.check_ts_validity(ts_value)
         if not valid
           @msg+=["Warning: Invalid/unknown transfer syntax! Will still write the file, but you should give this a closer look."]
@@ -373,8 +373,8 @@ module DICOM
         end # of case ts_value
       end # of if ts_pos != nil
     end # of method process_syntax
-  
-  
+
+
     # Sets the pack format strings that will be used for numbers depending on endianness of file/system.
     def set_pack_strings
       if @endian
@@ -399,14 +399,14 @@ module DICOM
         @fd = "G*"
       end
     end
-    
-    
+
+
     # Initializes the variables used when executing this program.
     def init_variables()
       # Variables that are accesible from outside:
       # Until a DICOM write has completed successfully the status is 'unsuccessful':
       @success = false
-      
+
       # Variables used internally:
       # Default explicitness of start of DICOM file:
       @explicit = true
@@ -425,6 +425,6 @@ module DICOM
       # Items contained under the Pixel Data element needs some special attention to write correctly:
       @enc_image = false
     end # of method init_variables
-  
+
   end # of class
 end # of module
