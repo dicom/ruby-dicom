@@ -1,7 +1,7 @@
 DICOM is a small library for reading, editing and writing DICOM files.
 It is written completely in Ruby and has no external dependencies.
 
-Copyright 2008-2009 Christoffer LervÃ¥g (chris.lervag [@nospam] @gmail.com)
+Copyright 2008-2009 Christoffer Lervåg (chris.lervag [@nospam] @gmail.com)
 
 INSTALLATION
 

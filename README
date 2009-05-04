@@ -35,11 +35,11 @@ every variable loaded in the program is automatically printed.
 A hack to avoid this effect is to append ";0" after a command.
 Example:
 dcm = DICOM::DObject.new("myFile.dcm") ;0
-  
+
 COPYRIGHT
 ---------
 
-Copyright 2008-2009 Christoffer LervÃ¥g
+Copyright 2008-2009 Christoffer Lervåg
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ ABOUT ME
 --------
 
 Name:
-Christoffer LervÃ¥g
+Christoffer Lervåg
 
 Location:
 Oslo, Norway

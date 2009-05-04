@@ -1,9 +1,10 @@
-= 0.5 RC
+= 0.5
 
-=== 27th April, 2009
+=== 4th May, 2009
 
-* There have been a change in syntax for several methods with a goal of simplification.
-* There have been a change in syntax for some methods, variables and messages in order
+* Several small changes have been made to achieve compatibility with both Ruby versions 1.8 and 1.9.
+* Implemented a change in syntax for several methods with a goal of simplification.
+* Implemented a change in syntax for some methods, variables and messages in order
   to better match the terminology used in the official DICOM documents.
 * Added a new attr_reader :errors, an array that holds any warnings issued during your
   interaction with DObject.
@@ -12,8 +13,9 @@
 * Several methods have been cleaned up, making execution in some cases somewhat snappier.
 * Several methods have been made more robust.
 * Added new keyword :partial to the get_pos() method, which will enable search for partial string matches.
+* Added new keyword :array to the get_value() and get_raw() methods which enables easy extraction of
+  multiple values of a given tag to an array (relevant for tags present at multiple places in a DICOM file)
 * Fixed a bug where exception folders where ignored in the Anonymizer class.
-* Made a small change to string extraction in an attempt to make Ruby DICOM compatible with both Ruby versions 1.8 and 1.9.
 
 
 = 0.4
