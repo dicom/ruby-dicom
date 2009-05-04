@@ -531,15 +531,15 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method get_value(). Returning false.")
       else
         if pos.size > 1
-	  if opts_array == true
-	    # Retrieve all values into an array:
-	    value = []
-	    pos.each do |i|
-	      value << @values[i]
-	    end
-	  else
-	    add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
-	  end
+          if opts_array == true
+            # Retrieve all values into an array:
+            value = []
+            pos.each do |i|
+              value << @values[i]
+            end
+          else
+            add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
+          end
         else
           value = @values[pos[0]]
         end
@@ -563,15 +563,15 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method get_raw(). Returning false.")
       else
         if pos.size > 1
-	  if opts_array == true
-	    # Retrieve all values into an array:
-	    value = []
-	    pos.each do |i|
-	      value << @raw[i]
-	    end
-	  else
-	    add_msg("Warning: Method get_raw() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
-	  end
+          if opts_array == true
+            # Retrieve all values into an array:
+            value = []
+            pos.each do |i|
+              value << @raw[i]
+            end
+          else
+            add_msg("Warning: Method get_raw() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
+          end
         else
           value = @raw[pos[0]]
         end
