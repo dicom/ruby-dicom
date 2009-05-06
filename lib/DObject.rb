@@ -145,10 +145,10 @@ module DICOM
         # No pixel data in DICOM file:
         @compression = nil
       else
-        @compression = @lib.get_compression(get_value("0002,0010"))
+        @compression = @lib.get_compression(get_value("0002,0010", :silent => true))
       end
       # Set color variable as true if our object contain a color image:
-      col_string = get_value("0028,0004")
+      col_string = get_value("0028,0004", :silent => true)
       if col_string != false
         if (col_string.include? "RGB") or (col_string.include? "COLOR") or (col_string.include? "COLOUR")
           @color = true
@@ -524,11 +524,13 @@ module DICOM
     #                  of occurances of the tag. If keyword is not specified, the method returns false in this case.
     def get_value(element, opts={})
       opts_array = opts[:array]
+      # As this method is also used internally, we want the possibility of warnings not being raised even if verbose is set to true by the user, to avoid confusion.
+      silent = opts[:silent]
       value = false
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false
-        add_msg("Warning: Invalid data element provided to method get_value(). Returning false.")
+        add_msg("Warning: Invalid data element provided to method get_value(). Returning false.") unless silent
       else
         if pos.size > 1
           if opts_array == true
@@ -538,7 +540,7 @@ module DICOM
               value << @values[i]
             end
           else
-            add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
+            add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless silent
           end
         else
           value = @values[pos[0]]
@@ -1146,7 +1148,7 @@ module DICOM
 
     # Sets the modality variable of the current DICOM object, by querying the library with the object's SOP Class UID.
     def set_modality()
-      value = get_value("0008,0016")
+      value = get_value("0008,0016", :silent => true)
       if value == false
         @modality = "Not specified"
       else
