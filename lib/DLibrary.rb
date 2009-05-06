@@ -1,4 +1,4 @@
-#    Copyright 2008-2009 Christoffer Lervåg
+#    Copyright 2008-2009 Christoffer Lervag
 
 module DICOM
   # Class which holds the methods that interact with the DICOM dictionary.
@@ -66,8 +66,8 @@ module DICOM
       end
       return [name,vr]
     end
-    
-    
+
+
     # Returns the tag that matches the supplied data element name,
     # or if a tag is supplied, return that tag.
     def get_tag(value)
@@ -117,8 +117,8 @@ module DICOM
       end
       return name
     end
-    
-    
+
+
     # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
     def get_compression(value)
       res = false
