@@ -4,6 +4,8 @@ require 'DLibrary'
 require 'DObject'
 require 'DRead'
 require 'DWrite'
-require 'ruby_extensions'
+require 'Stream'
 # Extended library:
 require 'Anonymizer'
+# Ruby library extensions:
+require 'ruby_extensions'
