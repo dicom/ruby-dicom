@@ -11,7 +11,7 @@ module DICOM
   # Class for reading the data from a DICOM file:
   class DRead
 
-    attr_reader :success,:names,:tags,:types,:lengths,:values,:raw,:levels,:explicit,:file_endian,:msg
+    attr_reader :success, :names, :tags, :types, :lengths, :values, :raw, :levels, :explicit, :file_endian, :msg
 
     # Initialize the DRead instance.
     def initialize(file_name=nil, opts={})
@@ -19,7 +19,7 @@ module DICOM
       @lib =  opts[:lib] || DLibrary.new
       @sys_endian = opts[:sys_endian] || false
       # Initiate the variables that are used during file reading:
-      init_variables()
+      init_variables
 
       # Test if file is readable and open it to the @file variable:
       open_file(file_name)
@@ -29,12 +29,17 @@ module DICOM
         # File is not readable, so we return:
         return
       else
+        # Extract the content of the file to a binary string:
+        @str = @file.read
+        @file.close
+        # Create a Stream instance to handle the decoding of content from this binary string:
+        @stream = Stream.new(@str, @file_endian, @explicit)
         # Read and verify the DICOM header:
-        header = check_header()
-        # If the file didnt have the expected header, we will attempt to read data elements from the very start of the file:
+        header = check_header
+        # If the file didnt have the expected header, we will attempt to read
+        # data elements from the very start file:
         if header == false
-          @file.close()
-          @file = File.new(file_name, "rb")
+          @stream.skip(-132)
           @header_length = 0
         elsif header == nil
           # Not a valid DICOM file, return:
@@ -46,12 +51,10 @@ module DICOM
       # (Data element information is stored in arrays by the method process_data_element)
       data_element = true
       while data_element != false do
-        data_element = process_data_element()
+        data_element = process_data_element
       end
 
       # Post processing:
-      # Close the file as we are finished reading it:
-      @file.close()
       # Assume file has been read successfully:
       @success = true
       # Check if the last element was read out correctly (that the length of its data (@raw.last.length)
@@ -64,7 +67,7 @@ module DICOM
           return
         end
       end
-    end # of method initialize
+    end # of initialize
 
 
     # Following methods are private:
@@ -72,40 +75,40 @@ module DICOM
 
 
     # Checks the initial header of the DICOM file.
-    def check_header()
+    def check_header
       # According to the official DICOM standard, a DICOM file shall contain 128
       # consequtive (zero) bytes followed by 4 bytes that spell the string 'DICM'.
       # Apparently, some providers seems to skip this in their DICOM files.
-      bin1 = @file.read(128)
-      @header_length += 128
-      # Next 4 bytes should spell 'DICM':
-      bin2 = @file.read(4)
-      @header_length += 4
-      # Check if this binary was successfully read (if not, this short file is not a valid DICOM file and we will return):
-      if bin2
-        dicm = bin2.unpack('a' * 4).join
-      else
+      # Check that the file is long enough to contain a valid header:
+      if @str.length < 132
+        # This does not seem to be a valid DICOM file and so we return.
         return nil
-      end
-      if dicm != 'DICM' then
-        # Header is not valid (we will still try to read it is a DICOM file though):
-        @msg += ["Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."]
-        # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
-        # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
-        @explicit = false
-        return false
       else
-        # Header is valid:
-        return true
+        @stream.skip(128)
+        # Next 4 bytes should spell "DICM":
+        identifier = @stream.decode(4, "STR")
+        @header_length += 132
+        if identifier != "DICM" then
+          # Header is not valid (we will still try to read it is a DICOM file though):
+          @msg += ["Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."]
+          # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
+          # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
+          @explicit = false
+          @stream.explicit = false
+          return false
+        else
+          # Header is valid:
+          return true
+        end
       end
-    end # of method check_header
+    end # of check_header
 
 
     # Governs the process of reading data elements from the DICOM file.
-    def process_data_element()
+    def process_data_element
       #STEP 1: ------------------------------------------------------
       # Attempt to read data element tag, but abort if we have reached end of file:
-      tag = read_tag()
+      tag = read_tag
       if tag == false
         # End of file, no more elements.
         return false
@@ -162,15 +165,15 @@ module DICOM
       @values += [value]
       @raw += [raw]
       return true
-    end # of method process_data_element
+    end # of process_data_element
 
 
     # Reads and returns the data element's TAG (4 first bytes of element).
-    def read_tag()
-      bin1 = @file.read(2)
-      bin2 = @file.read(2)
+    def read_tag
+      group = @stream.decode(2, "HEX")
+      element = @stream.decode(2, "HEX")
       # Do not proceed if we have reached end of file:
-      if bin2 == nil
+      if element == nil
         return false
       end
       # Add the length of the data element tag. If this was the first element read from file, we need to add the header length too:
@@ -181,9 +184,9 @@ module DICOM
         # For the remaining elements, increase the array with the integrated length of the previous elements + the 4 bytes:
         @integrated_lengths += [@integrated_lengths[@integrated_lengths.length-1] + 4]
       end
-      # Unpack the blobs:
-      tag1 = bin1.unpack('h*')[0].reverse.upcase
-      tag2 = bin2.unpack('h*')[0].reverse.upcase
+      # Initian rearrangement of tags:
+      tag1 = (group[2..3]+group[0..1]).upcase
+      tag2 = (element[2..3]+element[0..1]).upcase
       # Whether DICOM file is big or little endian, the first 0002 group is always little endian encoded.
       # In case of big endian system:
       if @sys_endian
@@ -193,17 +196,17 @@ module DICOM
       end
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
       if tag1 != "0002" and @switched == false
-        switch_syntax()
+        switch_syntax
       end
-      # Perhaps we need to rearrange the tag strings?
-      if not @endian
+      # If file is Big Endian encoded, we need to rearrange the tag strings:
+      if @file_endian
         # Need to rearrange the first and second part of each string:
         tag1 = tag1[2..3]+tag1[0..1]
         tag2 = tag2[2..3]+tag2[0..1]
       end
       # Join the tag group & element part together to form the final, complete string:
       return tag1+","+tag2
-    end # of method read_tag
+    end # of read_tag
 
 
     # Reads and returns data element TYPE (VR) (2 bytes) and data element LENGTH (Varying length).
@@ -214,9 +217,8 @@ module DICOM
         # Step 1: Read VR (if it exists)
         unless tag == "FFFE,E000" or tag == "FFFE,E00D" or tag == "FFFE,E0DD"
           # Read the element's type (2 bytes - since we are not dealing with an item related element):
-          bin = @file.read(2)
+          type = @stream.decode(2, "STR")
           @integrated_lengths[@integrated_lengths.length-1] += 2
-          type = bin.unpack('a*').join
         end
         # Step 2: Read length
         # Three possible structures for value length here, dependent on element type:
@@ -224,32 +226,28 @@ module DICOM
           when "OB","OW","SQ","UN"
             # 6 bytes total:
             # Two empty first:
-            bin = @file.read(2)
+            @stream.skip(2)
             @integrated_lengths[@integrated_lengths.length-1] += 2
             # Value length (4 bytes):
-            bin = @file.read(4)
+            length = @stream.decode(4, "UL")
             @integrated_lengths[@integrated_lengths.length-1] += 4
-            length = bin.unpack(@ul)[0]
           when "()"
             # 4 bytes:
             # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
-            bin = @file.read(4)
+            length = @stream.decode(4, "UL")
             @integrated_lengths[@integrated_lengths.length-1] += 4
-            length = bin.unpack(@ul)[0]
           else
             # 2 bytes:
             # For all the other element types, value length is 2 bytes:
-            bin = @file.read(2)
+            length = @stream.decode(2, "US")
             @integrated_lengths[@integrated_lengths.length-1] += 2
-            length = bin.unpack(@us)[0]
         end
       else
         # *****IMPLICIT*****:
         # No VR (retrieved from library based on the data element's tag)
         # Reading value length (4 bytes):
-        bin = @file.read(4)
+        length = @stream.decode(4, "UL")
         @integrated_lengths[@integrated_lengths.length-1] += 4
-        length = bin.unpack(@ul)[0]
       end
       # For encapsulated data, the element length will not be defined. To convey this,
       # the hex sequence 'ff ff ff ff' is used (-1 converted to signed long, 4294967295 converted to unsigned long).
@@ -261,110 +259,36 @@ module DICOM
         @msg += ["Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."]
       end
       return [type, length]
-    end # of method read_type_length
+    end # of read_type_length
 
 
     # Reads and returns data element VALUE (Of varying length - which is determined at an earlier stage).
     def read_value(type, length)
-      # Read the data:
-      bin = @file.read(length)
+      # Extract the binary data:
+      bin = @stream.decode(length, nil, :bin => true)
       @integrated_lengths[@integrated_lengths.size-1] += length
-      # Decoding of content will naturally depend on what kind of content (VR) we have.
-      case type
-
-        # Normally the "number elements" will contain just one number, but in some cases, they contain
-        # multiple numbers. In these cases we will read each number and store them all in a string separated by "/".
-        # Unsigned long: (4 bytes)
-        when "UL"
-          if length <= 4
-            data = bin.unpack(@ul)[0]
-          else
-            data = bin.unpack(@ul).join("/")
-          end
-
-        # Signed long: (4 bytes)
-        when "SL"
-          if length <= 4
-            data = bin.unpack(@sl)[0]
-          else
-            data = bin.unpack(@sl).join("/")
-          end
-
-        # Unsigned short: (2 bytes)
-        when "US"
-          if length <= 2
-            data = bin.unpack(@us)[0]
-          else
-            data = bin.unpack(@us).join("/")
-          end
-
-        # Signed short: (2 bytes)
-        when "SS"
-          if length <= 2
-            data = bin.unpack(@ss)[0]
-          else
-            data = bin.unpack(@ss).join("/")
-          end
-
-        # Floating point single: (4 bytes)
-        when "FL"
-          if length <= 4
-            data = bin.unpack(@fs)[0]
-          else
-            data = bin.unpack(@fs).join("/")
-          end
-
-        # Floating point double: (8 bytes)
-        when "FD"
-          if length <= 8
-            data = bin.unpack(@fd)[0]
-          else
-            data = bin.unpack(@fd).join("/")
-          end
-
-        # The data element contains a tag as its value (4 bytes):
-        when "AT"
-          # Bytes read in following order: 1 0 , 3 2 (And Hex nibbles read in this order: Hh)
-          # NB! This probably needs to be modified when dealing with something other than little endian.
-          # Value is unpacked to a string in the format GGGGEEEE.
-          data = (bin.unpack("xHXhX2HXh").join + bin.unpack("x3HXhX2HXh").join).upcase
-          #data = (bin.unpack("xHXhX2HXh").join + "," + bin.unpack("x3HXhX2HXh").join).upcase
-
-        # We have a number of VRs that are decoded as string:
-        when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT' #,'VR'
-          data = bin.unpack('a*').join
-
-        # NB!
-        # FOLLOWING ELEMENT TYPES WILL NOT BE DECODED.
-        # DECODING OF PIXEL DATA IS MOVED TO DOBJECT FOR PERFORMANCE REASONS.
-
-        # Unknown information, header element is not recognized from local database:
-        when "UN"
-          #data=bin.unpack('H*')[0]
-
-        # Other byte string, 1-byte integers
-        when "OB"
-          #data = bin.unpack('H*')[0]
-
-        # Other float string, 4-byte floating point numbers
-        when "OF"
-          # NB! This element type has not been tested yet with an actual DICOM file.
-          #data = bin.unpack(@fs)
-
-        # Image data:
-        # Other word string, 2-byte integers
-        when "OW"
-          # empty
-
-        # Unknown VR:
+      # Decode data?
+      # Some data elements (like those containing image data, compressed data or unknown data),
+      # will not be decoded here.
+      unless type == "OW" or type == "OB" or type == "OF" or type == "UN"
+        # "Rewind" and extract the value from this binary data:
+        @stream.skip(-length)
+        # Decode data:
+        value = @stream.decode(length, type)
+        if not value.is_a?(Array)
+          data = value
         else
-          @msg += ["Warning: Element type #{type} does not have a reading method assigned to it. Please check the validity of the DICOM file."]
-          #data = bin.unpack('H*')[0]
-      end # of case type
-
+          # If the returned value is not a string, it is an array of multiple elements,
+          # which need to be joined to a string with the separator "\":
+          data = value.join("\\")
+        end
+      else
+        # No decoded data:
+        data = nil
+      end
       # Return the data:
       return [data, bin]
-    end # of method read_value
+    end # of read_value
 
 
     # Sets the level of the current element in the hiearchy.
@@ -406,14 +330,14 @@ module DICOM
       if @hierarchy.size > 0
         # Do not perform this check for Pixel Data Items or Sequence Delimitation Items:
         # (If performed, it will give false errors for the case when we have Encapsulated Pixel Data)
-        check_level_end() unless name == "Pixel Data Item" or tag == "FFFE,E0DD"
+        check_level_end unless name == "Pixel Data Item" or tag == "FFFE,E0DD"
       end
-    end # of method set_level
+    end # of set_level
 
 
     # Checks how far we've read in the DICOM file to determine if we have reached a point
     # where sub-levels are ending. This method is recursive, as multiple sequences/items might end at the same point.
-    def check_level_end()
+    def check_level_end
       # The test is only meaningful to perform if we are not expecting an 'end of sequence/item' element to signal the level-change.
       if (@hierarchy.last).is_a?(Array)
         described_length = (@hierarchy.last)[0]
@@ -427,7 +351,7 @@ module DICOM
           if (@hierarchy.size > 1)
             @hierarchy = @hierarchy[0..(@hierarchy.size-2)]
             # There might be numerous levels that ends at this particular point, so we need to do a recursive repeat to check.
-            check_level_end()
+            check_level_end
           else
             @hierarchy = Array.new()
           end
@@ -439,7 +363,7 @@ module DICOM
           end
         end
       end
-    end # of method check_level_end
+    end
 
 
     # Tests if the file is readable and opens it.
@@ -461,30 +385,27 @@ module DICOM
       else
         @msg += ["Error! The file you have supplied does not exist. Returning. (#{file})"]
       end
-    end # of method open_file
+    end
 
 
     # Changes encoding variables as the file reading proceeds past the initial 0002 group of the DICOM file.
-    def switch_syntax()
+    def switch_syntax
       # The information read from the Transfer syntax element (if present), needs to be processed:
-      process_transfer_syntax()
+      process_transfer_syntax
       # We only plan to run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:
       @file_endian = @rest_endian
+      @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
-      if @sys_endian == @file_endian
-        @endian = true
-      else
-        @endian = false
-      end
-      set_unpack_strings()
+      @stream.explicit = @rest_explicit
+      set_unpack_strings
     end
 
 
     # Checks the Transfer Syntax UID element and updates class variables to prepare for correct reading of DICOM file.
     # A lot of code here is duplicated in DWrite class. Should move as much of this code as possible to DLibrary I think.
-    def process_transfer_syntax()
+    def process_transfer_syntax
       ts_pos = @tags.index("0002,0010")
       if ts_pos != nil
         ts_value = @raw[ts_pos].unpack('a*').join.rstrip
@@ -517,7 +438,7 @@ module DICOM
             @rest_endian = false
         end # of case ts_value
       end # of if ts_pos != nil
-    end # of method process_syntax
+    end
 
 
     # Sets the unpack format strings that will be used for numbers depending on endianness of file/system.
@@ -547,18 +468,18 @@ module DICOM
 
 
     # Initiates the variables that are used during file reading.
-    def init_variables()
+    def init_variables
       # Variables that hold data that will be available to the DObject class.
       # Arrays that will hold information from the elements of the DICOM file:
-      @names = Array.new()
-      @tags = Array.new()
-      @types = Array.new()
-      @lengths = Array.new()
-      @values = Array.new()
-      @raw = Array.new()
-      @levels = Array.new()
+      @names = []
+      @tags = []
+      @types = []
+      @lengths = []
+      @values = []
+      @raw = []
+      @levels = []
       # Array that will holde any messages generated while reading the DICOM file:
-      @msg = Array.new()
+      @msg = []
       # Variables that contain properties of the DICOM file:
       # Variable to keep track of whether the image pixel data in this file are compressed or not, and if it exists at all:
       # Default explicitness of start of DICOM file::
@@ -571,10 +492,10 @@ module DICOM
       # Variables used internally when reading through the DICOM file:
       # Array for keeping track of how many bytes have been read from the file up to and including each data element:
       # (This is necessary for tracking the hiearchy in some DICOM files)
-      @integrated_lengths = Array.new()
+      @integrated_lengths = []
       @header_length = 0
       # Array to keep track of the hierarchy of elements (this will be used to determine when a sequence or item is finished):
-      @hierarchy = Array.new()
+      @hierarchy = []
       @hierarchy_error = false
       # Explicitness of the remaining groups after the initial 0002 group:
       @rest_explicit = false
@@ -582,12 +503,6 @@ module DICOM
       @rest_endian = false
       # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
-      # Use a "relationship endian" variable to guide reading of file:
-      if @sys_endian == @file_endian
-        @endian = true
-      else
-        @endian = false
-      end
       # Set which format strings to use when unpacking numbers:
       set_unpack_strings
       # A length variable will be used at the end to check whether the last element was read correctly, or whether the file endend unexpectedly:
