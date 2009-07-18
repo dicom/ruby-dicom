@@ -12,15 +12,17 @@
 module DICOM
   # Class for writing the data from DObject to a valid DICOM file:
   class DWrite
+
     attr_writer :tags, :types, :lengths, :raw, :rest_endian, :rest_explicit
     attr_reader :success, :msg
 
     # Initialize the DWrite instance.
-    def initialize(file_name=nil, opts={})
+    def initialize(file_name=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      @lib =  opts[:lib] || DLibrary.new
-      @sys_endian = opts[:sys_endian] || false
+      @lib =  options[:lib] || DLibrary.new
+      @sys_endian = options[:sys_endian] || false
       @file_name = file_name
+      @transfer_syntax = options[:transfer_syntax] || "1.2.840.10008.1.2" # Implicit, little endian
 
       # Create arrays used for storing data element information:
       @tags = Array.new
@@ -34,39 +36,104 @@ module DICOM
       @rest_explicit = false
       # Endianness of the remaining groups after the first group:
       @rest_endian = false
-    end # of method initialize
+    end
 
 
     # Writes the DICOM information to file.
-    def write()
-      if @tags.size > 0
-        # Check if we are able to create given file:
-        open_file(@file_name)
-        # Read the initial header of the file:
-        if @file != nil
-          # Initiate necessary variables:
-          init_variables()
-          # Write header:
-          write_header()
-          # Write meta information (if it is not present in the DICOM object):
-          write_meta()
-          # Write data elements:
+    def write(body = nil)
+      # Check if we are able to create given file:
+      open_file(@file_name)
+      # Go ahead and write if the file was opened successfully:
+      if @file != nil
+        # Initiate necessary variables:
+        init_variables
+        # Create a Stream instance to handle the encoding of content to
+        # the binary string that will eventually be saved to file:
+        @stream = Stream.new(nil, @file_endian, @explicit)
+        # Meta information:
+        # A simple check to determine whether we need to write meta information to the DICOM object:
+        if @tags.length > 0
+          write_meta unless @tags[0].include?("0002")
+        else
+          write_meta
+        end
+        # Write either body or data elements:
+        if body
+          @stream.add_last(body)
+        else
           @tags.each_index do |i|
             write_data_element(i)
           end
-          # We are finished writing the data elements, and as such, can close the file:
-          @file.close()
-          # Mark this write session as successful:
-          @success = true
+        end
+        # Write header:
+        write_header
+        # After encoding the content, the binary string can be written to file:
+        @file.write(@stream.string)
+        # As file has been written successfully, it can be closed.
+        @file.close
+        # Mark this write session as successful:
+        @success = true
+      end
+    end
+
+
+    # Write DICOM content to a series of size-limited binary strings
+    # (typically used when transmitting DICOM objects through network connections)
+    # The method returns an array of binary strings.
+    def encode_segments(size)
+      # Initiate necessary variables:
+      init_variables
+      # When sending a DICOM file across the network, no header or meta information is needed.
+      # We must therefore find the position of the first tag which is not a meta information tag.
+      first_pos = first_non_meta
+      last_pos = @tags.length - 1
+      # Create a Stream instance to handle the encoding of content to
+      # the binary string that will eventually be saved to file:
+      @stream = Stream.new(nil, @file_endian, @explicit)
+      # Start encoding data elements, and start on a new string when the size limit is reached:
+      segments = Array.new
+      (first_pos..last_pos).each do |i|
+        value_length = @lengths[i].to_i
+        # Test the length of the upcoming data element against our size limitation:
+        if value_length > size
+          # Start writing content from this data element,
+          # then continue writing its content in the next segments.
+          # Write tag & type/length:
+          write_tag(i)
+          write_type_length(i)
+          # Find out how much of this element's value we can write, then add it:
+          available = size - @stream.string.length
+          value_first_part = @raw[i].slice(0, available)
+          @stream.add_last(value_first_part)
+          # Add segment and reset:
+          segments << @stream.string
+          @stream.reset
+          # Find out how many more segments our data element value will fill:
+          remaining_segments = ((value_length - available).to_f / size.to_f).ceil
+          index = available
+          # Iterate through the data element's value until we have added it entirely:
+          remaining_segments.times do
+            value = @raw[i].slice(index, size)
+            index = index + size
+            @stream.add_last(value)
+            # Add segment and reset:
+            segments << @stream.string
+            @stream.reset
+          end
+        elsif (10 + value_length + @stream.string.length) >= size
+          # End the current segment, and start on a new segment for the next data element.
+          segments << @stream.string
+          @stream.reset
+          write_data_element(i)
         else
-          # File is not writable, so we return:
-          # (Error msg already registered in open_file method)
-          return
-        end # of if @file != nil
-      else
-        @msg += ["Error. No data elements to write."]
-      end # of if @tags.size > 0
-    end # of method write
+          # Write the next data element to the current segment:
+          write_data_element(i)
+        end
+      end
+      # Mark this write session as successful:
+      @success = true
+      return segments
+    end
 
 
     # Following methods are private:
@@ -74,107 +141,63 @@ module DICOM
 
 
     # Writes the official DICOM header:
-    def write_header()
+    def write_header
+      # The header will be put first in the binary string, and built 'backwards':
+      # Write the string "DICM" which along with the empty bytes that
+      # will be put before it, identifies this as a valid DICOM file:
+      identifier = @stream.encode("DICM", "STR")
+      @stream.add_first(identifier)
       # Fill in 128 empty bytes:
-      @file.write(["00"*128].pack('H*'))
-      # Write the string "DICM" which is central to DICOM standards compliance:
-      @file.write("DICM")
-    end # of write_header
+      filler = @stream.encode("00"*128, "HEX")
+      @stream.add_first(filler)
+    end
 
 
-    # Inserts group 0002 if it is missing, to ensure DICOM compliance.
-    def write_meta()
-      # We will check for the existance of 5 group 0002 elements, and if they are not present, we will insert them:
-      pos = Array.new()
-      meta = Array.new()
+    # Inserts group 0002 data elements.
+    def write_meta
       # File Meta Information Version:
-      pos += [@tags.index("0002,0001")]
-      meta += [["0002,0001", "OB", 2, ["0100"].pack("H*")]]
+      tag = @stream.encode_tag("0002,0001")
+      @stream.add_last(tag)
+      @stream.encode_last("OB", "STR")
+      @stream.encode_last("0000", "HEX")
+      @stream.encode_last(2, "UL")
+      @stream.encode_last("0100", "HEX")
       # Transfer Syntax UID:
-      pos += [@tags.index("0002,0010")]
-      meta += [["0002,0010", "UI", 18, ["1.2.840.10008.1.2"].pack("a*")+["00"].pack("H*")]] # Implicit, little endian
+      tag = @stream.encode_tag("0002,0010")
+      @stream.add_last(tag)
+      @stream.encode_last("UI", "STR")
+      value = @stream.encode_value(@transfer_syntax, "STR")
+      @stream.encode_last(value.length, "US")
+      @stream.add_last(value)
       # Implementation Class UID:
-      pos += [@tags.index("0002,0012")]
-      meta += [["0002,0012", "UI", 26, ["1.2.826.0.1.3680043.8.641"].pack("a*")+["00"].pack("H*")]] # Ruby DICOM UID
+      tag = @stream.encode_tag("0002,0012")
+      @stream.add_last(tag)
+      @stream.encode_last("UI", "STR")
+      value = @stream.encode_value("1.2.826.0.1.3680043.8.641", "STR") # Ruby DICOM UID
+      @stream.encode_last(value.length, "US")
+      @stream.add_last(value)
       # Implementation Version Name:
-      pos += [@tags.index("0002,0013")]
-      meta += [["0002,0013", "SH", 10, ["RUBY_DICOM"].pack("a*")]]
-      # Insert meta information:
-      meta_added = false
-      pos.each_index do |i|
-        # Only insert element if it does not already exist (corresponding pos element shows no match):
-        if pos[i] == nil
-          meta_added = true
-          # Find where to insert this data element.
-          index = -1
-          tag = meta[i][0]
-          quit = false
-          while quit != true do
-            if tag < @tags[index+1]
-              quit = true
-            elsif @tags[index+1][0..3] != "0002"
-              # Abort to avoid needlessly going through the whole array.
-              quit = true
-            else
-              # Else increase index in anticipation of a 'hit'.
-              index += 1
-            end
-          end # of while
-          # Insert data element in the correct array position:
-          if index == -1
-            # Insert at the beginning of array:
-            @tags = [meta[i][0]] + @tags
-            @types = [meta[i][1]] + @types
-            @lengths = [meta[i][2]] + @lengths
-            @raw = [meta[i][3]] + @raw
-          else
-            # One or more elements comes before this element:
-            @tags = @tags[0..index] + [meta[i][0]] + @tags[(index+1)..(@tags.length-1)]
-            @types = @types[0..index] + [meta[i][1]] + @types[(index+1)..(@types.length-1)]
-            @lengths = @lengths[0..index] + [meta[i][2]] + @lengths[(index+1)..(@lengths.length-1)]
-            @raw = @raw[0..index] + [meta[i][3]] + @raw[(index+1)..(@raw.length-1)]
-          end # if index == -1
-        end # of if pos[i] != nil
-      end # of pos.each_index
-      # Calculate the length of group 0002:
-      length = 0
-      quit = false
-      j = 0
-      while quit == false do
-        if @tags[j][0..3] != "0002"
-          quit = true
-        else
-          # Add to length if group 0002:
-          if @tags[j] != "0002,0000"
-            if @types[j] == "OB"
-              length += 12 + @lengths[j]
-            else
-              length += 8 + @lengths[j]
-            end
-          end
-          j += 1
-        end # of if @tags[j][0..3]..
-      end # of while
-      # Set group length:
-      gl_pos = @tags.index("0002,0000")
-      gl_info = ["0002,0000", "UL", 4, [length].pack("I*")]
-      # Update group length, but only if there have been some modifications or GL is nonexistant:
-      if meta_added == true or gl_pos != nil
-        if gl_pos == nil
-          # Add group length (to beginning of arrays):
-          @tags = [gl_info[0]] + @tags
-          @types = [gl_info[1]] + @types
-          @lengths = [gl_info[2]] + @lengths
-          @raw = [gl_info[3]] + @raw
-        else
-          # Edit existing group length:
-          @tags[gl_pos] = gl_info[0]
-          @types[gl_pos] = gl_info[1]
-          @lengths[gl_pos] = gl_info[2]
-          @raw[gl_pos] = gl_info[3]
-        end
-      end
-    end # of method write_meta
+      tag = @stream.encode_tag("0002,0013")
+      @stream.add_last(tag)
+      @stream.encode_last("SH", "STR")
+      value = @stream.encode_value("RUBY_DICOM", "STR")
+      @stream.encode_last(value.length, "US")
+      @stream.add_last(value)
+      # Group length:
+      # This data element will be put first in the binary string, and built 'backwards'.
+      # Value:
+      value = @stream.encode(@stream.string.length, "UL")
+      @stream.add_first(value)
+      # Length:
+      length = @stream.encode(4, "US")
+      @stream.add_first(length)
+      # Type:
+      type = @stream.encode("UL", "STR")
+      @stream.add_first(type)
+      # Tag:
+      tag = @stream.encode_tag("0002,0000")
+      @stream.add_first(tag)
+    end
 
 
     # Writes each data element to file:
@@ -189,53 +212,41 @@ module DICOM
       if @tags[i] == "7FE0,0010"
         @enc_image = true if @lengths[i].to_i == 0
       end
-      # Should have some kind of test that the last data was written succesfully?
-    end # of method write_data_element
+    end
 
 
     # Writes the tag (first part of the data element):
     def write_tag(i)
-      # Tag is originally of the form "0002,0010".
-      # We need to reformat to get rid of the comma:
-      tag = @tags[i][0..3] + @tags[i][5..8]
-      # Whether DICOM file is big or little endian, the first 0002 group is always little endian encoded.
-      # On a big endian system, I believe the order of the numbers need not be changed,
-      # but this has not been tested yet.
-      if @sys_endian == false
-        # System is little endian:
-        # Change the order of the numbers so that it becomes correct when packed as hex:
-        tag_corr = tag[2..3] + tag[0..1] + tag[6..7] + tag[4..5]
-      end
+      # Extract current tag:
+      tag = @tags[i]
+      # Group 0002 is always little endian, but the rest of the file may be little or big endian.
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
       if tag[0..3] != "0002" and @switched == false
-        switch_syntax()
+        switch_syntax
       end
-      # Perhaps we need to rearrange the tag if the file encoding is now big endian:
-      if not @endian
-        # Need to rearrange the first and second part of each string:
-        tag_corr = tag
-      end
-      # Write to file:
-      @file.write([tag_corr].pack('H*'))
-    end # of method write_tag
+      # Write to binary string:
+      bin_tag = @stream.encode_tag(tag)
+      @stream.add_last(bin_tag)
+    end
 
 
-    # Writes the type (VR) (if it is to be written) and length value (these two are the middle part of the data element):
+    # Writes the type (VR) (if it is to be written) and length value
+    # (these two are the middle part of the data element):
     def write_type_length(i)
       # First some preprocessing:
       # Set length value:
       if @lengths[i] == nil
         # Set length value to 0:
-        length4 = [0].pack(@ul)
-        length2 = [0].pack(@us)
+        length4 = @stream.encode(0, "UL")
+        length2 = @stream.encode(0, "US")
       elsif @lengths[i] == "UNDEFINED"
         # Set length to 'ff ff ff ff':
-        length4 = [4294967295].pack(@ul)
+        length4 = @stream.encode(4294967295, "UL")
         # No length2 necessary for this case.
       else
         # Pick length value from array:
-        length4 = [@lengths[i]].pack(@ul)
-        length2 = [@lengths[i]].pack(@us)
+        length4 = @stream.encode(@lengths[i], "UL")
+        length2 = @stream.encode(@lengths[i], "US")
       end
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       # *****EXPLICIT*****:
@@ -243,7 +254,7 @@ module DICOM
         # Step 1: Write VR (if it is to be written)
         unless @tags[i] == "FFFE,E000" or @tags[i] == "FFFE,E00D" or @tags[i] == "FFFE,E0DD"
           # Write data element type (VR) (2 bytes - since we are not dealing with an item related element):
-          @file.write([@types[i]].pack('a*'))
+          @stream.encode_last(@types[i], "STR")
         end
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element type:
@@ -252,37 +263,37 @@ module DICOM
             if @enc_image
               # Item under an encapsulated Pixel Data (7FE0,0010):
               # 4 bytes:
-              @file.write(length4)
+              @stream.add_last(length4)
             else
               # 6 bytes total:
               # Two empty first:
-              @file.write(["00"*2].pack('H*'))
+              @stream.encode_last("00"*2, "HEX")
               # Value length (4 bytes):
-              @file.write(length4)
+              @stream.add_last(length4)
             end
           when "()"
             # 4 bytes:
             # For tags "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
-            @file.write(length4)
+            @stream.add_last(length4)
           else
             # 2 bytes:
             # For all the other data element types, value length is 2 bytes:
-            @file.write(length2)
+            @stream.add_last(length2)
         end # of case type
       else
         # *****IMPLICIT*****:
         # No VR written.
         # Writing value length (4 bytes):
-        @file.write(length4)
-      end # of if @explicit == true
-    end # of method write_type_length
+        @stream.add_last(length4)
+      end
+    end # of write_type_length
 
 
     # Writes the value (last part of the data element):
     def write_value(i)
       # This is pretty straightforward, just dump the binary data to the file:
-      @file.write(@raw[i])
-    end # of method write_value
+      @stream.add_last(@raw[i])
+    end
 
 
     # Tests if the file is writable and opens it.
@@ -295,7 +306,7 @@ module DICOM
           @file = File.new(file, "wb")
         else
           # Existing file is not writable:
-          @msg += ["Error! The program does not have permission or resources to create the file you specified. Returning. (#{file})"]
+          @msg << "Error! The program does not have permission or resources to create the file you specified. Returning. (#{file})"
         end
       else
         # File does not exist.
@@ -313,100 +324,59 @@ module DICOM
               FileUtils.mkdir_p path
             end
           end
-        end # of if arr != nil
+        end
         # The path to this non-existing file should now be prepared, and we will thus create the file:
         @file = File.new(file, "wb")
-      end # of if File.exist?(file)
-    end # of method open_file
+      end
+    end
 
 
     # Changes encoding variables as the file writing proceeds past the initial 0002 group of the DICOM file.
-    def switch_syntax()
+    def switch_syntax
       # The information from the Transfer syntax element (if present), needs to be processed:
-      process_transfer_syntax()
+      result = @lib.process_transfer_syntax(@transfer_syntax.rstrip)
+      # Result is a 3-element array: [Validity of ts, explicitness, endianness]
+      unless result[0]
+        @msg << "Warning: Invalid/unknown transfer syntax! Will still write the file, but you should give this a closer look."
+      end
+      @rest_explicit = result[1]
+      @rest_endian = result[2]
       # We only plan to run this method once:
       @switched = true
-      # Update endian, explicitness and unpack variables:
+      # Update explicitness and endianness (pack/unpack variables):
       @file_endian = @rest_endian
+      @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
+      @stream.explicit = @rest_explicit
       if @sys_endian == @file_endian
         @endian = true
       else
         @endian = false
       end
-      set_pack_strings()
     end
 
 
-    # Checks the Transfer Syntax UID element and updates class variables to prepare for correct writing of DICOM file.
-    def process_transfer_syntax()
-      ts_pos = @tags.index("0002,0010")
-      if ts_pos != nil
-        ts_value = @raw[ts_pos].unpack('a*').join.rstrip
-        valid = @lib.check_ts_validity(ts_value)
-        if not valid
-          @msg+=["Warning: Invalid/unknown transfer syntax! Will still write the file, but you should give this a closer look."]
+    # Find the position of the first tag which is not a group "0002" tag:
+    def first_non_meta
+      i = 0
+      go = true
+      while go == true and i < @tags.length do
+        tag = @tags[i]
+        if tag[0..3] == "0002"
+          i += 1
+        else
+          go = false
         end
-        case ts_value
-          # Some variations with uncompressed pixel data:
-          when "1.2.840.10008.1.2"
-            # Implicit VR, Little Endian
-            @rest_explicit = false
-            @rest_endian = false
-          when "1.2.840.10008.1.2.1"
-            # Explicit VR, Little Endian
-            @rest_explicit = true
-            @rest_endian = false
-          when "1.2.840.10008.1.2.1.99"
-            # Deflated Explicit VR, Little Endian
-            @msg += ["Warning: Transfer syntax 'Deflated Explicit VR, Little Endian' is untested. Unknown if this is handled correctly!"]
-            @rest_explicit = true
-            @rest_endian = false
-          when "1.2.840.10008.1.2.2"
-            # Explicit VR, Big Endian
-            @rest_explicit = true
-            @rest_endian = true
-          else
-            # For everything else, assume compressed pixel data, with Explicit VR, Little Endian:
-            @rest_explicit = true
-            @rest_endian = false
-        end # of case ts_value
-      end # of if ts_pos != nil
-    end # of method process_syntax
-
-
-    # Sets the pack format strings that will be used for numbers depending on endianness of file/system.
-    def set_pack_strings
-      if @endian
-        # System endian equals file endian:
-        # Native byte order.
-        @by = "C*" # Byte (1 byte)
-        @us = "S*" # Unsigned short (2 bytes)
-        @ss = "s*" # Signed short (2 bytes)
-        @ul = "I*" # Unsigned long (4 bytes)
-        @sl = "l*" # Signed long (4 bytes)
-        @fs = "e*" # Floating point single (4 bytes)
-        @fd = "E*" # Floating point double ( 8 bytes)
-      else
-        # System endian not equal to file endian:
-        # Network byte order.
-        @by = "C*"
-        @us = "n*"
-        @ss = "n*" # Not correct (gives US)
-        @ul = "N*"
-        @sl = "N*" # Not correct (gives UL)
-        @fs = "g*"
-        @fd = "G*"
       end
+      return i
     end
 
 
     # Initializes the variables used when executing this program.
-    def init_variables()
+    def init_variables
       # Variables that are accesible from outside:
       # Until a DICOM write has completed successfully the status is 'unsuccessful':
       @success = false
-
       # Variables used internally:
       # Default explicitness of start of DICOM file:
       @explicit = true
@@ -420,11 +390,9 @@ module DICOM
       else
         @endian = false
       end
-      # Set which format strings to use when unpacking numbers:
-      set_pack_strings
       # Items contained under the Pixel Data element needs some special attention to write correctly:
       @enc_image = false
-    end # of method init_variables
+    end
 
   end # of class
 end # of module
