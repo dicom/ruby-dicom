@@ -14,10 +14,10 @@ module DICOM
     attr_reader :success, :names, :tags, :types, :lengths, :values, :raw, :levels, :explicit, :file_endian, :msg
 
     # Initialize the DRead instance.
-    def initialize(file_name=nil, opts={})
+    def initialize(file_name=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      @lib =  opts[:lib] || DLibrary.new
-      @sys_endian = opts[:sys_endian] || false
+      @lib =  options[:lib] || DLibrary.new
+      @sys_endian = options[:sys_endian] || false
       # Initiate the variables that are used during file reading:
       init_variables
 
@@ -62,12 +62,65 @@ module DICOM
       # We only run this test if the last element has a positive expectation value, obviously.
       if @lengths.last.to_i > 0
         if @raw.last.length != @lengths.last
-          @msg += ["Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."]
+          @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
           @success = false
           return
         end
       end
     end # of initialize
+
+
+    # Extract an array of binary strings
+    # (this is typically used if one intends to transmit the DICOM file through a network connection)
+    def extract_segments(size)
+      # For this purpose we are not interested to include header or meta information.
+      # We must therefore find the position of the first tag which is not a meta information tag.
+      pos = first_non_meta
+      # Start position:
+      if pos == 0
+        start = 0
+      else
+        # First byte after the integrated length of the previous tag is our start:
+        start = @integrated_lengths[pos-1]
+      end
+      # Iterate through the tags and monitor the integrated_lengths values to determine
+      # when we need to start a new segment.
+      segments = Array.new
+      last_pos = pos
+      @tags.each_index do |i|
+        # Have we passed the size limit?
+        if (@integrated_lengths[i] - start) > size
+          # We either need to stop the current segment at the previous tag, or if
+          # this is a long tag (typically image data), we need to split its data
+          # and put it in several segments.
+          if (@integrated_lengths[i] - @integrated_lengths[i-1]) > size
+            # This element's value needs to be split up into several segments.
+            # How many segments are needed to fit this element?
+            number = ((@integrated_lengths[i] - start).to_f / size.to_f).ceil
+            number.times do
+              # Extract data and add to segments:
+              last_pos = (start+size-1)
+              segments << @stream.string[start..last_pos]
+              # Update start position for next segment:
+              start = last_pos + 1
+            end
+          else
+            # End the current segment at the last data element, then start the new segment with this element.
+            last_pos = @integrated_lengths[i-1]
+            segments << @stream.string[start..last_pos]
+            # Update start position for next segment:
+            start = last_pos + 1
+          end
+        end
+      end
+      # After running the above iteration, it is possible that we have some data elements remaining
+      # at the end of the file who's length are beneath the size limit, and thus has not been put into a segment.
+      if (last_pos + 1) < @stream.string.length
+        # Add the remaining data elements to a segment:
+        segments << @stream.string[start..@stream.string.length]
+      end
+      return segments
+    end
 
 
     # Following methods are private:
@@ -90,7 +143,7 @@ module DICOM
         @header_length += 132
         if identifier != "DICM" then
           # Header is not valid (we will still try to read it is a DICOM file though):
-          @msg += ["Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."]
+          @msg << "Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."
           # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
           # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
           @explicit = false
@@ -101,7 +154,7 @@ module DICOM
           return true
         end
       end
-    end # of check_header
+    end
 
 
     # Governs the process of reading data elements from the DICOM file.
@@ -158,58 +211,39 @@ module DICOM
       # Set the hiearchy level of this data element:
       set_level(level_type, length, tag, name)
       # Transfer the gathered data to arrays and return true:
-      @names += [name]
-      @tags += [tag]
-      @types += [type]
-      @lengths += [length]
-      @values += [value]
-      @raw += [raw]
+      @names << name
+      @tags << tag
+      @types << type
+      @lengths << length
+      @values << value
+      @raw << raw
       return true
     end # of process_data_element
 
 
     # Reads and returns the data element's TAG (4 first bytes of element).
     def read_tag
-      group = @stream.decode(2, "HEX")
-      element = @stream.decode(2, "HEX")
-      # Do not proceed if we have reached end of file:
-      if element == nil
-        return false
-      end
-      # Add the length of the data element tag. If this was the first element read from file, we need to add the header length too:
+      tag = @stream.decode_tag
+      # Do not proceed if we have reached end of file (tag is nil):
+      return false unless tag
+      # Tag was valid, so we add the length of the data element tag.
+      # If this was the first element read from file, we need to add the header length too:
       if @integrated_lengths.length == 0
         # Increase the array with the length of the header + the 4 bytes:
-        @integrated_lengths += [@header_length + 4]
+        @integrated_lengths << (@header_length + 4)
       else
         # For the remaining elements, increase the array with the integrated length of the previous elements + the 4 bytes:
-        @integrated_lengths += [@integrated_lengths[@integrated_lengths.length-1] + 4]
-      end
-      # Initian rearrangement of tags:
-      tag1 = (group[2..3]+group[0..1]).upcase
-      tag2 = (element[2..3]+element[0..1]).upcase
-      # Whether DICOM file is big or little endian, the first 0002 group is always little endian encoded.
-      # In case of big endian system:
-      if @sys_endian
-        # Rearrange the numbers (# This has never been tested btw.):
-        tag1 = tag1[2..3]+tag1[0..1]
-        tag2 = tag2[2..3]+tag2[0..1]
+        @integrated_lengths << (@integrated_lengths[@integrated_lengths.length-1] + 4)
       end
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-      if tag1 != "0002" and @switched == false
+      if tag[0..3] != "0002" and @switched == false
         switch_syntax
       end
-      # If file is Big Endian encoded, we need to rearrange the tag strings:
-      if @file_endian
-        # Need to rearrange the first and second part of each string:
-        tag1 = tag1[2..3]+tag1[0..1]
-        tag2 = tag2[2..3]+tag2[0..1]
-      end
-      # Join the tag group & element part together to form the final, complete string:
-      return tag1+","+tag2
-    end # of read_tag
+      return tag
+    end
 
 
-    # Reads and returns data element TYPE (VR) (2 bytes) and data element LENGTH (Varying length).
+    # Reads and returns data element TYPE (VR) (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
     def read_type_length(type,tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       # *****EXPLICIT*****:
@@ -313,9 +347,9 @@ module DICOM
         @current_level = @current_level + 1
         # If length of sequence/item is specified, we must note this length + the current element position in the arrays:
         if length.to_i != 0
-          @hierarchy += [[length,@integrated_lengths.last]]
+          @hierarchy << [length, @integrated_lengths.last]
         else
-          @hierarchy += [type]
+          @hierarchy << type
         end
       end
       # Need to check whether a previous sequence or item has ended, if so the level must be decreased by one:
@@ -374,24 +408,36 @@ module DICOM
             if File.size(file) > 8
               @file = File.new(file, "rb")
             else
-              @msg += ["Error! File is too small to contain DICOM information. Returning. (#{file})"]
+              @msg << "Error! File is too small to contain DICOM information. Returning. (#{file})"
             end
           else
-            @msg += ["Error! File is a directory. Returning. (#{file})"]
+            @msg << "Error! File is a directory. Returning. (#{file})"
           end
         else
-          @msg += ["Error! File exists but I don't have permission to read it. Returning. (#{file})"]
+          @msg << "Error! File exists but I don't have permission to read it. Returning. (#{file})"
         end
       else
-        @msg += ["Error! The file you have supplied does not exist. Returning. (#{file})"]
+        @msg << "Error! The file you have supplied does not exist. Returning. (#{file})"
       end
     end
 
 
     # Changes encoding variables as the file reading proceeds past the initial 0002 group of the DICOM file.
     def switch_syntax
-      # The information read from the Transfer syntax element (if present), needs to be processed:
-      process_transfer_syntax
+      # The information from the Transfer syntax element (if present), needs to be processed:
+      ts_pos = @tags.index("0002,0010")
+      if ts_pos
+        transfer_syntax = @values[ts_pos].rstrip
+      else
+        transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
+      end
+      result = @lib.process_transfer_syntax(transfer_syntax)
+      # Result is a 3-element array: [Validity of ts, explicitness, endianness]
+      unless result[0]
+        @msg+=["Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."]
+      end
+      @rest_explicit = result[1]
+      @rest_endian = result[2]
       # We only plan to run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:
@@ -399,71 +445,22 @@ module DICOM
       @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
       @stream.explicit = @rest_explicit
-      set_unpack_strings
     end
 
 
-    # Checks the Transfer Syntax UID element and updates class variables to prepare for correct reading of DICOM file.
-    # A lot of code here is duplicated in DWrite class. Should move as much of this code as possible to DLibrary I think.
-    def process_transfer_syntax
-      ts_pos = @tags.index("0002,0010")
-      if ts_pos != nil
-        ts_value = @raw[ts_pos].unpack('a*').join.rstrip
-        valid = @lib.check_ts_validity(ts_value)
-        if not valid
-          @msg+=["Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."]
+    # Find the position of the first tag which is not a group "0002" tag:
+    def first_non_meta
+      i = 0
+      go = true
+      while go == true and i < @tags.length do
+        tag = @tags[i]
+        if tag[0..3] == "0002"
+          i += 1
+        else
+          go = false
         end
-        case ts_value
-          # Some variations with uncompressed pixel data:
-          when "1.2.840.10008.1.2"
-            # Implicit VR, Little Endian
-            @rest_explicit = false
-            @rest_endian = false
-          when "1.2.840.10008.1.2.1"
-            # Explicit VR, Little Endian
-            @rest_explicit = true
-            @rest_endian = false
-          when "1.2.840.10008.1.2.1.99"
-            # Deflated Explicit VR, Little Endian
-            @msg += ["Warning: Transfer syntax 'Deflated Explicit VR, Little Endian' is untested. Unknown if this is handled correctly!"]
-            @rest_explicit = true
-            @rest_endian = false
-          when "1.2.840.10008.1.2.2"
-            # Explicit VR, Big Endian
-            @rest_explicit = true
-            @rest_endian = true
-          else
-            # For everything else, assume compressed pixel data, with Explicit VR, Little Endian:
-            @rest_explicit = true
-            @rest_endian = false
-        end # of case ts_value
-      end # of if ts_pos != nil
-    end
-
-
-    # Sets the unpack format strings that will be used for numbers depending on endianness of file/system.
-    def set_unpack_strings
-      if @endian
-        # System endian equals file endian:
-        # Native byte order.
-        @by = "C*" # Byte (1 byte)
-        @us = "S*" # Unsigned short (2 bytes)
-        @ss = "s*" # Signed short (2 bytes)
-        @ul = "I*" # Unsigned long (4 bytes)
-        @sl = "l*" # Signed long (4 bytes)
-        @fs = "e*" # Floating point single (4 bytes)
-        @fd = "E*" # Floating point double ( 8 bytes)
-      else
-        # System endian not equal to file endian:
-        # Network byte order.
-        @by = "C*"
-        @us = "n*"
-        @ss = "n*" # Not correct (gives US)
-        @ul = "N*"
-        @sl = "N*" # Not correct (gives UL)
-        @fs = "g*"
-        @fd = "G*"
       end
+      return i
     end
 
 
@@ -471,15 +468,15 @@ module DICOM
     def init_variables
       # Variables that hold data that will be available to the DObject class.
       # Arrays that will hold information from the elements of the DICOM file:
-      @names = []
-      @tags = []
-      @types = []
-      @lengths = []
-      @values = []
-      @raw = []
-      @levels = []
+      @names = Array.new
+      @tags = Array.new
+      @types = Array.new
+      @lengths = Array.new
+      @values = Array.new
+      @raw = Array.new
+      @levels = Array.new
       # Array that will holde any messages generated while reading the DICOM file:
-      @msg = []
+      @msg = Array.new
       # Variables that contain properties of the DICOM file:
       # Variable to keep track of whether the image pixel data in this file are compressed or not, and if it exists at all:
       # Default explicitness of start of DICOM file::
@@ -492,10 +489,10 @@ module DICOM
       # Variables used internally when reading through the DICOM file:
       # Array for keeping track of how many bytes have been read from the file up to and including each data element:
       # (This is necessary for tracking the hiearchy in some DICOM files)
-      @integrated_lengths = []
+      @integrated_lengths = Array.new
       @header_length = 0
       # Array to keep track of the hierarchy of elements (this will be used to determine when a sequence or item is finished):
-      @hierarchy = []
+      @hierarchy = Array.new
       @hierarchy_error = false
       # Explicitness of the remaining groups after the initial 0002 group:
       @rest_explicit = false
@@ -503,8 +500,6 @@ module DICOM
       @rest_endian = false
       # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
-      # Set which format strings to use when unpacking numbers:
-      set_unpack_strings
       # A length variable will be used at the end to check whether the last element was read correctly, or whether the file endend unexpectedly:
       @data_length = 0
       # Keeping track of the data element's level while reading through the file:
@@ -515,5 +510,5 @@ module DICOM
       @enc_image = false
     end
 
-  end # End of class
-end # End of module
+  end # of class
+end # of module
