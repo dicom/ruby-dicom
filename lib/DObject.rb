@@ -19,7 +19,7 @@
 # -Support for writing complex (hierarchical) DICOM files (basic write support is featured).
 # -Full support for compressed image data.
 # -Read 12 bit image data correctly.
-# -Support for color image data to get_image_narray() and get_image_magick().
+# -Support for color image data to get_image_narray and get_image_magick.
 # -Complete support for Big endian (basic support is already featured).
 # -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
 # -Reading of image data in files that contain two different and unrelated images (this problem has been observed with some MR images).
@@ -29,29 +29,30 @@ module DICOM
   # Class for handling the DICOM contents:
   class DObject
 
-    attr_reader :read_success, :write_success, :modality, :errors,
+    attr_reader :read_success, :write_success, :modality, :errors, :segments,
                       :names, :tags, :types, :lengths, :values, :raw, :levels
 
     # Initialize the DObject instance.
-    def initialize(file_name=nil, opts={})
+    def initialize(file_name=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      @verbose = opts[:verbose]
-      @lib =  opts[:lib]  || DLibrary.new
+      @verbose = options[:verbose]
+      @lib =  options[:lib]  || DLibrary.new
+      segment_size = options[:segment_size]
       # Default verbosity is true:
       @verbose = true if @verbose == nil
 
       # Initialize variables that will be used for the DICOM object:
-      @names = Array.new()
-      @tags = Array.new()
-      @types = Array.new()
-      @lengths = Array.new()
-      @values = Array.new()
-      @raw = Array.new()
-      @levels = Array.new()
+      @names = Array.new
+      @tags = Array.new
+      @types = Array.new
+      @lengths = Array.new
+      @values = Array.new
+      @raw = Array.new
+      @levels = Array.new
       # Array that will holde any messages generated while reading the DICOM file:
-      @errors = Array.new()
+      @errors = Array.new
       # Array to keep track of sequences/structure of the dicom elements:
-      @sequence = Array.new()
+      @sequence = Array.new
       # Index of last element in data element arrays:
       @last_index=0
       # Structural information (default values):
@@ -64,82 +65,87 @@ module DICOM
       # Control variables:
       @read_success = false
       # Check endianness of the system (false if little endian):
-      @sys_endian = check_sys_endian()
+      @sys_endian = check_sys_endian
       # Set format strings for packing/unpacking:
-      set_format_strings()
+      set_format_strings
 
       # If a (valid) file name string is supplied, call the method to read the DICOM file:
       if file_name.is_a?(String) and file_name != ""
         @file = file_name
-        read(file_name)
+        read(file_name, :segment_size => segment_size)
       end
-    end # of method initialize
+    end # of initialize
 
 
     # Returns a DICOM object by reading the file specified.
     # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
     # For the time being, this method is called automatically when initializing the DObject class,
     # but in the future, when write support is added, this method may have to be called manually.
-    def read(file_name)
-      dcm = DRead.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
+    def read(file_name, options = {})
+      r = DRead.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
       # Store the data to the instance variables if the readout was a success:
-      if dcm.success
+      if r.success
         @read_success = true
-        @names = dcm.names
-        @tags = dcm.tags
-        @types = dcm.types
-        @lengths = dcm.lengths
-        @values = dcm.values
-        @raw = dcm.raw
-        @levels = dcm.levels
-        @explicit = dcm.explicit
-        @file_endian = dcm.file_endian
+        @names = r.names
+        @tags = r.tags
+        @types = r.types
+        @lengths = r.lengths
+        @values = r.values
+        @raw = r.raw
+        @levels = r.levels
+        @explicit = r.explicit
+        @file_endian = r.file_endian
         # Set format strings for packing/unpacking:
         set_format_strings(@file_endian)
         # Index of last data element in element arrays:
         @last_index=@names.length-1
         # Update status variables for this object:
-        check_properties()
+        check_properties
         # Set the modality of the DICOM object:
-        set_modality()
+        set_modality
       else
         @read_success = false
       end
-      # If any messages has been recorded, send these to the message handling method:
-      if dcm.msg.size != 0
-        add_msg(dcm.msg)
+      # Check if a partial extraction has been requested (used for network communication purposes)
+      if options[:segment_size]
+        @segments = r.extract_segments(options[:segment_size])
       end
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(r.msg) if r.msg.size != 0
     end
 
 
     # Transfers necessary information from the DObject to the DWrite class, which
     # will attempt to write this information to a valid DICOM file.
     def write(file_name)
-      w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
-      w.tags = @tags
-      w.types = @types
-      w.lengths = @lengths
-      w.raw = @raw
-      w.rest_endian = @file_endian
-      w.rest_explicit = @explicit
+      w = set_write_object(file_name)
       w.write
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      if w.msg.size != 0
-        add_msg(w.msg)
-      end
+      add_msg(w.msg) if w.msg.size != 0
+    end
+
+
+    # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
+    def encode_segments(size)
+      w = set_write_object
+      @segments = w.encode_segments(size)
+      # Write process succesful?
+      @write_success = w.success
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(w.msg) if w.msg.size != 0
     end
 
 
     #################################################
-    # START OF METHODS FOR READING INFORMATION FROM DICOM OBJECT:#
+    # START OF METHODS FOR READING INFORMATION FROM DICOM OBJECT:
     #################################################
 
 
     # Checks the status of the pixel data that has been read from the DICOM file: whether it exists at all and if its greyscale or color.
     # Modifies instance variable @color if color image is detected and instance variable @compression if no pixel data is detected.
-    def check_properties()
+    def check_properties
       # Check if pixel data is present:
       if @tags.index("7FE0,0010") == nil
         # No pixel data in DICOM file:
@@ -160,7 +166,7 @@ module DICOM
     # Returns image data from the provided element index, performing decompression of data if necessary.
     def read_image_magick(pos, columns, rows)
       if pos == false or columns == false or rows == false
-        add_msg("Error: Method read_image_magick() does not have enough data available to build an image object.")
+        add_msg("Error: Method read_image_magick does not have enough data available to build an image object.")
         return false
       end
       if @compression != true
@@ -184,7 +190,7 @@ module DICOM
 
     # Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
 		# To call this method the user needs to have performed " require 'narray' " in advance.
-    def get_image_narray()
+    def get_image_narray
       # Does pixel data exist at all in the DICOM object?
       if @compression == nil
         add_msg("It seems pixel data is not present in this DICOM object: returning false.")
@@ -203,8 +209,8 @@ module DICOM
       # Gather information about the dimensions of the image data:
       rows = get_value("0028,0010")
       columns = get_value("0028,0011")
-      frames = get_frames()
-      image_pos = get_image_pos()
+      frames = get_frames
+      image_pos = get_image_pos
       # Creating a NArray object using int to make sure we have a big enough range for our numbers:
       image = NArray.int(frames,columns,rows)
       image_temp = NArray.int(columns,rows)
@@ -244,12 +250,12 @@ module DICOM
         image[i,true,true]=temp_image
       end
       return image
-    end # of method get_image_narray
+    end # of get_image_narray
 
 
     # Returns an array of RMagick image objects, where the size of the array corresponds with the number of frames in the image data.
 		# To call this method the user needs to have performed " require 'RMagick' " in advance.
-    def get_image_magick()
+    def get_image_magick
       # Does pixel data exist at all in the DICOM object?
       if @compression == nil
         add_msg("It seems pixel data is not present in this DICOM object: returning false.")
@@ -263,8 +269,8 @@ module DICOM
       # Gather information about the dimensions of the image data:
       rows = get_value("0028,0010")
       columns = get_value("0028,0011")
-      frames = get_frames()
-      image_pos = get_image_pos()
+      frames = get_frames
+      image_pos = get_image_pos
       # Array that will hold the RMagick image objects, one image object for each frame:
       image_arr = Array.new(frames)
       # Handling of image data will depend on whether we have one or more frames,
@@ -293,11 +299,11 @@ module DICOM
         end
       end
       return image_arr
-    end # of method get_image_magick
+    end # of get_image_magick
 
 
     # Returns the number of frames present in the image data in the DICOM file.
-    def get_frames()
+    def get_frames
       frames = get_value("0028,0008")
       if frames == false
         # If the DICOM object does not specify the number of frames explicitly, assume 1 image frame.
@@ -340,11 +346,11 @@ module DICOM
         add_msg("Error: DICOM object does not contain the 'Bit Depth' data element (0028,0010).")
       end # of if bit_depth ..
       return pixels
-    end # of method get_pixels
+    end
 
 
     # Returns the index(es) of the element(s) that contain image data.
-    def get_image_pos()
+    def get_image_pos
       image_element_pos = get_pos("7FE0,0010")
       item_pos = get_pos("FFFE,E000")
       # Proceed only if an image element actually exists:
@@ -365,22 +371,22 @@ module DICOM
             # Determine which of these late item elements contain image data.
             # Usually, there are frames+1 late items, and all except
             # the first item contain an image frame:
-            frames = get_frames()
+            frames = get_frames
             if frames != false  # note: function get_frames will never return false
               if late_item_pos.size == frames.to_i+1
                 return late_item_pos[1..late_item_pos.size-1]
               else
-                add_msg("Warning: Unexpected behaviour in DICOM file for method get_image_pos(). Expected number of image data items not equal to number of frames+1, returning false.")
+                add_msg("Warning: Unexpected behaviour in DICOM file for method get_image_pos. Expected number of image data items not equal to number of frames+1, returning false.")
                 return false
               end
             else
-              add_msg("Warning: 'Number of Frames' data element not found. Method get_image_pos() will return false.")
+              add_msg("Warning: 'Number of Frames' data element not found. Method get_image_pos will return false.")
               return false
             end
           end
         end
       end
-    end # of method get_image_pos
+    end
 
 
     # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, tag or name.
@@ -390,11 +396,8 @@ module DICOM
     #                                  through the entire DICOM object. If myArray equals false, the method will return false.
     # :partial => true - get_pos will not only search for exact matches, but will search the names and tags arrays for
     #                             strings that contain the given search string.
-    def get_pos(query, opts={})
-      # Optional keywords:
-      keyword_array = opts[:array]
-      keyword_partial = opts[:partial]
-      indexes = Array.new()
+    def get_pos(query, options={})
+      indexes = Array.new
       # For convenience, allow query to be a one-element array (its value will be extracted):
       if query.is_a?(Array)
         if query.length > 1 or query.length == 0
@@ -404,25 +407,25 @@ module DICOM
           query = query[0]
         end
       end
-      if keyword_array == false
+      if options[:array] == false
         # If the supplied array option equals false, it signals that the user tries to search for an element
         # in an invalid position, and as such, this method will also return false:
-        add_msg("Warning: Attempted to call get_pos() with query #{query}, but since keyword :array is false I will return false.")
+        add_msg("Warning: Attempted to call get_pos with query #{query}, but since keyword :array is false I will return false.")
         indexes = false
       else
-        # Check if query is a number (some methods want to have the ability to call get_pos() with a number):
+        # Check if query is a number (some methods want to have the ability to call get_pos with a number):
         if query.is_a?(Integer)
           # Return the position if it is valid:
           indexes = [query] if query >= 0 and query < @names.length
         elsif query.is_a?(String)
           # Either use the supplied array, or search the entire DICOM object:
-          if keyword_array.is_a?(Array)
-            search_array = keyword_array
+          if options[:array].is_a?(Array)
+            search_array = options[:array]
           else
             search_array = Array.new(@names.length) {|i| i}
           end
           # Perform search:
-          if keyword_partial == true
+          if options[:partial] == true
             # Search for partial string matches:
             partial_indexes = search_array.all_indices_partial_match(@tags, query.upcase)
             if partial_indexes.length > 0
@@ -443,51 +446,51 @@ module DICOM
         indexes = false if indexes.length == 0
       end
       return indexes
-    end # of method get_pos
+    end # of get_pos
 
 
     # Dumps the binary content of the Pixel Data element to file.
     def image_to_file(file)
-      pos = get_image_pos()
+      pos = get_image_pos
       if pos
         if pos.length == 1
           # Pixel data located in one element:
           pixel_data = get_raw(pos[0])
           f = File.new(file, "wb")
           f.write(pixel_data)
-          f.close()
+          f.close
         else
           # Pixel data located in several elements:
           pos.each_index do |i|
             pixel_data = get_raw(pos[i])
             f = File.new(file + i.to_s, "wb")
             f.write(pixel_data)
-            f.close()
+            f.close
           end
         end
-      end # of if pos =...
-    end # of method image_to_file
+      end
+    end
 
 
     # Returns the positions of all data elements inside the hierarchy of a sequence or an item.
     # Options:
     # :next_only => true - The method will only search immediately below the specified
     # item or sequence (that is, in the level of parent + 1).
-    def children(element, opts={})
+    def children(element, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      opt_next_only = opts[:next_only] || false
+      opt_next_only = options[:next_only] || false
       value = false
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false
-        add_msg("Warning: Invalid data element provided to method children(). Returning false.")
+        add_msg("Warning: Invalid data element provided to method children. Returning false.")
       else
         if pos.size > 1
-          add_msg("Warning: Method children() does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
+          add_msg("Warning: Method children does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
         else
           # Proceed to find the value:
           # First we need to establish in which positions to perform the search:
-          below_pos = Array.new()
+          below_pos = Array.new
           pos.each do |p|
             parent_level = @levels[p]
             remain_array = @levels[p+1..@levels.size-1]
@@ -496,11 +499,11 @@ module DICOM
               if (remain_array[i] > parent_level) and (extract == true)
                 # If search is targetted at any specific level, we can just add this position:
                 if not opt_next_only == true
-                  below_pos += [p+1+i]
+                  below_pos << (p+1+i)
                 else
                   # As search is restricted to parent level + 1, do a test for this:
                   if remain_array[i] == parent_level + 1
-                    below_pos += [p+1+i]
+                    below_pos << (p+1+i)
                   end
                 end
               else
@@ -513,7 +516,7 @@ module DICOM
         end # of if pos.size..else..
       end
       return value
-    end # of method below
+    end
 
 
     # Returns the value (processed raw data) of the requested DICOM data element.
@@ -522,32 +525,31 @@ module DICOM
     # :array => true - Allows the query of the value of a tag that occurs more than one time in the
     #                  DICOM object. Values will be returned in an array with length equal to the number
     #                  of occurances of the tag. If keyword is not specified, the method returns false in this case.
-    def get_value(element, opts={})
-      opts_array = opts[:array]
-      # As this method is also used internally, we want the possibility of warnings not being raised even if verbose is set to true by the user, to avoid confusion.
-      silent = opts[:silent]
+    # :silent => true - As this method is also used internally, we want the possibility of warnings not being
+    #                  raised even if verbose is set to true by the user, in order to avoid confusion.
+    def get_value(element, options={})
       value = false
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false
-        add_msg("Warning: Invalid data element provided to method get_value(). Returning false.") unless silent
+        add_msg("Warning: Invalid data element provided to method get_value. Returning false.") unless options[:silent]
       else
         if pos.size > 1
-          if opts_array == true
+          if options[:array] == true
             # Retrieve all values into an array:
-            value = []
+            value = Array.new
             pos.each do |i|
               value << @values[i]
             end
           else
-            add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless silent
+            add_msg("Warning: Method get_value does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless silent
           end
         else
           value = @values[pos[0]]
         end
       end
       return value
-    end # of method get_value
+    end
 
 
     # Returns the raw data of the requested DICOM data element.
@@ -556,30 +558,29 @@ module DICOM
     # :array => true - Allows the query of the value of a tag that occurs more than one time in the
     #                  DICOM object. Values will be returned in an array with length equal to the number
     #                  of occurances of the tag. If keyword is not specified, the method returns false in this case.
-    def get_raw(element, opts={})
-      opts_array = opts[:array]
+    def get_raw(element, options={})
       value = false
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false
-        add_msg("Warning: Invalid data element provided to method get_raw(). Returning false.")
+        add_msg("Warning: Invalid data element provided to method get_raw. Returning false.")
       else
         if pos.size > 1
-          if opts_array == true
+          if options[:array] == true
             # Retrieve all values into an array:
-            value = []
+            value = Array.new
             pos.each do |i|
               value << @raw[i]
             end
           else
-            add_msg("Warning: Method get_raw() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
+            add_msg("Warning: Method get_raw does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
           end
         else
           value = @raw[pos[0]]
         end
       end
       return value
-    end # of method get_raw
+    end
 
 
     # Returns the position of (possible) parents of the specified data element in the hierarchy structure of the DICOM object.
@@ -588,10 +589,10 @@ module DICOM
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false
-        add_msg("Warning: Invalid data element provided to method parents(). Returning false.")
+        add_msg("Warning: Invalid data element provided to method parents. Returning false.")
       else
         if pos.length > 1
-          add_msg("Warning: Method parents() does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
+          add_msg("Warning: Method parents does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
         else
           # Proceed to find the value:
           # Get the level of our element:
@@ -599,23 +600,23 @@ module DICOM
           # Element can obviously only have parents if it is not a top level element:
           unless level == 0
             # Search backwards, and record the position every time we encounter an upwards change in the level number.
-            parents = Array.new()
+            parents = Array.new
             prev_level = level
             search_arr = @levels[0..pos[0]-1].reverse
             search_arr.each_index do |i|
               if search_arr[i] < prev_level
-                parents += [search_arr.length-i-1]
+                parents << search_arr.length-i-1
                 prev_level = search_arr[i]
               end
             end
             # When the element has several generations of parents, we want its top parent to be first in the returned array:
             parents = parents.reverse
             value = parents if parents.length > 0
-          end # of if level == 0
-        end # of if pos.length..else..
+          end
+        end
       end
       return value
-    end # of method parents
+    end
 
 
     ##############################################
@@ -625,8 +626,8 @@ module DICOM
 
     # Prints the information of all elements stored in the DICOM object.
     # This method is kept for backwards compatibility.
-    # Instead of calling print_all() you may use print(true) for the same functionality.
-    def print_all()
+    # Instead of calling print_all you may use print(true) for the same functionality.
+    def print_all
       print(true)
     end
 
@@ -637,14 +638,14 @@ module DICOM
     # :levels => true - method will print the level numbers for each element.
     # :tree => true -   method will print a tree structure for the elements.
     # :file => true -    method will print to file instead of printing to screen.
-    def print(pos, opts={})
+    def print(pos, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      opt_levels = opts[:levels] || false
-      opt_tree = opts[:tree] || false
-      opt_file = opts[:file] || false
+      opt_levels = options[:levels] || false
+      opt_tree = options[:tree] || false
+      opt_file = options[:file] || false
       # If pos is false, abort, and inform the user:
       if pos == false
-        add_msg("Warning: Method print() was supplied false instead of a valid position. Aborting print.")
+        add_msg("Warning: Method print was supplied false instead of a valid position. Aborting print.")
         return
       end
       if not pos.is_a?(Array) and pos != true
@@ -658,21 +659,21 @@ module DICOM
         pos_valid = pos
       end
       # Extract the information to be printed from the object arrays:
-      indices = Array.new()
-      levels = Array.new()
-      tags = Array.new()
-      names = Array.new()
-      types = Array.new()
-      lengths = Array.new()
-      values = Array.new()
+      indices = Array.new
+      levels = Array.new
+      tags = Array.new
+      names = Array.new
+      types = Array.new
+      lengths = Array.new
+      values = Array.new
       # There may be a more elegant way to do this.
       pos_valid.each do |pos|
-        tags += [@tags[pos]]
-        levels += [@levels[pos]]
-        names += [@names[pos]]
-        types += [@types[pos]]
-        lengths += [@lengths[pos].to_s]
-        values += [@values[pos].to_s]
+        tags << @tags[pos]
+        levels << @levels[pos]
+        names << @names[pos]
+        types << @types[pos]
+        lengths << @lengths[pos].to_s
+        values << @values[pos].to_s
       end
       # We have collected the data that is to be printed, now we need to do some string manipulation if hierarchy is to be displayed:
       if opt_tree
@@ -686,10 +687,10 @@ module DICOM
         end
       end
       # Extract the string lengths which are needed to make the formatting nice:
-      tag_lengths = Array.new()
-      name_lengths = Array.new()
-      type_lengths = Array.new()
-      length_lengths = Array.new()
+      tag_lengths = Array.new
+      name_lengths = Array.new
+      type_lengths = Array.new
+      length_lengths = Array.new
       names.each_index do |i|
         tag_lengths[i] = tags[i].length
         name_lengths[i] = names[i].length
@@ -703,7 +704,7 @@ module DICOM
       type_maxL = type_lengths.max
       length_maxL = length_lengths.max
       # Construct the strings, one for each line of output, where each line contain the information of one data element:
-      elements = Array.new()
+      elements = Array.new
       # Start of loop which formats the element data:
       # (This loop is what consumes most of the computing time of this method)
       tags.each_index do |i|
@@ -733,19 +734,19 @@ module DICOM
           when "SQ","()"
             value = "(Encapsulated Elements)"
         end
-        elements += [f0 + pos_valid[i].to_s + s + lev + s + tags[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip]
+        elements << (f0 + pos_valid[i].to_s + s + lev + s + tags[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip)
       end
       # Print to either screen or file, depending on what the user requested:
       if opt_file
         print_file(elements)
       else
         print_screen(elements)
-      end # of tags.each do |i|
-    end # of method print
+      end
+    end # of print
 
 
     # Prints the key structural properties of the DICOM file.
-    def print_properties()
+    def print_properties
       # Explicitness:
       if @explicit
         explicit = "Explicit"
@@ -792,11 +793,11 @@ module DICOM
         puts "Bits per pixel: " + bits
       end
       puts "-------------------------------"
-    end # of method print_properties
+    end # of print_properties
 
 
     ####################################################
-    ### START OF METHODS FOR WRITING INFORMATION TO THE DICOM OBJECT:#
+    ### START OF METHODS FOR WRITING INFORMATION TO THE DICOM OBJECT:
     ####################################################
 
 
@@ -817,8 +818,8 @@ module DICOM
         set_value(bin, "7FE0,0010", :create => true, :bin => true)
       else
         add_msg("Content of file is of zero length. Nothing to store.")
-      end # of if bin.length > 0
-    end # of method set_image_file
+      end
+    end
 
 
     # Transfers pixel data from a RMagick object to the pixel data element:
@@ -835,7 +836,7 @@ module DICOM
       pos = get_pos(element)
       if pos != false
         if pos.length > 1
-          add_msg("Warning: Method remove() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT removed.")
+          add_msg("Warning: Method remove does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT removed.")
         else
           # Extract first array number:
           pos = pos[0]
@@ -855,29 +856,29 @@ module DICOM
           @raw.delete_at(pos)
         end
       else
-        add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove() has no data element to remove.")
+        add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove has no data element to remove.")
       end
     end
 
 
     # Sets the value of a data element by modifying an existing element or creating a new one.
     # If the supplied value is not binary, it will attempt to encode the value to binary itself.
-    def set_value(value, element, opts={})
+    def set_value(value, element, options={})
       # Options:
-      create = opts[:create] # =false means no element creation
-      bin = opts[:bin] # =true means value already encoded
+      create = options[:create] # =false means no element creation
+      bin = options[:bin] # =true means value already encoded
       # Retrieve array position:
       pos = get_pos(element)
       # We do not support changing multiple data elements:
       if pos.is_a?(Array)
         if pos.length > 1
-          add_msg("Warning: Method set_value() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT saved.")
+          add_msg("Warning: Method set_value does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT saved.")
           return
         end
       end
       if pos == false and create == false
         # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
-        add_msg("Warning: Invalid data element provided to method set_value(). Value NOT updated.")
+        add_msg("Warning: Invalid data element provided to method set_value. Value NOT updated.")
       elsif create == false
         # Modify element:
         modify_element(value, pos[0], :bin => bin)
@@ -890,7 +891,7 @@ module DICOM
           # We need to create element:
           tag = @lib.get_tag(element)
           if tag == false
-            add_msg("Warning: Method set_value() could not create data element, either because data element name was not recognized in the library, or data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
+            add_msg("Warning: Method set_value could not create data element, either because data element name was not recognized in the library, or data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
           else
             # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
             # We will do this by finding the last array position of the last element that will (alphabetically/numerically) stay in front of this element.
@@ -913,32 +914,28 @@ module DICOM
             end
             # The necessary information is gathered; create new data element:
             create_element(value, tag, index, :bin => bin)
-          end # of if tag ==..else..
-        end # of unless pos ==..else..
-      end # of if pos ==..and create ==..else..
-    end # of method set_value
+          end
+        end
+      end
+    end # of set_value
 
 
     ##################################################
-    ############## START OF PRIVATE METHODS:################
+    ############## START OF PRIVATE METHODS:  ########
     ##################################################
     private
 
 
     # Adds a warning or error message to the instance array holding messages, and if verbose variable is true, prints the message as well.
     def add_msg(msg)
-      if @verbose
-        puts msg
-      end
-      if (msg.is_a? String)
-        msg=[msg]
-      end
-      @errors += msg
+      puts msg if @verbose
+      @errors << msg
+      @errors.flatten
     end
 
 
     # Checks the endianness of the system. Returns false if little endian, true if big endian.
-    def check_sys_endian()
+    def check_sys_endian
       x = 0xdeadbeef
       endian_type = {
         Array(x).pack("V*") => false, #:little
@@ -949,8 +946,8 @@ module DICOM
 
 
     # Creates a new data element:
-    def create_element(value, tag, last_pos, opts={})
-      bin_only = opts[:bin]
+    def create_element(value, tag, last_pos, options={})
+      bin_only = options[:bin]
       # Fetch the VR:
       info = @lib.get_name_vr(tag)
       vr = info[1]
@@ -1020,7 +1017,7 @@ module DICOM
       else
         add_msg("Binary is nil. Nothing to save.")
       end
-    end # of method create_element
+    end # of create_element
 
 
     # Encodes a value to binary (used for inserting values to a DICOM object).
@@ -1081,17 +1078,17 @@ module DICOM
               else
                 # Unknown bit depth:
                 add_msg("Unknown bit depth #{bit_depth}. No data encoded.")
-            end # of case bit_depth
-          end # of if bit_depth..else..
+            end
+          end
         else # Unsupported VR:
           add_msg("Element type #{vr} does not have a dedicated encoding option assigned. Please contact author.")
       end # of case vr
       return bin
-    end # of method encode
+    end # of encode
 
     # Modifies existing data element:
-    def modify_element(value, pos, opts={})
-      bin_only = opts[:bin]
+    def modify_element(value, pos, options={})
+      bin_only = options[:bin]
       # Fetch the VR and old length:
       vr = @types[pos]
       old_length = @lengths[pos]
@@ -1123,7 +1120,7 @@ module DICOM
       else
         add_msg("Binary is nil. Nothing to save.")
       end
-    end # of method modify_element
+    end
 
 
     # Prints the selected elements to an ascii text file.
@@ -1147,7 +1144,7 @@ module DICOM
 
 
     # Sets the modality variable of the current DICOM object, by querying the library with the object's SOP Class UID.
-    def set_modality()
+    def set_modality
       value = get_value("0008,0016", :silent => true)
       if value == false
         @modality = "Not specified"
@@ -1181,6 +1178,21 @@ module DICOM
         @fs = "g*"
         @fd = "G*"
       end
+    end
+
+
+    # Handles the creation of a DWrite object, and returns this object to the calling method.
+    def set_write_object(file_name=nil)
+      ts = get_value("0002,0010", :silent => true)
+      ts = "1.2.840.10008.1.2" if not ts # Default is implicit, little endian
+      w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian, :transfer_syntax => ts)
+      w.tags = @tags
+      w.types = @types
+      w.lengths = @lengths
+      w.raw = @raw
+      w.rest_endian = @file_endian
+      w.rest_explicit = @explicit
+      return w
     end
 
 
@@ -1234,9 +1246,9 @@ module DICOM
         # Update arrays:
         @values[gl_pos] = value
         @raw[gl_pos] = bin
-      end # of if gl_pos
-    end # of method update_group_length
+      end
+    end # of update_group_length
 
 
-  end # End of class
-end # End of module
+  end # of class
+end # of module
