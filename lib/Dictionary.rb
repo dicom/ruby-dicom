@@ -9,7 +9,7 @@ module DICOM
 
     # Loads the image type library (Photometric Interpretation).
     # (Data element tag: 0028,0004)
-    def load_image_types()
+    def load_image_types
       return [
       ["MONOCHROME1", "grey level image description (high values=dark, low values=bright)"],
       ["MONOCHROME2", "grey level image description (high values=bright, low values=dark)"],
@@ -23,7 +23,7 @@ module DICOM
 
     # Loads the value representation library.
     # Consists of VR name, meaning and data format.
-    def load_vr()
+    def load_vr
       return [
       ["AE", "Application entity", "String"],
       ["AS", "Age string", "String"],
@@ -57,7 +57,7 @@ module DICOM
 
 
     # Table A.1 UID Values (DICOM Part 6, Annex A: Registry of DICOM unique identifiers)
-    def load_uid()
+    def load_uid
       return [
       ["1.2.840.10008.1.1", "Verification SOP Class", "SOP Class"],
       # Start: Transfer syntax (Data element tag: 0002,0010)
@@ -331,12 +331,12 @@ module DICOM
       ["1.2.840.10008.15.0.4.7", "dicomUniqueAETitle", "LDAP OID"],
       ["1.2.840.10008.15.0.4.8", "dicomTransferCapability", "LDAP OID"]
       ].transpose
-    end
+    end # of load_uid
 
 
     # Table A-2 Well-known Frames of Reference (DICOM Part 6, Annex A: Registry of DICOM unique identifiers)
     # (This table is not in use at the moment)
-    def load_frame_of_ref()
+    def load_frame_of_ref
       return [
       ["1.2.840.10008.1.4.1.1", "Talairach Brain Atlas Frame of Reference", "Talairach J. and Tournoux P. Co-Planar stereotactic atlas of the human brain. Stutgart: Georg Thieme Verlag, 1988."],
       ["1.2.840.10008.1.4.1.2", "SPM2 T1 Frame of Reference", "SPM2 /templates/T1.mnc"],
@@ -363,7 +363,7 @@ module DICOM
 
 
     # Data element dictionary:
-    def load_data_elements()
+    def load_data_elements
       return [
       # E.1 Registry of DICOM command elements
       # Group 0000
@@ -2882,8 +2882,8 @@ module DICOM
       ["FFFE,E00D", ["()"], "Item Delimitation Item"], # VR does not exist for this element
       ["FFFE,E0DD", ["()"], "Sequence Delimitation Item"] # VR does not exist for this element
       ].transpose
-    end # End of method load_data_elements()
+    end # of load_data_elements
 
 
-  end # End of class
-end # End of module
+  end # of class
+end # of module

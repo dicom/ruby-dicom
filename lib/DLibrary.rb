@@ -7,21 +7,21 @@ module DICOM
     attr_reader :de_tag, :de_vr, :de_name, :uid_value, :uid_name, :uid_type, :pi_type, :pi_description
 
     # Initialize the DRead instance.
-    def initialize()
+    def initialize
       # Dictionary content will be stored in instance arrays.
       # Load the dictionary:
-      dict = Dictionary.new()
+      dict = Dictionary.new
       # Data elements:
-      de = dict.load_data_elements()
+      de = dict.load_data_elements
       @de_tag = de[0]
       @de_vr = de[1]
       @de_name = de[2]
       # Photometric Interpretation:
-      pi = dict.load_image_types()
+      pi = dict.load_image_types
       @pi_type = pi[0]
       @pi_description = pi[1]
       # UID:
-      uid = dict.load_uid()
+      uid = dict.load_uid
       @uid_value = uid[0]
       @uid_name = uid[1]
       @uid_type = uid[2]
@@ -134,6 +134,37 @@ module DICOM
     end
 
 
+    # Checks the Transfer Syntax UID and return the encoding settings associated with this value.
+    def process_transfer_syntax(value)
+      valid = check_ts_validity(value)
+      case value
+        # Some variations with uncompressed pixel data:
+        when "1.2.840.10008.1.2"
+          # Implicit VR, Little Endian
+          explicit = false
+          endian = false
+        when "1.2.840.10008.1.2.1"
+          # Explicit VR, Little Endian
+          explicit = true
+          endian = false
+        when "1.2.840.10008.1.2.1.99"
+          # Deflated Explicit VR, Little Endian
+          #@msg += ["Warning: Transfer syntax 'Deflated Explicit VR, Little Endian' is untested. Unknown if this is handled correctly!"]
+          explicit = true
+          endian = false
+        when "1.2.840.10008.1.2.2"
+          # Explicit VR, Big Endian
+          explicit = true
+          endian = true
+        else
+          # For everything else, assume compressed pixel data, with Explicit VR, Little Endian:
+          explicit = true
+          endian = false
+        end
+        return [valid, explicit, endian]
+    end
+
+
     # Following methods are private.
     private
 
@@ -144,5 +175,5 @@ module DICOM
     end
 
 
-  end # end of class
-end # end of module
+  end # of class
+end # of module
