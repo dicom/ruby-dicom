@@ -542,7 +542,7 @@ module DICOM
               value << @values[i]
             end
           else
-            add_msg("Warning: Method get_value does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless silent
+            add_msg("Warning: Method get_value does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless options[:silent]
           end
         else
           value = @values[pos[0]]
