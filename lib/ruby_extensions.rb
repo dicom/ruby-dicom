@@ -23,3 +23,14 @@ class Array
   end
 
 end
+
+class String
+  
+  # Check if a given string appears to be a valid tag:
+  def is_a_tag?
+    result = false
+    result = true if self.length == 9 and self[4..4] == ','
+    result
+  end
+  
+end
