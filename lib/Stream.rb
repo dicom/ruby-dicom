@@ -61,6 +61,16 @@ module DICOM
       end
       return value
     end
+    
+    
+    # Decodes the entire binary string and returns the formatted data.
+    # Typically used for decoding image data.
+    def decode_all(type)
+      length = @string.length
+      value = @string.slice(@index, length).unpack(vr_to_str(type))
+      skip(length)
+      return value
+    end
 
 
     # Decodes a tag from a binary string to our standard ascii format ("GGGG,EEEE").
@@ -179,15 +189,64 @@ module DICOM
       set_string_formats
       set_format_hash
     end
+    
+    
+    # Set a new binary string for this instance.
+    def set_string(binary)
+      binary = binary[0] if binary.is_a?(Array)
+      @string = binary
+      @index = 0
+    end
 
 
+    # Applies an offset (positive or negative) to the index variable.
+    def skip(offset)
+      @index += offset
+    end
+
+
+    # Following methods are private:
+    private
+
+
+    # Determine the endianness of the system.
+    # Together with the specified endianness of the binary string,
+    # this will decide what encoding/decoding flags to use.
+    def configure_endian
+      x = 0xdeadbeef
+      endian_type = {
+        Array(x).pack("V*") => false, #:little
+        Array(x).pack("N*") => true   #:big
+      }
+      @sys_endian = endian_type[Array(x).pack("L*")]
+      # Use a "relationship endian" variable to guide encoding/decoding options:
+      if @sys_endian == @str_endian
+        @endian = true
+      else
+        @endian = false
+      end
+    end
+
+
+    # Convert a data element type (VR) to a encode/decode string.
+    def vr_to_str(vr)
+      str = @format[vr]
+      if str == nil
+        errors << "Warning: Element type #{vr} does not have a reading method assigned to it. Something is not implemented correctly or the DICOM data analyzed is invalid."
+        str = @hex
+      end
+      return str
+    end
+    
+    
     # Set the hash which is used to convert a data element type (VR) to a encode/decode string.
     def set_format_hash
       @format = {
-        "UL" => @ul, # Unsigned long (4 bytes)
-        "SL" => @sl, # Signed long (4 bytes)
+        "BY" => @by, # Byte/Character (1-byte integers)
         "US" => @us, # Unsigned short (2 bytes)
         "SS" => @ss, # Signed short (2 bytes)
+        "UL" => @ul, # Unsigned long (4 bytes)
+        "SL" => @sl, # Signed long (4 bytes)
         "FL" => @fs, # Floating point single (4 bytes)
         "FD" => @fd, # Floating point double (8 bytes)
         "OB" => @by, # Other byte string (1-byte integers)
@@ -244,46 +303,6 @@ module DICOM
       # Format strings that are not dependent on endianness:
       @str = "a*"
       @hex = "H*" # (this may be dependent on endianness(?))
-    end
-
-
-    # Applies an offset (positive or negative) to the index variable.
-    def skip(offset)
-      @index += offset
-    end
-
-
-    # Following methods are private:
-    private
-
-
-    # Determine the endianness of the system.
-    # Together with the specified endianness of the binary string,
-    # this will decide what encoding/decoding flags to use.
-    def configure_endian
-      x = 0xdeadbeef
-      endian_type = {
-        Array(x).pack("V*") => false, #:little
-        Array(x).pack("N*") => true   #:big
-      }
-      @sys_endian = endian_type[Array(x).pack("L*")]
-      # Use a "relationship endian" variable to guide encoding/decoding options:
-      if @sys_endian == @str_endian
-        @endian = true
-      else
-        @endian = false
-      end
-    end
-
-
-    # Convert a data element type (VR) to a encode/decode string.
-    def vr_to_str(vr)
-      str = @format[vr]
-      if str == nil
-        errors << "Warning: Element type #{vr} does not have a reading method assigned to it. Something is not implemented correctly or the DICOM data analyzed is invalid."
-        str = @hex
-      end
-      return str
     end
 
   end # of class

@@ -64,10 +64,8 @@ module DICOM
       @modality = nil
       # Control variables:
       @read_success = false
-      # Check endianness of the system (false if little endian):
-      @sys_endian = check_sys_endian
-      # Set format strings for packing/unpacking:
-      set_format_strings
+      # Initialize a Stream instance which is used for encoding/decoding:
+      @stream = Stream.new(nil, @file_endian, @explicit)
 
       # If a (valid) file name string is supplied, call the method to read the DICOM file:
       if file_name.is_a?(String) and file_name != ""
@@ -95,8 +93,9 @@ module DICOM
         @levels = r.levels
         @explicit = r.explicit
         @file_endian = r.file_endian
-        # Set format strings for packing/unpacking:
-        set_format_strings(@file_endian)
+        # Update Stream instance with settings from this DICOM file:
+        @stream.set_endian(@file_endian)
+        @stream.explicit = @explicit
         # Index of last data element in element arrays:
         @last_index=@names.length-1
         # Update status variables for this object:
@@ -176,7 +175,7 @@ module DICOM
         image.import_pixels(0, 0, columns, rows, "I", image_data)
         return image
       else
-        # Image data is compressed, we will attempt to unpack it using RMagick (ImageMagick):
+        # Image data is compressed, we will attempt to deflate it using RMagick (ImageMagick):
         begin
           image = Magick::Image.from_blob(@raw[pos])
           return image
@@ -319,26 +318,19 @@ module DICOM
       # We need to know what kind of bith depth the pixel data is saved with:
       bit_depth = get_value("0028,0100")
       if bit_depth != false
-        # Load the binary pixel data:
-        bin = get_raw(pos)
+        # Load the binary pixel data to the Stream instance:
+        @stream.set_string(get_raw(pos))
         # Number of bytes used per pixel will determine how to unpack this:
         case bit_depth
           when 8
-            pixels = bin.unpack(@by) # Byte/Character/Fixnum (1 byte)
+            pixels = @stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
           when 16
-            pixels = bin.unpack(@us) # Unsigned short (2 bytes)
+            pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
           when 12
             # 12 BIT SIMPLY NOT WORKING YET!
             # This one is a bit more tricky to extract.
             # I havent really given this priority so far as 12 bit image data is rather rare.
             add_msg("Warning: Bit depth 12 is not working correctly at this time! Please contact the author.")
-            #pixels = Array.new(length)
-            #(length).times do |i|
-              #hex = bin.unpack('H3')
-              #hex4 = "0"+hex[0]
-              #num = hex[0].unpack('v')
-              #data[i] = num
-            #end
           else
             raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
         end # of case bit_depth
@@ -934,17 +926,6 @@ module DICOM
     end
 
 
-    # Checks the endianness of the system. Returns false if little endian, true if big endian.
-    def check_sys_endian
-      x = 0xdeadbeef
-      endian_type = {
-        Array(x).pack("V*") => false, #:little
-        Array(x).pack("N*") => true   #:big
-      }
-      return endian_type[Array(x).pack("L*")]
-    end
-
-
     # Creates a new data element:
     def create_element(value, tag, last_pos, options={})
       bin_only = options[:bin]
@@ -1026,39 +1007,15 @@ module DICOM
       value = [value] if not value.is_a?(Array)
       # VR will decide how to encode this value:
       case vr
-        when "UL"
-          bin = value.pack(@ul)
-        when "SL"
-          bin = value.pack(@sl)
-        when "US"
-          bin = value.pack(@us)
-        when "SS"
-          bin = value.pack(@ss)
-        when "FL"
-          bin = value.pack(@fs)
-        when "FD"
-          bin = value.pack(@fd)
-        when "AT" # (Data element tag: Assume it has the format GGGGEEEE (no comma separation))
-          # Encode letter pairs indexes in following order 10 3 2:
-          # NB! This may not be encoded correctly on Big Endian files or computers.
-          old_format=value[0]
-          new_format = old_format[2..3]+old_format[0..1]+old_format[6..7]+old_format[4..5]
-          bin = [new_format].pack("H*")
-
+        when "AT" # (Data element tag: Assume it has the format "GGGG,EEEE"
+          bin = @stream.encode_tag(value)
         # We have a number of VRs that are encoded as string:
         when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
           # In case we are dealing with a number string element, the supplied value might be a number
           # instead of a string, and as such, we convert to string just to make sure this will work nicely:
           value[0] = value[0].to_s
-          # Odd/even test (num[0]=1 if num is odd):
-          if value[0].length[0] == 1
-            # Odd (add a zero byte):
-            bin = value.pack('a*') + ["00"].pack("H*")
-          else
-            # Even:
-            bin = value.pack('a*')
-          end
-        # Image related VR's:
+          bin = @stream.encode_value(value, "STR")
+        # Image related value representations:
         when "OW"
           # What bit depth to use when encoding the pixel data?
           bit_depth = get_value("0028,0100")
@@ -1069,19 +1026,21 @@ module DICOM
             # 8,12 or 16 bits?
             case bit_depth
               when 8
-                bin = value.pack(@by)
+                bin = @stream.encode(value, "BY")
               when 12
                 # 12 bit not supported yet!
                 add_msg("Encoding 12 bit pixel values not supported yet. Please change the bit depth to 8 or 16 bits.")
               when 16
-                bin = value.pack(@us)
+                bin = @stream.encode(value, "US")
               else
                 # Unknown bit depth:
                 add_msg("Unknown bit depth #{bit_depth}. No data encoded.")
             end
           end
-        else # Unsupported VR:
-          add_msg("Element type #{vr} does not have a dedicated encoding option assigned. Please contact author.")
+        # All other VR's:
+        else
+          # Just encode:
+          bin = @stream.encode(value, vr)
       end # of case vr
       return bin
     end # of encode
@@ -1151,32 +1110,6 @@ module DICOM
       else
         modality = @lib.get_uid(value.rstrip)
         @modality = modality
-      end
-    end
-
-
-    # Sets the format strings that will be used for packing/unpacking numbers depending on endianness of file/system.
-    def set_format_strings(file_endian=@file_endian)
-      if @file_endian == @sys_endian
-        # System endian equals file endian:
-        # Native byte order.
-        @by = "C*" # Byte (1 byte)
-        @us = "S*" # Unsigned short (2 bytes)
-        @ss = "s*" # Signed short (2 bytes)
-        @ul = "I*" # Unsigned long (4 bytes)
-        @sl = "l*" # Signed long (4 bytes)
-        @fs = "e*" # Floating point single (4 bytes)
-        @fd = "E*" # Floating point double ( 8 bytes)
-      else
-        # System endian not equal to file endian:
-        # Network byte order.
-        @by = "C*"
-        @us = "n*"
-        @ss = "n*" # Not correct (gives US)
-        @ul = "N*"
-        @sl = "N*" # Not correct (gives UL)
-        @fs = "g*"
-        @fd = "G*"
       end
     end
 
