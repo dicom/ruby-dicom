@@ -4,58 +4,56 @@ module DICOM
   # Class which holds the methods that interact with the DICOM dictionary.
   class DLibrary
 
-    attr_reader :de_tag, :de_vr, :de_name, :uid_value, :uid_name, :uid_type, :pi_type, :pi_description
+    attr_reader :tags, :uid
 
     # Initialize the DRead instance.
     def initialize
-      # Dictionary content will be stored in instance arrays.
+      # Dictionary content will be stored in a number of hash objects.
       # Load the dictionary:
-      dict = Dictionary.new
+      dic = Dictionary.new
       # Data elements:
-      de = dict.load_data_elements
-      @de_tag = de[0]
-      @de_vr = de[1]
-      @de_name = de[2]
-      # Photometric Interpretation:
-      pi = dict.load_image_types
-      @pi_type = pi[0]
-      @pi_description = pi[1]
-      # UID:
-      uid = dict.load_uid
-      @uid_value = uid[0]
-      @uid_name = uid[1]
-      @uid_type = uid[2]
+      # Value of this hash is a two-element array [vr, name] (where vr itself is an array of 1-3 elements)
+      @tags = dic.load_data_elements
+      # UID (DICOM unique identifiers):
+      # Value of this hash is a two-element array [description, type]
+      @uid = dic.load_uid
+      # Photometric Interpretation: (not in use yet)
+      #@image_types = dic.load_image_types
+      # Value representation library: (not in use yet)
+      #@vr = dic.load_vr
+      # Frame of reference library: (not in use yet)
+      #@frame_of_ref = dic.load_frame_of_ref
     end
 
 
-    # Returns data element name and value representation from library if data element is recognized, else it returns "Unknown Name" and "UN".
+    # Returns data element name and value representation from the dictionary if the data element
+    # is recognized, else it returns "Unknown Name" and "UN".
     def get_name_vr(tag)
-      pos = get_pos(tag)
-      if pos != nil
-        name = @de_name[pos]
-        vr = @de_vr[pos][0]
+      values = @tags[tag]
+      if values != nil
+        name = values[1]
+        vr = values[0][0]
       else
         # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
         # Split tag in group and element:
         group = tag[0..3]
         element = tag[5..8]
-        # Check for group length:
         if element == "0000"
+          # Group length:
           name = "Group Length"
           vr = "UL"
-        end
-        # Source Image ID's: (Retired)
-        if tag[0..6] == "0020,31"
-          pos = get_pos("0020,31xx")
-          name = @de_name[pos]
-          vr = @de_vr[pos][0]
-        end
-        # Group 50xx (retired) and 60xx:
-        if tag[0..1] == "50" or tag[0..1] == "60"
-          pos = get_pos(tag[0..1]+"xx"+tag[4..8])
-          if pos != nil
-            name = @de_name[pos]
-            vr = @de_vr[pos][0]
+        elsif tag[0..6] == "0020,31"
+          # Source Image ID's: (Retired)
+          values = @tags["0020,31xx"]
+          name = values[1]
+          vr = values[0][0]
+        elsif tag[0..1] == "50" or tag[0..1] == "60"
+          # Group 50xx (retired) and 60xx:
+          new_tag = tag[0..1]+"xx"+tag[4..8]
+          values = @tags[new_tag]
+          if values != nil
+            name = values[1]
+            vr = values[0][0]
           end
         end
         # If none of the above checks yielded a result, the tag is unknown:
@@ -70,21 +68,23 @@ module DICOM
 
     # Returns the tag that matches the supplied data element name,
     # or if a tag is supplied, return that tag.
-    def get_tag(value)
+    # (This method may be considered for removal: Does the usefulnes of being able to create a tag by Name,
+    # outweigh the performance impact of having this method?)
+    def get_tag(name)
       tag = false
       # The supplied value should be a string:
-      if value.is_a?(String)
-        # Is it a tag?
-        # A tag is a string with 9 characters, where the 5th character should be a comma.
-        if value[4..4] == ',' and value.length == 9
-          # This is a tag.
-          # (Here it is possible to have some further logic to check the validity of the string as a tag.)
-          tag = value
+      if name.is_a?(String)
+        if name.is_a_tag?
+          # This is a tag:
+          tag = name
         else
           # We have presumably been dealt a name. Search the dictionary to see if we can identify
-          # it along with its corresponding tag:
-          pos = @de_name.index(value)
-          tag = @de_tag[pos] unless pos == nil
+          # this name and return its corresponding tag:
+          @tags.each_pair do |key, value|
+            if value[1] == name
+              tag = key
+            end
+          end
         end
       end
       return tag
@@ -92,11 +92,11 @@ module DICOM
 
 
     # Checks whether a given string is a valid transfer syntax or not.
-    def check_ts_validity(value)
+    def check_ts_validity(uid)
       result = false
-      pos = @uid_value.index(value)
-      if pos != nil
-        if pos >= 1 and pos <= 34
+      value = @uid[uid.rstrip]
+      if value != nil
+        if value[1] == "Transfer Syntax"
           # Proved valid:
           result = true
         end
@@ -105,13 +105,12 @@ module DICOM
     end
 
 
-    # Returns the name corresponding to a given UID.
-    def get_uid(value)
-      # Find the position of the specified value in the array:
-      pos = @uid_value.index(value)
+    # Returns the name/description corresponding to a given UID.
+    def get_uid(uid)
+      value = @uid[uid.rstrip]
       # Fetch the name of this UID:
-      if pos != nil
-        name = @uid_name[pos]
+      if value != nil
+        name = value[0]
       else
         name = "Unknown UID!"
       end
@@ -120,17 +119,18 @@ module DICOM
 
 
     # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
-    def get_compression(value)
-      res = false
-      # Index less or equal to 4 means no compression.
-      pos = @uid_value.index(value)
-      if pos != nil
-        if pos > 4
-          # It seems we have compression:
-          res = true
+    def get_compression(uid)
+      result = false
+      if uid
+        value = @uid[uid.rstrip]
+        if value != nil
+          if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
+            # It seems we have compression:
+            res = true
+          end
         end
       end
-      return res
+      return result
     end
 
 
@@ -166,14 +166,7 @@ module DICOM
 
 
     # Following methods are private.
-    private
-
-    # Returns the position of the supplied data element name in the Dictionary array.
-    def get_pos(tag)
-      pos = @de_tag.index(tag)
-      return pos
-    end
-
+    #private
 
   end # of class
 end # of module
