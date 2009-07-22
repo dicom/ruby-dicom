@@ -61,8 +61,8 @@ module DICOM
       end
       return value
     end
-    
-    
+
+
     # Decodes the entire binary string and returns the formatted data.
     # Typically used for decoding image data.
     def decode_all(type)
@@ -168,13 +168,43 @@ module DICOM
     end
 
 
-    # Reset the string variable.
-    def reset
-      @string = ""
+    # Extracts and returns a binary string of the given length from the current @index position and out.
+    def extract(length)
+      str = @string.slice(@index, length)
+      skip(length)
+      return str
     end
 
 
-    # Reset the string index variable:
+    # Returns the total length of the binary string of this instance.
+    def length
+      return @string.length
+    end
+
+
+    # Calculates and returns the remaining length of the binary string of this instance.
+    def rest_length
+      length = @string.length - @index
+      return length
+    end
+
+
+    # Extracts and returns the remaining binary string of this instance.
+    # (the part of the string which occurs after the position of the @index variable)
+    def rest_string
+      str = @string[@index..(@string.length-1)]
+      return str
+    end
+
+
+    # Resets the string variable (along with the index variable).
+    def reset
+      @string = ""
+      @index = 0
+    end
+
+
+    # Resets the string index variable.
     def reset_index
       @index = 0
     end
@@ -189,8 +219,8 @@ module DICOM
       set_string_formats
       set_format_hash
     end
-    
-    
+
+
     # Set a new binary string for this instance.
     def set_string(binary)
       binary = binary[0] if binary.is_a?(Array)
@@ -237,8 +267,8 @@ module DICOM
       end
       return str
     end
-    
-    
+
+
     # Set the hash which is used to convert a data element type (VR) to a encode/decode string.
     def set_format_hash
       @format = {
