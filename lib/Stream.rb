@@ -38,24 +38,18 @@ module DICOM
 
 
     # Decodes a section of the binary string and returns the formatted data.
-    def decode(length, type, options = {})
+    def decode(length, type)
       # Check if values are valid:
       if (@index + length) > @string.length
         # The index number is bigger then the length of the binary string.
         # We have reached the end and will return nil.
         value = nil
       else
-        # Decode the string, unless the binary string itself is wanted:
-        if options[:bin] == true
-          # Return binary string:
-          value = @string.slice(@index, length)
-        else
-          # Decode the binary string and return value:
-          value = @string.slice(@index, length).unpack(vr_to_str(type))
-          # If the result is an array of one element, return the element instead of the array.
-          # If result is contained in a multi-element array, return the original array.
-          value = value[0] if value.length == 1
-        end
+        # Decode the binary string and return value:
+        value = @string.slice(@index, length).unpack(vr_to_str(type))
+        # If the result is an array of one element, return the element instead of the array.
+        # If result is contained in a multi-element array, return the original array.
+        value = value[0] if value.length == 1
         # Update our position in the string:
         skip(length)
       end

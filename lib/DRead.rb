@@ -299,7 +299,7 @@ module DICOM
     # Reads and returns data element VALUE (Of varying length - which is determined at an earlier stage).
     def read_value(type, length)
       # Extract the binary data:
-      bin = @stream.decode(length, nil, :bin => true)
+      bin = @stream.extract(length)
       @integrated_lengths[@integrated_lengths.size-1] += length
       # Decode data?
       # Some data elements (like those containing image data, compressed data or unknown data),
