@@ -50,6 +50,10 @@ module DICOM
         # Create a Stream instance to handle the encoding of content to
         # the binary string that will eventually be saved to file:
         @stream = Stream.new(nil, @file_endian, @explicit)
+        # Tell the Stream instance which file to write to:
+        @stream.set_file(@file)
+        # Write header:
+        write_header
         # Meta information:
         # A simple check to determine whether we need to write meta information to the DICOM object:
         if @tags.length > 0
@@ -65,10 +69,6 @@ module DICOM
             write_data_element(i)
           end
         end
-        # Write header:
-        write_header
-        # After encoding the content, the binary string can be written to file:
-        @file.write(@stream.string)
         # As file has been written successfully, it can be closed.
         @file.close
         # Mark this write session as successful:
@@ -102,7 +102,7 @@ module DICOM
           write_tag(i)
           write_type_length(i)
           # Find out how much of this element's value we can write, then add it:
-          available = size - @stream.string.length
+          available = size - @stream.length
           value_first_part = @raw[i].slice(0, available)
           @stream.add_last(value_first_part)
           # Add segment and reset:
@@ -120,7 +120,7 @@ module DICOM
             segments << @stream.string
             @stream.reset
           end
-        elsif (10 + value_length + @stream.string.length) >= size
+        elsif (10 + value_length + @stream.length) >= size
           # End the current segment, and start on a new segment for the next data element.
           segments << @stream.string
           @stream.reset
@@ -140,16 +140,25 @@ module DICOM
     private
 
 
+    # Add a binary string to (the end of) either file or string.
+    def add(string)
+      if @file
+        @stream.write(string)
+      else
+        @stream.add_last(string)
+      end
+    end
+
+
     # Writes the official DICOM header:
     def write_header
-      # The header will be put first in the binary string, and built 'backwards':
       # Write the string "DICM" which along with the empty bytes that
       # will be put before it, identifies this as a valid DICOM file:
       identifier = @stream.encode("DICM", "STR")
-      @stream.add_first(identifier)
       # Fill in 128 empty bytes:
       filler = @stream.encode("00"*128, "HEX")
-      @stream.add_first(filler)
+      @stream.write(filler)
+      @stream.write(identifier)
     end
 
 
@@ -186,7 +195,7 @@ module DICOM
       # Group length:
       # This data element will be put first in the binary string, and built 'backwards'.
       # Value:
-      value = @stream.encode(@stream.string.length, "UL")
+      value = @stream.encode(@stream.length, "UL")
       @stream.add_first(value)
       # Length:
       length = @stream.encode(4, "US")
@@ -197,6 +206,8 @@ module DICOM
       # Tag:
       tag = @stream.encode_tag("0002,0000")
       @stream.add_first(tag)
+      # Write the meta information to file:
+      @stream.write(@stream.string)
     end
 
 
@@ -226,7 +237,7 @@ module DICOM
       end
       # Write to binary string:
       bin_tag = @stream.encode_tag(tag)
-      @stream.add_last(bin_tag)
+      add(bin_tag)
     end
 
 
@@ -254,7 +265,8 @@ module DICOM
         # Step 1: Write VR (if it is to be written)
         unless @tags[i] == "FFFE,E000" or @tags[i] == "FFFE,E00D" or @tags[i] == "FFFE,E0DD"
           # Write data element type (VR) (2 bytes - since we are not dealing with an item related element):
-          @stream.encode_last(@types[i], "STR")
+          vr = @stream.encode(@types[i], "STR")
+          add(vr)
         end
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element type:
@@ -263,36 +275,37 @@ module DICOM
             if @enc_image
               # Item under an encapsulated Pixel Data (7FE0,0010):
               # 4 bytes:
-              @stream.add_last(length4)
+              add(length4)
             else
               # 6 bytes total:
               # Two empty first:
-              @stream.encode_last("00"*2, "HEX")
+              empty = @stream.encode("00"*2, "HEX")
+              add(empty)
               # Value length (4 bytes):
-              @stream.add_last(length4)
+              add(length4)
             end
           when "()"
             # 4 bytes:
             # For tags "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
-            @stream.add_last(length4)
+            add(length4)
           else
             # 2 bytes:
             # For all the other data element types, value length is 2 bytes:
-            @stream.add_last(length2)
+            add(length2)
         end # of case type
       else
         # *****IMPLICIT*****:
         # No VR written.
         # Writing value length (4 bytes):
-        @stream.add_last(length4)
+        add(length4)
       end
     end # of write_type_length
 
 
     # Writes the value (last part of the data element):
     def write_value(i)
-      # This is pretty straightforward, just dump the binary data to the file:
-      @stream.add_last(@raw[i])
+      # This is pretty straightforward, just dump the binary data to the file/string:
+      add(@raw[i])
     end
 
 

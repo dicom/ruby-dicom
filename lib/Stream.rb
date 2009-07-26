@@ -215,6 +215,14 @@ module DICOM
     end
 
 
+    # Set a file variable for the Stream class.
+    # For performance reasons, we will enable the Stream class to write directly
+    # to file, to avoid expensive string operations which will otherwise slow down write performance.
+    def set_file(file)
+      @file = file
+    end
+
+
     # Set a new binary string for this instance.
     def set_string(binary)
       binary = binary[0] if binary.is_a?(Array)
@@ -226,6 +234,12 @@ module DICOM
     # Applies an offset (positive or negative) to the index variable.
     def skip(offset)
       @index += offset
+    end
+
+
+    # Write a binary string to file.
+    def write(string)
+      @file.write(string)
     end
 
 
