@@ -48,8 +48,12 @@ module DICOM
         # Decode the binary string and return value:
         value = @string.slice(@index, length).unpack(vr_to_str(type))
         # If the result is an array of one element, return the element instead of the array.
-        # If result is contained in a multi-element array, return the original array.
-        value = value[0] if value.length == 1
+        # If result is contained in a multi-element array, the original array is returned.
+        if value.length == 1
+          value = value[0]
+          # If value is a string, strip away possible trailing whitespace:
+          value = value.rstrip if value.is_a?(String)
+        end
         # Update our position in the string:
         skip(length)
       end
