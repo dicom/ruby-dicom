@@ -39,7 +39,7 @@ module DICOM
           @str = @file.read
           @file.close
         end
-      end      
+      end
       # Create a Stream instance to handle the decoding of content from this binary string:
       @stream = Stream.new(@str, @file_endian, @explicit)
       # Do not check for header information when supplied a (network) binary string:
@@ -55,7 +55,7 @@ module DICOM
           return
         end
       end
-      
+
       # Run a loop to read the data elements:
       # (Data element information is stored in arrays by the method process_data_element)
       data_element = true
@@ -256,7 +256,6 @@ module DICOM
     def read_type_length(type,tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       pre_skip = 0
-      post_skip = 0
       bytes = 0
       # *****EXPLICIT*****:
       if @explicit == true
@@ -298,7 +297,7 @@ module DICOM
       end
       @stream.skip(post_skip)
       # Update integrated lengths array:
-      @integrated_lengths[@integrated_lengths.length-1] += pre_skip + bytes + post_skip
+      @integrated_lengths[@integrated_lengths.length-1] += (pre_skip + bytes)
       # For encapsulated data, the element length will not be defined. To convey this,
       # the hex sequence 'ff ff ff ff' is used (-1 converted to signed long, 4294967295 converted to unsigned long).
       if length == 4294967295
