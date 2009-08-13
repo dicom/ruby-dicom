@@ -1,3 +1,16 @@
+= 0.6
+
+=== 13th August, 2009
+
+* Complete rewrite of encoding/decoding to reduce code duplication and simplify the code.
+* General optimizations to improve speed and reduce code complexity.
+* Rewrote Dictionary to use Hash instead of Array. This has significantly improved the read spead of the library.
+* Ruby DICOM now automatically strips away trailing whitespace when decoding string values.
+* Introducing basic, experimental network functionality.
+* The new DClient class enables features such as query, move and send.
+* The new DServer class presents the ability to set up a simple storage server (Service Class Provider).
+
+
 = 0.5
 
 === 4th May, 2009
@@ -14,7 +27,7 @@
 * Several methods have been made more robust.
 * Added new keyword :partial to the get_pos() method, which will enable search for partial string matches.
 * Added new keyword :array to the get_value() and get_raw() methods which enables easy extraction of
-  multiple values of a given tag to an array (relevant for tags present at multiple places in a DICOM file)
+  multiple values of a given tag to an array (relevant for tags present at multiple places in a DICOM file).
 * Fixed a bug where exception folders where ignored in the Anonymizer class.
 
 
@@ -75,7 +88,9 @@
 === 20th July, 2008
 
 First public release.
-The library does have several known issues and lacks some features I would like it to have, but it does offer basic functionality and should be usable for people interested in working with DICOM files in Ruby. The reading algorithm has been tested succesfully with some 40 different DICOM files, so it should be fairly robust.
+The library does have several known issues and lacks some features I would like it to have, but it does
+offer basic functionality and should be usable for people interested in working with DICOM files in Ruby.
+The reading algorithm has been tested succesfully with some 40 different DICOM files, so it should be fairly robust.
 
 Features:
 * Reads DICOM files
@@ -88,8 +103,9 @@ Features:
 
 
 Known issues:
-* 12 bit image data not supported
-* Color images not supported in NArray and RMagick retrieve methods
+* Network communication is highly experimental.
+* 12 bit image data not supported.
+* Color images not supported in NArray and RMagick retrieve methods.
 * Unpacking compressed image data has basic support but is not properly tested yet.
 * Reading Big Endian files has fairly good, but possibly not full, support.
 * Reading on a Big Endian system is not tested.
