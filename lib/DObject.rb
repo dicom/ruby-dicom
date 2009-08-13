@@ -16,6 +16,8 @@
 #--------------------------------------------------------------------------------------------------
 
 # TODO:
+# -Improve the retrieve file network functionality
+# -Make the networking more intelligent in its handling of (unexpected) messages
 # -Support for writing complex (hierarchical) DICOM files (basic write support is featured).
 # -Full support for compressed image data.
 # -Read 12 bit image data correctly.
@@ -33,11 +35,13 @@ module DICOM
                       :names, :tags, :types, :lengths, :values, :raw, :levels
 
     # Initialize the DObject instance.
-    def initialize(file_name=nil, options={})
+    def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
       @verbose = options[:verbose]
       @lib =  options[:lib]  || DLibrary.new
       segment_size = options[:segment_size]
+      bin = options[:bin]
+      syntax = options[:syntax]
       # Default verbosity is true:
       @verbose = true if @verbose == nil
 
@@ -68,9 +72,9 @@ module DICOM
       @stream = Stream.new(nil, @file_endian, @explicit)
 
       # If a (valid) file name string is supplied, call the method to read the DICOM file:
-      if file_name.is_a?(String) and file_name != ""
-        @file = file_name
-        read(file_name, :segment_size => segment_size)
+      if string.is_a?(String) and string != ""
+        @file = string
+        read(string, :bin => bin, :segment_size => segment_size, :syntax => syntax)
       end
     end # of initialize
 
@@ -79,8 +83,8 @@ module DICOM
     # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
     # For the time being, this method is called automatically when initializing the DObject class,
     # but in the future, when write support is added, this method may have to be called manually.
-    def read(file_name, options = {})
-      r = DRead.new(file_name, :lib => @lib, :sys_endian => @sys_endian)
+    def read(string, options = {})
+      r = DRead.new(string, :lib => @lib, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
       # Store the data to the instance variables if the readout was a success:
       if r.success
         @read_success = true
@@ -116,8 +120,8 @@ module DICOM
 
     # Transfers necessary information from the DObject to the DWrite class, which
     # will attempt to write this information to a valid DICOM file.
-    def write(file_name)
-      w = set_write_object(file_name)
+    def write(file_name, transfer_syntax = nil)
+      w = set_write_object(file_name, transfer_syntax)
       w.write
       # Write process succesful?
       @write_success = w.success
@@ -1115,10 +1119,12 @@ module DICOM
 
 
     # Handles the creation of a DWrite object, and returns this object to the calling method.
-    def set_write_object(file_name=nil)
-      ts = get_value("0002,0010", :silent => true)
-      ts = "1.2.840.10008.1.2" if not ts # Default is implicit, little endian
-      w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian, :transfer_syntax => ts)
+    def set_write_object(file_name = nil, transfer_syntax = nil)
+      unless transfer_syntax
+        transfer_syntax = get_value("0002,0010", :silent => true)
+        transfer_syntax = "1.2.840.10008.1.2" if not transfer_syntax # Default is implicit, little endian
+      end
+      w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian, :transfer_syntax => transfer_syntax)
       w.tags = @tags
       w.types = @types
       w.lengths = @lengths
