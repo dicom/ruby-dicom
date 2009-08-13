@@ -14,39 +14,48 @@ module DICOM
     attr_reader :success, :names, :tags, :types, :lengths, :values, :raw, :levels, :explicit, :file_endian, :msg
 
     # Initialize the DRead instance.
-    def initialize(file_name=nil, options={})
+    def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
       @lib =  options[:lib] || DLibrary.new
       @sys_endian = options[:sys_endian] || false
+      @bin = options[:bin]
+      @transfer_syntax = options[:syntax]
       # Initiate the variables that are used during file reading:
       init_variables
 
-      # Test if file is readable and open it to the @file variable:
-      open_file(file_name)
-
-      # Read the initial header of the file:
-      if @file == nil
-        # File is not readable, so we return:
-        return
+      # Are we going to read from a file, or read from a binary string:
+      if @bin
+        # Read from the provided binary string:
+        @str = string
       else
-        # Extract the content of the file to a binary string:
-        @str = @file.read
-        @file.close
-        # Create a Stream instance to handle the decoding of content from this binary string:
-        @stream = Stream.new(@str, @file_endian, @explicit)
+        # Read from file:
+        open_file(string)
+        # Read the initial header of the file:
+        if @file == nil
+          # File is not readable, so we return:
+          return
+        else
+          # Extract the content of the file to a binary string:
+          @str = @file.read
+          @file.close
+        end
+      end      
+      # Create a Stream instance to handle the decoding of content from this binary string:
+      @stream = Stream.new(@str, @file_endian, @explicit)
+      # Do not check for header information when supplied a (network) binary string:
+      unless @bin
         # Read and verify the DICOM header:
         header = check_header
         # If the file didnt have the expected header, we will attempt to read
         # data elements from the very start file:
         if header == false
           @stream.skip(-132)
-          @header_length = 0
         elsif header == nil
           # Not a valid DICOM file, return:
           return
         end
       end
-
+      
       # Run a loop to read the data elements:
       # (Data element information is stored in arrays by the method process_data_element)
       data_element = true
@@ -246,6 +255,9 @@ module DICOM
     # Reads and returns data element TYPE (VR) (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
     def read_type_length(type,tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
+      pre_skip = 0
+      post_skip = 0
+      bytes = 0
       # *****EXPLICIT*****:
       if @explicit == true
         # Step 1: Read VR (if it exists)
@@ -259,30 +271,34 @@ module DICOM
         case type
           when "OB","OW","SQ","UN"
             # 6 bytes total:
-            # Two empty first:
-            @stream.skip(2)
-            @integrated_lengths[@integrated_lengths.length-1] += 2
+            # Two empty bytes first:
+            pre_skip = 2
             # Value length (4 bytes):
-            length = @stream.decode(4, "UL")
-            @integrated_lengths[@integrated_lengths.length-1] += 4
+            bytes = 4
           when "()"
             # 4 bytes:
             # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
-            length = @stream.decode(4, "UL")
-            @integrated_lengths[@integrated_lengths.length-1] += 4
+            bytes = 4
           else
             # 2 bytes:
             # For all the other element types, value length is 2 bytes:
-            length = @stream.decode(2, "US")
-            @integrated_lengths[@integrated_lengths.length-1] += 2
+            bytes = 2
         end
       else
         # *****IMPLICIT*****:
-        # No VR (retrieved from library based on the data element's tag)
-        # Reading value length (4 bytes):
-        length = @stream.decode(4, "UL")
-        @integrated_lengths[@integrated_lengths.length-1] += 4
+        # Value length (4 bytes):
+        bytes = 4
       end
+      # Handle skips and read out length value:
+      @stream.skip(pre_skip)
+      if bytes == 2
+        length = @stream.decode(bytes, "US") # (2)
+      else
+        length = @stream.decode(bytes, "UL") # (4)
+      end
+      @stream.skip(post_skip)
+      # Update integrated lengths array:
+      @integrated_lengths[@integrated_lengths.length-1] += pre_skip + bytes + post_skip
       # For encapsulated data, the element length will not be defined. To convey this,
       # the hex sequence 'ff ff ff ff' is used (-1 converted to signed long, 4294967295 converted to unsigned long).
       if length == 4294967295
@@ -424,14 +440,17 @@ module DICOM
 
     # Changes encoding variables as the file reading proceeds past the initial 0002 group of the DICOM file.
     def switch_syntax
-      # The information from the Transfer syntax element (if present), needs to be processed:
-      ts_pos = @tags.index("0002,0010")
-      if ts_pos
-        transfer_syntax = @values[ts_pos].rstrip
-      else
-        transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
+      # Get the transfer syntax string, unless it has already been provided by keyword:
+      unless @transfer_syntax
+        ts_pos = @tags.index("0002,0010")
+        if ts_pos
+          @transfer_syntax = @values[ts_pos].rstrip
+        else
+          @transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
+        end
       end
-      result = @lib.process_transfer_syntax(transfer_syntax)
+      # Query the library with our particular transfer syntax string:
+      result = @lib.process_transfer_syntax(@transfer_syntax)
       # Result is a 3-element array: [Validity of ts, explicitness, endianness]
       unless result[0]
         @msg+=["Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."]
@@ -508,6 +527,8 @@ module DICOM
       @undef = "UNDEFINED"
       # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
       @enc_image = false
+      # Assume header size is zero bytes until otherwise is determined:
+      @header_length = 0
     end
 
   end # of class
