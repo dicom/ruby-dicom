@@ -133,7 +133,7 @@ module DICOM
 
 
     # Send a DICOM file to a service class provider (SCP/PACS).
-    def send(file_path, options={})
+    def send(file_path)
       # Load the DICOM file from the specified path:
       obj = DObject.new(file_path, :verbose => false, :lib => @lib)
       if obj.read_success
