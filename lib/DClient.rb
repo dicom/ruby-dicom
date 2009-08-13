@@ -6,7 +6,7 @@ module DICOM
   class DClient
 
     attr_accessor :ae, :host_ae, :host_ip, :max_package_size, :port, :timeout, :verbose
-    attr_reader :errors, :command_results, :data_results
+    attr_reader :command_results, :data_results, :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
     def initialize(host_ip, port, options={})
