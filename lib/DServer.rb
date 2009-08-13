@@ -6,7 +6,7 @@ module DICOM
   # which will act as a simple storage node (a server that receives images).
   class DServer
 
-    attr_accessor :ae, :host_ae, :host_ip, :max_package_size, :port, :timeout, :verbose
+    attr_accessor :host_ae, :max_package_size, :port, :timeout, :verbose
     attr_reader :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
@@ -15,10 +15,8 @@ module DICOM
       # Required parameters:
       @port = port
       # Optional parameters (and default values):
-      @host_ip = host_ip || nil
-      @ae =  options[:ae]  || "RUBY_DICOM"
       @lib =  options[:lib]  || DLibrary.new
-      @host_ae =  options[:host_ae]  || "DEFAULT"
+      @host_ae =  options[:host_ae]  || "RUBY_DICOM"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
       @min_length = 12 # minimum number of bytes to expect in an incoming transmission
