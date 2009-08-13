@@ -1,4 +1,5 @@
-DICOM is a small library for reading, editing and writing DICOM files.
+DICOM is a small and simple library for handling DICOM files (reading, editing
+and writing) and DICOM network communication (both client and server side).
 It is written completely in Ruby and has no external dependencies.
 
 Copyright 2008-2009 Christoffer Lervåg (chris.lervag [@nospam] @gmail.com)
@@ -251,3 +252,172 @@ PUBLIC INSTANCE METHODS
 			a.remove_tag("0010,0010")
 
 
+CLASS DClient
+
+PUBLIC CLASS METHODS
+
+  new(host_ip, port, options={})
+    Initialize a new DClient instance.
+    Example:
+      node = DICOM::DClient.new("10.1.25.200", 104)
+
+ACCESSORS (Read & write)
+  :ae
+    Calling application entity (name of the service class user - client).
+  :host_ae
+    Called application entity (name of the service class provider - server).
+  :host_ip
+    The host (server) ip adress.
+  :max_package_size
+    Maximum size of transferred network packages.
+  :port
+    Port number to be used in the network communication.
+  :timeout
+    Timeout (in seconds) to be used in the network communication.
+  :verbose
+    Verbosity with regards to notices and error messages (true or false).
+ACCESSORS (Read only)
+  :command_results
+    An array holding any received command results.
+  :data_results
+    An array holding any received data results.
+  :errors
+    An array holding any error messages that have occurred in this session.
+  :notices
+    An array holding any informational messages presented in this session.
+
+PUBLIC INSTANCE METHODS
+
+  get_image(path, options={})
+    Retrieve a DICOM image file from a server (C-GET-RQ) (this method is probably not working yet).
+    Accepted options:
+      "0008,0018" (SOP Instance UID)
+      "0008,0052" (Query/Retrieve Level)
+      "0020,000D" (Study Instance UID)
+      "0020,000E" (Series Instance UID)
+    Example:
+      node.get_image("/home/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+
+  find_images(options={})
+    Query a server for DICOM images that matches your specified criteria.
+    Accepted options:
+      "0008,0018" (SOP Instance UID)
+      "0008,0052" (Query/Retrieve Level)
+      "0020,000D" (Study Instance UID)
+      "0020,000E" (Series Instance UID)
+      "0020,0013" (Instance Number)
+    Example:
+      find_images("0010,0020" => patient_id, "0020,000D" => study_uid, "0020,000E" => series_uid)
+
+  find_patients(options={})
+    Query a server for patients that matches your specified criteria.
+    Accepted options:
+      "0008,0052" (Query/Retrieve Level)
+      "0010,0010" (Patient's Name)
+      "0010,0020" (Patient ID)
+      "0010,0030" (Patient's Birth Date)
+      "0010,0040" (Patient's Sex)
+    Example:
+      find_patients("0010,0010" => "James*")
+
+  find_series(options={})
+    Query a server for series that matches your specified criteria.
+    Accepted options:
+      "0008,0052" (Query/Retrieve Level)
+      "0008,0060" (Modality)
+      "0008,103E" (Series Description)
+      "0020,000D" (Study Instance UID)
+      "0020,000E" (Series Instance UID)
+      "0020,0011" (Series Number)
+    Example:
+      find_series("0010,0020" => patient_id, "0020,000D" => study_uid)
+
+  find_studies(options={})
+    Query a server for studies that matches your specified criteria.
+    Accepted options:
+      "0008,0020" (Study Date)
+      "0008,0030" (Study Time)
+      "0008,0050" (Accession Number)
+      "0008,0052" (Query/Retrieve Level)
+      "0008,0090" (Referring Physician's Name)
+      "0008,1030" (Study Description)
+      "0008,1060" (Name of Physician(s) Reading Study)
+      "0010,0010" (Patient's Name)
+      "0010,0020" (Patient ID)
+      "0010,0030" (Patient's Birth Date)
+      "0010,0040" (Patient's Sex)
+      "0020,000D" (Study Instance UID)
+      "0020,0010" (Study ID)
+    Example:
+      find_studies("0008,0020" => study_date, "0010,000D" => patient_id)
+
+  move_image(destination, options={})
+    Move an image to a dicom node other than yourself.
+    Accepted options:
+      "0008,0018" (SOP Instance UID)
+      "0008,0052" (Query/Retrieve Level)
+      "0020,000D" (Study Instance UID)
+      "0020,000E" (Series Instance UID)
+    Example:
+      move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+
+  move_study(destination, options={})
+    Move an entire study to a dicom node other than yourself.
+    Accepted options:
+      "0008,0052" (Query/Retrieve Level)
+      "0010,0020" (Patient ID)
+      "0020,000D" (Study Instance UID)
+    Example:
+      move_study("MYDICOM", "0010,0020" => patient_id, "0020,000D" => study_uid)
+
+  send(file_path)
+    Send a DICOM file to a service class provider (SCP/PACS).
+    Example:
+      send("myFile.dcm")
+
+  test
+    Tests a connection with your DICOM server by trying a simple association.
+
+
+CLASS DServer
+
+PUBLIC CLASS METHODS
+
+  new(port, options={})
+    Initialize a new DServer instance.
+    Example:
+      node = DICOM::DServer.new(104)
+
+ACCESSORS (Read & write)
+  :host_ae
+    Called application entity (name of the service class provider - server).
+  :max_package_size
+    Maximum size of transferred network packages.
+  :port
+    Port number to be used in the network communication.
+  :timeout
+    Timeout (in seconds) to be used in the network communication.
+  :verbose
+    Verbosity with regards to notices and error messages (true or false).
+ACCESSORS (Read only)
+  :errors
+    An array holding any error messages that have occurred in this session.
+  :notices
+    An array holding any informational messages presented in this session.
+
+PUBLIC INSTANCE METHODS
+
+  add_abstract_syntax(value)
+    Adds a specified abstract syntax to the list of syntaxes that is accepted by the server.
+
+  print_syntaxes
+    Prints the list of abstract syntaxes that is accepted by the server.
+
+  remove_abstract_syntax(value)
+    Removes a specified abstract syntax from the list of syntaxes that is accepted by the server.
+
+  remove_all_abstract_syntaxes
+    Completely clears the list of syntaxes that the server instance will accept.
+
+  start_scp(path)
+    Launch the simple storage server (Storage Content Provider - SCP)
