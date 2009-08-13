@@ -1,6 +1,6 @@
 # Core library:
-require 'Dictionary'
 require 'DClient'
+require 'Dictionary'
 require 'DLibrary'
 require 'DObject'
 require 'DRead'
