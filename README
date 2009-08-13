@@ -4,12 +4,17 @@ RUBY DICOM
 SUMMARY
 --------
 
-This is a fairly basic library for handling DICOM files in Ruby. Digital Imaging and Communications in Medicine (DICOM) is a standard for handling, storing, printing, and transmitting information in medical imaging. It includes a file format definition and a network communications protocol. Ruby DICOM supports reading from, editing and writing to this file format.
+This is a small and simple library for handling DICOM in Ruby. DICOM (Digital Imaging
+and Communications in Medicine) is a standard for handling, storing, printing,
+and transmitting information in medical imaging. It includes a file format definition
+and a network communications protocol. Ruby DICOM supports reading from, editing and
+writing to this file format. It also features experimental support for network
+communication modalities like query, move and send.
 
 BASIC USAGE
 -----------
 
-require 'dicom'
+require "dicom"
 # Read file:
 dcm = DICOM::DObject.new("myFile.dcm")
 # Display some key information about the file:
@@ -26,6 +31,9 @@ image[0].display
 # Load pixel data to a NArray object and display it on screen:
 image = dcm.get_image_narray()
 NImage.show image[0,true,true]
+# Send a local file to a server (PACS) over the network:
+node = DICOM::DClient.new("10.1.25.200", 104)
+node.send("myFile.dcm")
 
 Tip:
 When playing around with Ruby DICOM in irb, you may be annoyed
@@ -66,5 +74,5 @@ Oslo, Norway
 
 Email:
 chris.lervag [@nospam] @gmail.com
-Please don't hesitate to email me if have any thoughts on this project!
+Please don't hesitate to email me if have any thoughts about this project!
 
