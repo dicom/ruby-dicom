@@ -295,7 +295,6 @@ module DICOM
       else
         length = @stream.decode(bytes, "UL") # (4)
       end
-      @stream.skip(post_skip)
       # Update integrated lengths array:
       @integrated_lengths[@integrated_lengths.length-1] += (pre_skip + bytes)
       # For encapsulated data, the element length will not be defined. To convey this,

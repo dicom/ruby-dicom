@@ -72,8 +72,8 @@ module DICOM
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(pdu)
     end
-    
-    
+
+
     # Build the binary string that will be sent as TCP data in the association rejection.
     # NB: For the moment, this method will only customize the "reason" value.
     # For a list of error codes, see the official dicom 08_08.pdf, page 41.
@@ -95,8 +95,8 @@ module DICOM
       @outgoing.encode_last(reason, "HEX")
       append_header(pdu)
     end
-    
-    
+
+
     # Build the binary string that will be sent as TCP data in the Association request.
     def build_association_request(ac_uid, as, ts, ui)
       # Big endian encoding:
@@ -210,8 +210,8 @@ module DICOM
       @outgoing.encode_last("00"*4, "HEX")
       append_header(pdu)
     end
-    
-    
+
+
     # Build the binary string that will be sent as TCP data in the association release response.
     def build_release_response
       # Big endian encoding:
@@ -270,16 +270,16 @@ module DICOM
       end
       return info
     end
-    
-    
+
+
     # Handles the abortion of a session, when a non-valid message has been received.
     def handle_abort(session)
       add_notice("An unregonizable (non-DICOM) message was received.")
       build_association_abort
       transmit(session)
     end
-    
-    
+
+
     # Handles the association accept.
     def handle_association_accept(session, info, syntax_result)
       application_context = info[:application_context]
@@ -288,8 +288,8 @@ module DICOM
       build_association_accept(application_context, transfer_syntax, @user_information, syntax_result)
       transmit(session)
     end
-    
-    
+
+
     # Process the data that was received from the user.
     # We expect this to be an initial C-STORE-RQ followed by a bunch of data fragments.
     def handle_incoming_data(session, path)
@@ -329,8 +329,8 @@ module DICOM
       obj.write(full_path, @transfer_syntax)
       return full_path
     end
-    
-    
+
+
     # Handles the rejection of an association, when the formalities of the association is not correct.
     def handle_rejection(session)
       add_notice("An incoming association request was rejected. Error code: #{association_error}")
@@ -340,8 +340,8 @@ module DICOM
       build_association_reject(info)
       transmit(session)
     end
-    
-    
+
+
     # Handles the release of an association.
     def handle_release(session)
       segments = receive_single_transmission(session)
@@ -352,8 +352,8 @@ module DICOM
         transmit(session)
       end
     end
-    
-    
+
+
     # Handles the response (C-STORE-RSP) when a DICOM object has been (successfully) received.
     def handle_response(session)
       tags = @command_results.first
@@ -781,8 +781,8 @@ module DICOM
       info[:valid] = true
       return info
     end
-    
-    
+
+
     # Decode the binary string received in the release request, and interpret its content.
     def interpret_release_request(message)
       info = Hash.new
@@ -842,8 +842,8 @@ module DICOM
 
     # Following methods are private:
     private
-    
-    
+
+
     # Adds a warning or error message to the instance array holding messages,
     # and if verbose variable is true, prints the message as well.
     def add_error(error)
@@ -858,8 +858,8 @@ module DICOM
       puts notice if @verbose
       @notices << notice
     end
-    
-    
+
+
     # Builds the application context that is part of the association request.
     def append_application_context(ac_uid)
       # Application context item type (1 byte)
@@ -871,8 +871,8 @@ module DICOM
       # Application context (variable length)
       @outgoing.encode_last(ac_uid, "STR")
     end
-    
-    
+
+
     # Build the binary string that makes up the header part (part of the association request).
     def append_association_header(pdu)
       # Big endian encoding:
@@ -893,8 +893,8 @@ module DICOM
       @outgoing.encode_first("0001", "HEX")
       append_header(pdu)
     end
-    
-    
+
+
     # Adds the header bytes to the outgoing, binary string (this part has the same structure for all dicom network messages)
     # PDU: "01", "02", etc..
     def append_header(pdu)
@@ -905,8 +905,8 @@ module DICOM
       # PDU type (1 byte)
       @outgoing.encode_first(pdu, "HEX")
     end
-    
-    
+
+
     # Build the binary string that makes up the presentation context part (part of the association request).
     # For a list of error codes, see the official dicom 08_08.pdf, page 39.
     def append_presentation_context(as, pc, ts, result = "00")
@@ -961,8 +961,8 @@ module DICOM
       # Update key values for this instance:
       set_transfer_syntax(ts.first)
     end
-    
-    
+
+
     # Adds the binary string that makes up the user information (part of the association request).
     def append_user_information(ui)
       # USER INFORMATION:
@@ -990,8 +990,8 @@ module DICOM
         @outgoing.add_last(values[i])
       end
     end
-    
-    
+
+
     # Handles an incoming transmission.
     # Optional: Specify a minimum length of the incoming transmission. (If a message is received
     # which is shorter than this limit, the method will keep listening for more incoming packets to append)
@@ -1048,8 +1048,8 @@ module DICOM
       @implementation_uid = "1.2.826.0.1.3680043.8.641"
       @implementation_name = "RUBY_DICOM_0.6"
     end
-    
-    
+
+
     # Set instance variables related to the transfer syntax.
     def set_transfer_syntax(value)
       # Query the library with our particular transfer syntax string:
@@ -1063,8 +1063,8 @@ module DICOM
       @data_endian = result[2]
       @transfer_syntax = value
     end
-    
-    
+
+
     # Set user information [item type code, vr/type, value]
     def set_user_information_array
       @user_information = [

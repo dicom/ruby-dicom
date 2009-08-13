@@ -40,8 +40,8 @@ module DICOM
       # Initialize the network package handler:
       @link = Link.new(:ae => @ae, :host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout)
     end
-    
-    
+
+
     # Retrieve a dicom file from a service class provider (SCP/PACS).
     # Example:  get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
     def get_image(path, options={})
@@ -102,8 +102,8 @@ module DICOM
       set_data_options(options)
       perform_find
     end
-    
-    
+
+
     # Move an image to a dicom node other than yourself.
     # Example:  move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
     def move_image(destination, options={})
@@ -116,8 +116,8 @@ module DICOM
       set_data_options(options)
       perform_move
     end
-    
-    
+
+
     # Move an entire study to a dicom node other than yourself.
     # Example:  move_study("MYDICOM", "0010,0020" => pat_id, "0020,000D" => study_uid)
     def move_study(destination, options={})
@@ -289,8 +289,8 @@ module DICOM
         establish_release
       end
     end
-    
-    
+
+
     # Build and send command & data fragment, then receive the incoming file data.
     def perform_get(path)
       # Open a DICOM link:
@@ -313,8 +313,8 @@ module DICOM
         establish_release
       end
     end
-    
-    
+
+
     # Handle the communication involved in DICOM move request.
     def perform_move
       # Open a DICOM link:
@@ -367,8 +367,8 @@ module DICOM
         add_error("Error: Unable to extract SOP Instance UID for the given DICOM file. File will not be sent to its destination.")
       end
     end
-    
-    
+
+
     # Process the data that was returned from the interaction with the SCP and make it available to the user.
     def process_returned_data(segments)
       # Reset command results arrays:
@@ -398,8 +398,8 @@ module DICOM
         element[1] = ""
       end
     end
-    
-    
+
+
     # Set command elements used in a C-GET-RQ:
     def set_command_fragment_get
       @command_elements = [
@@ -410,8 +410,8 @@ module DICOM
         ["0000,0800", "US", 1] # Data Set Type: 1
       ]
     end
-    
-    
+
+
     # Command elements used in a C-FIND-RQ.
     # This seems to be the same, regardless of what we want to query.
     def set_command_fragment_find
@@ -423,8 +423,8 @@ module DICOM
         ["0000,0800", "US", 1] # Data Set Type: 1
       ]
     end
-    
-    
+
+
     # Set command elements used in a C-MOVE-RQ:
     def set_command_fragment_move(destination)
       @command_elements = [
@@ -436,8 +436,8 @@ module DICOM
         ["0000,0800", "US", 1] # Data Set Type: 1
       ]
     end
-    
-    
+
+
     # Command elements used in a p-data c-store-rq query command:
     def set_command_fragment_store(sop_uid)
       @command_elements = [
@@ -506,8 +506,8 @@ module DICOM
         ["0020,0010", ""] # Study ID
       ]
     end
-    
-    
+
+
     # Set data elements used for an image C-GET-RQ:
     def set_data_fragment_get_image
       @data_elements = [
@@ -517,8 +517,8 @@ module DICOM
         ["0020,000E", ""] # Series Instance UID
       ]
     end
-    
-    
+
+
     # Set data elements used for an image C-MOVE-RQ:
     def set_data_fragment_move_image
       @data_elements = [

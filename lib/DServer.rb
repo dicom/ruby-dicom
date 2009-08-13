@@ -34,8 +34,8 @@ module DICOM
       @release = nil # Status of received, valid release response
       set_valid_abstract_syntaxes
     end
-    
-    
+
+
     # Add a specified abstract syntax to the list of syntaxes that the server instance will accept.
     def add_abstract_syntax(value)
       if value.is_a?(String)
@@ -45,8 +45,8 @@ module DICOM
         add_error("Error: The specified abstract syntax is not a string!")
       end
     end
-    
-    
+
+
     # Print the list of valid abstract syntaxes to the screen.
     def print_syntaxes
       puts "Abstract syntaxes accepted by this SCP:"
@@ -54,8 +54,8 @@ module DICOM
         puts syntax
       end
     end
-    
-    
+
+
     # Remove a specific abstract syntax from the list of syntaxes that the server instance will accept.
     def remove_abstract_syntax(value)
       if value.is_a?(String)
@@ -65,8 +65,8 @@ module DICOM
         add_error("Error: The specified abstract syntax is not a string!")
       end
     end
-    
-    
+
+
     # Completely clear the list of syntaxes that the server instance will accept.
     def remove_all_abstract_syntaxes
       @valid_abstract_syntaxes = Array.new
@@ -153,8 +153,8 @@ module DICOM
       end
       @notices << notice
     end
-    
-    
+
+
     # Check if the association request is formally correct.
     # Things that can be checked here, are:
     # Application context name, calling AE title, called AE title
@@ -169,8 +169,8 @@ module DICOM
       end
       return error
     end
-    
-    
+
+
     # Check if the requested abstract syntax & transfer syntax are supported:
     # Error codes are given in the official dicom document, part 08_08, page 39
     def check_syntax_requests(info)
@@ -189,8 +189,8 @@ module DICOM
       end
       return result
     end
-    
-    
+
+
     # Set the default valid abstract syntaxes for our SCP.
     def set_valid_abstract_syntaxes
       @valid_abstract_syntaxes = [
