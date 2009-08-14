@@ -289,7 +289,7 @@ ACCESSORS (Read only)
 PUBLIC INSTANCE METHODS
 
   get_image(path, options={})
-    Retrieve a DICOM image file from a server (C-GET-RQ) (this method is probably not working yet).
+    Retrieve a DICOM image file from a server (C-GET-RQ) (this method is untested (might not work)).
     Accepted options:
       "0008,0018" (SOP Instance UID)
       "0008,0052" (Query/Retrieve Level)
@@ -307,7 +307,7 @@ PUBLIC INSTANCE METHODS
       "0020,000E" (Series Instance UID)
       "0020,0013" (Instance Number)
     Example:
-      find_images("0010,0020" => patient_id, "0020,000D" => study_uid, "0020,000E" => series_uid)
+      result = node.find_images("0010,0020" => patient_id, "0020,000D" => study_uid, "0020,000E" => series_uid)
 
   find_patients(options={})
     Query a server for patients that matches your specified criteria.
@@ -318,7 +318,7 @@ PUBLIC INSTANCE METHODS
       "0010,0030" (Patient's Birth Date)
       "0010,0040" (Patient's Sex)
     Example:
-      find_patients("0010,0010" => "James*")
+      result = node.find_patients("0010,0010" => "James*")
 
   find_series(options={})
     Query a server for series that matches your specified criteria.
@@ -330,7 +330,7 @@ PUBLIC INSTANCE METHODS
       "0020,000E" (Series Instance UID)
       "0020,0011" (Series Number)
     Example:
-      find_series("0010,0020" => patient_id, "0020,000D" => study_uid)
+      result = node.find_series("0010,0020" => patient_id, "0020,000D" => study_uid)
 
   find_studies(options={})
     Query a server for studies that matches your specified criteria.
@@ -349,7 +349,7 @@ PUBLIC INSTANCE METHODS
       "0020,000D" (Study Instance UID)
       "0020,0010" (Study ID)
     Example:
-      find_studies("0008,0020" => study_date, "0010,000D" => patient_id)
+      result = node.find_studies("0008,0020" => study_date, "0010,000D" => patient_id)
 
   move_image(destination, options={})
     Move an image to a dicom node other than yourself.
@@ -359,7 +359,7 @@ PUBLIC INSTANCE METHODS
       "0020,000D" (Study Instance UID)
       "0020,000E" (Series Instance UID)
     Example:
-      move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+      node.move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
 
   move_study(destination, options={})
     Move an entire study to a dicom node other than yourself.
@@ -368,12 +368,12 @@ PUBLIC INSTANCE METHODS
       "0010,0020" (Patient ID)
       "0020,000D" (Study Instance UID)
     Example:
-      move_study("MYDICOM", "0010,0020" => patient_id, "0020,000D" => study_uid)
+      node.move_study("MYDICOM", "0010,0020" => patient_id, "0020,000D" => study_uid)
 
   send(file_path)
     Send a DICOM file to a service class provider (SCP/PACS).
     Example:
-      send("myFile.dcm")
+      node.send("myFile.dcm")
 
   test
     Tests a connection with your DICOM server by trying a simple association.
@@ -386,7 +386,7 @@ PUBLIC CLASS METHODS
   new(port, options={})
     Initialize a new DServer instance.
     Example:
-      node = DICOM::DServer.new(104)
+      server = DICOM::DServer.new(104)
 
 ACCESSORS (Read & write)
   :host_ae
@@ -420,4 +420,4 @@ PUBLIC INSTANCE METHODS
     Completely clears the list of syntaxes that the server instance will accept.
 
   start_scp(path)
-    Launch the simple storage server (Storage Content Provider - SCP)
+    Launch the simple storage server (Storage Content Provider - SCP).
