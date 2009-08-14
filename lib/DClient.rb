@@ -42,20 +42,6 @@ module DICOM
     end
 
 
-    # Retrieve a dicom file from a service class provider (SCP/PACS).
-    # Example:  get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
-    def get_image(path, options={})
-      # Study Root Query/Retrieve Information Model - GET:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.3"
-      # Transfer the current options to the data_elements hash:
-      set_command_fragment_get
-      # Prepare data elements for this operation:
-      set_data_fragment_get_image
-      set_data_options(options)
-      perform_get(path)
-    end
-
-
     # Query a service class provider for images that match the specified criteria.
     # Example:   find_images("0010,0020" => "123456789", "0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844") # (Patient ID, Study Instance UID & Series Instance UID)
     def find_images(options={})
@@ -65,6 +51,7 @@ module DICOM
       set_data_fragment_find_images
       set_data_options(options)
       perform_find
+      return @data_results
     end
 
 
@@ -77,6 +64,7 @@ module DICOM
       set_data_fragment_find_patients
       set_data_options(options)
       perform_find
+      return @data_results
     end
 
 
@@ -89,6 +77,7 @@ module DICOM
       set_data_fragment_find_series
       set_data_options(options)
       perform_find
+      return @data_results
     end
 
 
@@ -101,6 +90,21 @@ module DICOM
       set_data_fragment_find_studies
       set_data_options(options)
       perform_find
+      return @data_results
+    end
+
+
+    # Retrieve a dicom file from a service class provider (SCP/PACS).
+    # Example:  get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+    def get_image(path, options={})
+      # Study Root Query/Retrieve Information Model - GET:
+      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.3"
+      # Transfer the current options to the data_elements hash:
+      set_command_fragment_get
+      # Prepare data elements for this operation:
+      set_data_fragment_get_image
+      set_data_options(options)
+      perform_get(path)
     end
 
 
