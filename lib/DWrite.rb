@@ -330,14 +330,12 @@ module DICOM
         if folders.length > 1
           # Remove last element (which should be the file string):
           folders.pop
-          if folders.length > 1
-            path = arr.join(File::SEPARATOR)
-            # Check if this path exists:
-            unless File.directory?(path)
-              # We need to create (parts of) this path:
-              require 'fileutils'
-              FileUtils.mkdir_p path
-            end
+          path = folders.join(File::SEPARATOR)
+          # Check if this path exists:
+          unless File.directory?(path)
+            # We need to create (parts of) this path:
+            require 'fileutils'
+            FileUtils.mkdir_p path
           end
         end
         # The path to this non-existing file should now be prepared, and we proceed to creating the file:
