@@ -1013,7 +1013,7 @@ module DICOM
           if value.is_a_tag?
             bin = @stream.encode_tag(value)
           else
-            add_msg("Invalid tag value (#{value})")
+            add_msg("Invalid tag format (#{value})")
           end
         # We have a number of VRs that are encoded as string:
         when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
