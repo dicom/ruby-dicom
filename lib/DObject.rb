@@ -1007,17 +1007,19 @@ module DICOM
 
     # Encodes a value to binary (used for inserting values to a DICOM object).
     def encode(value, vr)
-      # Our value needs to be inside an array to be encoded:
-      value = [value] if not value.is_a?(Array)
       # VR will decide how to encode this value:
       case vr
         when "AT" # (Data element tag: Assume it has the format "GGGG,EEEE"
-          bin = @stream.encode_tag(value)
+          if value.is_a_tag?
+            bin = @stream.encode_tag(value)
+          else
+            add_msg("Invalid tag value (#{value})")
+          end
         # We have a number of VRs that are encoded as string:
         when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
           # In case we are dealing with a number string element, the supplied value might be a number
           # instead of a string, and as such, we convert to string just to make sure this will work nicely:
-          value[0] = value[0].to_s
+          value = value.to_s
           bin = @stream.encode_value(value, "STR")
         # Image related value representations:
         when "OW"
