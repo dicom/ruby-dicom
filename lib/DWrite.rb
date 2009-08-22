@@ -10,7 +10,8 @@
 # Please contact the author if you discover any issues with file creation.
 
 module DICOM
-  # Class for writing the data from DObject to a valid DICOM file:
+
+  # Class for writing the data from a DObject to a valid DICOM file.
   class DWrite
 
     attr_writer :tags, :types, :lengths, :raw, :rest_endian, :rest_explicit
@@ -309,7 +310,8 @@ module DICOM
     end
 
 
-    # Tests if the file is writable and opens it.
+    # Tests if the file/path is writable, creates any folders
+    # if necessary, and opens the file for writing.
     def open_file(file)
       # Two cases: File already exists or it does not.
       # Check if file exists:
@@ -323,22 +325,22 @@ module DICOM
         end
       else
         # File does not exist.
-        # Check if this file's path contains a directory that does not exist and so need to be created:
-        arr = file.split('/')
-        if arr != nil
+        # Check if this file's path contains a folder that does not exist, and therefore needs to be created:
+        folders = file.split(File::SEPARATOR)
+        if folders.length > 1
           # Remove last element (which should be the file string):
-          arr.pop
-          if arr != nil
-            path = arr.join('/')
+          folders.pop
+          if folders.length > 1
+            path = arr.join(File::SEPARATOR)
             # Check if this path exists:
-            if not File.directory?(path)
-              # Need to create this path:
+            unless File.directory?(path)
+              # We need to create (parts of) this path:
               require 'fileutils'
               FileUtils.mkdir_p path
             end
           end
         end
-        # The path to this non-existing file should now be prepared, and we will thus create the file:
+        # The path to this non-existing file should now be prepared, and we proceed to creating the file:
         @file = File.new(file, "wb")
       end
     end
