@@ -24,7 +24,7 @@
 # -Support for color image data to get_image_narray and get_image_magick.
 # -Complete support for Big endian (basic support is already featured).
 # -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
-# -Reading of image data in files that contain two different and unrelated images (this problem has been observed with some MR images).
+# -Make the image handling more intelligent with respect to interpreting data elements that hold information on the image and its properties.
 
 module DICOM
 
@@ -172,9 +172,9 @@ module DICOM
         add_msg("Error: Method read_image_magick does not have enough data available to build an image object.")
         return false
       end
-      if @compression != true
+      unless @compression
         # Non-compressed, just return the array contained on the particular element:
-        image_data=get_pixels(pos)
+        image_data = get_pixels(pos)
         image = Magick::Image.new(columns,rows)
         image.import_pixels(0, 0, columns, rows, "I", image_data)
         return image
@@ -192,7 +192,7 @@ module DICOM
 
 
     # Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
-		# To call this method the user needs to have performed " require 'narray' " in advance.
+    # To call this method the user needs to have performed " require 'narray' " in advance.
     def get_image_narray
       # Does pixel data exist at all in the DICOM object?
       if @compression == nil
@@ -256,48 +256,46 @@ module DICOM
     end # of get_image_narray
 
 
-    # Returns an array of RMagick image objects, where the size of the array corresponds with the number of frames in the image data.
-		# To call this method the user needs to have performed " require 'RMagick' " in advance.
+    # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
+    # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
     def get_image_magick
       # Does pixel data exist at all in the DICOM object?
       if @compression == nil
-        add_msg("It seems pixel data is not present in this DICOM object: returning false.")
+        add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
         return false
       end
       # No support yet for color pixel data:
       if @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: aborting.")
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: Aborting.")
         return false
       end
       # Gather information about the dimensions of the image data:
-      rows = get_value("0028,0010")
-      columns = get_value("0028,0011")
+      rows = get_value("0028,0010", :array => true)
+      columns = get_value("0028,0011", :array => true)
+      rows = [rows] unless rows.is_a?(Array)
+      columns = [columns] unless columns.is_a?(Array)
       frames = get_frames
       image_pos = get_image_pos
       # Array that will hold the RMagick image objects, one image object for each frame:
       image_arr = Array.new(frames)
+      # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
+      if image_pos.length > 1 and columns.length > 1
+        image_pos = [image_pos.last]
+        columns = [columns[0]]
+        rows = [rows[0]]
+      end
       # Handling of image data will depend on whether we have one or more frames,
       if image_pos.size == 1
-        # All of the image data is located in one element:
-        #image_data = get_image_data(image_pos[0])
-        #(0..frames-1).each do |i|
-         # image = Magick::Image.new(columns,rows)
-         # image.import_pixels(0, 0, columns, rows, "I", image_data)
-         # image_arr[i] = image
-        #end
+        # All of the image data is located in one data element:
         if frames > 1
           add_msg("Unfortunately, this method only supports reading the first image frame as of now.")
         end
-        image = read_image_magick(image_pos[0], columns, rows)
+        image = read_image_magick(image_pos[0], columns[0], rows[0])
         image_arr[0] = image
-        #image_arr[i] = image
       else
         # Image data is encapsulated in items:
         (0..frames-1).each do |i|
-          #image_data=get_image_data(image_pos[i])
-          #image = Magick::Image.new(columns,rows)
-          #image.import_pixels(0, 0, columns, rows, "I", image_data)
-          image = read_image_magick(image_pos[i], columns, rows)
+          image = read_image_magick(image_pos[i], columns[0], rows[0])
           image_arr[i] = image
         end
       end
@@ -307,11 +305,9 @@ module DICOM
 
     # Returns the number of frames present in the image data in the DICOM file.
     def get_frames
-      frames = get_value("0028,0008")
-      if frames == false
-        # If the DICOM object does not specify the number of frames explicitly, assume 1 image frame.
-        frames = 1
-      end
+      frames = get_value("0028,0008", :silent => true)
+      # If the DICOM object does not specify the number of frames explicitly, assume 1 image frame:
+      frames = 1 unless frames
       return frames.to_i
     end
 
@@ -320,10 +316,11 @@ module DICOM
     def get_pixels(pos)
       pixels = false
       # We need to know what kind of bith depth the pixel data is saved with:
-      bit_depth = get_value("0028,0100")
-      if bit_depth != false
+      bit_depth = get_value("0028,0100", :array => true)
+      unless bit_depth == false
         # Load the binary pixel data to the Stream instance:
         @stream.set_string(get_raw(pos))
+        bit_depth = bit_depth.first if bit_depth.is_a?(Array)
         # Number of bytes used per pixel will determine how to unpack this:
         case bit_depth
           when 8
@@ -774,7 +771,8 @@ module DICOM
         compression = "No"
       end
       # Bits per pixel (allocated):
-      bits = get_value("0028,0100").to_s
+      bits = get_value("0028,0100", :array => true)
+      bits = bits[0].to_s if bits
       # Print the file properties:
       puts "Key properties of DICOM object:"
       puts "-------------------------------"
