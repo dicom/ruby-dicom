@@ -890,7 +890,7 @@ module DICOM
             add_msg("Warning: Method set_value could not create data element, either because data element name was not recognized in the library, or data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
           else
             # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
-            # We will do this by finding the last array position of the last element that will (alphabetically/numerically) stay in front of this element.
+            # We will do this by finding the array position of the last element that will (alphabetically/numerically) stay in front of this element.
             if @tags.size > 0
               # Search the array:
               index = -1
@@ -898,7 +898,7 @@ module DICOM
               while quit != true do
                 if index+1 >= @tags.length # We have reached end of array.
                   quit = true
-                elsif tag < @tags[index+1] # We are past the correct position.
+                elsif tag < @tags[index+1] and @levels[index+1] == 0 # We are past the correct position (only match against top level tags).
                   quit = true
                 else # Increase index in anticipation of a 'hit'.
                   index += 1
