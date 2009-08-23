@@ -16,240 +16,240 @@ CLASS DLibrary
 
 PUBLIC CLASS METHODS
 
-	new()
+  new()
 
-		Initialize a new Library (dictionary) object.
-		Useful if you want to make a script that reads hundreds or thousands of DICOM files,
-		because you can save time by loading the library one time at startup instead of
-		having the library being loaded for each DICOM file being read.
-		Example:
-			myLib = DICOM::DLibrary.new
+    Initialize a new Library (dictionary) object.
+    Useful if you want to make a script that reads hundreds or thousands of DICOM files,
+    because you can save time by loading the library one time at startup instead of
+    having the library being loaded for each DICOM file being read.
+    Example:
+      myLib = DICOM::DLibrary.new
 
 
 CLASS DObject
 
 PUBLIC CLASS METHODS
 
-	new(filename, options={})
+  new(filename, options={})
 
-		Initialize a new DICOM object.
-		Example 1: (The simplest way)
-			require 'dicom'
-			obj = DICOM::DObject.new("myFile.dcm")
-		Example 2: (Using a pre-loaded library to speed up reading when reading multiple files)
-			obj = DICOM::DObject.new("myFile.dcm", :verbose => false, :lib => myLib)
-		Example 3: (Open an empty DICOM object)
-			obj = DICOM::DObject.new(nil)
+    Initialize a new DICOM object.
+    Example 1: (The simplest way)
+      require 'dicom'
+      obj = DICOM::DObject.new("myFile.dcm")
+    Example 2: (Using a pre-loaded library to speed up reading when reading multiple files)
+      obj = DICOM::DObject.new("myFile.dcm", :verbose => false, :lib => myLib)
+    Example 3: (Open an empty DICOM object)
+      obj = DICOM::DObject.new(nil)
 
 ACCESSORS (read only)
-	:read_success
-		A boolean that is true if DICOM object was read successfully, and false if not.
-	:write_success
-		A boolean that is true if DICOM object was written successfully, and false if not.
-	:errors
-		An array holding any error messages, warnings or notices that have been logged
-		during your interaction with DObject.
-	:modality
-		A string which holds the description of the modality of the DICOM object that has been read.
-		Example of use:
-			obj = DICOM::DObject.new("myFile.dcm")
-			if obj.read_success
-			  puts obj.modality
-			end
-	The following accessors are the arrays that hold all the information gathered on the DICOM object.
-	As such, their length is equal to the number of tags in a DICOM object.
-	:names
-	:tags
-	:types
-	:lengths
-	:values
-	:raw
-	:levels
+  :read_success
+    A boolean that is true if DICOM object was read successfully, and false if not.
+  :write_success
+    A boolean that is true if DICOM object was written successfully, and false if not.
+  :errors
+    An array holding any error messages, warnings or notices that have been logged
+    during your interaction with DObject.
+  :modality
+    A string which holds the description of the modality of the DICOM object that has been read.
+    Example of use:
+      obj = DICOM::DObject.new("myFile.dcm")
+      if obj.read_success
+        puts obj.modality
+      end
+  The following accessors are the arrays that hold all the information gathered on the DICOM object.
+  As such, their length is equal to the number of tags in a DICOM object.
+  :names
+  :tags
+  :types
+  :lengths
+  :values
+  :raw
+  :levels
 
 PUBLIC INSTANCE METHODS
 
-	children(element, options={})
-		Returns the positions of all data elements inside the hierarchy of a sequence or an item.
-		This is useful if you later want to get the position(s) of a certain element,
-		restricted to the positions inside the given sequence or item.
-		Element may be an array index, element name or element tag.
-		Example 1: (Return all element positions that is contained in the following sequence)
-			pos = obj.children("3006,0082")
-		Example 2: (Return all element positions that is contained only directly beneath the following sequence)
-			pos = obj.children("3006,0082", :next_only => true)
+  children(element, options={})
+    Returns the positions of all data elements inside the hierarchy of a sequence or an item.
+    This is useful if you later want to get the position(s) of a certain element,
+    restricted to the positions inside the given sequence or item.
+    Element may be an array index, element name or element tag.
+    Example 1: (Return all element positions that is contained in the following sequence)
+      pos = obj.children("3006,0082")
+    Example 2: (Return all element positions that is contained only directly beneath the following sequence)
+      pos = obj.children("3006,0082", :next_only => true)
 
-	get_frames
-		Returns the number of frames present in the image data in the DICOM file.
+  get_frames
+    Returns the number of frames present in the image data in the DICOM file.
 
-	get_image_magick
-		Returns an array of RMagick image objects, where the size of the array corresponds
-		with the number of frames in the image data.
-		To call this method the user needs to have loaded the RMagick bindings in advance (require 'RMagick').
-		Example (retrieve object and display first frame):
-		require 'RMagick'
-		data = dicom.get_image_magick()
-		data[0].display
+  get_image_magick
+    Returns an array of RMagick image objects, where the size of the array corresponds
+    with the number of frames in the image data.
+    To call this method the user needs to have loaded the RMagick bindings in advance (require 'RMagick').
+    Example (retrieve object and display first frame):
+    require 'RMagick'
+    data = dicom.get_image_magick()
+    data[0].display
 
-	get_image_narray
-		Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
-		To call this method the user needs to have loaded the NArray library in advance (require 'narray').
-		Example (retrieve object and display first frame):
-			require 'narray'
-			require 'nimage'
-			data = obj.get_image_narray()
-			NImage.show data[0,true,true]
+  get_image_narray
+    Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
+    To call this method the user needs to have loaded the NArray library in advance (require 'narray').
+    Example (retrieve object and display first frame):
+      require 'narray'
+      require 'nimage'
+      data = obj.get_image_narray()
+      NImage.show data[0,true,true]
 
-	get_image_pos
-		Returns the index(es) of the data element(s) that contain image data.
+  get_image_pos
+    Returns the index(es) of the data element(s) that contain image data.
 
-	get_pos(string, options={})
-		Returns the index(es) of the data element(s) in the DICOM file that match
-		the supplied element tag or name.
-		Example 1: (Find all occurences of the specified tag in the object)
-			pos = obj.get_pos("3006,0080")
-		Example 2: (Find all occurences of the specified tag inside the specified sequence)
-			selection = obj.children("3006,0082")
-			pos = obj.get_pos("3006,0080", :array => selection)
-		Example 3: (Using the :partial argument to find position of all elements containing a specific string)
-			pos = obj.get_pos("0010", :partial => true)
-			pos = obj.get_pos("Name", :partial => true)
+  get_pos(string, options={})
+    Returns the index(es) of the data element(s) in the DICOM file that match
+    the supplied element tag or name.
+    Example 1: (Find all occurences of the specified tag in the object)
+      pos = obj.get_pos("3006,0080")
+    Example 2: (Find all occurences of the specified tag inside the specified sequence)
+      selection = obj.children("3006,0082")
+      pos = obj.get_pos("3006,0080", :array => selection)
+    Example 3: (Using the :partial argument to find position of all elements containing a specific string)
+      pos = obj.get_pos("0010", :partial => true)
+      pos = obj.get_pos("Name", :partial => true)
 
-	get_raw(element, options={})
-		Returns the raw data of the requested DICOM data element.
-		Element may be an array index, element name or element tag.
-		If you wish to return multiple data values of a tag that occurs several times in the file,
-		use the keyword :array => true .
-		Example: (Returns all data values in a array)
-			contour_data = obj.get_raw("3006,0050", :array => true)
+  get_raw(element, options={})
+    Returns the raw data of the requested DICOM data element.
+    Element may be an array index, element name or element tag.
+    If you wish to return multiple data values of a tag that occurs several times in the file,
+    use the keyword :array => true .
+    Example: (Returns all data values in a array)
+      contour_data = obj.get_raw("3006,0050", :array => true)
 
-	get_value(element)
-		Returns the value (processed raw data) of the requested DICOM data element.
-		Element may be an array index, element name or element tag.
-		If you wish to return multiple values of a tag that occurs several times in the file,
-		use the keyword :array => true .
-		Example: (Returns all data values in a array)
-			contour_data = obj.get_value("3006,0050", :array => true)
+  get_value(element)
+    Returns the value (processed raw data) of the requested DICOM data element.
+    Element may be an array index, element name or element tag.
+    If you wish to return multiple values of a tag that occurs several times in the file,
+    use the keyword :array => true .
+    Example: (Returns all data values in a array)
+      contour_data = obj.get_value("3006,0050", :array => true)
 
-	image_to_file(file)
-		Dumps the pixel data of the DICOM object directly to the specified file.
-		This is useful if you wish to extract this data to process it with another program.
+  image_to_file(file)
+    Dumps the pixel data of the DICOM object directly to the specified file.
+    This is useful if you wish to extract this data to process it with another program.
 
-	parents(element)
-		Returns the positions of all parents of this tag in the hierarchy.
-		This is useful if you want to know the position of the items or sequence tags that 'hold' your tag.
-		Element may be an array index, element name or element tag.
-		Example:
-			pos = obj.parents("300C,0006")
+  parents(element)
+    Returns the positions of all parents of this tag in the hierarchy.
+    This is useful if you want to know the position of the items or sequence tags that 'hold' your tag.
+    Element may be an array index, element name or element tag.
+    Example:
+      pos = obj.parents("300C,0006")
 
-	print(pos, options={})
-		Prints the information gathered on one or several/all tag(s) in the DICOM object:
-			(index, [hierarchy level,] label, name, type, length, value)
-		The method can print to both screen or to a text file. If print to file is chosen,
-		the text file will be put in the folder of the original DICOM file with a '.txt' extension.
-		The argument pos may be a number (array position), an array of numbers, or true.
-		Example 1: (Print all tags to file, with both tree visualization and level numbers)
-			obj.print(true, :levels => true, :tree => true, :file => true)
-		Example 2: (Print an array of tags to screen, no level or tree visualization)
-			obj.print([4,5,6])
+  print(pos, options={})
+    Prints the information gathered on one or several/all tag(s) in the DICOM object:
+      (index, [hierarchy level,] label, name, type, length, value)
+    The method can print to both screen or to a text file. If print to file is chosen,
+    the text file will be put in the folder of the original DICOM file with a '.txt' extension.
+    The argument pos may be a number (array position), an array of numbers, or true.
+    Example 1: (Print all tags to file, with both tree visualization and level numbers)
+      obj.print(true, :levels => true, :tree => true, :file => true)
+    Example 2: (Print an array of tags to screen, no level or tree visualization)
+      obj.print([4,5,6])
 
-	print_all
-		Prints information of all tags stored in the DICOM object to the screen.
+  print_all
+    Prints information of all tags stored in the DICOM object to the screen.
 
-	print_properties
-		Prints the key structural properties of the DICOM file to the screen.
+  print_properties
+    Prints the key structural properties of the DICOM file to the screen.
 
-	remove(element)
-		Removes the specified data element from the DICOM object. You can use this method
-		if you are editing a DICOM object and wants to get rid of one or more elements.
-		Element may be an array index, element name or element tag.
+  remove(element)
+    Removes the specified data element from the DICOM object. You can use this method
+    if you are editing a DICOM object and wants to get rid of one or more elements.
+    Element may be an array index, element name or element tag.
 
-	set_value(value, element, options={})
-		This method can be used both to edit an existing data element, or to create
-		new data elements in your DICOM object.
-		Element may be an array index, element name or element tag.
-		Example 1: (Edit patient name)
-			obj.set_value("Anonymous", "0010,0010", :create => false)
-		Example 2: (Insert binary data for a specific tag)
-			obj.set_value(data, 52, :bin => true, :create => false)
+  set_value(value, element, options={})
+    This method can be used both to edit an existing data element, or to create
+    new data elements in your DICOM object.
+    Element may be an array index, element name or element tag.
+    Example 1: (Edit patient name)
+      obj.set_value("Anonymous", "0010,0010", :create => false)
+    Example 2: (Insert binary data for a specific tag)
+      obj.set_value(data, 52, :bin => true, :create => false)
 
-	set_image_magick(object)
-		Inserts a RMagick image object to the pixel data tag of your DICOM object.
+  set_image_magick(object)
+    Inserts a RMagick image object to the pixel data tag of your DICOM object.
 
-	set_image_file(file)
-		Inserts the binary content of a file to the Pixel Data tag in your DICOM object.
-		This can be useful if you have processed some image data using a custom program
-		and just wants to put that data back into a DICOM object.
+  set_image_file(file)
+    Inserts the binary content of a file to the Pixel Data tag in your DICOM object.
+    This can be useful if you have processed some image data using a custom program
+    and just wants to put that data back into a DICOM object.
 
-	write(file)
-		Writes the DICOM object to the specified file.
-		Example:
-			obj.write(myPath + "test_file.dcm")
+  write(file)
+    Writes the DICOM object to the specified file.
+    Example:
+      obj.write(myPath + "test_file.dcm")
 
 
 CLASS Anonymizer
 
 PUBLIC CLASS METHODS
 
-	new()
-		Initialize a new Anonymizer instance.
-		Example:
-			a = DICOM::Anonymizer.new
+  new()
+    Initialize a new Anonymizer instance.
+    Example:
+      a = DICOM::Anonymizer.new
 
 ACCESSORS (Read & write)
-	:blank
-		A boolean that you can set if you want to all anonymization tags to be blank
-		instead of having some generic value.
-	:enumeration
-		A boolean that if set will make the script set enumerated values on anonymized tags,
-		such that you are able to separate the DICOM files of unique individuals after anonymization.
-		Example of fictious result:
-			"Joe Sixpack" => "Person1" and "Joe Schmoe" => "Person2"
-	:identity_file
-		If you request enumeration, you can specify an identity file which will enable you to reidentify
-		the anonymized DICOM files at a later stage. The relationship between original names and
-		enumerated values is stored in a text file which you can keep for yourself, while handing out
-		the anonymized DICOM files to a third party.
+  :blank
+    A boolean that you can set if you want to all anonymization tags to be blank
+    instead of having some generic value.
+  :enumeration
+    A boolean that if set will make the script set enumerated values on anonymized tags,
+    such that you are able to separate the DICOM files of unique individuals after anonymization.
+    Example of fictious result:
+      "Joe Sixpack" => "Person1" and "Joe Schmoe" => "Person2"
+  :identity_file
+    If you request enumeration, you can specify an identity file which will enable you to reidentify
+    the anonymized DICOM files at a later stage. The relationship between original names and
+    enumerated values is stored in a text file which you can keep for yourself, while handing out
+    the anonymized DICOM files to a third party.
 
-	:write_path
-		You may set a different path for where the anonymized DICOM files will be stored. If this
-		value is not set, the Anonymizer script will overwrite the old DICOM files.
-		Example:
-			a.write_path = "C:/temp/"
+  :write_path
+    You may set a different path for where the anonymized DICOM files will be stored. If this
+    value is not set, the Anonymizer script will overwrite the old DICOM files.
+    Example:
+      a.write_path = "C:/temp/"
 
 PUBLIC INSTANCE METHODS
 
-	add_folder(path)
-		Adds a folder who's files (including all files in subfolders) will be anonymized.
-		Example:
-			a.add_folder("/home/dicom")
+  add_folder(path)
+    Adds a folder who's files (including all files in subfolders) will be anonymized.
+    Example:
+      a.add_folder("/home/dicom")
 
-	add_exception(path)
-		Adds a folder who's files (including all files in its subfolders) will be excluded from anonymization.
+  add_exception(path)
+    Adds a folder who's files (including all files in its subfolders) will be excluded from anonymization.
 
-	add_tag(tag, options={})
-		Adds a tag to the list of tags that will be anonymized. As options you can specify value to be used
-		and whether the tag should be included for enumeration if this feature has been activated.
-		Example:
-			a.add_tag("0010,0010, :value => "MrAnonymous", :enum => true)
+  add_tag(tag, options={})
+    Adds a tag to the list of tags that will be anonymized. As options you can specify value to be used
+    and whether the tag should be included for enumeration if this feature has been activated.
+    Example:
+      a.add_tag("0010,0010, :value => "MrAnonymous", :enum => true)
 
-	change_enum(tag, status)
-		Sets enumeration status for a specific tag. Status = true means the selected tag will get
-		an enumerated value, false means it will not.
+  change_enum(tag, status)
+    Sets enumeration status for a specific tag. Status = true means the selected tag will get
+    an enumerated value, false means it will not.
 
-	execute(verbose)
-		Executes the anonymization process. Run this method when you are finished choosing all your settings.
-		Verbose (=true/false) will apply to the read/update/write process that takes place in DObject, and not
-		the messages of the Anonymization script itself.
+  execute(verbose)
+    Executes the anonymization process. Run this method when you are finished choosing all your settings.
+    Verbose (=true/false) will apply to the read/update/write process that takes place in DObject, and not
+    the messages of the Anonymization script itself.
 
-	print
-		Prints the list of tags that have been selected for anonymization, along with the values
-		that the original tags will be replaced with. If enumeration is selected, this method will also
-		print which tags have been selected for enumeration.
+  print
+    Prints the list of tags that have been selected for anonymization, along with the values
+    that the original tags will be replaced with. If enumeration is selected, this method will also
+    print which tags have been selected for enumeration.
 
-	remove_tag(tag)
-		Removes a tag from the list of tags that will be anonymized.
-		Example:
-			a.remove_tag("0010,0010")
+  remove_tag(tag)
+    Removes a tag from the list of tags that will be anonymized.
+    Example:
+      a.remove_tag("0010,0010")
 
 
 CLASS DClient
