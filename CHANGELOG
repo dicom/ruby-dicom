@@ -1,3 +1,14 @@
+= 0.6.1
+
+=== 23rd August, 2009
+
+* Fixed a bug (introduced in version 0.6) where the creation of new data elements caused an error.
+* Fixed a bug (introduced in version 0.6) where compressed pixel data were no longer detected correctly.
+* Fixed a bug where writing a DICOM file with no path prefix failed.
+* Fixed a bug where creating a new data element in a DICOM file with tag hierarchies gave an invalid DICOM file.
+* Fixed a bug where retrieving a RMagick image from DICOM files containing two sets of image data failed.
+
+
 = 0.6
 
 === 13th August, 2009
