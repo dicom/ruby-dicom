@@ -26,6 +26,36 @@ module DICOM
     end
 
 
+    # Checks whether a given string is a valid transfer syntax or not.
+    def check_ts_validity(uid)
+      result = false
+      value = @uid[uid.rstrip]
+      if value != nil
+        if value[1] == "Transfer Syntax"
+          # Proved valid:
+          result = true
+        end
+      end
+      return result
+    end
+
+
+    # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
+    def get_compression(uid)
+      result = false
+      if uid
+        value = @uid[uid.rstrip]
+        if value != nil
+          if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
+            # It seems we have compression:
+            result = true
+          end
+        end
+      end
+      return result
+    end
+
+
     # Returns data element name and value representation from the dictionary if the data element
     # is recognized, else it returns "Unknown Name" and "UN".
     def get_name_vr(tag)
@@ -91,20 +121,6 @@ module DICOM
     end
 
 
-    # Checks whether a given string is a valid transfer syntax or not.
-    def check_ts_validity(uid)
-      result = false
-      value = @uid[uid.rstrip]
-      if value != nil
-        if value[1] == "Transfer Syntax"
-          # Proved valid:
-          result = true
-        end
-      end
-      return result
-    end
-
-
     # Returns the name/description corresponding to a given UID.
     def get_uid(uid)
       value = @uid[uid.rstrip]
@@ -115,22 +131,6 @@ module DICOM
         name = "Unknown UID!"
       end
       return name
-    end
-
-
-    # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
-    def get_compression(uid)
-      result = false
-      if uid
-        value = @uid[uid.rstrip]
-        if value != nil
-          if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
-            # It seems we have compression:
-            res = true
-          end
-        end
-      end
-      return result
     end
 
 
@@ -160,8 +160,8 @@ module DICOM
           # For everything else, assume compressed pixel data, with Explicit VR, Little Endian:
           explicit = true
           endian = false
-        end
-        return [valid, explicit, endian]
+      end
+      return [valid, explicit, endian]
     end
 
 
