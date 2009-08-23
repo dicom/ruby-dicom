@@ -28,7 +28,7 @@
 
 module DICOM
 
-  # Class for handling the DICOM contents:
+  # Class for interacting with the DICOM object.
   class DObject
 
     attr_reader :read_success, :write_success, :modality, :errors, :segments,
@@ -1005,7 +1005,7 @@ module DICOM
     end # of create_element
 
 
-    # Encodes a value to binary (used for inserting values to a DICOM object).
+    # Encodes a value to binary (used for inserting values into a DICOM object).
     def encode(value, vr)
       # VR will decide how to encode this value:
       case vr
@@ -1013,7 +1013,7 @@ module DICOM
           if value.is_a_tag?
             bin = @stream.encode_tag(value)
           else
-            add_msg("Invalid tag format (#{value}).")
+            add_msg("Invalid tag format (#{value}). Expected format: 'GGGG,EEEE'")
           end
         # We have a number of VRs that are encoded as string:
         when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
@@ -1050,6 +1050,7 @@ module DICOM
       end # of case vr
       return bin
     end # of encode
+
 
     # Modifies existing data element:
     def modify_element(value, pos, options={})

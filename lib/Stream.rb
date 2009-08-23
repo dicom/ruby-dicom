@@ -96,14 +96,16 @@ module DICOM
 
     # Encodes content (string, number, array of numbers) and returns the binary string.
     def encode(value, type)
-      bin = [value].pack(vr_to_str(type))
+      value = [value] unless value.is_a?(Array)
+      return value.pack(vr_to_str(type))
     end
 
 
     # Encodes content (string, number, array of numbers) to a binary string and pastes it to
     # the beginning of the @string variable of this instance.
     def encode_first(value, type)
-      bin = [value].pack(vr_to_str(type))
+      value = [value] unless value.is_a?(Array)
+      bin = value.pack(vr_to_str(type))
       @string = bin + @string
     end
 
@@ -111,7 +113,8 @@ module DICOM
     # Encodes content (string, number, array of numbers) to a binary string and pastes it to
     # the end of the @string variable of this instance.
     def encode_last(value, type)
-      bin = [value].pack(vr_to_str(type))
+      value = [value] unless value.is_a?(Array)
+      bin = value.pack(vr_to_str(type))
       @string = @string + bin
     end
 
