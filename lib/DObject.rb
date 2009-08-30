@@ -146,51 +146,6 @@ module DICOM
     #################################################
 
 
-    # Checks the status of the pixel data that has been read from the DICOM file: whether it exists at all and if its greyscale or color.
-    # Modifies instance variable @color if color image is detected and instance variable @compression if no pixel data is detected.
-    def check_properties
-      # Check if pixel data is present:
-      if @tags.index("7FE0,0010") == nil
-        # No pixel data in DICOM file:
-        @compression = nil
-      else
-        @compression = @lib.get_compression(get_value("0002,0010", :silent => true))
-      end
-      # Set color variable as true if our object contain a color image:
-      col_string = get_value("0028,0004", :silent => true)
-      if col_string != false
-        if (col_string.include? "RGB") or (col_string.include? "COLOR") or (col_string.include? "COLOUR")
-          @color = true
-        end
-      end
-    end
-
-
-    # Returns image data from the provided element index, performing decompression of data if necessary.
-    def read_image_magick(pos, columns, rows)
-      if pos == false or columns == false or rows == false
-        add_msg("Error: Method read_image_magick does not have enough data available to build an image object.")
-        return false
-      end
-      unless @compression
-        # Non-compressed, just return the array contained on the particular element:
-        image_data = get_pixels(pos)
-        image = Magick::Image.new(columns,rows)
-        image.import_pixels(0, 0, columns, rows, "I", image_data)
-        return image
-      else
-        # Image data is compressed, we will attempt to deflate it using RMagick (ImageMagick):
-        begin
-          image = Magick::Image.from_blob(@raw[pos])
-          return image
-        rescue
-          add_msg("RMagick did not succeed in decoding the compressed image data. Returning false.")
-          return false
-        end
-      end
-    end
-
-
     # Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
     # To call this method the user needs to have performed " require 'narray' " in advance.
     def get_image_narray
@@ -309,36 +264,6 @@ module DICOM
       # If the DICOM object does not specify the number of frames explicitly, assume 1 image frame:
       frames = 1 unless frames
       return frames.to_i
-    end
-
-
-    # Unpacks and returns pixel data from a specified data element array position:
-    def get_pixels(pos)
-      pixels = false
-      # We need to know what kind of bith depth the pixel data is saved with:
-      bit_depth = get_value("0028,0100", :array => true)
-      unless bit_depth == false
-        # Load the binary pixel data to the Stream instance:
-        @stream.set_string(get_raw(pos))
-        bit_depth = bit_depth.first if bit_depth.is_a?(Array)
-        # Number of bytes used per pixel will determine how to unpack this:
-        case bit_depth
-          when 8
-            pixels = @stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
-          when 16
-            pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
-          when 12
-            # 12 BIT SIMPLY NOT WORKING YET!
-            # This one is a bit more tricky to extract.
-            # I havent really given this priority so far as 12 bit image data is rather rare.
-            add_msg("Warning: Bit depth 12 is not working correctly at this time! Please contact the author.")
-          else
-            raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
-        end # of case bit_depth
-      else
-        add_msg("Error: DICOM object does not contain the 'Bit Depth' data element (0028,0010).")
-      end # of if bit_depth ..
-      return pixels
     end
 
 
@@ -928,6 +853,26 @@ module DICOM
     end
 
 
+    # Checks the status of the pixel data that has been read from the DICOM file: whether it exists at all and if its greyscale or color.
+    # Modifies instance variable @color if color image is detected and instance variable @compression if no pixel data is detected.
+    def check_properties
+      # Check if pixel data is present:
+      if @tags.index("7FE0,0010") == nil
+        # No pixel data in DICOM file:
+        @compression = nil
+      else
+        @compression = @lib.get_compression(get_value("0002,0010", :silent => true))
+      end
+      # Set color variable as true if our object contain a color image:
+      col_string = get_value("0028,0004", :silent => true)
+      if col_string != false
+        if (col_string.include? "RGB") or (col_string.include? "COLOR") or (col_string.include? "COLOUR")
+          @color = true
+        end
+      end
+    end
+
+
     # Creates a new data element:
     def create_element(value, tag, last_pos, options={})
       bin_only = options[:bin]
@@ -1050,6 +995,36 @@ module DICOM
     end # of encode
 
 
+    # Unpacks and returns pixel data from a specified data element array position:
+    def get_pixels(pos)
+      pixels = false
+      # We need to know what kind of bith depth the pixel data is saved with:
+      bit_depth = get_value("0028,0100", :array => true)
+      unless bit_depth == false
+        # Load the binary pixel data to the Stream instance:
+        @stream.set_string(get_raw(pos))
+        bit_depth = bit_depth.first if bit_depth.is_a?(Array)
+        # Number of bytes used per pixel will determine how to unpack this:
+        case bit_depth
+          when 8
+            pixels = @stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
+          when 16
+            pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
+          when 12
+            # 12 BIT SIMPLY NOT WORKING YET!
+            # This one is a bit more tricky to extract.
+            # I havent really given this priority so far as 12 bit image data is rather rare.
+            add_msg("Warning: Bit depth 12 is not working correctly at this time! Please contact the author.")
+          else
+            raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
+        end # of case bit_depth
+      else
+        add_msg("Error: DICOM object does not contain the 'Bit Depth' data element (0028,0010).")
+      end # of if bit_depth ..
+      return pixels
+    end
+
+
     # Modifies existing data element:
     def modify_element(value, pos, options={})
       bin_only = options[:bin]
@@ -1103,6 +1078,31 @@ module DICOM
     def print_screen(elements)
       elements.each do |element|
         puts element
+      end
+    end
+
+
+    # Returns image data from the provided element index, performing decompression of data if necessary.
+    def read_image_magick(pos, columns, rows)
+      if pos == false or columns == false or rows == false
+        add_msg("Error: Method read_image_magick does not have enough data available to build an image object.")
+        return false
+      end
+      unless @compression
+        # Non-compressed, just return the array contained on the particular element:
+        image_data = get_pixels(pos)
+        image = Magick::Image.new(columns,rows)
+        image.import_pixels(0, 0, columns, rows, "I", image_data)
+        return image
+      else
+        # Image data is compressed, we will attempt to deflate it using RMagick (ImageMagick):
+        begin
+          image = Magick::Image.from_blob(@raw[pos])
+          return image
+        rescue
+          add_msg("RMagick did not succeed in decoding the compressed image data. Returning false.")
+          return false
+        end
       end
     end
 
