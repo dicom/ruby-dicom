@@ -146,82 +146,74 @@ module DICOM
     #################################################
 
 
-    # Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].
-    # To call this method the user needs to have performed " require 'narray' " in advance.
+    # Returns a 3d NArray object where the array dimensions corresponds to [frames, columns, rows].
+    # To call this method the user needs to loaded the NArray library in advance (require 'narray').
     def get_image_narray
-      # Does pixel data exist at all in the DICOM object?
+      # Are we able to make a pixel array?
       if @compression == nil
-        add_msg("It seems pixel data is not present in this DICOM object: returning false.")
+        add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
+        return false
+      elsif @compression == true
+        add_msg("Reading compressed data to a NArray object not supported yet: Returning false.")
+        return false
+      elsif @color
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: Returning false.")
         return false
       end
-      # No support yet for retrieving compressed data:
-      if @compression == true
-        add_msg("Reading compressed data to a NArray object not supported yet: returning false.")
-        return false
-      end
-      # No support yet for retrieving color pixel data:
-      if @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: returning false.")
-        return false
-      end
-      # Gather information about the dimensions of the image data:
+      # Gather information about the dimensions of the pixel data:
       rows = get_value("0028,0010")
       columns = get_value("0028,0011")
       frames = get_frames
-      image_pos = get_image_pos
-      # Creating a NArray object using int to make sure we have a big enough range for our numbers:
-      image = NArray.int(frames,columns,rows)
-      image_temp = NArray.int(columns,rows)
-      # Handling of image data will depend on whether we have one or more frames,
-      # and if it is located in one or more elements:
-      if image_pos.size == 1
-        # All of the image data is located in one element:
-        image_data = get_pixels(image_pos[0])
-        #image_data = get_image_data(image_pos[0])
-        (0..frames-1).each do |i|
-          (0..columns*rows-1).each do |j|
-            image_temp[j] = image_data[j+i*columns*rows]
+      pixel_element_pos = get_image_pos
+      # Creating a NArray object using int to make sure we have the necessary range for our numbers:
+      pixel_data = NArray.int(frames,columns,rows)
+      pixel_frame = NArray.int(columns,rows)
+      # Handling of pixel data will depend on whether we have one or more frames,
+      # and if it is located in one or more data elements:
+      if pixel_element_pos.length == 1
+        # All of the pixel data is located in one element:
+        pixel_array = get_pixels(pixel_element_pos[0])
+        frames.times do |i|
+          (columns*rows).times do |j|
+            pixel_frame[j] = pixel_array[j+i*columns*rows]
           end
-          image[i,true,true] = image_temp
+          pixel_data[i,true,true] = pixel_frame
         end
       else
-        # Image data is encapsulated in items:
-        (0..frames-1).each do |i|
-          image_data=get_value(image_pos[i])
-          #image_data = get_image_data(image_pos[i])
-          (0..columns*rows-1).each do |j|
-            image_temp[j] = image_data[j+i*columns*rows]
+        # Pixel data is encapsulated in items:
+        frames.times do |i|
+          pixel_array = get_pixels(pixel_element_pos[i])
+          (columns*rows).times do |j|
+            pixel_frame[j] = pixel_array[j+i*columns*rows]
           end
-          image[i,true,true] = image_temp
+          pixel_data[i,true,true] = pixel_frame
         end
       end
-      # Turn around the images to get the expected orientation when displaying on the screen:
-      (0..frames-1).each do |i|
-        temp_image=image[i,true,true]
-        #Transpose the images:
-        temp_image.transpose(1,0)
-        #Need to mirror the y-axis:
-        (0..temp_image.shape[0]-1).each do |j|
-          temp_image[j,0..temp_image.shape[1]-1] = temp_image[j,temp_image.shape[1]-1..0]
+      # Rearrange the pixel data to get the expected orientation when displaying it on the screen:
+      frames.times do |i|
+        temp_frame = pixel_data[i,true,true]
+        # Transpose array:
+        temp_frame.transpose(1,0)
+        # Mirror the y-axis:
+        temp_frame.shape[0].times do |j|
+          temp_frame[j, 0..temp_frame.shape[1]-1] = temp_frame[j, temp_frame.shape[1]-1..0]
         end
-        # Put the reoriented image back in the image matrixx:
-        image[i,true,true]=temp_image
+        # Put the reoriented pixel data back in its original variable:
+        pixel_data[i,true,true] = temp_frame
       end
-      return image
+      return pixel_data
     end # of get_image_narray
 
 
     # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
     # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
     def get_image_magick
-      # Does pixel data exist at all in the DICOM object?
+      # Are we able to make an image?
       if @compression == nil
         add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
         return false
-      end
-      # No support yet for color pixel data:
-      if @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: Aborting.")
+      elsif @color
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: Returning false.")
         return false
       end
       # Gather information about the dimensions of the image data:
@@ -230,31 +222,32 @@ module DICOM
       rows = [rows] unless rows.is_a?(Array)
       columns = [columns] unless columns.is_a?(Array)
       frames = get_frames
-      image_pos = get_image_pos
-      # Array that will hold the RMagick image objects, one image object for each frame:
-      image_arr = Array.new(frames)
+      pixel_element_pos = get_image_pos
+      # Array that will hold the RMagick image objects, one object for each frame:
+      images = Array.new(frames)
       # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
-      if image_pos.length > 1 and columns.length > 1
-        image_pos = [image_pos.last]
+      if pixel_element_pos.length > 1 and columns.length > 1
+        pixel_element_pos = [pixel_element_pos.last]
         columns = [columns[0]]
         rows = [rows[0]]
       end
-      # Handling of image data will depend on whether we have one or more frames,
-      if image_pos.size == 1
-        # All of the image data is located in one data element:
+      # Handling of pixel data will depend on whether we have one or more frames,
+      # and if it is located in one or more data elements:
+      if pixel_element_pos.size == 1
+        # All of the pixel data is located in one data element:
         if frames > 1
           add_msg("Unfortunately, this method only supports reading the first image frame as of now.")
         end
-        image = read_image_magick(image_pos[0], columns[0], rows[0])
-        image_arr[0] = image
+        image = read_image_magick(pixel_element_pos[0], columns[0], rows[0])
+        images[0] = image
       else
         # Image data is encapsulated in items:
-        (0..frames-1).each do |i|
-          image = read_image_magick(image_pos[i], columns[0], rows[0])
-          image_arr[i] = image
+        frames.times do |i|
+          image = read_image_magick(pixel_element_pos[i], columns[0], rows[0])
+          images[i] = image
         end
       end
-      return image_arr
+      return images
     end # of get_image_magick
 
 
