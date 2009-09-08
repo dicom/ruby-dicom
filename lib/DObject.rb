@@ -207,7 +207,7 @@ module DICOM
 
     # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
     # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
-    def get_image_magick
+    def get_image_magick(options={})
       # Are we able to make an image?
       if @compression == nil
         add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
@@ -238,12 +238,12 @@ module DICOM
         if frames > 1
           add_msg("Unfortunately, this method only supports reading the first image frame as of now.")
         end
-        image = read_image_magick(pixel_element_pos[0], columns[0], rows[0])
-        images[0] = image
+        images = read_image_magick(pixel_element_pos[0], columns[0], rows[0], frames, options)
+        images = [images] unless images.is_a?(Array)
       else
         # Image data is encapsulated in items:
         frames.times do |i|
-          image = read_image_magick(pixel_element_pos[i], columns[0], rows[0])
+          image = read_image_magick(pixel_element_pos[i], columns[0], rows[0], 1, options)
           images[i] = image
         end
       end
@@ -991,23 +991,29 @@ module DICOM
     # Unpacks and returns pixel data from a specified data element array position:
     def get_pixels(pos)
       pixels = false
-      # We need to know what kind of bith depth the pixel data is saved with:
+      # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth = get_value("0028,0100", :array => true)
+      pixel_rep = get_value("0028,0103", :array => true)
       unless bit_depth == false
         # Load the binary pixel data to the Stream instance:
         @stream.set_string(get_raw(pos))
         bit_depth = bit_depth.first if bit_depth.is_a?(Array)
+        pixel_rep = pixel_rep.first if pixel_rep.is_a?(Array)
         # Number of bytes used per pixel will determine how to unpack this:
         case bit_depth
           when 8
             pixels = @stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
           when 16
-            pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
+            if pixel_rep == 1
+              pixels = @stream.decode_all("SS") # Signed short (2 bytes)
+            else
+              pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
+            end
           when 12
             # 12 BIT SIMPLY NOT WORKING YET!
             # This one is a bit more tricky to extract.
             # I havent really given this priority so far as 12 bit image data is rather rare.
-            add_msg("Warning: Bit depth 12 is not working correctly at this time! Please contact the author.")
+            add_msg("Warning: Decoding bit depth 12 is not implemented yet! Please contact the author.")
           else
             raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
         end # of case bit_depth
@@ -1075,17 +1081,144 @@ module DICOM
     end
 
 
-    # Returns image data from the provided element index, performing decompression of data if necessary.
-    def read_image_magick(pos, columns, rows)
+    # Converts original pixel data values to presentation values.
+    # NB: This method is not used at the moment.
+    def process_presentation_values(pixel_data, center, width, slope, intercept, min_allowed, max_allowed)
+      # Rescale:
+      # PixelOutput = slope * pixel_values + intercept
+      if intercept != 0 or slope != 1
+        pixel_data.collect!{|x| (slope * x) + intercept}
+      end
+      # Contrast enhancement by black and white thresholding:
+      if center and width
+        low = center - width/2
+        high = center + width/2
+        pixel_data.each_index do |i|
+          if pixel_data[i] < low
+            pixel_data[i] = low
+          elsif pixel_data[i] > high
+            pixel_data[i] = high
+          end
+        end
+      end
+      # Need to introduce an offset?
+      min_pixel_value = pixel_data.min
+      if min_allowed
+        if min_pixel_value < min_allowed
+          offset = min_pixel_value.abs
+          pixel_data.collect!{|x| x + offset}
+        end
+      end
+      # Downscale pixel range?
+      max_pixel_value = pixel_data.max
+      if max_allowed
+        if max_pixel_value > max_allowed
+          factor = (max_pixel_value.to_f/max_allowed.to_f).ceil
+          pixel_data.collect!{|x| x / factor}
+        end
+      end
+      return pixel_data
+    end
+
+
+    # Converts original pixel data values to a RMagick image object containing presentation values.
+    def process_presentation_values_magick(pixel_data, center, width, slope, intercept, max_allowed, columns, rows)
+      # Rescale:
+      # PixelOutput = slope * pixel_values + intercept
+      if intercept != 0 or slope != 1
+        pixel_data.collect!{|x| (slope * x) + intercept}
+      end
+      # Need to introduce an offset?
+      offset = 0
+      min_pixel_value = pixel_data.min
+      if min_pixel_value < 0
+        offset = min_pixel_value.abs
+        pixel_data.collect!{|x| x + offset}
+      end
+      # Downscale pixel range?
+      factor = 1
+      max_pixel_value = pixel_data.max
+      if max_allowed
+        if max_pixel_value > max_allowed
+          factor = (max_pixel_value.to_f/max_allowed.to_f).ceil
+          pixel_data.collect!{|x| x / factor}
+        end
+      end
+      image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
+      # Contrast enhancement by black and white thresholding:
+      if center and width
+        low = (center - width/2 + offset) / factor
+        high = (center + width/2 + offset) / factor
+        image = image.level(low, high)
+      end
+      return image
+    end
+
+
+    # Converts original pixel data values to presentation values, using the faster numerical array.
+    # NB: This returns a one-dimensional NArray object (i.e. no columns & rows).
+    def process_presentation_values_narray(pixel_data, center, width, slope, intercept, min_allowed, max_allowed)
+      n_arr = NArray.to_na(pixel_data)
+      # Rescale:
+      # PixelOutput = slope * pixel_values + intercept
+      if intercept != 0 or slope != 1
+        n_arr = slope * n_arr + intercept
+      end
+      # Contrast enhancement by black and white thresholding:
+      if center and width
+        low = center - width/2
+        high = center + width/2
+        n_arr[n_arr < low] = low
+        n_arr[n_arr > high] = high
+      end
+      # Need to introduce an offset?
+      min_pixel_value = n_arr.min
+      if min_allowed
+        if min_pixel_value < min_allowed
+          offset = min_pixel_value.abs
+          n_arr = n_arr + offset
+        end
+      end
+      # Downscale pixel range?
+      max_pixel_value = n_arr.max
+      if max_allowed
+        if max_pixel_value > max_allowed
+          factor = (max_pixel_value.to_f/max_allowed.to_f).ceil
+          n_arr = n_arr / factor
+        end
+      end
+      return n_arr
+    end
+
+
+    # Returns one or more RMagick image objects from the binary string pixel data,
+    # performing decompression of data if necessary.
+    def read_image_magick(pos, columns, rows, frames, options={})
       if pos == false or columns == false or rows == false
-        add_msg("Error: Method read_image_magick does not have enough data available to build an image object.")
+        add_msg("Error: Method read_image_magick does not have enough data available to build an image object. Returning false.")
         return false
       end
       unless @compression
         # Non-compressed, just return the array contained on the particular element:
-        image_data = get_pixels(pos)
-        image = Magick::Image.new(columns,rows)
-        image.import_pixels(0, 0, columns, rows, "I", image_data)
+        pixel_data = get_pixels(pos)
+        # Process pixel data for presentation according to the information in the DICOM file:
+        center = get_value("0028,1050", :silent => true)
+        width = get_value("0028,1051", :silent => true)
+        intercept = get_value("0028,1052", :silent => true) || 0
+        slope = get_value("0028,1053", :silent => true) || 1
+        center = center.to_i if center
+        width = width.to_i if width
+        intercept = intercept.to_i
+        slope = slope.to_i
+        # What tools will be used to process the pixel presentation values?
+        if options[:narray]
+          # Use numerical array (fast):
+          pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, 0, Magick::QuantumRange).to_a
+          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
+        else
+          # Use a combination of ruby array and RMagick processing:
+          image = process_presentation_values_magick(pixel_data, center, width, slope, intercept, Magick::QuantumRange, columns, rows)
+        end
         return image
       else
         # Image data is compressed, we will attempt to deflate it using RMagick (ImageMagick):
