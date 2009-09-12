@@ -161,10 +161,12 @@ module DICOM
         return false
       end
       # Gather information about the dimensions of the pixel data:
-      rows = get_value("0028,0010")
-      columns = get_value("0028,0011")
+      rows = get_value("0028,0010", :array => true)[0]
+      columns = get_value("0028,0011", :array => true)[0]
       frames = get_frames
       pixel_element_pos = get_image_pos
+      # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
+      pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
       # Creating a NArray object using int to make sure we have the necessary range for our numbers:
       pixel_data = NArray.int(frames,columns,rows)
       pixel_frame = NArray.int(columns,rows)
@@ -217,20 +219,14 @@ module DICOM
         return false
       end
       # Gather information about the dimensions of the image data:
-      rows = get_value("0028,0010", :array => true)
-      columns = get_value("0028,0011", :array => true)
-      rows = [rows] unless rows.is_a?(Array)
-      columns = [columns] unless columns.is_a?(Array)
+      rows = get_value("0028,0010", :array => true)[0]
+      columns = get_value("0028,0011", :array => true)[0]
       frames = get_frames
       pixel_element_pos = get_image_pos
       # Array that will hold the RMagick image objects, one object for each frame:
       images = Array.new(frames)
       # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
-      if pixel_element_pos.length > 1 and columns.length > 1
-        pixel_element_pos = [pixel_element_pos.last]
-        columns = [columns[0]]
-        rows = [rows[0]]
-      end
+      pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
       # Handling of pixel data will depend on whether we have one or more frames,
       # and if it is located in one or more data elements:
       if pixel_element_pos.size == 1
@@ -238,12 +234,12 @@ module DICOM
         if frames > 1
           add_msg("Unfortunately, this method only supports reading the first image frame as of now.")
         end
-        images = read_image_magick(pixel_element_pos[0], columns[0], rows[0], frames, options)
+        images = read_image_magick(pixel_element_pos[0], columns, rows, frames, options)
         images = [images] unless images.is_a?(Array)
       else
         # Image data is encapsulated in items:
         frames.times do |i|
-          image = read_image_magick(pixel_element_pos[i], columns[0], rows[0], 1, options)
+          image = read_image_magick(pixel_element_pos[i], columns, rows, 1, options)
           images[i] = image
         end
       end
@@ -446,6 +442,7 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method get_value. Returning false.") unless options[:silent]
       else
         if pos.size > 1
+          # Multiple 'hits':
           if options[:array] == true
             # Retrieve all values into an array:
             value = Array.new
@@ -456,7 +453,10 @@ module DICOM
             add_msg("Warning: Method get_value does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless options[:silent]
           end
         else
+          # One single match:
           value = @values[pos[0]]
+          # Return the single value in an array if keyword :array used:
+          value = [value] if options[:array]
         end
       end
       return value
@@ -477,6 +477,7 @@ module DICOM
         add_msg("Warning: Invalid data element provided to method get_raw. Returning false.")
       else
         if pos.size > 1
+          # Multiple 'hits':
           if options[:array] == true
             # Retrieve all values into an array:
             value = Array.new
@@ -487,7 +488,10 @@ module DICOM
             add_msg("Warning: Method get_raw does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
           end
         else
+          # One single match:
           value = @raw[pos[0]]
+          # Return the single value in an array if keyword :array used:
+          value = [value] if options[:array]
         end
       end
       return value
@@ -992,13 +996,11 @@ module DICOM
     def get_pixels(pos)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
-      bit_depth = get_value("0028,0100", :array => true)
-      pixel_rep = get_value("0028,0103", :array => true)
+      bit_depth = get_value("0028,0100", :array => true)[0]
+      pixel_rep = get_value("0028,0103", :array => true)[0]
       unless bit_depth == false
         # Load the binary pixel data to the Stream instance:
         @stream.set_string(get_raw(pos))
-        bit_depth = bit_depth.first if bit_depth.is_a?(Array)
-        pixel_rep = pixel_rep.first if pixel_rep.is_a?(Array)
         # Number of bytes used per pixel will determine how to unpack this:
         case bit_depth
           when 8
