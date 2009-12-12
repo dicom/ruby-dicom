@@ -12,3 +12,6 @@ require 'Stream'
 require 'Anonymizer'
 # Ruby library extensions:
 require 'ruby_extensions'
+
+# Ruby DICOM version string:
+DICOM::VERSION = "0.6.1"
