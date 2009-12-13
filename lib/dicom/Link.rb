@@ -1043,9 +1043,6 @@ module DICOM
       @explicit = true
       # Transfer syntax (Implicit, little endian):
       set_transfer_syntax("1.2.840.10008.1.2")
-      # Version information:
-      @implementation_uid = "1.2.826.0.1.3680043.8.641"
-      @implementation_name = "RUBY_DICOM_0.6"
     end
 
 
@@ -1068,8 +1065,8 @@ module DICOM
     def set_user_information_array
       @user_information = [
         ["51", "UL", @max_package_size], # Max PDU Length
-        ["52", "STR", @implementation_uid],
-        ["55", "STR", @implementation_name]
+        ["52", "STR", UID],
+        ["55", "STR", NAME]
       ]
     end
 

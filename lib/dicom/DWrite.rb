@@ -182,14 +182,14 @@ module DICOM
       tag = @stream.encode_tag("0002,0012")
       @stream.add_last(tag)
       @stream.encode_last("UI", "STR")
-      value = @stream.encode_value(@implementation_uid, "STR")
+      value = @stream.encode_value(UID, "STR")
       @stream.encode_last(value.length, "US")
       @stream.add_last(value)
       # Implementation Version Name:
       tag = @stream.encode_tag("0002,0013")
       @stream.add_last(tag)
       @stream.encode_last("SH", "STR")
-      value = @stream.encode_value(@implementation_name, "STR")
+      value = @stream.encode_value(NAME, "STR")
       @stream.encode_last(value.length, "US")
       @stream.add_last(value)
       # Group length:
@@ -404,9 +404,6 @@ module DICOM
       end
       # Items contained under the Pixel Data element needs some special attention to write correctly:
       @enc_image = false
-      # Version information:
-      @implementation_uid = "1.2.826.0.1.3680043.8.641"
-      @implementation_name = "RUBY_DICOM_0.6"
     end
 
   end # of class
