@@ -777,6 +777,22 @@ module DICOM
     end
 
 
+    # Removes all private data elements from the DICOM object.
+    def remove_private
+      # Private data elemements have a group tag that is odd.
+      odd_group = ["1,","3,","5,","7,","9,","B,","D,","F,"]
+      odd_group.each do |odd|
+        positions = get_pos(odd, :partial => true)
+        if positions
+          # Delete all entries (important to do this in reverse order).
+          positions.reverse.each do |pos|
+            remove(pos)
+          end
+        end
+      end
+    end
+
+
     # Sets the value of a data element by modifying an existing element or creating a new one.
     # If the supplied value is not binary, it will attempt to encode the value to binary itself.
     def set_value(value, element, options={})
