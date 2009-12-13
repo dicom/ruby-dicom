@@ -38,7 +38,6 @@ module DICOM
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
       @verbose = options[:verbose]
-      @lib =  options[:lib]  || DLibrary.new
       segment_size = options[:segment_size]
       bin = options[:bin]
       syntax = options[:syntax]
@@ -84,7 +83,7 @@ module DICOM
     # For the time being, this method is called automatically when initializing the DObject class,
     # but in the future, when write support is added, this method may have to be called manually.
     def read(string, options = {})
-      r = DRead.new(string, :lib => @lib, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
+      r = DRead.new(string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
       # Store the data to the instance variables if the readout was a success:
       if r.success
         @read_success = true
@@ -688,7 +687,7 @@ module DICOM
       end
       # Compression:
       if @compression == true
-        compression = @lib.get_uid(get_value("0002,0010").rstrip)
+        compression = LIBRARY.get_uid(get_value("0002,0010").rstrip)
       else
         compression = "No"
       end
@@ -821,7 +820,7 @@ module DICOM
           modify_element(value, pos[0], :bin => bin)
         else
           # We need to create element:
-          tag = @lib.get_tag(element)
+          tag = LIBRARY.get_tag(element)
           if tag == false
             add_msg("Warning: Method set_value could not create data element, either because data element name was not recognized in the library, or data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
           else
@@ -874,7 +873,7 @@ module DICOM
         # No pixel data in DICOM file:
         @compression = nil
       else
-        @compression = @lib.get_compression(get_value("0002,0010", :silent => true))
+        @compression = LIBRARY.get_compression(get_value("0002,0010", :silent => true))
       end
       # Set color variable as true if our object contain a color image:
       col_string = get_value("0028,0004", :silent => true)
@@ -890,7 +889,7 @@ module DICOM
     def create_element(value, tag, last_pos, options={})
       bin_only = options[:bin]
       # Fetch the VR:
-      info = @lib.get_name_vr(tag)
+      info = LIBRARY.get_name_vr(tag)
       vr = info[1]
       name = info[0]
       # Encode binary (if a binary is not provided):
@@ -1257,7 +1256,7 @@ module DICOM
       if value == false
         @modality = "Not specified"
       else
-        modality = @lib.get_uid(value.rstrip)
+        modality = LIBRARY.get_uid(value.rstrip)
         @modality = modality
       end
     end
@@ -1269,7 +1268,7 @@ module DICOM
         transfer_syntax = get_value("0002,0010", :silent => true)
         transfer_syntax = "1.2.840.10008.1.2" if not transfer_syntax # Default is implicit, little endian
       end
-      w = DWrite.new(file_name, :lib => @lib, :sys_endian => @sys_endian, :transfer_syntax => transfer_syntax)
+      w = DWrite.new(file_name, :sys_endian => @sys_endian, :transfer_syntax => transfer_syntax)
       w.tags = @tags
       w.types = @types
       w.lengths = @lengths

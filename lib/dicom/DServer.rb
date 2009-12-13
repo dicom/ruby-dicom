@@ -15,7 +15,6 @@ module DICOM
       # Required parameters:
       @port = port
       # Optional parameters (and default values):
-      @lib =  options[:lib]  || DLibrary.new
       @host_ae =  options[:host_ae]  || "RUBY_DICOM"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
@@ -176,7 +175,7 @@ module DICOM
       # We will accept any transfer syntax (as long as it is recognized in the library):
       # (Weakness: Only checking the first occuring transfer syntax for now)
       transfer_syntax = info[:ts].first[:transfer_syntax]
-      unless @lib.check_ts_validity(transfer_syntax)
+      unless LIBRARY.check_ts_validity(transfer_syntax)
         result = "04" # transfer syntax not supported
         add_error("Warning: Unsupported transfer syntax received in incoming association request. (#{transfer_syntax})")
       end

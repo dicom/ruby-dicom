@@ -14,7 +14,6 @@ module DICOM
       require 'socket'
       # Optional parameters (and default values):
       @ae =  options[:ae]  || "RUBY_DICOM"
-      @lib =  options[:lib]  || DLibrary.new
       @host_ae =  options[:host_ae]  || "DEFAULT"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @max_receive_size = @max_package_size
@@ -175,7 +174,7 @@ module DICOM
         # Tag (4 bytes)
         @outgoing.add_last(@outgoing.encode_tag(element[0]))
         # Type (VR) (2 bytes)
-        vr = @lib.get_name_vr(element[0])[1]
+        vr = LIBRARY.get_name_vr(element[0])[1]
         @outgoing.encode_last(vr, "STR")
         # Encode the value first, so we know its length:
         value = @outgoing.encode_value(element[1], vr)
@@ -711,7 +710,7 @@ module DICOM
           # Reserved (2 bytes)
           msg.skip(2)
           # Type (VR) (from library - not the stream):
-          result = @lib.get_name_vr(tag)
+          result = LIBRARY.get_name_vr(tag)
           name = result[0]
           type = result[1]
           # Value (variable length)
@@ -764,7 +763,7 @@ module DICOM
             end
             # Value (variable length)
             value = msg.decode(length, type)
-            result = @lib.get_name_vr(tag)
+            result = LIBRARY.get_name_vr(tag)
             name = result[0]
             # Put tag and value in a hash:
             results[tag] = value
@@ -1053,7 +1052,7 @@ module DICOM
     # Set instance variables related to the transfer syntax.
     def set_transfer_syntax(value)
       # Query the library with our particular transfer syntax string:
-      result = @lib.process_transfer_syntax(value)
+      result = LIBRARY.process_transfer_syntax(value)
       # Result is a 3-element array: [Validity of ts, explicitness, endianness]
       unless result[0]
         add_error("Warning: Invalid/unknown transfer syntax encountered! Will try to continue, but errors may occur.")

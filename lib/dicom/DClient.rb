@@ -16,7 +16,6 @@ module DICOM
       @port = port
       # Optional parameters (and default values):
       @ae =  options[:ae]  || "RUBY_DICOM"
-      @lib =  options[:lib]  || DLibrary.new
       @host_ae =  options[:host_ae]  || "DEFAULT"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
@@ -139,7 +138,7 @@ module DICOM
     # Send a DICOM file to a service class provider (SCP/PACS).
     def send(file_path)
       # Load the DICOM file from the specified path:
-      obj = DObject.new(file_path, :verbose => false, :lib => @lib)
+      obj = DObject.new(file_path, :verbose => false)
       if obj.read_success
         # Get the SOP Class UID (abstract syntax) from the DICOM obj:
         @abstract_syntax = obj.get_value("0008,0016")

@@ -16,7 +16,6 @@ module DICOM
     # Initialize the DRead instance.
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      @lib =  options[:lib] || DLibrary.new
       @sys_endian = options[:sys_endian] || false
       @bin = options[:bin]
       @transfer_syntax = options[:syntax]
@@ -177,7 +176,7 @@ module DICOM
       end
       # STEP 2: ------------------------------------------------------
       # Access library to retrieve the data element name and type (VR) from the tag we just read:
-      lib_data = @lib.get_name_vr(tag)
+      lib_data = LIBRARY.get_name_vr(tag)
       name = lib_data[0]
       vr = lib_data[1]
       # (Note: VR will be overwritten if the DICOM file contains VR)
@@ -448,7 +447,7 @@ module DICOM
         end
       end
       # Query the library with our particular transfer syntax string:
-      result = @lib.process_transfer_syntax(@transfer_syntax)
+      result = LIBRARY.process_transfer_syntax(@transfer_syntax)
       # Result is a 3-element array: [Validity of ts, explicitness, endianness]
       unless result[0]
         @msg+=["Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."]

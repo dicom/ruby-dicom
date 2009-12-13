@@ -20,7 +20,6 @@ module DICOM
     # Initialize the DWrite instance.
     def initialize(file_name=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      @lib =  options[:lib] || DLibrary.new
       @sys_endian = options[:sys_endian] || false
       @file_name = file_name
       @transfer_syntax = options[:transfer_syntax] || "1.2.840.10008.1.2" # Implicit, little endian
@@ -347,7 +346,7 @@ module DICOM
     # Changes encoding variables as the file writing proceeds past the initial 0002 group of the DICOM file.
     def switch_syntax
       # The information from the Transfer syntax element (if present), needs to be processed:
-      result = @lib.process_transfer_syntax(@transfer_syntax.rstrip)
+      result = LIBRARY.process_transfer_syntax(@transfer_syntax.rstrip)
       # Result is a 3-element array: [Validity of ts, explicitness, endianness]
       unless result[0]
         @msg << "Warning: Invalid/unknown transfer syntax! Will still write the file, but you should give this a closer look."

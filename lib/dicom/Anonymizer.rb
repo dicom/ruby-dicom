@@ -13,8 +13,6 @@ module DICOM
       # Default verbosity is true: # NB: verbosity is not used currently
       @verbose = opts[:verbose]
       @verbose = true if @verbose == nil
-      # Load library:
-      @lib = DLibrary.new
       # Default value of accessors:
       @blank = false
       @enumeration = false
@@ -138,7 +136,7 @@ module DICOM
           all_write = true
           @files.each_index do |i|
             # Read existing file to DICOM object:
-            obj = DICOM::DObject.new(@files[i], :verbose => verbose, :lib => @lib)
+            obj = DICOM::DObject.new(@files[i], :verbose => verbose)
             if obj.read_success
               # Anonymize the desired tags:
               @tags.each_index do |j|
@@ -208,7 +206,7 @@ module DICOM
       type_lengths = Array.new
       value_lengths = Array.new
       @tags.each_index do |i|
-        arr = @lib.get_name_vr(@tags[i])
+        arr = LIBRARY.get_name_vr(@tags[i])
         names += [arr[0]]
         types += [arr[1]]
         tag_lengths[i] = @tags[i].length
