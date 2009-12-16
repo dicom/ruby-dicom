@@ -106,6 +106,7 @@ module DICOM
       pdu = "01"
       pc = "20"
       # Note: The order of which these components are built is not arbitrary.
+      # (The first three are built 'in order of appearance', the header is built last, but is put first in the message)
       append_application_context(ac_uid)
       append_presentation_context(as, pc, ts)
       append_user_information(ui)
@@ -160,10 +161,9 @@ module DICOM
 
 
     # Build the binary string that will be sent as TCP data in the query data fragment.
-    # NB!! This method does not (yet) take explicitness into consideration when building content.
-    # It might go wrong if an implicit data stream is encountered!
+    # The style of encoding will depend on whether we have an implicit or explicit transfer syntax.
     def build_data_fragment(data_elements)
-      # Little endian encoding:
+      # Endianness of data fragment:
       @outgoing.set_endian(@data_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
@@ -173,13 +173,19 @@ module DICOM
         # Encode all tags (even tags which are empty):
         # Tag (4 bytes)
         @outgoing.add_last(@outgoing.encode_tag(element[0]))
-        # Type (VR) (2 bytes)
+        # Encode the value in advance of putting it into the message, so we know its length:
         vr = LIBRARY.get_name_vr(element[0])[1]
-        @outgoing.encode_last(vr, "STR")
-        # Encode the value first, so we know its length:
         value = @outgoing.encode_value(element[1], vr)
-        # Length (2 bytes)
-        @outgoing.encode_last(value.length, "US")
+        if @explicit
+          # Type (VR) (2 bytes)
+          @outgoing.encode_last(vr, "STR")
+          # Length (2 bytes)
+          @outgoing.encode_last(value.length, "US")
+        else
+          # Implicit:
+          # Length (4 bytes)
+          @outgoing.encode_last(value.length, "UL")
+        end
         # Value (variable length)
         @outgoing.add_last(value)
       end
@@ -314,18 +320,23 @@ module DICOM
         end
       end
       data = file_data.join
-      # Read the received data stream and load it as a DICOM object:
-      obj = DObject.new(data, :bin => true, :syntax => @transfer_syntax)
-      # File will be saved with the following path:
-      # original_path/<PatientID>/<StudyDate>/<Modality>/
-      # File name will be equal to the SOP Instance UID
-      file_name = obj.get_value("0008,0018")
-      folders = Array.new(3)
-      folders[0] = obj.get_value("0010,0020") || "PatientID"
-      folders[1] = obj.get_value("0008,0020") || "StudyDate"
-      folders[2] = obj.get_value("0008,0060") || "Modality"
-      full_path = path + folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
-      obj.write(full_path, @transfer_syntax)
+      if data.length > 8
+        # Read the received data stream and load it as a DICOM object:
+        obj = DObject.new(data, :bin => true, :syntax => @transfer_syntax)
+        # File will be saved with the following path:
+        # original_path/<PatientID>/<StudyDate>/<Modality>/
+        # File name will be equal to the SOP Instance UID
+        file_name = obj.get_value("0008,0018")
+        folders = Array.new(3)
+        folders[0] = obj.get_value("0010,0020") || "PatientID"
+        folders[1] = obj.get_value("0008,0020") || "StudyDate"
+        folders[2] = obj.get_value("0008,0060") || "Modality"
+        full_path = path + folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
+        obj.write(full_path, @transfer_syntax)
+      else
+        # Valid DICOM data not received:
+        full_path = false
+      end
       return full_path
     end
 
@@ -416,7 +427,7 @@ module DICOM
           info[:pdu] = pdu
           segments << info
         else
-          # Length of the message is less than what is specified in the message. Throw error:
+          # Length of the message is less than what is specified in the message. Need to listen for more. This is hopefully handled properly now.
           #add_error("Error. The length of the received message (#{msg.rest_length}) is smaller than what it claims (#{specified_length}). Aborting.")
           @first_part = msg.string
         end
@@ -561,8 +572,10 @@ module DICOM
             add_error("Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
+      @listen = false
+      @receive = false
       info[:valid] = true
-      # Update key values for this instance:
+      # Update transfer syntax settings for this instance:
       set_transfer_syntax(info[:transfer_syntax])
       return info
     end # of interpret_association_accept
@@ -581,6 +594,8 @@ module DICOM
       # Reason (1 byte)
       info[:reason] = msg.decode(1, "BY")
       add_error("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM 08_08, page 41: Table 9-21 for details.)")
+      @listen = false
+      @receive = false
       info[:valid] = true
       return info
     end
@@ -676,14 +691,15 @@ module DICOM
             add_error("Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
+      @listen = false
+      @receive = false
       info[:valid] = true
       return info
     end # of interpret_association_request
 
 
-    # Decode the binary string received in the query response, and interpret its content.
-    # NB!! This method does not (yet) take explicitness into consideration when decoding content.
-    # It might go wrong if an implicit data stream is encountered!
+    # Decode the received command/data binary string, and interpret its content.
+    # Decoding of data fragment will depend on the explicitness of the transmission.
     def interpret_command_and_data(message, file = nil)
       info = Hash.new
       msg = Stream.new(message, @net_endian, @explicit)
@@ -754,17 +770,25 @@ module DICOM
           while msg.index < msg.length do
             # Tag (4 bytes)
             tag = msg.decode_tag
-            # Type (VR) (2 bytes):
-            type = msg.decode(2, "STR")
-            # Length (2 bytes)
-            length = msg.decode(2, "US")
+            if @explicit
+              # Type (VR) (2 bytes):
+              type = msg.decode(2, "STR")
+              # Length (2 bytes)
+              length = msg.decode(2, "US")
+            else
+              # Implicit:
+              # Length (4 bytes)
+              length = msg.decode(4, "UL")
+            end
             if length > msg.rest_length
               add_error("Error: Specified length of data element value exceeds remaining length of the received message! Something is wrong.")
             end
-            # Value (variable length)
-            value = msg.decode(length, type)
+            # Fetch the name (& type if not defined already) for this data element:
             result = LIBRARY.get_name_vr(tag)
             name = result[0]
+            type = result[1] unless type
+            # Value (variable length)
+            value = msg.decode(length, type)
             # Put tag and value in a hash:
             results[tag] = value
           end
@@ -788,6 +812,8 @@ module DICOM
       msg = Stream.new(message, @net_endian, @explicit)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
+      @listen = false
+      @receive = false
       info[:valid] = true
       return info
     end
@@ -799,6 +825,8 @@ module DICOM
       msg = Stream.new(message, @net_endian, @explicit)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
+      @listen = false
+      @receive = false
       info[:valid] = true
       return info
     end
@@ -957,7 +985,7 @@ module DICOM
         # Transfer syntax (variable length)
         @outgoing.encode_last(t, "STR")
       end
-      # Update key values for this instance:
+      # Update transfer syntax settings for this instance:
       set_transfer_syntax(ts.first)
     end
 
@@ -1039,7 +1067,8 @@ module DICOM
       @net_endian = true
       # Default endianness of data is little endian:
       @data_endian = false
-      # Explicitness (this may turn out not to be necessary...)
+      # It may turn out to be unncessary to define the following values at this early stage.
+      # Explicitness
       @explicit = true
       # Transfer syntax (Implicit, little endian):
       set_transfer_syntax("1.2.840.10008.1.2")

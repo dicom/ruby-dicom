@@ -218,7 +218,7 @@ module DICOM
       @link.build_association_request(@application_context_uid, @abstract_syntax, @transfer_syntax, @user_information)
       @connection = TCPSocket.new(@host_ip, @port)
       @link.transmit(@connection)
-      info = @link.receive_single_transmission(@connection).first
+      info = @link.receive_multiple_transmissions(@connection).first
       # Interpret the results:
       if info[:valid]
         if info[:pdu] == "02"
@@ -308,9 +308,11 @@ module DICOM
           @link.build_data_fragment(@data_elements) # (uses flag = 02)
           @link.transmit(@connection)
           # Listen for incoming file data:
-          @link.handle_incoming_data(@connection, path)
-          # Send confirmation response:
-          @link.handle_response(@connection)
+          success = @link.handle_incoming_data(@connection, path)
+          if success
+            # Send confirmation response:
+            @link.handle_response(@connection)
+          end
         end
         # Close the DICOM link:
         establish_release
@@ -408,7 +410,7 @@ module DICOM
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntax], # Affected SOP Class UID
         ["0000,0100", "US", 16], # Command Field: 16 (C-GET-RQ)
-        ["0000,0600", "AE", destination], # Move destination
+        ["0000,0600", "AE", @ae], # Destination is ourselves
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", 1] # Data Set Type: 1
       ]
@@ -573,8 +575,8 @@ module DICOM
     def set_user_information_array
       @user_information = [
         ["51", "UL", @max_package_size], # Max PDU Length
-        ["52", "STR", "1.2.826.0.1.3680043.8.641"], # Implementation UID
-        ["55", "STR", "RUBY_DICOM"] # Implementation Version
+        ["52", "STR", UID], # Implementation UID
+        ["55", "STR", NAME] # Implementation Version (Name & version)
       ]
     end
 
