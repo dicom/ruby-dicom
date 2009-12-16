@@ -162,6 +162,9 @@ PUBLIC INSTANCE METHODS
     Removes the specified data element from the DICOM object. You can use this method
     if you are editing a DICOM object and wants to get rid of one or more elements.
     Element may be an array index, element name or element tag.
+  
+  remove_private
+    Removes all private data elements from the DICOM object.
 
   set_value(value, element, options={})
     This method can be used both to edit an existing data element, or to create
