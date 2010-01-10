@@ -188,7 +188,7 @@ module DICOM
         "1.2.840.10008.5.1.4.1.1.4" => ["MR Image Storage", "SOP Class"],
         "1.2.840.10008.5.1.4.1.1.4.1" => ["Enhanced MR Image Storage", "SOP Class"],
         "1.2.840.10008.5.1.4.1.1.4.2" => ["MR Spectroscopy Storage", "SOP Class"],
-				"1.2.840.10008.5.1.4.1.1.4.3" => ["Enhanced MR Color ImageStorage", "SOP Class"],
+				"1.2.840.10008.5.1.4.1.1.4.3" => ["Enhanced MR Color Image Storage", "SOP Class"],
         "1.2.840.10008.5.1.4.1.1.5" => ["Nuclear Medicine Image Storage", "SOP Class"], # RET
         "1.2.840.10008.5.1.4.1.1.6" => ["Ultrasound Image Storage", "SOP Class"], # RET
         "1.2.840.10008.5.1.4.1.1.6.1" => ["Ultrasound Image Storage", "SOP Class"],
