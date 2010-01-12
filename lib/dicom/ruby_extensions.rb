@@ -1,7 +1,7 @@
 # This file contains extensions to the Ruby library which are used by Ruby DICOM.
 
 class Array
-  
+
   # Searching all indices, or a subset of indices, in an array, and returning all indices
   # where the array's value equals the queried value.
   def all_indices(array, value)
@@ -11,7 +11,7 @@ class Array
     end
     return result
   end
-  
+
   # Similar to method above, but this one returns the position of all strings that
   # contain the query string (exact match not required).
   def all_indices_partial_match(array, value)
@@ -25,18 +25,14 @@ class Array
 end
 
 class String
-  
-  # Check if a given string appears to be a valid tag (GGGG,EEEE).
-  # Three tests are performed on our string: Length (9), presence of comma in position 5,
-  # and that the rest of the characters are valid DICOM tag characters.
-  # (It might be that this can be simplified to one single test with a more advanced regex formula)
+
+  # Check if a given string appears to be a valid tag (GGGG,EEEE) by regexp matching.
+  # The method tests that the string is exactly composed of 4 HEX characters, followed by
+	# a comma, then 4 new HEX characters, which constitutes the tag format used by Ruby DICOM.
   def is_a_tag?
     result = false
-    if self.length == 9 and self[4..4] == ','
-      clean = self.delete(',').downcase
-      result = true unless clean =~ /([^a-f0-9])/
-    end
+		result = true if self =~ /\A\h{4},\h{4}\z/
     return result
   end
-  
+
 end
