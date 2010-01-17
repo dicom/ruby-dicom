@@ -496,7 +496,7 @@ module DICOM
         "0008,0023" => [["DA"], "Content Date"],
         "0008,0024" => [["DA"], "Overlay Date"],  # RET
         "0008,0025" => [["DA"], "Curve Date"],  # RET
-        "0008,002A" => [["DT"], "Acquisition Datetime"],
+        "0008,002A" => [["DT"], "Acquisition DateTime"],
         "0008,0030" => [["TM"], "Study Time"],
         "0008,0031" => [["TM"], "Series Time"],
         "0008,0032" => [["TM"], "Acquisition Time"],
@@ -634,7 +634,7 @@ module DICOM
         "0008,9208" => [["CS"], "Complex Image Component"],
         "0008,9209" => [["CS"], "Acquisition Contrast"],
         "0008,9215" => [["SQ"], "Derivation Code Sequence"],
-        "0008,9237" => [["SQ"], "Referenced Grayscale Presentation State Sequence"],
+        "0008,9237" => [["SQ"], "Referenced Presentation State Sequence"],
         "0008,9410" => [["SQ"], "Referenced Other Plane Sequence"],
         "0008,9458" => [["SQ"], "Frame Display Sequence"],
         "0008,9459" => [["FL"], "Recommended Display Frame Rate in Float"],
@@ -650,7 +650,7 @@ module DICOM
         "0010,0040" => [["CS"], "Patient's Sex"],
         "0010,0050" => [["SQ"], "Patient's Insurance Plan Code Sequence"],
         "0010,0101" => [["SQ"], "Patient's Primary Language Code Sequence"],
-        "0010,0102" => [["SQ"], "Patient's Primary Language Code Modifier Sequence"],
+        "0010,0102" => [["SQ"], "Patient's Primary Language Modifier Code Sequence"],
         "0010,1000" => [["LO"], "Other Patient IDs"],
         "0010,1001" => [["PN"], "Other Patient Names"],
         "0010,1002" => [["SQ"], "Other Patient IDs Sequence"],
@@ -725,7 +725,7 @@ module DICOM
         "0018,0026" => [["SQ"], "Intervention Drug Information Sequence"],
         "0018,0027" => [["TM"], "Intervention Drug Stop Time"],
         "0018,0028" => [["DS"], "Intervention Drug Dose"],
-        "0018,0029" => [["SQ"], "Intervention Drug Sequence"],
+        "0018,0029" => [["SQ"], "Intervention Drug Code Sequence"],
         "0018,002A" => [["SQ"], "Additional Drug Sequence"],
         "0018,0030" => [["LO"], "Radionuclide"],  # RET
         "0018,0031" => [["LO"], "Radiopharmaceutical"],
@@ -1163,7 +1163,7 @@ module DICOM
         "0018,9152" => [["SQ"], "MR Metabolite Map Sequence"],
         "0018,9155" => [["FD"], "Parallel Reduction Factor out-of-plane"],
         "0018,9159" => [["UL"], "Spectroscopy Acquisition Out-of-plane Phase Steps"],
-        "0018,9166" => [["CS"], "Bulk Motion Status"],
+        "0018,9166" => [["CS"], "Bulk Motion Status"], # RET
         "0018,9168" => [["FD"], "Parallel Reduction Factor Second In-plane"],
         "0018,9169" => [["CS"], "Cardiac Beat Rejection Technique"],
         "0018,9170" => [["CS"], "Respiratory Motion Compensation Technique"],
@@ -1183,8 +1183,8 @@ module DICOM
         "0018,9184" => [["FD"], "Tagging Delay"],
         "0018,9185" => [["ST"], "Respiratory Motion Compensation Technique Description"],
         "0018,9186" => [["SH"], "Respiratory Signal Source ID"],
-        "0018,9195" => [["FD"], "Chemical Shifts Minimum Integration Limit in Hz"],  # RET
-        "0018,9196" => [["FD"], "Chemical Shifts Maximum Integration Limit in Hz"],  # RET
+        "0018,9195" => [["FD"], "Chemical Shift Minimum Integration Limit in Hz"],  # RET
+        "0018,9196" => [["FD"], "Chemical Shift Maximum Integration Limit in Hz"],  # RET
         "0018,9197" => [["SQ"], "MR Velocity Encoding Sequence"],
         "0018,9198" => [["CS"], "First Order Phase Correction"],
         "0018,9199" => [["CS"], "Water Referenced Phase Correction"],
@@ -1203,8 +1203,8 @@ module DICOM
         "0018,9239" => [["SQ"], "Specific Absorption Rate Sequence"],
         "0018,9240" => [["US"], "RF Echo Train Length"],
         "0018,9241" => [["US"], "Gradient Echo Train Length"],
-        "0018,9295" => [["FD"], "Chemical Shifts Minimum Integration Limit in ppm"],
-        "0018,9296" => [["FD"], "Chemical Shifts Maximum Integration Limit in ppm"],
+        "0018,9295" => [["FD"], "Chemical Shift Minimum Integration Limit in ppm"],
+        "0018,9296" => [["FD"], "Chemical Shift Maximum Integration Limit in ppm"],
         "0018,9301" => [["SQ"], "CT Acquisition Type Sequence"],
         "0018,9302" => [["CS"], "Acquisition Type"],
         "0018,9303" => [["FD"], "Tube Angle"],
@@ -1405,7 +1405,7 @@ module DICOM
         "0020,0020" => [["CS"], "Patient Orientation"],
         "0020,0022" => [["IS"], "Overlay Number"],  # RET
         "0020,0024" => [["IS"], "Curve Number"],  # RET
-        "0020,0026" => [["IS"], "Lookup Table Number"],  # RET
+        "0020,0026" => [["IS"], "LUT Number"],  # RET
         "0020,0030" => [["DS"], "Image Position"],  # RET
         "0020,0032" => [["DS"], "Image Position (Patient)"],
         "0020,0035" => [["DS"], "Image Orientation"],  # RET
@@ -1622,7 +1622,7 @@ module DICOM
         "0028,5000" => [["SQ"], "Bi-Plane Acquisition Sequence"],
         "0028,6010" => [["US"], "Representative Frame Number"],
         "0028,6020" => [["US"], "Frame Numbers of Interest (FOI)"],
-        "0028,6022" => [["LO"], "Frame(s) of Interest Description"],
+        "0028,6022" => [["LO"], "Frame of Interest Description"],
         "0028,6023" => [["CS"], "Frame of Interest Type"],
         "0028,6030" => [["US"], "Mask Pointer(s)"],  # RET
         "0028,6040" => [["US"], "R Wave Pointer"],
@@ -1693,7 +1693,7 @@ module DICOM
         "0038,0004" => [["SQ"], "Referenced Patient Alias Sequence"],
         "0038,0008" => [["CS"], "Visit Status ID"],
         "0038,0010" => [["LO"], "Admission ID"],
-        "0038,0011" => [["LO"], "Issuer of Admission ID"],
+        "0038,0011" => [["LO"], "Issuer of Admission ID"], # RET
         "0038,0014" => [["SQ"], "Issuer of Admission ID Sequence"],
         "0038,0016" => [["LO"], "Route of Admissions"],
         "0038,001A" => [["DA"], "Scheduled Admission Date"],  # RET
@@ -1708,6 +1708,9 @@ module DICOM
         "0038,0040" => [["LO"], "Discharge Diagnosis Description"],  # RET
         "0038,0044" => [["SQ"], "Discharge Diagnosis Code Sequence"],  # RET
         "0038,0050" => [["LO"], "Special Needs"],
+        "0038,0060" => [["LO"], "Service Episode ID"],
+        "0038,0061" => [["LO"], "Issuer of Service Episode ID"], # RET
+        "0038,0062" => [["LO"], "Service Episode Description"],
         "0038,0064" => [["SQ"], "Issuer of Service Episode ID Sequence"],
         "0038,0100" => [["SQ"], "Pertinent Documents Sequence"],
         "0038,0300" => [["LO"], "Current Patient Location"],
@@ -1813,18 +1816,21 @@ module DICOM
         "0040,0440" => [["SQ"], "Protocol Context Sequence"],
         "0040,0441" => [["SQ"], "Content Item Modifier Sequence"],
         "0040,0500" => [["SQ"], "Scheduled Specimen Sequence"],
-        "0040,050A" => [["LO"], "Specimen Accession Number"],
+        "0040,050A" => [["LO"], "Specimen Accession Number"], # RET
         "0040,0512" => [["LO"], "Container Identifier"],
         "0040,0513" => [["SQ"], "Issuer of the Container Identifier Sequence"],
         "0040,0515" => [["SQ"], "Alternate Container Identifier Sequence"],
         "0040,0518" => [["SQ"], "Container Type Code Sequence"],
         "0040,051A" => [["LO"], "Container Description"],
         "0040,0520" => [["SQ"], "Container Component Sequence"],
-        "0040,0550" => [["SQ"], "Specimen Sequence"],
+        "0040,0550" => [["SQ"], "Specimen Sequence"], # RET
         "0040,0551" => [["LO"], "Specimen Identifier"],
+        "0040,0552" => [["SQ"], "Specimen Description Sequence - Trial"], # RET
+        "0040,0553" => [["ST"], "Specimen Description - Trial"],
         "0040,0554" => [["UI"], "Specimen UID"],
         "0040,0555" => [["SQ"], "Acquisition Context Sequence"],
         "0040,0556" => [["ST"], "Acquisition Context Description"],
+        "0040,059A" => [["SQ"], "Specimen Type Code Sequence"],
         "0040,0560" => [["SQ"], "Specimen Description Sequence"],
         "0040,0562" => [["SQ"], "Issuer of the Specimen Identifier Sequence"],
         "0040,0600" => [["LO"], "Specimen Short Description"],
@@ -1833,7 +1839,7 @@ module DICOM
         "0040,0612" => [["SQ"], "Specimen Preparation Step Content Item Sequence"],
         "0040,0620" => [["SQ"], "Specimen Localization Content Item Sequence"],
         "0040,059A" => [["SQ"], "Specimen Type Code Sequence"],
-        "0040,06FA" => [["LO"], "Slide Identifier"],
+        "0040,06FA" => [["LO"], "Slide Identifier"], # RET
         "0040,071A" => [["SQ"], "Image Center Point Coordinates Sequence"],
         "0040,072A" => [["DS"], "X offset in Slide Coordinate System"],
         "0040,073A" => [["DS"], "Y offset in Slide Coordinate System"],
@@ -1874,12 +1880,12 @@ module DICOM
         "0040,4002" => [["CS"], "General Purpose Performed Procedure Step Status"],
         "0040,4003" => [["CS"], "General Purpose Scheduled Procedure Step Priority"],
         "0040,4004" => [["SQ"], "Scheduled Processing Applications Code Sequence"],
-        "0040,4005" => [["DT"], "Scheduled Procedure Step Start Date and Time"],
+        "0040,4005" => [["DT"], "Scheduled Procedure Step Start Date Time"],
         "0040,4006" => [["CS"], "Multiple Copies Flag"],
         "0040,4007" => [["SQ"], "Performed Processing Applications Code Sequence"],
         "0040,4009" => [["SQ"], "Human Performer Code Sequence"],
-        "0040,4010" => [["DT"], "Scheduled Procedure Step Modification Date and Time"],
-        "0040,4011" => [["DT"], "Expected Completion Date and Time"],
+        "0040,4010" => [["DT"], "Scheduled Procedure Step Modification Date Time"],
+        "0040,4011" => [["DT"], "Expected Completion Date Time"],
         "0040,4015" => [["SQ"], "Resulting General Purpose Performed Procedure Steps Sequence"],
         "0040,4016" => [["SQ"], "Referenced General Purpose Scheduled Procedure Step Sequence"],
         "0040,4018" => [["SQ"], "Scheduled Workitem Code Sequence"],
@@ -1961,7 +1967,7 @@ module DICOM
         "0040,A504" => [["SQ"], "Content Template Sequence"],
         "0040,A525" => [["SQ"], "Identical Documents Sequence"],
         "0040,A730" => [["SQ"], "Content Sequence"],
-        "0040,B020" => [["SQ"], "Annotation Sequence"],
+        "0040,B020" => [["SQ"], "Waveform Annotation Sequence"],
         "0040,DB00" => [["CS"], "Template Identifier"],
         "0040,DB06" => [["DT"], "Template Version"],  # RET
         "0040,DB07" => [["DT"], "Template Local Version"],  # RET
@@ -2039,7 +2045,7 @@ module DICOM
         "0050,0016" => [["DS"], "Device Diameter"],
         "0050,0017" => [["CS"], "Device Diameter Units"],
         "0050,0018" => [["DS"], "Device Volume"],
-        "0050,0019" => [["DS"], "Intermarker Distance"],
+        "0050,0019" => [["DS"], "Inter-Marker Distance"],
         "0050,001A" => [["CS"], "Container Component Material"],
         "0050,001B" => [["LO"], "Container Component ID"],
         "0050,001C" => [["FD"], "Container Component Length"],
@@ -2364,7 +2370,7 @@ module DICOM
         "0072,0604" => [["CS"], "Sorting Direction"],
         "0072,0700" => [["CS"], "Display Set Patient Orientation"],
         "0072,0702" => [["CS"], "VOI Type"],
-        "0072,0704" => [["CS"], "Pseudo-color Type"],
+        "0072,0704" => [["CS"], "Pseudo-Color Type"],
         "0072,0706" => [["CS"], "Show Grayscale Inverted"],
         "0072,0710" => [["CS"], "Show Image True Size Flag"],
         "0072,0712" => [["CS"], "Show Graphic Annotation Flag"],
@@ -2372,17 +2378,62 @@ module DICOM
         "0072,0716" => [["CS"], "Show Acquisition Techniques Flag"],
         "0072,0717" => [["CS"], "Display Set Horizontal Justification"],
         "0072,0718" => [["CS"], "Display Set Vertical Justification"],
+        # Group 0074
+        "0074,1000" => [["CS"], "Unified Procedure Step State"],
+        "0074,1002" => [["SQ"], "Unified Procedure Step UPS Progress Information Sequence"],
+        "0074,1004" => [["DS"], "Unified Procedure Step Progress"],
+        "0074,1006" => [["ST"], "Unified Procedure Step Progress Description"],
+        "0074,1008" => [["SQ"], "Unified Procedure Step Communications URI Sequence"],
+        "0074,100a" => [["ST"], "Contact URI"],
+        "0074,100c" => [["LO"], "Contact Display Name"],
+        "0074,100e" => [["SQ"], "Unified Procedure Step Discontinuation Reason Code Sequence"],
+        "0074,1020" => [["SQ"], "Beam Task Sequence"],
+        "0074,1022" => [["CS"], "Beam Task Type"],
+        "0074,1024" => [["IS"], "Beam Order Index"],
+        "0074,1030" => [["SQ"], "Delivery Verification Image Sequence"],
+        "0074,1032" => [["CS"], "Verification Image Timing"],
+        "0074,1034" => [["CS"], "Double Exposure Flag"],
+        "0074,1036" => [["CS"], "Double Exposure Ordering"],
+        "0074,1038" => [["DS"], "Double Exposure Meterset"],
+        "0074,103A" => [["DS"], "Double Exposure Field Delta"],
+        "0074,1040" => [["SQ"], "Related Reference RT Image Sequence"],
+        "0074,1042" => [["SQ"], "General Machine Verification Sequence"],
+        "0074,1044" => [["SQ"], "Conventional Machine Verification Sequence"],
+        "0074,1046" => [["SQ"], "Ion Machine Verification Sequence"],
+        "0074,1048" => [["SQ"], "Failed Attributes Sequence"],
+        "0074,104A" => [["SQ"], "Overridden Attributes Sequence"],
+        "0074,104C" => [["SQ"], "Conventional Control Point Verification Sequence"],
+        "0074,104E" => [["SQ"], "Ion Control Point Verification Sequence"],
+        "0074,1050" => [["SQ"], "Attribute Occurrence Sequence"],
+        "0074,1052" => [["AT"], "Attribute Occurrence Pointer"],
+        "0074,1054" => [["UL"], "Attribute Item Selector"],
+        "0074,1056" => [["LO"], "Attribute Occurrence Private Creator"],
+        "0074,1200" => [["CS"], "Scheduled Procedure Step Priority"],
+        "0074,1202" => [["LO"], "Worklist Label"],
+        "0074,1204" => [["LO"], "Procedure Step Label"],
+        "0074,1210" => [["SQ"], "Scheduled Processing Parameters Sequence"],
+        "0074,1212" => [["SQ"], "Performed Processing Parameters Sequence"],
+        "0074,1216" => [["SQ"], "Unified Procedure Step UPS Performed Procedure Sequence"],
+        "0074,1220" => [["SQ"], "Related Procedure Step Sequence"],
+        "0074,1222" => [["LO"], "Procedure Step Relationship Type"],
+        "0074,1230" => [["LO"], "Deletion Lock"],
+        "0074,1234" => [["AE"], "Receiving AE"],
+        "0074,1236" => [["AE"], "Requesting AE"],
+        "0074,1238" => [["LT"], "Reason for Cancellation"],
+        "0074,1242" => [["CS"], "SCP Status"],
+        "0074,1244" => [["CS"], "Subscription List Status"],
+        "0074,1246" => [["CS"], "Unified Procedure Step UPS List Status"],
         # Group 0088
         "0088,0130" => [["SH"], "Storage Media File-set ID"],
         "0088,0140" => [["UI"], "Storage Media File-set UID"],
         "0088,0200" => [["SQ"], "Icon Image Sequence"],
-        "0088,0904" => [["LO"], "Topic Title"],
-        "0088,0906" => [["ST"], "Topic Subject"],
-        "0088,0910" => [["LO"], "Topic Author"],
-        "0088,0912" => [["LO"], "Topic Keywords"],
+        "0088,0904" => [["LO"], "Topic Title"], # RET
+        "0088,0906" => [["ST"], "Topic Subject"], # RET
+        "0088,0910" => [["LO"], "Topic Author"], # RET
+        "0088,0912" => [["LO"], "Topic Keywords"], # RET
         # Group 0100
         "0100,0410" => [["CS"], "SOP Instance Status"],
-        "0100,0420" => [["DT"], "SOP Authorization Date and Time"],
+        "0100,0420" => [["DT"], "SOP Authorization Date Time"],
         "0100,0424" => [["LT"], "SOP Authorization Comment"],
         "0100,0426" => [["LO"], "Authorization Equipment Certification Number"],
         # Group 0400
@@ -2410,6 +2461,15 @@ module DICOM
         "0400,0563" => [["LO"], "Modifying System"],
         "0400,0564" => [["LO"], "Source of Previous Values"],
         "0400,0565" => [["CS"], "Reason for the Attribute Modification"],
+        # Group 1000
+        "1000,xxx0" => [["US"], "Escape Triplet"], # RET
+        "1000,xxx1" => [["US"], "Run Length Triplet"], # RET
+        "1000,xxx2" => [["US"], "Huffman Table Size"], # RET
+        "1000,xxx3" => [["US"], "Huffman Table Triplet"], # RET
+        "1000,xxx4" => [["US"], "Shift Table Size"], # RET
+        "1000,xxx5" => [["US"], "Shift Table Triplet"], # RET
+        # Group 1010
+        "1010,xxxx" => [["US"], "Zonal Map"], # RET
         # Group 2000
         "2000,0010" => [["IS"], "Number of Copies"],
         "2000,001E" => [["SQ"], "Printer Configuration Sequence"],
@@ -2492,13 +2552,13 @@ module DICOM
         "2050,0020" => [["CS"], "Presentation LUT Shape"],
         "2050,0500" => [["SQ"], "Referenced Presentation LUT Sequence"],
         # Group 2100
-        "2100,0010" => [["SH"], "Print Job ID"],
+        "2100,0010" => [["SH"], "Print Job ID"], # RET
         "2100,0020" => [["CS"], "Execution Status"],
         "2100,0030" => [["CS"], "Execution Status Info"],
         "2100,0040" => [["DA"], "Creation Date"],
         "2100,0050" => [["TM"], "Creation Time"],
         "2100,0070" => [["AE"], "Originator"],
-        "2100,0140" => [["AE"], "Destination AE"],
+        "2100,0140" => [["AE"], "Destination AE"], # RET
         "2100,0160" => [["SH"], "Owner ID"],
         "2100,0170" => [["IS"], "Number of Films"],
         "2100,0500" => [["SQ"], "Referenced Print Job Sequence (Pull Stored Print)"],  # RET
@@ -3059,6 +3119,12 @@ module DICOM
         "300A,0401" => [["SQ"], "Referenced Setup Image Sequence"],
         "300A,0402" => [["ST"], "Setup Image Comment"],
         "300A,0410" => [["SQ"], "Motion Synchronization Sequence"],
+        "300A,0412" => [["FL"], "Control Point Orientation"],
+        "300A,0420" => [["SQ"], "General Accessory Sequence"],
+        "300A,0421" => [["SH"], "General Accessory ID"],
+        "300A,0422" => [["ST"], "General Accessory Description"],
+        "300A,0423" => [["CS"], "General Accessory Type"],
+        "300A,0424" => [["IS"], "General Accessory Number"],
         # Group 300C
         "300C,0002" => [["SQ"], "Referenced RT Plan Sequence"],
         "300C,0004" => [["SQ"], "Referenced Beam Sequence"],
@@ -3203,6 +3269,14 @@ module DICOM
         "60xx,4000" => [["LT"], "Overlay Comments"],  # RET
         # Pixel data and structural data elements:
         "7FE0,0010" => [["OW","OB"], "Pixel Data"],
+        "7FE0,0020" => [["OW"], "Coefficients SDVN"], # RET
+        "7FE0,0030" => [["OW"], "Coefficients SDHN"], # RET
+        "7FE0,0040" => [["OW"], "Coefficients SDDN"], # RET
+        "7Fxx,0010" => [["OW","OB"], "Variable Pixel Data"], # RET
+        "7Fxx,0011" => [["US"], "Variable Next Data Group"], # RET
+        "7Fxx,0020" => [["OW"], "Variable Coefficients SDVN"], # RET
+        "7Fxx,0030" => [["OW"], "Variable Coefficients SDHN"], # RET
+        "7Fxx,0040" => [["OW"], "Variable Coefficients SDDN"], # RET
         "FFFA,FFFA" => [["SQ"], "Digital Signatures Sequence"],
         "FFFC,FFFC" => [["OB"], "Data Set Trailing Padding"],
         "FFFE,E000" => [["()"], "Item"], # VR does not exist for this element
