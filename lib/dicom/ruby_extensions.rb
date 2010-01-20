@@ -35,4 +35,11 @@ class String
     return result
   end
 
+  # Check if a given tag string indicates a private tag (Odd group number) by doing a regexp matching.
+  def private?
+    result = false
+    result = true if self.upcase =~ /\A\h{3}[1,3,5,7,9,B,D,F],\h{4}\z/
+    return result
+  end
+
 end
