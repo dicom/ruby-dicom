@@ -30,7 +30,7 @@ module DICOM
     def check_ts_validity(uid)
       result = false
       value = @uid[uid.rstrip]
-      if value != nil
+      if value
         if value[1] == "Transfer Syntax"
           # Proved valid:
           result = true
@@ -45,7 +45,7 @@ module DICOM
       result = false
       if uid
         value = @uid[uid.rstrip]
-        if value != nil
+        if value
           if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
             # It seems we have compression:
             result = true
@@ -56,40 +56,62 @@ module DICOM
     end
 
 
-    # Returns data element name and value representation from the dictionary if the data element
-    # is recognized, else it returns "Unknown Name" and "UN".
+    # Returns data element name and value representation from the dictionary unless the data element
+    # is private. If a non-private tag is not recognized, "Unknown Name" and "UN" is returned.
     def get_name_vr(tag)
-      values = @tags[tag]
-      if values != nil
-        name = values[1]
-        vr = values[0][0]
+      if tag.private?
+        name = "Private"
+        vr = "UN"
       else
-        # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
-        # Split tag in group and element:
-        group = tag[0..3]
-        element = tag[5..8]
-        if element == "0000"
-          # Group length:
-          name = "Group Length"
-          vr = "UL"
-        elsif tag[0..6] == "0020,31"
-          # Source Image ID's: (Retired)
-          values = @tags["0020,31xx"]
+        # Check the dictionary:
+        values = @tags[tag]
+        if values
           name = values[1]
           vr = values[0][0]
-        elsif tag[0..1] == "50" or tag[0..1] == "60"
-          # Group 50xx (retired) and 60xx:
-          new_tag = tag[0..1]+"xx"+tag[4..8]
-          values = @tags[new_tag]
-          if values != nil
+        else
+          # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
+          # Split tag in group and element:
+          group = tag[0..3]
+          element = tag[5..8]
+          if element == "0000"
+            # Group length:
+            name = "Group Length"
+            vr = "UL"
+          elsif tag[0..6] == "0020,31"
+            # Source Image ID's (Retired):
+            values = @tags["0020,31xx"]
             name = values[1]
             vr = values[0][0]
+          elsif group == "1000" and element =~ /\A\h{3}[0-5]\z/
+            # Group 1000,xxx[0-5] (Retired):
+            new_tag = group + "xx" + element[3..3]
+            values = @tags[new_tag]
+          elsif group == "1010"
+            # Group 1010,xxxx (Retired):
+            new_tag = group + "xxxx"
+            values = @tags[new_tag]
+          elsif tag[0..1] == "50" or tag[0..1] == "60"
+            # Group 50xx (Retired) and 60xx:
+            new_tag = tag[0..1]+"xx"+tag[4..8]
+            values = @tags[new_tag]
+            if values
+              name = values[1]
+              vr = values[0][0]
+            end
+          elsif tag[0..1] == "7F" and tag[5..6] == "00"
+            # Group 7Fxx,00[10,11,20,30,40] (Retired):
+            new_tag = tag[0..1]+"xx"+tag[4..8]
+            values = @tags[new_tag]
+            if values
+              name = values[1]
+              vr = values[0][0]
+            end
           end
-        end
-        # If none of the above checks yielded a result, the tag is unknown:
-        if name == nil
-          name = "Unknown Name"
-          vr = "UN"
+          # If none of the above checks yielded a result, the tag is unknown:
+          unless name
+            name = "Unknown Name"
+            vr = "UN"
+          end
         end
       end
       return [name,vr]
@@ -125,7 +147,7 @@ module DICOM
     def get_uid(uid)
       value = @uid[uid.rstrip]
       # Fetch the name of this UID:
-      if value != nil
+      if value
         name = value[0]
       else
         name = "Unknown UID!"
