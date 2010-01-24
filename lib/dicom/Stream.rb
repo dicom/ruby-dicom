@@ -1,4 +1,4 @@
-#    Copyright 2009 Christoffer Lervag
+#    Copyright 2009-2010 Christoffer Lervag
 
 # This file contains the Stream class, which handles all encoding to and
 # decoding from binary strings. It is used by the other components of

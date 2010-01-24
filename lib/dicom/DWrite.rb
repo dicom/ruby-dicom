@@ -1,4 +1,4 @@
-#    Copyright 2008-2009 Christoffer Lervag
+#    Copyright 2008-2010 Christoffer Lervag
 
 # Some notes about this DICOM file writing class:
 # In its current state, this class will always try to write the file such that it is compliant to the

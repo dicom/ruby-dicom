@@ -1,6 +1,6 @@
 # coding: ISO-8859-1
 
-#    Copyright 2008-2009 Christoffer Lervag
+#    Copyright 2008-2010 Christoffer Lervag
 
 module DICOM
   # This class holds all the dictionary data.

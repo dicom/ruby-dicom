@@ -1,4 +1,5 @@
-#    Copyright 2008-2009 Christoffer Lervag
+#    Copyright 2008-2010 Christoffer Lervag
+
 module DICOM
 
   # Class for anonymizing DICOM files:
@@ -34,19 +35,19 @@ module DICOM
       # Write paths will be determined later and put in this array:
       @write_paths = Array.new
       # Set the default data elements to be anonymized:
-      set_defaults()
-    end # of method initialize
+      set_defaults
+    end
 
 
     # Adds a folder who's files will be anonymized:
     def add_folder(path)
-      @folders += [path] if path
+      @folders << path if path
     end
 
 
     # Adds an exception folder that is to be avoided when anonymizing:
     def add_exception(path)
-      @exceptions += [path] if path
+      @exceptions << path if path
     end
 
 
@@ -59,9 +60,9 @@ module DICOM
         if tag.is_a?(String)
           if tag.length == 9
             # Add anonymization information for this tag:
-            @tags += [tag]
-            @values += [value]
-            @enum += [enum]
+            @tags << tag
+            @values << value
+            @enum << enum
           else
             puts "Warning: Invalid tag length. Please use the form 'GGGG,EEEE'."
           end
@@ -71,7 +72,7 @@ module DICOM
       else
         puts "Warning: No tag supplied. Nothing to add."
       end
-    end # of method add_tag
+    end
 
 
     # Set enumeration status for a specific tag (toggle true/false)
@@ -86,7 +87,7 @@ module DICOM
       else
         puts "Specified tag not found in anonymization array. No changes made."
       end
-    end # of method change_enum
+    end
 
 
     # Changes the value used in anonymization for a specific tag:
@@ -101,7 +102,7 @@ module DICOM
       else
         puts "Specified tag not found in anonymization array. No changes made."
       end
-    end # of method change_value
+    end
 
 
     # Executes the anonymization process:
@@ -111,7 +112,7 @@ module DICOM
       puts "Initiating anonymization process."
       start_time = Time.now.to_f
       puts "Searching for files..."
-      load_files()
+      load_files
       puts "Done."
       if @files.length > 0
         if @tags.length > 0
@@ -119,7 +120,7 @@ module DICOM
           if @write_path
             # Determine the write paths, as anonymized files will be written to a separate location:
             puts "Processing write paths..."
-            process_write_paths()
+            process_write_paths
             puts "Done"
           else
             # Overwriting old files:
@@ -128,7 +129,7 @@ module DICOM
           end
           # If the user wants enumeration, we need to prepare variables for storing
           # existing information associated with each tag:
-          create_enum_hash() if @enumeration
+          create_enum_hash if @enumeration
           # Start the read/update/write process:
           puts "Initiating read/update/write process (This may take some time)..."
           # Monitor whether every file read/write was successful:
@@ -164,7 +165,8 @@ module DICOM
             else
               all_read = false
             end
-          end # of @files.each...
+          end
+          # Finished anonymizing files. Print elapsed time and status of anonymization:
           end_time = Time.now.to_f
           puts "Anonymization process completed!"
           if all_read
@@ -180,7 +182,7 @@ module DICOM
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
           if @enumeration and @identity_file
             puts "Writing identity file."
-            write_identity_file()
+            write_identity_file
             puts "Done"
           end
           elapsed = (end_time-start_time).to_s
@@ -197,7 +199,7 @@ module DICOM
 
     # Prints a list of which tags are currently selected for anonymization along with
     # replacement values that will be used and enumeration status.
-    def print()
+    def print
       # Extract the string lengths which are needed to make the formatting nice:
       names = Array.new
       types = Array.new
@@ -207,8 +209,8 @@ module DICOM
       value_lengths = Array.new
       @tags.each_index do |i|
         arr = LIBRARY.get_name_vr(@tags[i])
-        names += [arr[0]]
-        types += [arr[1]]
+        names << arr[0]
+        types << arr[1]
         tag_lengths[i] = @tags[i].length
         name_lengths[i] = names[i].length
         type_lengths[i] = types[i].length
@@ -241,13 +243,13 @@ module DICOM
           value = @values[i]
         end
         tag = @tags[i]
-        lines += [tag + f1 + names[i] + f2 + types[i] + f3 + value.to_s + f4 + enum.to_s ]
+        lines << tag + f1 + names[i] + f2 + types[i] + f3 + value.to_s + f4 + enum.to_s
       end
       # Print to screen:
       lines.each do |line|
         puts line
       end
-    end # of method print_tags
+    end
 
 
     # Removes a tag from the list of tags that will be anonymized:
@@ -260,7 +262,7 @@ module DICOM
       else
         puts "Specified tag not found in anonymization array. No changes made."
       end
-    end # of method remove_tag
+    end
 
 
     # The following methods are private:
@@ -285,11 +287,11 @@ module DICOM
         result = index - 1
       end
       return result
-    end # of method common_path
+    end
 
 
     # Creates a hash that is used for storing information used when enumeration is desired.
-    def create_enum_hash()
+    def create_enum_hash
       @enum.each_index do |i|
         @enum_old_hash[@tags[i]] = Array.new
         @enum_new_hash[@tags[i]] = Array.new
@@ -309,23 +311,23 @@ module DICOM
           # Current value has not been encountered before:
           value = @values[j]+(p_index + 1).to_s
           # Store value in array (and hash):
-          previous_old += [current]
-          previous_new += [value]
+          previous_old << current
+          previous_new << value
           @enum_old_hash[@tags[j]] = previous_old
           @enum_new_hash[@tags[j]] = previous_new
         else
           # Current value has been observed before:
           value = previous_new[previous_old.index(current)]
-        end # of if previous.index...else..
+        end
       else
         value = @values[j]
-      end # of if @enum[j]..else..
+      end
       return value
-    end # of method handle_enumeration
+    end
 
 
     # Discover all the files contained in the specified directory and all its sub-directories:
-    def load_files()
+    def load_files
       # Load find library:
       require 'find'
       # Iterate through the folders (and its subfolders) to extract all files:
@@ -342,50 +344,50 @@ module DICOM
               Find.prune  # Don't look any further into this directory.
             end
           else
-            @files += [path]  # Store the file in our array
+            @files << path  # Store the file in our array
           end
         end
-      end # of for dir...
-    end # of method load_files
+      end
+    end
 
 
     # Analyses the write_path and the 'read' file path to determine if the have some common root.
     # If there are parts of file that exist also in write path, it will not add those parts to write_path.
-    def process_write_paths()
-      # First make sure @write_path ends with a "/":
-      last_character = @write_path[(@write_path.length-1)..(@write_path.length-1)]
-      @write_path = @write_path + "/" unless last_character == "/"
-      # Separate behaviour if we have one, or several files in our array:
+    def process_write_paths
+      # First make sure @write_path ends with a file separator character:
+      last_character = @write_path[-1..-1]
+      @write_path = @write_path + File::SEPARATOR unless last_character == File::SEPARATOR
+      # Differing behaviour if we have one, or several files in our array:
       if @files.length == 1
         # One file.
         # Write path is requested write path + old file name:
-        str_arr = @files[0].split("/")
-        @write_paths += [@write_path + str_arr.last]
+        str_arr = @files[0].split(File::SEPARATOR)
+        @write_paths << @write_path + str_arr.last
       else
         # Several files.
         # Find out how much of the path they have in common, remove that and
         # add the remaining to the @write_path:
-        str_arr = @files[0].split("/")
+        str_arr = @files[0].split(File::SEPARATOR)
         last_match_index = common_path(str_arr, 0)
         if last_match_index >= 0
           # Remove the matching folders from the path that will be added to @write_path:
           @files.each do |file|
-            arr = file.split("/")
-            part_to_write = arr[(last_match_index+1)..(arr.length-1)].join("/")
-            @write_paths += [@write_path + part_to_write]
+            arr = file.split(File::SEPARATOR)
+            part_to_write = arr[(last_match_index+1)..(arr.length-1)].join(File::SEPARATOR)
+            @write_paths << @write_path + part_to_write
           end
         else
           # No common folders. Add all of original path to write path:
           @files.each do |file|
-            @write_paths += [@write_path + file]
+            @write_paths << @write_path + file
           end
         end
-      end # of if @files.length..
-    end # of method process_write_paths
+      end
+    end
 
 
-    # Default tags that will be anonymized, along with some settings for each:
-    def set_defaults()
+    # Default tags that will be anonymized, along with default replacement value and enumeration setting.
+    def set_defaults
       data = [
       ["0008,0012", "20000101", false], # Instance Creation Date
       ["0008,0013", "000000.00", false], # Instance Creation Time
@@ -406,12 +408,12 @@ module DICOM
       @tags = data[0]
       @values = data[1]
       @enum = data[2]
-    end # of method set_defaults
+    end
 
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
     # using the enumeration feature. Values will be saved in a text file, using semi colon delineation.
-    def write_identity_file()
+    def write_identity_file
       # Open file and prepare to write text:
       File.open( @identity_file, 'w' ) do |output|
         # Cycle through each
@@ -427,10 +429,10 @@ module DICOM
             end
             # Print empty line for separation between different tags:
             output.print "\n"
-          end # of if @enum[i]
-        end # of @tags.each...
-      end # of File.open...
-    end # of method write...
+          end
+        end
+      end
+    end
 
 
   end # of class

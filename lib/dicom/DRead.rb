@@ -1,4 +1,4 @@
-#    Copyright 2008-2009 Christoffer Lervag
+#    Copyright 2008-2010 Christoffer Lervag
 
 # Some notes about this DICOM file reading class:
 # In addition to reading files that are compliant to DICOM 3 Part 10, the philosophy of this library

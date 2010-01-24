@@ -1,4 +1,4 @@
-#    Copyright 2008-2009 Christoffer Lervag
+#    Copyright 2008-2010 Christoffer Lervag
 
 module DICOM
   # Class which holds the methods that interact with the DICOM dictionary.

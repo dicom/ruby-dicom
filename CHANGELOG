@@ -121,4 +121,3 @@ Known issues:
 * Reading Big Endian files has fairly good, but possibly not full, support.
 * Reading on a Big Endian system is not tested.
 * Reading of multiple frame image data to RMagick does not work in all cases.
-* Retrieving images when file contains two or more unrelated images may not be handled correctly.
