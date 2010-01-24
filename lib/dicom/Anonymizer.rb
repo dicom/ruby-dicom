@@ -396,6 +396,7 @@ module DICOM
       ["0008,0080", "Institution", true], # Institution name
       ["0008,0090", "Physician", true], # Referring Physician's name
       ["0008,1010", "Station", true], # Station name
+      ["0008,1070", "Operator", true], # Operator's Name
       ["0010,0010", "Patient", true], # Patient's name
       ["0010,0020", "ID", true], # Patient's ID
       ["0010,0030", "20000101", false], # Patient's Birth Date
