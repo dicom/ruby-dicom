@@ -200,10 +200,10 @@ PUBLIC CLASS METHODS
 
 ACCESSORS (Read & write)
   :blank
-    A boolean that you can set if you want to all anonymization tags to be blank
+    A boolean that you can set as true if you want all anonymization tags to be blank
     instead of having some generic value.
   :enumeration
-    A boolean that if set will make the script set enumerated values on anonymized tags,
+    A boolean that if set as true will make the script set enumerated values on anonymized tags,
     such that you are able to separate the DICOM files of unique individuals after anonymization.
     Example of fictious result:
       "Joe Sixpack" => "Person1" and "Joe Schmoe" => "Person2"
@@ -212,7 +212,9 @@ ACCESSORS (Read & write)
     the anonymized DICOM files at a later stage. The relationship between original names and
     enumerated values is stored in a text file which you can keep for yourself, while handing out
     the anonymized DICOM files to a third party.
-
+  :remove_private
+    If this accessor is set as true, all private tags in the selected DICOM files will be removed.
+    This can be useful if you are unsure whether the private tags contain sensitive data or not.
   :write_path
     You may set a different path for where the anonymized DICOM files will be stored. If this
     value is not set, the Anonymizer script will overwrite the old DICOM files.

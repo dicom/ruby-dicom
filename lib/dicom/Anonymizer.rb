@@ -7,7 +7,7 @@ module DICOM
   # ftp://medical.nema.org/medical/dicom/Supps/sup142_03.pdf
   class Anonymizer
 
-    attr_accessor :blank, :enumeration, :identity_file, :verbose, :write_path
+    attr_accessor :blank, :enumeration, :identity_file, :remove_private, :verbose, :write_path
 
     # Initialize the Anonymizer instance:
     def initialize(opts={})
@@ -15,11 +15,17 @@ module DICOM
       @verbose = opts[:verbose]
       @verbose = true if @verbose == nil
       # Default value of accessors:
+      # Replace all values with a blank string?
       @blank = false
+      # Enumerate selected replacement values?
       @enumeration = false
+      # All private tags may be removed if desired:
+      @remove_private = false
+      # A separate path may be selected for writing the anonymized files:
       @write_path = nil
       # Array of folders to be processed for anonymization:
       @folders = Array.new
+      # Folders that will be skipped:
       @exceptions = Array.new
       # Data elements which will be anonymized (the array will hold a list of tag strings):
       @tags = Array.new
@@ -159,6 +165,8 @@ module DICOM
                 # Update DICOM object with new value:
                 obj.set_value(value, @tags[j], :create => false)
               end
+              # Remove private tags?
+              obj.remove_private if @remove_private
               # Write DICOM file:
               obj.write(@write_paths[i])
               all_write = false unless obj.write_success
