@@ -1,8 +1,8 @@
-DICOM is a small and simple library for handling DICOM files (reading, editing
+Ruby DICOM is a small and simple library for handling DICOM files (reading, editing
 and writing) and DICOM network communication (both client and server side).
 It is written completely in Ruby and has no external dependencies.
 
-Copyright 2008-2010 Christoffer Lervåg (chris.lervag [@nospam] @gmail.com)
+Copyright 2008-2010 Christoffer LervÃ¥g (chris.lervag [@nospam] @gmail.com)
 
 INSTALLATION
 
@@ -162,7 +162,7 @@ PUBLIC INSTANCE METHODS
     Removes the specified data element from the DICOM object. You can use this method
     if you are editing a DICOM object and wants to get rid of one or more elements.
     Element may be an array index, element name or element tag.
-  
+
   remove_private
     Removes all private data elements from the DICOM object.
 
@@ -174,6 +174,8 @@ PUBLIC INSTANCE METHODS
       obj.set_value("Anonymous", "0010,0010", :create => false)
     Example 2: (Insert binary data for a specific tag)
       obj.set_value(data, 52, :bin => true, :create => false)
+    Example 3: (Create a private data element)
+      obj.set_value("Test", "0011,0010", :vr => "LO")
 
   set_image_magick(object)
     Inserts a RMagick image object to the pixel data tag of your DICOM object.

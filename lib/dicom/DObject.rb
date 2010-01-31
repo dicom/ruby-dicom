@@ -821,12 +821,11 @@ module DICOM
           modify_element(value, pos[0], :bin => bin)
         else
           # We need to create element:
-					# In the case that name has been provided instead of a tag, check with the library first:
+          # In the case that name has been provided instead of a tag, check with the library first:
           tag = LIBRARY.get_tag(element)
-					# If this doesnt give a match, we may be dealing with a private tag:
-					tag = element
-          #if tag == false
-					unless element.is_a_tag?
+          # If this doesnt give a match, we may be dealing with a private tag:
+          tag = element unless tag
+          unless element.is_a_tag?
             add_msg("Warning: Method set_value could not create data element, because the data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
           else
             # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
@@ -893,7 +892,7 @@ module DICOM
     # Creates a new data element:
     def create_element(value, tag, last_pos, options={})
       bin_only = options[:bin]
-      vr = options[:vr]
+      vr = options[:vr].upcase if options[:vr].is_a?(String)
       # Fetch the VR:
       info = LIBRARY.get_name_vr(tag)
       vr = info[1] unless vr
