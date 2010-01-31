@@ -1,12 +1,12 @@
 #    Copyright 2010 Christoffer Lervag
 
-# The purpose of this file is to make it as easy as humanly possible for users to customise the way
+# The purpose of this file is to make it very easy for users to customise the way
 # DICOM files are handled when they are received through the network.
 # The default behaviour is to save the file to disk using a folder structure determined by the file's DICOM tags.
 # Some suggested alternatives:
 # - Analyzing tags and/or image data to determine further actions.
 # - Modify the DICOM object before it is saved to disk.
-# - Modify the folder structure for the way DICOM files are saved to disk.
+# - Modify the folder structure in which DICOM files are saved to disk.
 # - Store DICOM contents in a database (highly relevant if you are building a Ruby on Rails application).
 # - Retransmit the DICOM object to another network destination using the DClient class.
 

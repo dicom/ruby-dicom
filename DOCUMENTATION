@@ -12,20 +12,6 @@ gem install dicom
 
 DOCUMENTATION
 
-CLASS DLibrary
-
-PUBLIC CLASS METHODS
-
-  new()
-
-    Initialize a new Library (dictionary) object.
-    Useful if you want to make a script that reads hundreds or thousands of DICOM files,
-    because you can save time by loading the library one time at startup instead of
-    having the library being loaded for each DICOM file being read.
-    Example:
-      myLib = DICOM::DLibrary.new
-
-
 CLASS DObject
 
 PUBLIC CLASS METHODS
@@ -36,10 +22,10 @@ PUBLIC CLASS METHODS
     Example 1: (The simplest way)
       require 'dicom'
       obj = DICOM::DObject.new("myFile.dcm")
-    Example 2: (Using a pre-loaded library to speed up reading when reading multiple files)
-      obj = DICOM::DObject.new("myFile.dcm", :verbose => false, :lib => myLib)
-    Example 3: (Open an empty DICOM object)
-      obj = DICOM::DObject.new(nil)
+    Example 2: (Reading a DICOM file that has already been loaded into memory in a binary string)
+      obj = DICOM::DObject.new(bin_data, :bin => true, :syntax => syntax_string)
+    Example 3: (Open an empty DICOM object & choose non-verbose behaviour)
+      obj = DICOM::DObject.new(nil, :verbose => false)
 
 ACCESSORS (read only)
   :read_success

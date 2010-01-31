@@ -417,9 +417,9 @@ module DICOM
                 extract = false
               end
             end
-          end # of pos.each do..
+          end
           value = below_pos if below_pos.size != 0
-        end # of if pos.size..else..
+        end
       end
       return value
     end
@@ -842,7 +842,7 @@ module DICOM
                 else # Increase index in anticipation of a 'hit'.
                   index += 1
                 end
-              end # of while
+              end
             else
               # We are dealing with an empty DICOM object:
               index = nil
@@ -1007,7 +1007,7 @@ module DICOM
         else
           # Just encode:
           bin = @stream.encode(value, vr)
-      end # of case vr
+      end
       return bin
     end # of encode
 
@@ -1038,10 +1038,10 @@ module DICOM
             add_msg("Warning: Decoding bit depth 12 is not implemented yet! Please contact the author.")
           else
             raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
-        end # of case bit_depth
+        end
       else
         add_msg("Error: DICOM object does not contain the 'Bit Depth' data element (0028,0010).")
-      end # of if bit_depth ..
+      end
       return pixels
     end
 
@@ -1319,7 +1319,7 @@ module DICOM
                 element_length += 4
               else
                 element_length += 2
-            end # of case
+            end
           else
             # In the implicit scenario it is easier:
             element_length = 4
