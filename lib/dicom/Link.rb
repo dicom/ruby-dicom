@@ -323,21 +323,15 @@ module DICOM
       if data.length > 8
         # Read the received data stream and load it as a DICOM object:
         obj = DObject.new(data, :bin => true, :syntax => @transfer_syntax)
-        # File will be saved with the following path:
-        # original_path/<PatientID>/<StudyDate>/<Modality>/
-        # File name will be equal to the SOP Instance UID
-        file_name = obj.get_value("0008,0018")
-        folders = Array.new(3)
-        folders[0] = obj.get_value("0010,0020") || "PatientID"
-        folders[1] = obj.get_value("0008,0020") || "StudyDate"
-        folders[2] = obj.get_value("0008,0060") || "Modality"
-        full_path = path + folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
-        obj.write(full_path, @transfer_syntax)
+        # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
+        # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
+        # their own customised solutions for handling the incoming DICOM files:
+        success_message = FileHandler.receive_file(obj, path, @transfer_syntax)
       else
         # Valid DICOM data not received:
-        full_path = false
+        success_message = false
       end
-      return full_path
+      return success_message
     end
 
 
@@ -1100,5 +1094,5 @@ module DICOM
     end
 
 
-  end
-end
+  end # of class
+end # of module

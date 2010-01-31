@@ -99,13 +99,14 @@ module DICOM
                   link.handle_release(session)
                 else
                   # Process the incoming data:
-                  file_path = link.handle_incoming_data(session, path)
-                  if file_path
-                    add_notice("DICOM file saved to: " + file_path)
+                  success_message = link.handle_incoming_data(session, path)
+                  if success_message
+                    add_notice(success_message)
                     # Send a receipt for received data:
                     link.handle_response(session)
                   else
-                    add_error("Invalid data received (too small to be a valid DICOM file). File not saved.")
+                    # Something has gone wrong:
+                    add_error("Invalid data received (either the data was too small to be a valid DICOM file, or it was not parsed succesfully).")
                   end
                   # Release the connection:
                   link.handle_release(session)
@@ -289,5 +290,5 @@ module DICOM
     end
 
 
-  end
-end
+  end # of class
+end # of module

@@ -6,6 +6,7 @@ require 'dicom/DObject'
 require 'dicom/DRead'
 require 'dicom/DServer'
 require 'dicom/DWrite'
+require 'dicom/FileHandler'
 require 'dicom/Link'
 require 'dicom/Stream'
 # Extended library:
