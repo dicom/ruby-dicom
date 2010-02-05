@@ -757,9 +757,14 @@ module DICOM
           pos = pos[0]
           # Update group length:
           if @tags[pos][5..8] != "0000"
-            change = @lengths[pos]
+            # Note: When removing an item, its length value must not be used for 'change' (it's value is in reality nil):
+            if @types[pos] == "()" or @types[pos] == "SQ"
+              change = 0
+            else
+              change = @lengths[pos]
+            end
             vr = @types[pos]
-            update_group_length(pos, vr, change, -1)
+            update_group_and_parents_length(pos, vr, change, -1)
           end
           # Remove entry from arrays:
           @tags.delete_at(pos)
@@ -957,7 +962,7 @@ module DICOM
         pos = @tags.index(tag)
         if @tags[pos][5..8] != "0000"
           change = bin.length
-          update_group_length(pos, vr, change, 1)
+          update_group_and_parents_length(pos, vr, change, 1)
         end
       else
         add_msg("Binary is nil. Nothing to save.")
@@ -1010,6 +1015,38 @@ module DICOM
       end
       return bin
     end # of encode
+
+
+    # Find the position(s) of the group length tag(s) that the given tag is associated with.
+    # If a group length tag does not exist, return false.
+    def find_group_length(pos)
+      positions = Array.new
+      group = @tags[pos][0..4]
+      # Check if our tag is part of a sequence/item:
+      if @levels[pos] > 0
+        # Add (possible) group length of top parent:
+        parent_positions = parents(pos)
+        first_parent_gl_pos = find_group_length(parent_positions.first)
+        positions << first_parent_gl_pos.first if first_parent_gl_pos
+        # Add (possible) group length at current tag's level:
+        valid_positions = children(parent_positions.last)
+        level_gl_pos = get_pos(group+"0000", :array => valid_positions)
+        positions << level_gl_pos.first if level_gl_pos
+      else
+        # We are dealing with a top level tag:
+        gl_pos = get_pos(group+"0000")
+        # Note: Group level tags of this type may be found elsewhere in the DICOM object inside other
+        # sequences/items. We must make sure that such tags are not added to our list:
+        if gl_pos
+          gl_pos.each do |gl|
+            positions << gl if @levels[gl] == 0
+          end
+        end
+      end
+      # If we didnt find any positions, we return false:
+      positions = false unless positions.length > 0
+      return positions
+    end
 
 
     # Unpacks and returns pixel data from a specified data element array position:
@@ -1075,7 +1112,7 @@ module DICOM
         # Update group length (as long as it was not the group length that was modified):
         if @tags[pos][5..8] != "0000"
           change = bin.length - old_length
-          update_group_length(pos, vr, change, 0)
+          update_group_and_parents_length(pos, vr, change, 0)
         end
       else
         add_msg("Binary is nil. Nothing to save.")
@@ -1284,20 +1321,44 @@ module DICOM
     end
 
 
-    # Updates the group length value when a data element has been updated, created or removed:
-    # The variable change holds the change in value length for the updated data element.
-    # (Change should be positive when a data element is removed - it will only be negative when editing an element to a shorter value)
+    # Updates the group length value when a data element has been updated, created or removed.
+    # If the tag is part of a sequence/item, and its parent have length values, these parents' lengths are also updated.
+    # The variable value_change_length holds the change in value length for the updated data element.
+    # (value_change_length should be positive when a data element is removed - it will only be negative when editing an element to a shorter value)
     # The variable existance is -1 if data element has been removed, +1 if element has been added and 0 if it has been updated.
-    # (Perhaps in the future this functionality might be moved to the DWrite class, it might give an easier implementation)
-    def update_group_length(pos, type, change, existance)
-      # Find position of relevant group length (if it exists):
-      gl_pos = @tags.index(@tags[pos][0..4] + "0000")
-      existance = 0 if existance == nil
-      # If it exists, calculate change:
+    # There is some repetition of code in this method, so there is possible a potential to clean it up somewhat.
+    def update_group_and_parents_length(pos, type, value_change_length, existance)
+      update_positions = Array.new
+      # Is this a tag with parents?
+      if @levels[pos] > 0
+        parent_positions = parents(pos)
+        parent_positions.each do |parent|
+          # If the parent has a length value, then it must be added to our list of tags that will have its length updated:
+          update_positions << parent if @lengths[parent] > 0
+        end
+      end
+      # Check for a corresponding group length tag:
+      gl_pos = find_group_length(pos)
+      # Join the arrays if group length tag(s) were actually discovered (Operator | can be used here for simplicity, but seems to be not working in Ruby 1.8)
       if gl_pos
+        gl_pos.each do |gl|
+          update_positions << gl
+        end
+      end
+      existance = 0 unless existance
+      # If group length(s)/parent(s) to be updated exists, calculate change:
+      if update_positions
+        values = Array.new
         if existance == 0
-          # Element has only been updated, so we only need to think about value change:
-          value = @values[gl_pos] + change
+          # Element has only been updated, so we only need to think about value value_change_length:
+          update_positions.each do |up|
+            # If we have a group length, value will be changed, if it is a sequence/item, length will be changed:
+            if @tags[up][5..8] == "0000"
+              values << @values[up] + value_change_length
+            else
+              values << @lengths[up] + change
+            end
+          end
         else
           # Element has either been created or removed. This means we need to calculate the length of its other parts.
           if @explicit
@@ -1325,17 +1386,31 @@ module DICOM
             element_length = 4
           end
           # Update group length for creation/deletion scenario:
-          change = (4 + element_length + change) * existance
-          value = @values[gl_pos] + change
+          change = (4 + element_length + value_change_length) * existance
+          update_positions.each do |up|
+            # If we have a group length, value will be changed, if it is a sequence/item, length will be changed:
+            if @tags[up][5..8] == "0000"
+              values << @values[up] + change
+            else
+              values << @lengths[up] + change
+            end
+          end
         end
-        # Write the new Group Length value:
-        # Encode the new value to binary:
-        bin = encode(value, "UL")
-        # Update arrays:
-        @values[gl_pos] = value
-        @raw[gl_pos] = bin
+        # Write the new Group Length(s)/parent(s) value(s):
+        update_positions.each_index do |i|
+          # If we have a group length, value will be changed, if it is a sequence/item, length will be changed:
+          if @tags[update_positions[i]][5..8] == "0000"
+            # Encode the new value to binary:
+            bin = encode(values[i], "UL")
+            # Update arrays:
+            @values[update_positions[i]] = values[i]
+            @raw[update_positions[i]] = bin
+          else
+            @lengths[update_positions[i]] = values[i]
+          end
+        end
       end
-    end # of update_group_length
+    end # of update_group_and_parents_length
 
 
   end # of class
