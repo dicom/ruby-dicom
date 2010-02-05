@@ -59,7 +59,7 @@ module DICOM
     # Returns data element name and value representation from the dictionary unless the data element
     # is private. If a non-private tag is not recognized, "Unknown Name" and "UN" is returned.
     def get_name_vr(tag)
-      if tag.private?
+      if tag.private? and tag[5..8] != "0000"
         name = "Private"
         vr = "UN"
       else
