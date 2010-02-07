@@ -583,7 +583,7 @@ module DICOM
       # There may be a more elegant way to do this.
       pos_valid.each do |pos|
         tags << @tags[pos]
-        levels << @levels[pos]
+        levels << @levels[pos].to_s
         names << @names[pos]
         types << @types[pos]
         lengths << @lengths[pos].to_s
@@ -595,24 +595,27 @@ module DICOM
         front_symbol = "| "
         tree_symbol = "|_"
         tags.each_index do |i|
-          if levels[i] != 0
-            tags[i] = front_symbol*(levels[i]-1) + tree_symbol + tags[i]
+          if levels[i] != "0"
+            tags[i] = front_symbol*(levels[i].to_i-1) + tree_symbol + tags[i]
           end
         end
       end
       # Extract the string lengths which are needed to make the formatting nice:
       tag_lengths = Array.new
+      lev_lengths = Array.new
       name_lengths = Array.new
       type_lengths = Array.new
       length_lengths = Array.new
       names.each_index do |i|
         tag_lengths[i] = tags[i].length
+        lev_lengths[i] = levels[i].length
         name_lengths[i] = names[i].length
         type_lengths[i] = types[i].length
         length_lengths[i] = lengths[i].to_s.length
       end
       # To give the printed output a nice format we need to check the string lengths of some of these arrays:
       index_maxL = pos_valid.max.to_s.length
+      lev_maxL = lev_lengths.max
       tag_maxL = tag_lengths.max
       name_maxL = name_lengths.max
       type_maxL = type_lengths.max
@@ -625,13 +628,14 @@ module DICOM
         # Configure empty spaces:
         s = " "
         f0 = " "*(index_maxL-pos_valid[i].to_s.length)
+        f1 = " "*(lev_maxL-levels[i].length)
         f2 = " "*(tag_maxL-tags[i].length+1)
         f3 = " "*(name_maxL-names[i].length+1)
         f4 = " "*(type_maxL-types[i].length+1)
-        f5 = " "*(length_maxL-lengths[i].to_s.length)
+        f5 = " "*(length_maxL-lengths[i].length)
         # Display levels?
         if opt_levels
-          lev = levels[i].to_s + s
+          lev = levels[i] + f1
         else
           lev = ""
         end
@@ -645,8 +649,14 @@ module DICOM
         case types[i]
           when "OW","OB","UN"
             value = "(Binary Data)"
-          when "SQ","()"
+          when "SQ"
             value = "(Encapsulated Elements)"
+          when "()"
+            if tags[i].include?("FFFE,E000") # (Item)
+              value = "(Encapsulated Elements)"
+            else
+              value = ""
+            end
         end
         elements << (f0 + pos_valid[i].to_s + s + lev + s + tags[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip)
       end
@@ -692,7 +702,7 @@ module DICOM
         compression = "No"
       end
       # Bits per pixel (allocated):
-      bits = get_value("0028,0100", :array => true)
+      bits = get_value("0028,0100", :array => true, :silent => true)
       bits = bits[0].to_s if bits
       # Print the file properties:
       puts "Key properties of DICOM object:"
