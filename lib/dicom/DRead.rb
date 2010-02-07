@@ -267,7 +267,7 @@ module DICOM
         # Step 2: Read length
         # Three possible structures for value length here, dependent on element type:
         case type
-          when "OB","OW","SQ","UN"
+          when "OB","OW","SQ","UN","UT"
             # 6 bytes total:
             # Two empty bytes first:
             pre_skip = 2
@@ -275,7 +275,7 @@ module DICOM
             bytes = 4
           when "()"
             # 4 bytes:
-            # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
+            # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD":
             bytes = 4
           else
             # 2 bytes:

@@ -271,7 +271,7 @@ module DICOM
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element type:
         case @types[i]
-          when "OB","OW","SQ","UN"
+          when "OB","OW","SQ","UN","UT"
             if @enc_image
               # Item under an encapsulated Pixel Data (7FE0,0010):
               # 4 bytes:
