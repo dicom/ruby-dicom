@@ -703,9 +703,9 @@ module DICOM
       puts "Byte order:     " + endian
       puts "Pixel data:     " + pixels
       if pixels == "Yes"
-        puts "Image:          " + image
-        puts "Compression:    " + compression
-        puts "Bits per pixel: " + bits
+        puts "Image:          " + image if image
+        puts "Compression:    " + compression if compression
+        puts "Bits per pixel: " + bits if bits
       end
       puts "-------------------------------"
     end # of print_properties
