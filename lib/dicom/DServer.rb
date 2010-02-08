@@ -90,7 +90,7 @@ module DICOM
           if info[:valid]
             association_error = check_association_request(info)
             unless association_error
-              syntax_result = check_syntax_requests(info)
+              syntax_result = check_syntax_requests(link, info)
               link.handle_association_accept(session, info, syntax_result)
               if syntax_result == "00" # Normal (no error)
                 add_notice("An incoming association request and its abstract syntax has been accepted.")
@@ -175,17 +175,17 @@ module DICOM
 
     # Check if the requested abstract syntax & transfer syntax are supported:
     # Error codes are given in the official dicom document, part 08_08, page 39
-    def check_syntax_requests(info)
+    def check_syntax_requests(link, info)
       result = "00" # (no error)
       # We will accept any transfer syntax (as long as it is recognized in the library):
       # (Weakness: Only checking the first occuring transfer syntax for now)
-      transfer_syntax = info[:ts].first[:transfer_syntax]
+      transfer_syntax = link.extract_transfer_syntax(info)
       unless LIBRARY.check_ts_validity(transfer_syntax)
         result = "04" # transfer syntax not supported
         add_error("Warning: Unsupported transfer syntax received in incoming association request. (#{transfer_syntax})")
       end
       # Check that abstract syntax is among the ones that have been set as valid for this server instance:
-      abstract_syntax = info[:abstract_syntax]
+      abstract_syntax = link.extract_abstract_syntax(info)
       unless @valid_abstract_syntaxes.include?(abstract_syntax)
         result = "03" # abstract syntax not supported
       end

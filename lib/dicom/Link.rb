@@ -250,6 +250,18 @@ module DICOM
       # PRESENTATION DATA VALUE (the above)
       append_header(pdu)
     end
+    
+    
+    # Extracts the abstrax syntax from the first presentation context in the info hash object:
+    def extract_abstract_syntax(info)
+      return info[:pc].first[:abstract_syntax]
+    end
+    
+    
+    # Extracts the (first) transfer syntax from the first presentation context in the info hash object:
+    def extract_transfer_syntax(info)
+      return info[:pc].first[:ts].first[:transfer_syntax]
+    end
 
 
     # Delegates an incoming message to its correct interpreter method, based on pdu type.
@@ -287,9 +299,12 @@ module DICOM
 
     # Handles the association accept.
     def handle_association_accept(session, info, syntax_result)
+      # Update the variable for calling ae (information gathered in the association request):
+      @ae = info[:calling_ae]
       application_context = info[:application_context]
-      abstract_syntax = info[:abstract_syntax]
-      transfer_syntax = info[:ts].first[:transfer_syntax]
+      abstract_syntax = extract_abstract_syntax(info)
+      transfer_syntax = extract_transfer_syntax(info)
+      set_user_information_array(info)
       build_association_accept(application_context, transfer_syntax, @user_information, syntax_result)
       transmit(session)
     end
@@ -407,9 +422,14 @@ module DICOM
           fragment = msg.extract(specified_length)
           info = forward_to_interpret(fragment, pdu, file)
           info[:pdu] = pdu
+          segments << info
+          # It is possible that a fragment contains both a command and a data fragment. If so, we need to make sure we collect all the information:
+          if info[:rest_string]
+            additional_info = forward_to_interpret(info[:rest_string], pdu, file)
+            segments << additional_info
+          end
           # The information gathered from the interpretation is appended to a segments array,
           # and in the case of a recursive call some special logic is needed to build this array in the expected fashion.
-          segments << info
           remaining_segments = interpret(msg.rest_string, file)
           remaining_segments.each do |remaining|
             segments << remaining
@@ -420,6 +440,11 @@ module DICOM
           info = forward_to_interpret(fragment, pdu, file)
           info[:pdu] = pdu
           segments << info
+          # It is possible that a fragment contains both a command and a data fragment. If so, we need to make sure we collect all the information:
+          if info[:rest_string]
+            additional_info = forward_to_interpret(info[:rest_string], pdu, file)
+            segments << additional_info
+          end
         else
           # Length of the message is less than what is specified in the message. Need to listen for more. This is hopefully handled properly now.
           #add_error("Error. The length of the received message (#{msg.rest_length}) is smaller than what it claims (#{specified_length}). Aborting.")
@@ -541,7 +566,7 @@ module DICOM
       # Transfer syntax name (variable length)
       info[:transfer_syntax] = msg.decode(info[:transfer_syntax_item_length], "STR")
       # USER INFORMATION:
-      # Item type (1 byte)
+      # Item type (1 byte) ("50")
       info[:user_info_item_type] = msg.decode(1, "HEX")
       # Reserved (1 byte)
       msg.skip(1)
@@ -619,49 +644,71 @@ module DICOM
       # Application context (variable length)
       info[:application_context] = msg.decode(info[:application_item_length], "STR")
       # PRESENTATION CONTEXT:
-      # Item type (1 byte)
-      info[:presentation_item_type] = msg.decode(1, "HEX") # "20"
-      # Reserved (1 byte)
-      msg.skip(1)
-      # Presentation context item length (2 bytes)
-      info[:presentation_item_length] = msg.decode(2, "US")
-      # Presentation context ID (1 byte)
-      info[:presentation_context_id] = msg.decode(1, "HEX")
-      # Reserved (3 bytes)
-      msg.skip(3)
-      # ABSTRACT SYNTAX SUB-ITEM:
-      # Abstract syntax item type (1 byte)
-      info[:abstract_syntax_item_type] = msg.decode(1, "HEX") # "30"
-      # Reserved (1 byte)
-      msg.skip(1)
-      # Abstract syntax item length (2 bytes)
-      info[:abstract_syntax_item_length] = msg.decode(2, "US")
-      # Abstract syntax (variable length)
-      info[:abstract_syntax] = msg.decode(info[:abstract_syntax_item_length], "STR")
-      ## TRANSFER SYNTAX SUB-ITEM(S):
-      item_type = "40"
-      # As multiple TS may occur, we need a loop to catch them all:
-      # Each TS Hash will be put in an array, which will be put in the info hash.
-      ts_array = Array.new
-      while item_type == "40" do
+      # As multiple presentation contexts may occur, we need a loop to catch them all:
+      # Each presentation context hash will be put in an array, which will be put in the info hash.
+      presentation_contexts = Array.new
+      pc_loop = true
+      while pc_loop do
         # Item type (1 byte)
         item_type = msg.decode(1, "HEX")
-        if item_type == "40"
-          ts = Hash.new
-          ts[:transfer_syntax_item_type] = item_type
+        if item_type == "20"
+          pc = Hash.new
+          pc[:presentation_item_type] = item_type
           # Reserved (1 byte)
           msg.skip(1)
-          # Transfer syntax item length (2 bytes)
-          ts[:transfer_syntax_item_length] = msg.decode(2, "US")
-          # Transfer syntax name (variable length)
-          ts[:transfer_syntax] = msg.decode(ts[:transfer_syntax_item_length], "STR")
-          ts_array << ts
+          # Presentation context item length (2 bytes)
+          pc[:presentation_item_length] = msg.decode(2, "US")
+          # Presentation context id (1 byte)
+          pc[:presentation_context_id] = msg.decode(1, "HEX")
+          # Reserved (3 bytes)
+          msg.skip(3)
+          presentation_contexts << pc
+          # A presentation context contains an abstract syntax and one or more transfer syntaxes.
+          # ABSTRACT SYNTAX SUB-ITEM:
+          # Abstract syntax item type (1 byte)
+          pc[:abstract_syntax_item_type] = msg.decode(1, "HEX") # "30"
+          # Reserved (1 byte)
+          msg.skip(1)
+          # Abstract syntax item length (2 bytes)
+          pc[:abstract_syntax_item_length] = msg.decode(2, "US")
+          # Abstract syntax (variable length)
+          pc[:abstract_syntax] = msg.decode(pc[:abstract_syntax_item_length], "STR")
+          ## TRANSFER SYNTAX SUB-ITEM(S):
+          # As multiple transfer syntaxes may occur, we need a loop to catch them all:
+          # Each transfer syntax hash will be put in an array, which will be put in the presentation context hash.
+          transfer_syntaxes = Array.new
+          ts_loop = true
+          while ts_loop do
+            # Item type (1 byte)
+            item_type = msg.decode(1, "HEX")
+            if item_type == "40"
+              ts = Hash.new
+              ts[:transfer_syntax_item_type] = item_type
+              # Reserved (1 byte)
+              msg.skip(1)
+              # Transfer syntax item length (2 bytes)
+              ts[:transfer_syntax_item_length] = msg.decode(2, "US")
+              # Transfer syntax name (variable length)
+              ts[:transfer_syntax] = msg.decode(ts[:transfer_syntax_item_length], "STR")
+              transfer_syntaxes << ts
+            else
+              # Break the transfer syntax loop, as we have probably reached the next stage,
+              # which is either user info or a new presentation context entry. Rewind:
+              msg.skip(-1)
+              ts_loop = false
+            end
+          end
+          pc[:ts] = transfer_syntaxes
         else
-          info[:user_info_item_type] = item_type # "50"
+          # Break the presentation context loop, as we have probably reached the next stage, which is user info. Rewind:
+          msg.skip(-1)
+          pc_loop = false
         end
       end
-      info[:ts] = ts_array
+      info[:pc] = presentation_contexts
       # USER INFORMATION:
+      # Item type (1 byte)
+      info[:user_info_item_type] = msg.decode(1, "HEX")
       # Reserved (1 byte)
       msg.skip(1)
       # User information item length (2 bytes)
@@ -679,10 +726,17 @@ module DICOM
             info[:max_pdu_length] = msg.decode(item_length, "UL")
           when "52"
             info[:implementation_class_uid] = msg.decode(item_length, "STR")
+          when "53"
+            # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
+            info[:maxnum_operations_invoked] = msg.decode(2, "US")
+            info[:maxnum_operations_performed] = msg.decode(2, "US")
           when "55"
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
-            add_error("Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
+            # Unknown item type:
+            # Value (variable length)
+            value = msg.decode(item_length, "STR")
+            add_error("Notice: Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
       @listen = false
@@ -699,6 +753,8 @@ module DICOM
       msg = Stream.new(message, @net_endian, @explicit)
       # Length (of remaining PDV data) (4 bytes)
       info[:presentation_data_value_length] = msg.decode(4, "UL")
+      # Calculate the last index position of this message element:
+      last_index = info[:presentation_data_value_length] + msg.index
       # Presentation context ID (1 byte)
       info[:presentation_context_id] = msg.decode(1, "HEX") # "01" expected
       # Flags (1 byte)
@@ -709,7 +765,7 @@ module DICOM
       results = Hash.new
       if info[:presentation_context_flag] == "03"
         # COMMAND, LAST FRAGMENT:
-        while msg.index < msg.length do
+        while msg.index < last_index do
           # Tag (4 bytes)
           tag = msg.decode_tag
           # Length (2 bytes)
@@ -761,7 +817,7 @@ module DICOM
           end
         else
           # Decode data elements:
-          while msg.index < msg.length do
+          while msg.index < last_index do
             # Tag (4 bytes)
             tag = msg.decode_tag
             if @explicit
@@ -795,6 +851,8 @@ module DICOM
         @listen = false
         @receive = false
       end
+      # If only parts of the string was read, return the rest:
+      info[:rest_string] = msg.rest_string if last_index < msg.length
       info[:valid] = true
       return info
     end
@@ -1085,12 +1143,16 @@ module DICOM
 
 
     # Set user information [item type code, vr/type, value]
-    def set_user_information_array
+    def set_user_information_array(info = nil)
       @user_information = [
         ["51", "UL", @max_package_size], # Max PDU Length
         ["52", "STR", UID],
         ["55", "STR", NAME]
       ]
+      # A bit of a hack to include "asynchronous operations window negotiation", if this has been included in the association request:
+      if info
+        @user_information.insert(2, ["53", "HEX", "00010001"]) if info[:maxnum_operations_invoked]
+      end
     end
 
 
