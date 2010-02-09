@@ -147,7 +147,9 @@ module DICOM
 
     # Returns a 3d NArray object where the array dimensions corresponds to [frames, columns, rows].
     # To call this method the user needs to loaded the NArray library in advance (require 'narray').
-    def get_image_narray
+    # Options:
+    # Some options to reorient the pixel matrix may be implemented here.
+    def get_image_narray(options={})
       # Are we able to make a pixel array?
       if @compression == nil
         add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
@@ -191,6 +193,8 @@ module DICOM
         end
       end
       # Rearrange the pixel data to get the expected orientation when displaying it on the screen:
+      # (This rearrangement is disabled and should ideally be replaced with a more principal, robust implementation.)
+=begin
       frames.times do |i|
         temp_frame = pixel_data[i,true,true]
         # Transpose array:
@@ -202,6 +206,7 @@ module DICOM
         # Put the reoriented pixel data back in its original variable:
         pixel_data[i,true,true] = temp_frame
       end
+=end
       return pixel_data
     end # of get_image_narray
 
@@ -756,34 +761,48 @@ module DICOM
     end
 
 
-    # Removes an element from the DICOM object:
-    def remove(element)
-      pos = get_pos(element)
-      if pos != false
-        if pos.length > 1
+    # Removes an element from the DICOM object.
+    # Options:
+    # :ignore_children => true  - Force the method to ignore children when removing an element.
+    #    (default behaviour is to remove any children if a sequence or item is removed)
+    def remove(element, options={})
+      positions = get_pos(element)
+      if positions != false
+        if positions.length > 1
           add_msg("Warning: Method remove does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT removed.")
         else
-          # Extract first array number:
-          pos = pos[0]
-          # Update group length:
-          if @tags[pos][5..8] != "0000"
-            # Note: When removing an item, its length value must not be used for 'change' (it's value is in reality nil):
-            if @types[pos] == "()" or @types[pos] == "SQ"
-              change = 0
-            else
-              change = @lengths[pos]
+          # Check if the tag selected for removal has children (relevant for sequence/item tags):
+          unless options[:ignore_children]
+            child_pos = children(positions)
+            if child_pos
+              # Add the positions of the children to our original tag's position array:
+              positions << child_pos
             end
-            vr = @types[pos]
-            update_group_and_parents_length(pos, vr, change, -1)
           end
-          # Remove entry from arrays:
-          @tags.delete_at(pos)
-          @levels.delete_at(pos)
-          @names.delete_at(pos)
-          @types.delete_at(pos)
-          @lengths.delete_at(pos)
-          @values.delete_at(pos)
-          @raw.delete_at(pos)
+          positions.flatten!
+          # Loop through all positions (important to do this in reverse to retain predictable array positions):
+          positions.reverse.each do |pos|
+            # Update group length
+            # (Possible weakness: Group length tag contained inside a sequence/item. Code needs a slight rewrite to make it more robust)
+            if @tags[pos][5..8] != "0000"
+              # Note: When removing an item/sequence, its length value must not be used for 'change' (it's value is in reality nil):
+              if @types[pos] == "()" or @types[pos] == "SQ"
+                change = 0
+              else
+                change = @lengths[pos]
+              end
+              vr = @types[pos]
+              update_group_and_parents_length(pos, vr, change, -1)
+            end
+            # Remove entry from arrays:
+            @tags.delete_at(pos)
+            @levels.delete_at(pos)
+            @names.delete_at(pos)
+            @types.delete_at(pos)
+            @lengths.delete_at(pos)
+            @values.delete_at(pos)
+            @raw.delete_at(pos)
+          end
         end
       else
         add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove has no data element to remove.")
