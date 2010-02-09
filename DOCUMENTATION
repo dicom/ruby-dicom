@@ -144,10 +144,16 @@ PUBLIC INSTANCE METHODS
   print_properties
     Prints the key structural properties of the DICOM file to the screen.
 
-  remove(element)
+  remove(element, options={})
     Removes the specified data element from the DICOM object. You can use this method
     if you are editing a DICOM object and wants to get rid of one or more elements.
     Element may be an array index, element name or element tag.
+    The default behaviour of this method is to remove any encapsulated elements if a sequence
+    or item is selected for removal. If for some reason you want to avoid this, user the :ignore_children option.
+    Example 1: (Remove a sequence tag along with all its 'children' tags)
+      obj.remove("Request Attributes Sequence")
+    Example 2: (Remove a specific sequence tag only (not recommended unless you really know what you are doing))
+      obj.remove("0040,0275", :ignore_children => true)
 
   remove_private
     Removes all private data elements from the DICOM object.
