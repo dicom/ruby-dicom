@@ -70,7 +70,7 @@ module DICOM
     end
 
 
-    # Start a Storage Content Provider (SCP).
+    # Start a Service Class Provider (SCP).
     # This service will receive and store DICOM files in a specified folder.
     def start_scp(path)
       add_notice("Starting SCP server...")
@@ -84,7 +84,8 @@ module DICOM
           link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose)
           add_notice("Connection established (name: #{session.peeraddr[2]}, ip: #{session.peeraddr[3]})")
           # Receive an incoming message:
-          segments = link.receive_single_transmission(session)
+          #segments = link.receive_single_transmission(session)
+          segments = link.receive_multiple_transmissions(session)
           info = segments.first
           # Interpret the received message:
           if info[:valid]

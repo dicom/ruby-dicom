@@ -37,36 +37,47 @@ module DICOM
 
     # Build the abort message which is transmitted when the server wishes to (abruptly) abort the connection.
     # For the moment: NO REASONS WILL BE PROVIDED. (and source of problems will always be set as client side)
-    def build_abort(message)
+    def build_association_abort
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
+      pdu = "07"
       # Reserved (2 bytes)
-      @outgoing.encode_first("00"*2, "HEX")
+      @outgoing.encode_last("00"*2, "HEX")
       # Source (1 byte)
       source = "00" # (client side error)
-      @outgoing.encode_first(source, "HEX")
+      @outgoing.encode_last(source, "HEX")
       # Reason/Diag. (1 byte)
       reason = "00" # (Reason not specified)
-      @outgoing.encode_first(reason, "HEX")
+      @outgoing.encode_last(reason, "HEX")
+      append_header(pdu)
     end
 
 
     # Build the binary string that will be sent as TCP data in the Association accept response.
-    def build_association_accept(ac_uid, ts, ui, result)
+    def build_association_accept(info, ac_uid, ui, result)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
       # Set item types (pdu and presentation context):
       pdu = "02"
-      pc = "21"
+      pc_type = "21"
       # No abstract syntax in association response:
-      as = nil
+      abstract_syntax = nil
       # Note: The order of which these components are built is not arbitrary.
       append_application_context(ac_uid)
-      append_presentation_context(as, pc, ts, result)
+      # Return one presentation context for each of the proposed abstract syntaxes:
+      abstract_syntaxes = Array.new
+      info[:pc].each do |pc|
+        unless abstract_syntaxes.include?(pc[:abstract_syntax])
+          abstract_syntaxes << pc[:abstract_syntax]
+          context_id = pc[:presentation_context_id]
+          transfer_syntax = pc[:ts].first[:transfer_syntax]
+          append_presentation_context(abstract_syntax, pc_type, transfer_syntax, context_id, result)
+        end
+      end
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(pdu)
@@ -302,10 +313,8 @@ module DICOM
       # Update the variable for calling ae (information gathered in the association request):
       @ae = info[:calling_ae]
       application_context = info[:application_context]
-      abstract_syntax = extract_abstract_syntax(info)
-      transfer_syntax = extract_transfer_syntax(info)
       set_user_information_array(info)
-      build_association_accept(application_context, transfer_syntax, @user_information, syntax_result)
+      build_association_accept(info, application_context, @user_information, syntax_result)
       transmit(session)
     end
 
@@ -495,8 +504,7 @@ module DICOM
             add_error("Reason specified for abort: Unknown reason (Error code: #{info[:reason]})")
         end
       end
-      @listen = false
-      @receive = false
+      stop_receiving
       @abort = true
       info[:valid] = true
       return info
@@ -591,8 +599,7 @@ module DICOM
             add_error("Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
-      @listen = false
-      @receive = false
+      stop_receiving
       info[:valid] = true
       # Update transfer syntax settings for this instance:
       set_transfer_syntax(info[:transfer_syntax])
@@ -613,8 +620,7 @@ module DICOM
       # Reason (1 byte)
       info[:reason] = msg.decode(1, "BY")
       add_error("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM 08_08, page 41: Table 9-21 for details.)")
-      @listen = false
-      @receive = false
+      stop_receiving
       info[:valid] = true
       return info
     end
@@ -739,8 +745,7 @@ module DICOM
             add_error("Notice: Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
-      @listen = false
-      @receive = false
+      stop_receiving
       info[:valid] = true
       return info
     end # of interpret_association_request
@@ -792,8 +797,7 @@ module DICOM
           if status == 0
             # Last fragment (Break the while loop that listens continuously for incoming packets):
             add_notice("Receipt for successful execution of the desired request has been received. Closing communication.")
-            @listen = false
-            @receive = false
+            stop_receiving
           elsif status == 65281
             # Status = "01 ff": More command/data fragments to follow.
             # (No particular action taken, the program will listen for and receive the coming fragments)
@@ -812,8 +816,7 @@ module DICOM
           info[:bin] = msg.rest_string
           # Abort the listening if this is last data fragment:
           if info[:presentation_context_flag] == "02"
-            @listen = false
-            @receive = false
+            stop_receiving
           end
         else
           # Decode data elements:
@@ -848,8 +851,7 @@ module DICOM
       else
         # Unknown.
         add_error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
-        @listen = false
-        @receive = false
+        stop_receiving
       end
       # If only parts of the string was read, return the rest:
       info[:rest_string] = msg.rest_string if last_index < msg.length
@@ -864,8 +866,7 @@ module DICOM
       msg = Stream.new(message, @net_endian, @explicit)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
-      @listen = false
-      @receive = false
+      stop_receiving
       info[:valid] = true
       return info
     end
@@ -877,8 +878,7 @@ module DICOM
       msg = Stream.new(message, @net_endian, @explicit)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
-      @listen = false
-      @receive = false
+      stop_receiving
       info[:valid] = true
       return info
     end
@@ -988,7 +988,7 @@ module DICOM
 
     # Build the binary string that makes up the presentation context part (part of the association request).
     # For a list of error codes, see the official dicom 08_08.pdf, page 39.
-    def append_presentation_context(as, pc, ts, result = "00")
+    def append_presentation_context(as, pc, ts, context_id = "01", result = "00")
       # PRESENTATION CONTEXT:
       # Presentation context item type (1 byte)
       @outgoing.encode_last(pc, "HEX") # "20" (request) & "21" (response)
@@ -1007,7 +1007,7 @@ module DICOM
       end
       @outgoing.encode_last(items_length, "US")
       # Presentation context ID (1 byte)
-      @outgoing.encode_last("01", "HEX")
+      @outgoing.encode_last(context_id, "HEX")
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # (1 byte) Reserved (for association request) & Result/reason (for association accept response)
@@ -1105,8 +1105,7 @@ module DICOM
         if (Time.now.to_f - t1) > @timeout
           Thread.kill(thr)
           add_error("No answer was received within the specified timeout period. Aborting.")
-          @listen = false
-          @receive = false
+          stop_receiving
         end
       end
       return data
@@ -1153,6 +1152,15 @@ module DICOM
       if info
         @user_information.insert(2, ["53", "HEX", "00010001"]) if info[:maxnum_operations_invoked]
       end
+    end
+    
+    
+    # Breaks the loops that listen for incoming packets by changing a couple of instance variables.
+    # This method is called by the various methods that interpret incoming data when they have verified that
+    # the entire message has been received, or when a timeout is reached.
+    def stop_receiving
+      @listen = false
+      @receive = false
     end
 
 
