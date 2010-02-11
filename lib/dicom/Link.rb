@@ -6,13 +6,14 @@ module DICOM
   # as well as network communication.
   class Link
 
-    attr_accessor :max_package_size, :verbose
+    attr_accessor :max_package_size, :verbose, :file_handler
     attr_reader :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
     def initialize(options={})
       require 'socket'
       # Optional parameters (and default values):
+      @file_handler = options[:file_handler] || FileHandler
       @ae =  options[:ae]  || "RUBY_DICOM"
       @host_ae =  options[:host_ae]  || "DEFAULT"
       @max_package_size = options[:max_package_size] || 32768 # 16384
@@ -350,7 +351,7 @@ module DICOM
         # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
         # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
         # their own customised solutions for handling the incoming DICOM files:
-        success_message = FileHandler.receive_file(obj, path, @transfer_syntax)
+        success_message = @file_handler.receive_file(obj, path, @transfer_syntax)
       else
         # Valid DICOM data not received:
         success_message = false

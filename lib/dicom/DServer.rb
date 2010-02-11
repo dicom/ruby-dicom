@@ -5,8 +5,19 @@ module DICOM
   # This class contains code for setting up a Service Class Provider (SCP),
   # which will act as a simple storage node (a server that receives images).
   class DServer
+    
+    
+    # Run the server and take a block for initializing
+    
+    def self.run(port=11112, path='/tmp/', &block)
+      server = DServer.new(port)
+      server.instance_eval(&block)
+      server.start_scp(path)
+    end
+    
+    #
 
-    attr_accessor :host_ae, :max_package_size, :port, :timeout, :verbose
+    attr_accessor :host_ae, :max_package_size, :port, :timeout, :verbose, :file_handler
     attr_reader :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
@@ -15,6 +26,7 @@ module DICOM
       # Required parameters:
       @port = port
       # Optional parameters (and default values):
+      @file_handler = options[:file_handler] || FileHandler
       @host_ae =  options[:host_ae]  || "RUBY_DICOM"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
@@ -69,7 +81,6 @@ module DICOM
       @valid_abstract_syntaxes = Array.new
     end
 
-
     # Start a Service Class Provider (SCP).
     # This service will receive and store DICOM files in a specified folder.
     def start_scp(path)
@@ -81,7 +92,7 @@ module DICOM
       loop do
         Thread.start(@scp.accept) do |session|
           # Initialize the network package handler for this session:
-          link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose)
+          link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose, :file_handler => @file_handler)
           add_notice("Connection established (name: #{session.peeraddr[2]}, ip: #{session.peeraddr[3]})")
           # Receive an incoming message:
           #segments = link.receive_single_transmission(session)
