@@ -14,7 +14,7 @@ module DICOM
   # Class for writing the data from a DObject to a valid DICOM file.
   class DWrite
 
-    attr_writer :tags, :types, :lengths, :raw, :rest_endian, :rest_explicit
+    attr_writer :tags, :types, :lengths, :bin, :rest_endian, :rest_explicit
     attr_reader :success, :msg
 
     # Initialize the DWrite instance.
@@ -28,7 +28,7 @@ module DICOM
       @tags = Array.new
       @types = Array.new
       @lengths = Array.new
-      @raw = Array.new
+      @bin = Array.new
       # Array for storing error/warning messages:
       @msg = Array.new
       # Default values that may be overwritten by the user:
@@ -103,7 +103,7 @@ module DICOM
           write_type_length(i)
           # Find out how much of this element's value we can write, then add it:
           available = size - @stream.length
-          value_first_part = @raw[i].slice(0, available)
+          value_first_part = @bin[i].slice(0, available)
           @stream.add_last(value_first_part)
           # Add segment and reset:
           segments << @stream.string
@@ -113,7 +113,7 @@ module DICOM
           index = available
           # Iterate through the data element's value until we have added it entirely:
           remaining_segments.times do
-            value = @raw[i].slice(index, size)
+            value = @bin[i].slice(index, size)
             index = index + size
             @stream.add_last(value)
             # Add segment and reset:
@@ -305,7 +305,7 @@ module DICOM
     # Writes the value (last part of the data element):
     def write_value(i)
       # This is pretty straightforward, just dump the binary data to the file/string:
-      add(@raw[i])
+      add(@bin[i])
     end
 
 

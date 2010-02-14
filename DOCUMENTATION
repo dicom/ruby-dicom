@@ -49,7 +49,7 @@ ACCESSORS (read only)
   :types
   :lengths
   :values
-  :raw
+  :bin
   :levels
 
 PUBLIC INSTANCE METHODS
@@ -63,6 +63,14 @@ PUBLIC INSTANCE METHODS
       pos = obj.children("3006,0082")
     Example 2: (Return all element positions that is contained only directly beneath the following sequence)
       pos = obj.children("3006,0082", :next_only => true)
+
+  get_bin(element, options={})
+    Returns the unprocessed, binary string of the requested DICOM data element.
+    Element may be an array index, element name or element tag.
+    If you wish to return multiple data values of a tag that occurs several times in the file,
+    use the keyword :array => true .
+    Example: (Returns all data values in a array)
+      contour_data = obj.get_bin("3006,0050", :array => true)
 
   get_frames
     Returns the number of frames present in the image data in the DICOM file.
@@ -100,16 +108,8 @@ PUBLIC INSTANCE METHODS
       pos = obj.get_pos("0010", :partial => true)
       pos = obj.get_pos("Name", :partial => true)
 
-  get_raw(element, options={})
-    Returns the raw data of the requested DICOM data element.
-    Element may be an array index, element name or element tag.
-    If you wish to return multiple data values of a tag that occurs several times in the file,
-    use the keyword :array => true .
-    Example: (Returns all data values in a array)
-      contour_data = obj.get_raw("3006,0050", :array => true)
-
   get_value(element)
-    Returns the value (processed raw data) of the requested DICOM data element.
+    Returns the value (processed binary data) of the requested DICOM data element.
     Element may be an array index, element name or element tag.
     If you wish to return multiple values of a tag that occurs several times in the file,
     use the keyword :array => true .

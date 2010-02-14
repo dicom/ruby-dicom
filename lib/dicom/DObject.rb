@@ -32,7 +32,7 @@ module DICOM
   class DObject
 
     attr_reader :read_success, :write_success, :modality, :errors, :segments,
-                      :names, :tags, :types, :lengths, :values, :raw, :levels
+                      :names, :tags, :types, :lengths, :values, :bin, :levels
 
     # Initialize the DObject instance.
     def initialize(string=nil, options={})
@@ -50,7 +50,7 @@ module DICOM
       @types = Array.new
       @lengths = Array.new
       @values = Array.new
-      @raw = Array.new
+      @bin = Array.new
       @levels = Array.new
       # Array that will holde any messages generated while reading the DICOM file:
       @errors = Array.new
@@ -92,7 +92,7 @@ module DICOM
         @types = r.types
         @lengths = r.lengths
         @values = r.values
-        @raw = r.raw
+        @bin = r.bin
         @levels = r.levels
         @explicit = r.explicit
         @file_endian = r.file_endian
@@ -366,14 +366,14 @@ module DICOM
       if pos
         if pos.length == 1
           # Pixel data located in one element:
-          pixel_data = get_raw(pos[0])
+          pixel_data = get_bin(pos[0])
           f = File.new(file, "wb")
           f.write(pixel_data)
           f.close
         else
           # Pixel data located in several elements:
           pos.each_index do |i|
-            pixel_data = get_raw(pos[i])
+            pixel_data = get_bin(pos[i])
             f = File.new(file + i.to_s, "wb")
             f.write(pixel_data)
             f.close
@@ -430,7 +430,7 @@ module DICOM
     end
 
 
-    # Returns the value (processed raw data) of the requested DICOM data element.
+    # Returns the value (processed binary data) of the requested DICOM data element.
     # Data element may be specified by array position, tag or name.
     # Options:
     # :array => true - Allows the query of the value of a tag that occurs more than one time in the
@@ -467,18 +467,18 @@ module DICOM
     end
 
 
-    # Returns the raw data of the requested DICOM data element.
+    # Returns the unprocessed, binary string of the requested DICOM data element.
     # Data element may be specified by array position, tag or name.
     # Options:
-    # :array => true - Allows the query of the value of a tag that occurs more than one time in the
+    # :array => true - Allows the query of the (binary) value of a tag that occurs more than one time in the
     #                  DICOM object. Values will be returned in an array with length equal to the number
     #                  of occurances of the tag. If keyword is not specified, the method returns false in this case.
-    def get_raw(element, options={})
+    def get_bin(element, options={})
       value = false
       # Retrieve array position:
       pos = get_pos(element)
       if pos == false
-        add_msg("Warning: Invalid data element provided to method get_raw. Returning false.")
+        add_msg("Warning: Invalid data element provided to method get_bin. Returning false.")
       else
         if pos.size > 1
           # Multiple 'hits':
@@ -486,14 +486,14 @@ module DICOM
             # Retrieve all values into an array:
             value = Array.new
             pos.each do |i|
-              value << @raw[i]
+              value << @bin[i]
             end
           else
-            add_msg("Warning: Method get_raw does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
+            add_msg("Warning: Method get_bin does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
           end
         else
           # One single match:
-          value = @raw[pos[0]]
+          value = @bin[pos[0]]
           # Return the single value in an array if keyword :array used:
           value = [value] if options[:array]
         end
@@ -801,7 +801,7 @@ module DICOM
             @types.delete_at(pos)
             @lengths.delete_at(pos)
             @values.delete_at(pos)
-            @raw.delete_at(pos)
+            @bin.delete_at(pos)
           end
         end
       else
@@ -956,7 +956,7 @@ module DICOM
           @types = [vr]
           @lengths = [bin.length]
           @values = [value]
-          @raw = [bin]
+          @bin = [bin]
         elsif last_pos == -1
           # Insert in front of arrays:
           @tags = [tag] + @tags
@@ -965,7 +965,7 @@ module DICOM
           @types = [vr] + @types
           @lengths = [bin.length] + @lengths
           @values = [value] + @values
-          @raw = [bin] + @raw
+          @bin = [bin] + @bin
         elsif last_pos == @tags.length-1
           # Insert at end arrays:
           @tags = @tags + [tag]
@@ -974,7 +974,7 @@ module DICOM
           @types = @types + [vr]
           @lengths = @lengths + [bin.length]
           @values = @values + [value]
-          @raw = @raw + [bin]
+          @bin = @bin + [bin]
         else
           # Insert somewhere inside the array:
           @tags = @tags[0..last_pos] + [tag] + @tags[(last_pos+1)..(@tags.length-1)]
@@ -983,7 +983,7 @@ module DICOM
           @types = @types[0..last_pos] + [vr] + @types[(last_pos+1)..(@types.length-1)]
           @lengths = @lengths[0..last_pos] + [bin.length] + @lengths[(last_pos+1)..(@lengths.length-1)]
           @values = @values[0..last_pos] + [value] + @values[(last_pos+1)..(@values.length-1)]
-          @raw = @raw[0..last_pos] + [bin] + @raw[(last_pos+1)..(@raw.length-1)]
+          @bin = @bin[0..last_pos] + [bin] + @bin[(last_pos+1)..(@bin.length-1)]
         end
         # Update last index variable as we have added to our arrays:
         @last_index += 1
@@ -1086,7 +1086,7 @@ module DICOM
       pixel_rep = get_value("0028,0103", :array => true)[0]
       unless bit_depth == false
         # Load the binary pixel data to the Stream instance:
-        @stream.set_string(get_raw(pos))
+        @stream.set_string(get_bin(pos))
         # Number of bytes used per pixel will determine how to unpack this:
         case bit_depth
           when 8
@@ -1137,7 +1137,7 @@ module DICOM
         #@types[pos] = vr # for the time being there is no logic for updating type.
         @lengths[pos] = bin.length
         @values[pos] = value
-        @raw[pos] = bin
+        @bin[pos] = bin
         # Update group length (as long as it was not the group length that was modified):
         if @tags[pos][5..8] != "0000"
           change = bin.length - old_length
@@ -1311,7 +1311,7 @@ module DICOM
       else
         # Image data is compressed, we will attempt to deflate it using RMagick (ImageMagick):
         begin
-          image = Magick::Image.from_blob(@raw[pos])
+          image = Magick::Image.from_blob(@bin[pos])
           return image
         rescue
           add_msg("RMagick did not succeed in decoding the compressed image data. Returning false.")
@@ -1343,7 +1343,7 @@ module DICOM
       w.tags = @tags
       w.types = @types
       w.lengths = @lengths
-      w.raw = @raw
+      w.bin = @bin
       w.rest_endian = @file_endian
       w.rest_explicit = @explicit
       return w
@@ -1433,7 +1433,7 @@ module DICOM
             bin = encode(values[i], "UL")
             # Update arrays:
             @values[update_positions[i]] = values[i]
-            @raw[update_positions[i]] = bin
+            @bin[update_positions[i]] = bin
           else
             @lengths[update_positions[i]] = values[i]
           end

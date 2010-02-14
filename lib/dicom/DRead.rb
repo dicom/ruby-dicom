@@ -11,19 +11,19 @@ module DICOM
   # Class for reading the data from a DICOM file:
   class DRead
 
-    attr_reader :success, :names, :tags, :types, :lengths, :values, :raw, :levels, :explicit, :file_endian, :msg
+    attr_reader :success, :names, :tags, :types, :lengths, :values, :bin, :levels, :explicit, :file_endian, :msg
 
     # Initialize the DRead instance.
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
       @sys_endian = options[:sys_endian] || false
-      @bin = options[:bin]
+      @bin_string = options[:bin]
       @transfer_syntax = options[:syntax]
       # Initiate the variables that are used during file reading:
       init_variables
 
       # Are we going to read from a file, or read from a binary string:
-      if @bin
+      if @bin_string
         # Read from the provided binary string:
         @str = string
       else
@@ -42,7 +42,7 @@ module DICOM
       # Create a Stream instance to handle the decoding of content from this binary string:
       @stream = Stream.new(@str, @file_endian, @explicit)
       # Do not check for header information when supplied a (network) binary string:
-      unless @bin
+      unless @bin_string
         # Read and verify the DICOM header:
         header = check_header
         # If the file didnt have the expected header, we will attempt to read
@@ -65,11 +65,11 @@ module DICOM
       # Post processing:
       # Assume file has been read successfully:
       @success = true
-      # Check if the last element was read out correctly (that the length of its data (@raw.last.length)
+      # Check if the last element was read out correctly (that the length of its data (@bin.last.length)
       # corresponds to that expected by the length specified in the DICOM file (@lengths.last)).
       # We only run this test if the last element has a positive expectation value, obviously.
       if @lengths.last.to_i > 0
-        if @raw.last.length != @lengths.last
+        if @bin.last.length != @lengths.last
           @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
           @success = false
           return
@@ -205,7 +205,7 @@ module DICOM
         # Read the element's value (data):
         data = read_value(type,length)
         value = data[0]
-        raw = data[1]
+        bin = data[1]
       else
         # Data element has no value (data).
         # Special case: Check if pixel data element is sequenced:
@@ -224,7 +224,7 @@ module DICOM
       @types << type
       @lengths << length
       @values << value
-      @raw << raw
+      @bin << bin
       return true
     end # of process_data_element
 
@@ -489,7 +489,7 @@ module DICOM
       @types = Array.new
       @lengths = Array.new
       @values = Array.new
-      @raw = Array.new
+      @bin = Array.new
       @levels = Array.new
       # Array that will holde any messages generated while reading the DICOM file:
       @msg = Array.new
