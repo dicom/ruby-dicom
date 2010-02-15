@@ -6,14 +6,13 @@ module DICOM
   # as well as network communication.
   class Link
 
-    attr_accessor :max_package_size, :verbose, :file_handler
+    attr_accessor :max_package_size, :verbose
     attr_reader :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
     def initialize(options={})
       require 'socket'
       # Optional parameters (and default values):
-      @file_handler = options[:file_handler] || FileHandler
       @ae =  options[:ae]  || "RUBY_DICOM"
       @host_ae =  options[:host_ae]  || "DEFAULT"
       @max_package_size = options[:max_package_size] || 32768 # 16384
@@ -87,7 +86,7 @@ module DICOM
 
     # Build the binary string that will be sent as TCP data in the association rejection.
     # NB: For the moment, this method will only customize the "reason" value.
-    # For a list of error codes, see the official dicom 08_08.pdf, page 41.
+    # For a list of error codes, see the official dicom PS3.8 document, page 41.
     def build_association_reject(info)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -351,7 +350,7 @@ module DICOM
         # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
         # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
         # their own customised solutions for handling the incoming DICOM files:
-        success_message = @file_handler.receive_file(obj, path, @transfer_syntax)
+        success_message = FileHandler.receive_file(obj, path, @transfer_syntax)
       else
         # Valid DICOM data not received:
         success_message = false
@@ -548,21 +547,7 @@ module DICOM
       msg.skip(1)
       # Result (& Reason) (1 byte)
       info[:result] = msg.decode(1, "BY")
-      # Analyse the results:
-      unless info[:result] == 0
-        case info[:result]
-          when 1
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'User-rejection'")
-          when 2
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
-          when 3
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
-          when 4
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
-          else
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'UNKNOWN (#{info[:result]})' (Illegal reason provided)")
-        end
-      end
+      process_result(info[:result])
       # Reserved (1 byte)
       msg.skip(1)
       # Transfer syntax sub-item:
@@ -594,9 +579,15 @@ module DICOM
             @max_receive_size = info[:max_pdu_length]
           when "52"
             info[:implementation_class_uid] = msg.decode(item_length, "STR")
+          when "53"
+            # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
+            info[:maxnum_operations_invoked] = msg.decode(2, "US")
+            info[:maxnum_operations_performed] = msg.decode(2, "US")
           when "55"
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
+            # Value (variable length)
+            value = msg.decode(item_length, "STR")
             add_error("Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
@@ -620,7 +611,7 @@ module DICOM
       info[:source] = msg.decode(1, "BY")
       # Reason (1 byte)
       info[:reason] = msg.decode(1, "BY")
-      add_error("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM 08_08, page 41: Table 9-21 for details.)")
+      add_error("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM PS3.8: Table 9-21 for details.)")
       stop_receiving
       info[:valid] = true
       return info
@@ -795,19 +786,8 @@ module DICOM
         # Check if the command fragment indicates that this was the last of the response fragments for this query:
         status = results["0000,0900"]
         if status
-          if status == 0
-            # Last fragment (Break the while loop that listens continuously for incoming packets):
-            add_notice("Receipt for successful execution of the desired request has been received. Closing communication.")
-            stop_receiving
-          elsif status == 65281
-            # Status = "01 ff": More command/data fragments to follow.
-            # (No particular action taken, the program will listen for and receive the coming fragments)
-          elsif status == 65280
-            # Status = "00 ff": Sub-operations are continuing.
-            # (No particular action taken, the program will listen for and receive the coming fragments)
-          else
-            add_error("Error! Something was NOT successful regarding the desired operation. (SCP responded with error code: #{status}) (tag: 0000,0900)")
-          end
+          # Note: This method will also stop the packet receiver if indicated by the status mesasge.
+          process_status(status)
         end
       elsif info[:presentation_context_flag] == "00" or info[:presentation_context_flag] == "02"
         # DATA FRAGMENT:
@@ -988,7 +968,7 @@ module DICOM
 
 
     # Build the binary string that makes up the presentation context part (part of the association request).
-    # For a list of error codes, see the official dicom 08_08.pdf, page 39.
+    # For a list of error codes, see the official DICOM PS3.8 document, (page 39).
     def append_presentation_context(as, pc, ts, context_id = "01", result = "00")
       # PRESENTATION CONTEXT:
       # Presentation context item type (1 byte)
@@ -1068,6 +1048,67 @@ module DICOM
         @outgoing.encode_last(values[i].length, "US")
         # UI value (4 bytes)
         @outgoing.add_last(values[i])
+      end
+    end
+    
+    
+    # Process the value of the result byte (in the association response).
+    # Something is wrong if result is not 0.
+    def process_result(result)
+      unless result == 0
+        # Analyse the result and report what is wrong:
+        case result
+          when 1
+            add_error("Warning: DICOM Request was rejected by the host, reason: 'User-rejection'")
+          when 2
+            add_error("Warning: DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
+          when 3
+            add_error("Warning: DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
+          when 4
+            add_error("Warning: DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
+          else
+            add_error("Warning: DICOM Request was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
+        end
+      end
+    end
+    
+    
+    # Process the value of the status tag 0000,0900 received in the command fragment.
+    # Note: The status tag has vr 'US', and the status as reported here is therefore a number.
+    # In the official DICOM documents however, the value of the various status options is given in hex format.
+    # Resources: DICOM PS3.4 Annex Q 2.1.1.4, DICOM PS3.7 Annex C 4.
+    def process_status(status)
+      case status
+        when 0 # "0000"
+          # Last fragment (Break the while loop that listens continuously for incoming packets):
+          add_notice("Receipt for successful execution of the desired request has been received. Closing communication.")
+          stop_receiving
+        when 42752 # "a700"
+          # Failure: Out of resources. Related fields: 0000,0902
+          add_error("Failure! SCP has given the following reason: 'Out of Resources'.")
+        when 43264 # "a900"
+          # Failure: Identifier Does Not Match SOP Class. Related fields: 0000,0901, 0000,0902
+          add_error("Failure! SCP has given the following reason: 'Identifier Does Not Match SOP Class'.")
+        when 49152 # "c000"
+          # Failure: Unable to process. Related fields: 0000,0901, 0000,0902
+          add_error("Failure! SCP has given the following reason: 'Unable to process'.")
+        when 49408 # "c100"
+          # Failure: More than one match found. Related fields: 0000,0901, 0000,0902
+          add_error("Failure! SCP has given the following reason: 'More than one match found'.")
+        when 49664 # "c200"
+          # Failure: Unable to support requested template. Related fields: 0000,0901, 0000,0902
+          add_error("Failure! SCP has given the following reason: 'Unable to support requested template'.")
+        when 65024 # "fe00"
+          # Cancel: Matching terminated due to Cancel request.
+          add_notice("Cancel! SCP has given the following reason: 'Matching terminated due to Cancel request'.")
+        when 65280 # "ff00"
+          # Sub-operations are continuing.
+          # (No particular action taken, the program will listen for and receive the coming fragments)
+        when 65281 # "ff01"
+          # More command/data fragments to follow.
+          # (No particular action taken, the program will listen for and receive the coming fragments)
+        else
+          add_error("Error! Something was NOT successful regarding the desired operation. SCP responded with error code: #{status} (tag: 0000,0900). See DICOM PS3.7, Annex C for details.")
       end
     end
 
