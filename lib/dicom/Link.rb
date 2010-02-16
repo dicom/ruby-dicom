@@ -261,14 +261,14 @@ module DICOM
       # PRESENTATION DATA VALUE (the above)
       append_header(pdu)
     end
-    
-    
+
+
     # Extracts the abstrax syntax from the first presentation context in the info hash object:
     def extract_abstract_syntax(info)
       return info[:pc].first[:abstract_syntax]
     end
-    
-    
+
+
     # Extracts the (first) transfer syntax from the first presentation context in the info hash object:
     def extract_transfer_syntax(info)
       return info[:pc].first[:ts].first[:transfer_syntax]
@@ -478,32 +478,8 @@ module DICOM
       # Reason/Diag. (1 byte)
       info[:reason] = msg.decode(1, "HEX")
       # Analyse the results:
-      if info[:source] == "00"
-        add_error("Warning: Connection has been aborted by the service provider because of an error by the service user (client side).")
-      elsif info[:source] == "02"
-        add_error("Warning: Connection has been aborted by the service provider because of an error by the service provider (server side).")
-      else
-        add_error("Warning: Connection has been aborted by the service provider, with an unknown cause of the problems. (error code: #{info[:source]})")
-      end
-      if info[:source] != "00"
-        # Display reason for error:
-        case info[:reason]
-          when "00"
-            add_error("Reason specified for abort: Reason not specified")
-          when "01"
-            add_error("Reason specified for abort: Unrecognized PDU")
-          when "02"
-            add_error("Reason specified for abort: Unexpected PDU")
-          when "04"
-            add_error("Reason specified for abort: Unrecognized PDU parameter")
-          when "05"
-            add_error("Reason specified for abort: Unexpected PDU parameter")
-          when "06"
-            add_error("Reason specified for abort: Invalid PDU parameter value")
-          else
-            add_error("Reason specified for abort: Unknown reason (Error code: #{info[:reason]})")
-        end
-      end
+      process_source(info[:source])
+      process_reason(info[:reason])
       stop_receiving
       @abort = true
       info[:valid] = true
@@ -811,6 +787,7 @@ module DICOM
               length = msg.decode(2, "US")
             else
               # Implicit:
+              type = nil
               # Length (4 bytes)
               length = msg.decode(4, "UL")
             end
@@ -1050,10 +1027,32 @@ module DICOM
         @outgoing.add_last(values[i])
       end
     end
-    
-    
+
+
+    # Process the value of the reason byte (in an association abort).
+    # This will provide information on what is the reason for the error.
+    def process_reason(reason)
+      case reason
+        when "00"
+          add_error("Reason specified for abort: Reason not specified")
+        when "01"
+          add_error("Reason specified for abort: Unrecognized PDU")
+        when "02"
+          add_error("Reason specified for abort: Unexpected PDU")
+        when "04"
+          add_error("Reason specified for abort: Unrecognized PDU parameter")
+        when "05"
+          add_error("Reason specified for abort: Unexpected PDU parameter")
+        when "06"
+          add_error("Reason specified for abort: Invalid PDU parameter value")
+        else
+          add_error("Reason specified for abort: Unknown reason (Error code: #{reason})")
+      end
+    end
+
+
     # Process the value of the result byte (in the association response).
-    # Something is wrong if result is not 0.
+    # Something is wrong if result is different from 0.
     def process_result(result)
       unless result == 0
         # Analyse the result and report what is wrong:
@@ -1071,8 +1070,21 @@ module DICOM
         end
       end
     end
-    
-    
+
+
+    # Process the value of the source byte (in an association abort).
+    # This will provide information on who is the source of the error.
+    def process_source(source)
+      if source == "00"
+        add_error("Warning: Connection has been aborted by the service provider because of an error by the service user (client side).")
+      elsif source == "02"
+        add_error("Warning: Connection has been aborted by the service provider because of an error by the service provider (server side).")
+      else
+        add_error("Warning: Connection has been aborted by the service provider, with an unknown cause of the problems. (error code: #{source})")
+      end
+    end
+
+
     # Process the value of the status tag 0000,0900 received in the command fragment.
     # Note: The status tag has vr 'US', and the status as reported here is therefore a number.
     # In the official DICOM documents however, the value of the various status options is given in hex format.
@@ -1195,8 +1207,8 @@ module DICOM
         @user_information.insert(2, ["53", "HEX", "00010001"]) if info[:maxnum_operations_invoked]
       end
     end
-    
-    
+
+
     # Breaks the loops that listen for incoming packets by changing a couple of instance variables.
     # This method is called by the various methods that interpret incoming data when they have verified that
     # the entire message has been received, or when a timeout is reached.
