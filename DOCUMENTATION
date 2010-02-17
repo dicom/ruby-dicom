@@ -104,7 +104,9 @@ PUBLIC INSTANCE METHODS
     Example 2: (Find all occurences of the specified tag inside the specified sequence)
       mySelection = obj.children("3006,0082")
       pos = obj.get_pos("3006,0080", :selection => mySelection)
-    Example 3: (Using the :partial argument to find position of all elements containing a specific string)
+    Example 3: (Same as above, but slightly more concise using the :parent option)
+      pos = obj.get_pos("3006,0080", :parent => "3006,0082")
+    Example 4: (Using the :partial argument to find position of all elements containing a specific string)
       pos = obj.get_pos("0010", :partial => true)
       pos = obj.get_pos("Name", :partial => true)
 

@@ -312,7 +312,7 @@ module DICOM
       # For convenience, allow query to be a one-element array (its value will be extracted):
       if query.is_a?(Array)
         if query.length > 1 or query.length == 0
-          add_msg("Invalid array length supplied to method get_pos.")
+          add_msg("Invalid array length supplied to method get_pos. Returning false.")
           return false
         else
           query = query[0]
@@ -329,12 +329,34 @@ module DICOM
           # Return the position if it is valid:
           indexes = [query] if query >= 0 and query < @names.length
         elsif query.is_a?(String)
-          # Either use the supplied array, or search the entire DICOM object:
+          # Has the user specified an array to search within?
           if options[:selection].is_a?(Array)
             search_array = options[:selection]
-          else
-            search_array = Array.new(@names.length) {|i| i}
           end
+          # Has the user specified a specific parent which will restrict our search to only it's children?
+          if options[:parent]
+            parent_pos = get_pos(options[:parent])
+            if parent_pos == false
+              add_msg("Invalid parent supplied to method get_pos. Returning false.")
+              return false
+            else
+              if parent_pos.length > 1
+                add_msg("The parent you supplied to method get_pos gives multiple hits. A more precise parent specification is needed. Returning false.")
+                return false
+              else
+                # Find the children of this particular tag:
+                children_pos = children(parent_pos)
+                # If selection has also been specified along with parent, we need to extract the array positions that are common to the two arrays:
+                if search_array
+                  search_array = search_array & children_pos
+                else
+                  search_array = children_pos
+                end
+              end
+            end
+          end
+          # Search the entire DICOM object if no restrictions have been set:
+          search_array = Array.new(@names.length) {|i| i} unless search_array
           # Perform search:
           if options[:partial] == true
             # Search for partial string matches:
