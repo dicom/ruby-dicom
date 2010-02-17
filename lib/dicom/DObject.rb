@@ -303,8 +303,8 @@ module DICOM
     # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, tag or name.
     # If no match is found, the method will return false.
     # Additional options:
-    # :array => myArray - tells the method to search for matches in this specific array of positions instead of searching
-    #                                  through the entire DICOM object. If myArray equals false, the method will return false.
+    # :selection => mySelection - tells the method to search for matches in this specific array of positions instead of searching
+    #                                  through the entire DICOM object. If mySelection equals false, the method will return false.
     # :partial => true - get_pos will not only search for exact matches, but will search the names and tags arrays for
     #                             strings that contain the given search string.
     def get_pos(query, options={})
@@ -318,7 +318,7 @@ module DICOM
           query = query[0]
         end
       end
-      if options[:array] == false
+      if options[:selection] == false
         # If the supplied array option equals false, it signals that the user tries to search for an element
         # in an invalid position, and as such, this method will also return false:
         add_msg("Warning: Attempted to call get_pos with query #{query}, but since keyword :array is false I will return false.")
@@ -330,8 +330,8 @@ module DICOM
           indexes = [query] if query >= 0 and query < @names.length
         elsif query.is_a?(String)
           # Either use the supplied array, or search the entire DICOM object:
-          if options[:array].is_a?(Array)
-            search_array = options[:array]
+          if options[:selection].is_a?(Array)
+            search_array = options[:selection]
           else
             search_array = Array.new(@names.length) {|i| i}
           end
