@@ -788,7 +788,7 @@ module DICOM
               length = msg.decode(2, "US")
             else
               # Implicit:
-              type = nil
+              type = nil # (needs to be defined as nil here or it will take the value from the previous step in the loop)
               # Length (4 bytes)
               length = msg.decode(4, "UL")
             end
