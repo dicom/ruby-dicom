@@ -146,6 +146,37 @@ module DICOM
     #################################################
 
 
+    # Returns the image pixel data in a standard Ruby array.
+    # The array does not carry the dimensions of the pixel data, it will be a one dimensional array (vector).
+    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
+    def get_image(options={})
+      pixel_element_pos = get_image_pos
+      # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
+      pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
+      # For now we only support returning pixel data if the image is located in a single pixel data element:
+      if pixel_element_pos.length == 1
+        # All of the pixel data is located in one element:
+        pixel_data = get_pixels(pixel_element_pos[0])
+      else
+        add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images! Returning false.")
+        return false
+      end
+      # Remap the image from pixel values to presentation values if the user has requested this:
+      if options[:rescale] == true
+        # Process pixel data for presentation according to the image information in the DICOM object:
+        center, width, intercept, slope = window_level_values
+        if options[:narray] == true
+          # Use numerical array (faster):
+          pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, -65535, 65535).to_a
+        else
+          # Use standard Ruby array (slower):
+          pixel_data = process_presentation_values(pixel_data, center, width, slope, intercept, -65535, 65535)
+        end
+      end
+      return pixel_data
+    end
+
+
     # Returns a 3d NArray object where the array dimensions corresponds to [frames, columns, rows].
     # To call this method the user needs to loaded the NArray library in advance (require 'narray').
     # Options:
@@ -1187,7 +1218,6 @@ module DICOM
 
 
     # Converts original pixel data values to presentation values.
-    # NB: This method is not used at the moment.
     def process_presentation_values(pixel_data, center, width, slope, intercept, min_allowed, max_allowed)
       # Rescale:
       # PixelOutput = slope * pixel_values + intercept
@@ -1316,7 +1346,7 @@ module DICOM
           # Process pixel data for presentation according to the image information in the DICOM object:
           center, width, intercept, slope = window_level_values
           # What tools will be used to process the pixel presentation values?
-          if options[:narray]
+          if options[:narray] == true
             # Use numerical array (fast):
             pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, 0, Magick::QuantumRange).to_a
             image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)

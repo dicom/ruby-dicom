@@ -75,13 +75,23 @@ PUBLIC INSTANCE METHODS
   get_frames
     Returns the number of frames present in the image data in the DICOM file.
 
+  get_image(options={})
+    Returns a standard Ruby array with the pixel data, where the length of the array corresponds
+    with the number of pixels in the image.
+    Example 1: (Retrieve the pixel data)
+      pixels = obj.get_image
+    Example 2: (Retrieve the pixel data rescaled to presentation values according to window center/width settings)
+      pixels = obj.get_image(:rescale => true)
+    Example 3: (Retrieve the rescaled pixel data and using a numerical array in the rescaling process (~2 times faster))
+      pixels = obj.get_image(:rescale => true, :narray => true)
+
   get_image_magick(options={})
     Returns an array of RMagick image objects, where the size of the array corresponds
     with the number of frames in the image data.
     To call this method the user needs to have loaded the RMagick bindings in advance (require 'RMagick').
     Example 1: (Retrieve object and display first frame)
       require 'RMagick'
-      images = obj.get_image_magick()
+      images = obj.get_image_magick
       images[0].display
     Example 2: (Retrieve image object rescaled to presentation values according to window center/width settings)
       images = obj.get_image_magick(:rescale => true)
@@ -94,7 +104,7 @@ PUBLIC INSTANCE METHODS
     Example 1: (Retrieve object and display first frame):
       require 'narray'
       require 'nimage'
-      data = obj.get_image_narray()
+      data = obj.get_image_narray
       NImage.show data[0,true,true]
     Example 2: (Retrieve numerical array rescaled from the original pixel values to presentation values)
       data = obj.get_image_narray(:rescale => true)
