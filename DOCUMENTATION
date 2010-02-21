@@ -75,14 +75,18 @@ PUBLIC INSTANCE METHODS
   get_frames
     Returns the number of frames present in the image data in the DICOM file.
 
-  get_image_magick
+  get_image_magick(options={})
     Returns an array of RMagick image objects, where the size of the array corresponds
     with the number of frames in the image data.
     To call this method the user needs to have loaded the RMagick bindings in advance (require 'RMagick').
-    Example (retrieve object and display first frame):
+    Example 1: (Retrieve object and display first frame)
     require 'RMagick'
-    data = dicom.get_image_magick()
-    data[0].display
+    images = dicom.get_image_magick()
+    images[0].display
+    Example 2: (Retrieve image object rescaled to presentation values according to window center/width settings)
+    images = dicom.get_image_magick(:rescale => true)
+    Example 3: (Retrieve rescaled image object and using a numerical array in the rescaling process (~2 times faster))
+    images = dicom.get_image_magick(:rescale => true, :narray => true)
 
   get_image_narray
     Returns a 3d NArray object where the array dimensions are related to [frames, columns, rows].

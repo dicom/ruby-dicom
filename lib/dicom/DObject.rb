@@ -213,6 +213,9 @@ module DICOM
 
     # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
     # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
+    # Options:
+    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range instead of.
+    # :narray => true  - Use NArray when rescaling pixel values (faster than using RMagick/Ruby array).
     def get_image_magick(options={})
       # Are we able to make an image?
       if @compression == nil
@@ -236,7 +239,7 @@ module DICOM
       if pixel_element_pos.size == 1
         # All of the pixel data is located in one data element:
         if frames > 1
-          add_msg("Unfortunately, this method only supports reading the first image frame as of now.")
+          add_msg("Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.")
         end
         images = read_image_magick(pixel_element_pos[0], columns, rows, frames, options)
         images = [images] unless images.is_a?(Array)
@@ -1311,23 +1314,29 @@ module DICOM
       unless @compression
         # Non-compressed, just return the array contained on the particular element:
         pixel_data = get_pixels(pos)
-        # Process pixel data for presentation according to the information in the DICOM file:
-        center = get_value("0028,1050", :silent => true)
-        width = get_value("0028,1051", :silent => true)
-        intercept = get_value("0028,1052", :silent => true) || 0
-        slope = get_value("0028,1053", :silent => true) || 1
-        center = center.to_i if center
-        width = width.to_i if width
-        intercept = intercept.to_i
-        slope = slope.to_i
-        # What tools will be used to process the pixel presentation values?
-        if options[:narray]
-          # Use numerical array (fast):
-          pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, 0, Magick::QuantumRange).to_a
-          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
+        # Remap the image from pixel values to presentation values if the user has requested this:
+        if options[:rescale] == true
+          # Process pixel data for presentation according to the information in the DICOM file:
+          center = get_value("0028,1050", :silent => true)
+          width = get_value("0028,1051", :silent => true)
+          intercept = get_value("0028,1052", :silent => true) || 0
+          slope = get_value("0028,1053", :silent => true) || 1
+          center = center.to_i if center
+          width = width.to_i if width
+          intercept = intercept.to_i
+          slope = slope.to_i
+          # What tools will be used to process the pixel presentation values?
+          if options[:narray]
+            # Use numerical array (fast):
+            pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, 0, Magick::QuantumRange).to_a
+            image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
+          else
+            # Use a combination of ruby array and RMagick processing:
+            image = process_presentation_values_magick(pixel_data, center, width, slope, intercept, Magick::QuantumRange, columns, rows)
+          end
         else
-          # Use a combination of ruby array and RMagick processing:
-          image = process_presentation_values_magick(pixel_data, center, width, slope, intercept, Magick::QuantumRange, columns, rows)
+          # Load original pixel values to a RMagick object:
+          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
         end
         return image
       else
