@@ -25,6 +25,7 @@
 # -Complete support for Big endian (basic support is already featured).
 # -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
 # -Make the image handling more intelligent with respect to interpreting data elements that hold information on the image and its properties.
+# -More robust and flexible options for reorienting extracted pixel arrays?
 
 module DICOM
 
@@ -148,7 +149,7 @@ module DICOM
     # Returns a 3d NArray object where the array dimensions corresponds to [frames, columns, rows].
     # To call this method the user needs to loaded the NArray library in advance (require 'narray').
     # Options:
-    # Some options to reorient the pixel matrix may be implemented here.
+    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     def get_image_narray(options={})
       # Are we able to make a pixel array?
       if @compression == nil
@@ -192,21 +193,12 @@ module DICOM
           pixel_data[i,true,true] = pixel_frame
         end
       end
-      # Rearrange the pixel data to get the expected orientation when displaying it on the screen:
-      # (This rearrangement is disabled and should ideally be replaced with a more principal, robust implementation.)
-=begin
-      frames.times do |i|
-        temp_frame = pixel_data[i,true,true]
-        # Transpose array:
-        temp_frame.transpose(1,0)
-        # Mirror the y-axis:
-        temp_frame.shape[0].times do |j|
-          temp_frame[j, 0..temp_frame.shape[1]-1] = temp_frame[j, temp_frame.shape[1]-1..0]
-        end
-        # Put the reoriented pixel data back in its original variable:
-        pixel_data[i,true,true] = temp_frame
+      # Remap the image from pixel values to presentation values if the user has requested this:
+      if options[:rescale] == true
+        # Process pixel data for presentation according to the image information in the DICOM object:
+        center, width, intercept, slope = window_level_values
+        pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, -65535, 65535)
       end
-=end
       return pixel_data
     end # of get_image_narray
 
@@ -214,7 +206,7 @@ module DICOM
     # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
     # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
     # Options:
-    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range instead of.
+    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     # :narray => true  - Use NArray when rescaling pixel values (faster than using RMagick/Ruby array).
     def get_image_magick(options={})
       # Are we able to make an image?
@@ -1269,9 +1261,14 @@ module DICOM
 
 
     # Converts original pixel data values to presentation values, using the faster numerical array.
-    # NB: This returns a one-dimensional NArray object (i.e. no columns & rows).
+    # If a Ruby array is supplied, this returns a one-dimensional NArray object (i.e. no columns & rows).
+    # If a NArray is supplied, the NArray is returned with its original dimensions.
     def process_presentation_values_narray(pixel_data, center, width, slope, intercept, min_allowed, max_allowed)
-      n_arr = NArray.to_na(pixel_data)
+      if pixel_data.is_a?(Array)
+        n_arr = NArray.to_na(pixel_data)
+      else
+        n_arr = pixel_data
+      end
       # Rescale:
       # PixelOutput = slope * pixel_values + intercept
       if intercept != 0 or slope != 1
@@ -1316,15 +1313,8 @@ module DICOM
         pixel_data = get_pixels(pos)
         # Remap the image from pixel values to presentation values if the user has requested this:
         if options[:rescale] == true
-          # Process pixel data for presentation according to the information in the DICOM file:
-          center = get_value("0028,1050", :silent => true)
-          width = get_value("0028,1051", :silent => true)
-          intercept = get_value("0028,1052", :silent => true) || 0
-          slope = get_value("0028,1053", :silent => true) || 1
-          center = center.to_i if center
-          width = width.to_i if width
-          intercept = intercept.to_i
-          slope = slope.to_i
+          # Process pixel data for presentation according to the image information in the DICOM object:
+          center, width, intercept, slope = window_level_values
           # What tools will be used to process the pixel presentation values?
           if options[:narray]
             # Use numerical array (fast):
@@ -1471,6 +1461,20 @@ module DICOM
         end
       end
     end # of update_group_and_parents_length
+
+
+    # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
+    def window_level_values
+      center = get_value("0028,1050", :silent => true)
+      width = get_value("0028,1051", :silent => true)
+      intercept = get_value("0028,1052", :silent => true) || 0
+      slope = get_value("0028,1053", :silent => true) || 1
+      center = center.to_i if center
+      width = width.to_i if width
+      intercept = intercept.to_i
+      slope = slope.to_i
+      return center, width, intercept, slope
+    end
 
 
   end # of class
