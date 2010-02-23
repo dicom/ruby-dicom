@@ -876,13 +876,17 @@ module DICOM
 
     # Sets the value of a data element by modifying an existing element or creating a new one.
     # If the supplied value is not binary, it will attempt to encode the value to binary itself.
+    # Options:
+    # :create => false  - Only update the specified element (do not create if missing).
+    # :bin => bin_data  - Value is already encoded as a binary string.
+    # :vr => string  - If creating a private element, the value representation must be provided to ensure proper encoding.
+    # :parent => element  - If an element is to be created inside a sequence/item, it's parent must be specified to ensure proper placement.
     def set_value(value, element, options={})
       # Options:
-      create = options[:create] # =false means no element creation
       bin = options[:bin] # =true means value already encoded
       vr = options[:vr] # a string which tells us what kind of type an unknown data element is
       # Retrieve array position:
-      pos = get_pos(element)
+      pos = get_pos(element, options)
       # We do not support changing multiple data elements:
       if pos.is_a?(Array)
         if pos.length > 1
@@ -890,10 +894,10 @@ module DICOM
           return
         end
       end
-      if pos == false and create == false
+      if pos == false and options[:create] == false
         # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
         add_msg("Warning: Invalid data element provided to method set_value. Value NOT updated.")
-      elsif create == false
+      elsif options[:create] == false
         # Modify element:
         modify_element(value, pos[0], :bin => bin)
       else
@@ -913,24 +917,45 @@ module DICOM
             # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
             # We will do this by finding the array position of the last element that will (alphabetically/numerically) stay in front of this element.
             if @tags.size > 0
-              # Search the array:
+              if options[:parent]
+                # Parent specified:
+                parent_pos = get_pos(options[:parent])
+                if parent_pos.length > 1
+                  add_msg("Error: Method set_value could not create data element, because the specified parent element returns multiple hits.")
+                  return false
+                end
+                indexes = children(parent_pos, :next_only => true)
+                level = @levels[parent_pos.first]+1
+              else
+                # No parent (fetch top level elements):
+                full_array = Array.new(@levels.length) {|i| i}
+                indexes = full_array.all_indices(@levels, 0)
+                level = 0
+              end
+              # Loop through the selection:
               index = -1
               quit = false
               while quit != true do
-                if index+1 >= @tags.length # We have reached end of array.
+                if index+1 >= indexes.length # We have reached end of array.
                   quit = true
-                elsif tag < @tags[index+1] and @levels[index+1] == 0 # We are past the correct position (only match against top level tags).
+                elsif tag < @tags[indexes[index+1]]
                   quit = true
                 else # Increase index in anticipation of a 'hit'.
                   index += 1
                 end
               end
+              # Determine the index to pass on:
+              if index == -1
+                full_index = indexes.first-1
+              else
+                full_index = indexes[index]
+              end
             else
               # We are dealing with an empty DICOM object:
-              index = nil
+              full_index = nil
             end
             # The necessary information is gathered; create new data element:
-            create_element(value, tag, index, :bin => bin, :vr => vr)
+            create_element(value, tag, full_index, level, :bin => bin, :vr => vr)
           end
         end
       end
@@ -972,7 +997,7 @@ module DICOM
 
 
     # Creates a new data element:
-    def create_element(value, tag, last_pos, options={})
+    def create_element(value, tag, last_pos, level, options={})
       bin_only = options[:bin]
       vr = options[:vr].upcase if options[:vr].is_a?(String)
       # Fetch the VR:
@@ -999,45 +1024,48 @@ module DICOM
         if last_pos == nil
           # We have empty DICOM object:
           @tags = [tag]
-          @levels = [0]
+          @levels = [level]
           @names = [name]
           @types = [vr]
           @lengths = [bin.length]
           @values = [value]
           @bin = [bin]
+          pos = 0
         elsif last_pos == -1
           # Insert in front of arrays:
           @tags = [tag] + @tags
-          @levels = [0] + @levels
+          @levels = [level] + @levels
           @names = [name] + @names
           @types = [vr] + @types
           @lengths = [bin.length] + @lengths
           @values = [value] + @values
           @bin = [bin] + @bin
+          pos = 0
         elsif last_pos == @tags.length-1
           # Insert at end arrays:
           @tags = @tags + [tag]
-          @levels = @levels + [0]
+          @levels = @levels + [level]
           @names = @names + [name]
           @types = @types + [vr]
           @lengths = @lengths + [bin.length]
           @values = @values + [value]
           @bin = @bin + [bin]
+          pos = @tags.length-1
         else
           # Insert somewhere inside the array:
           @tags = @tags[0..last_pos] + [tag] + @tags[(last_pos+1)..(@tags.length-1)]
-          @levels = @levels[0..last_pos] + [0] + @levels[(last_pos+1)..(@levels.length-1)]
+          @levels = @levels[0..last_pos] + [level] + @levels[(last_pos+1)..(@levels.length-1)]
           @names = @names[0..last_pos] + [name] + @names[(last_pos+1)..(@names.length-1)]
           @types = @types[0..last_pos] + [vr] + @types[(last_pos+1)..(@types.length-1)]
           @lengths = @lengths[0..last_pos] + [bin.length] + @lengths[(last_pos+1)..(@lengths.length-1)]
           @values = @values[0..last_pos] + [value] + @values[(last_pos+1)..(@values.length-1)]
           @bin = @bin[0..last_pos] + [bin] + @bin[(last_pos+1)..(@bin.length-1)]
+          pos = last_pos + 1
         end
         # Update last index variable as we have added to our arrays:
         @last_index += 1
-        # Update group length (as long as it was not a group length element that was created):
-        pos = @tags.index(tag)
-        if @tags[pos][5..8] != "0000"
+        # Update group length (as long as it was not a top-level group length element that was created):
+        if @tags[pos][5..8] != "0000" or level != 0
           change = bin.length
           update_group_and_parents_length(pos, vr, change, 1)
         end
@@ -1430,13 +1458,13 @@ module DICOM
       if update_positions
         values = Array.new
         if existance == 0
-          # Element has only been updated, so we only need to think about value value_change_length:
+          # Element has only been updated, so we only need to think about the change in length of its value:
           update_positions.each do |up|
             # If we have a group length, value will be changed, if it is a sequence/item, length will be changed:
             if @tags[up][5..8] == "0000"
               values << @values[up] + value_change_length
             else
-              values << @lengths[up] + change
+              values << @lengths[up] + value_change_length
             end
           end
         else

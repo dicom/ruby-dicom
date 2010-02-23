@@ -186,6 +186,9 @@ PUBLIC INSTANCE METHODS
       obj.set_value(data, 52, :bin => true, :create => false)
     Example 3: (Create a private data element)
       obj.set_value("Test", "0011,0010", :vr => "LO")
+    Example 4: (Create/edit a data element in a specific item in a given sequence)
+      items = obj.get_pos("FFFE,E000", :parent => "0040,0275")
+      obj.set_value("CT1", "0040,0007", :parent => items.first)
 
   set_image_magick(object)
     Inserts a RMagick image object to the pixel data tag of your DICOM object.
