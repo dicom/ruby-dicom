@@ -57,8 +57,6 @@ module DICOM
       @errors = Array.new
       # Array to keep track of sequences/structure of the dicom elements:
       @sequence = Array.new
-      # Index of last element in data element arrays:
-      @last_index=0
       # Structural information (default values):
       @compression = false
       @color = false
@@ -100,8 +98,6 @@ module DICOM
         # Update Stream instance with settings from this DICOM file:
         @stream.set_endian(@file_endian)
         @stream.explicit = @explicit
-        # Index of last data element in element arrays:
-        @last_index=@names.length-1
         # Update status variables for this object:
         check_properties
         # Set the modality of the DICOM object:
@@ -114,7 +110,7 @@ module DICOM
         @segments = r.extract_segments(options[:segment_size])
       end
       # If any messages has been recorded, send these to the message handling method:
-      add_msg(r.msg) if r.msg.size != 0
+      add_msg(r.msg) if r.msg.length > 0
     end
 
 
@@ -126,7 +122,7 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.size != 0
+      add_msg(w.msg) if w.msg.length > 0
     end
 
 
@@ -137,7 +133,7 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.size != 0
+      add_msg(w.msg) if w.msg.length > 0
     end
 
 
@@ -147,9 +143,11 @@ module DICOM
 
 
     # Returns the image pixel data in a standard Ruby array.
+    # Returns false if it fails to retrieve image data.
     # The array does not carry the dimensions of the pixel data, it will be a one dimensional array (vector).
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     def get_image(options={})
+      pixel_data = false
       pixel_element_pos = get_image_pos
       # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
       pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
@@ -158,11 +156,10 @@ module DICOM
         # All of the pixel data is located in one element:
         pixel_data = get_pixels(pixel_element_pos[0])
       else
-        add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images! Returning false.")
-        return false
+        add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images!")
       end
       # Remap the image from pixel values to presentation values if the user has requested this:
-      if options[:rescale] == true
+      if options[:rescale] == true and pixel_data
         # Process pixel data for presentation according to the image information in the DICOM object:
         center, width, intercept, slope = window_level_values
         if options[:narray] == true
@@ -178,19 +175,20 @@ module DICOM
 
 
     # Returns a 3d NArray object where the array dimensions corresponds to [frames, columns, rows].
+    # Returns false if it fails to retrieve image data.
     # To call this method the user needs to loaded the NArray library in advance (require 'narray').
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     def get_image_narray(options={})
       # Are we able to make a pixel array?
       if @compression == nil
-        add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
+        add_msg("It seems pixel data is not present in this DICOM object.")
         return false
       elsif @compression == true
-        add_msg("Reading compressed data to a NArray object not supported yet: Returning false.")
+        add_msg("Reading compressed data to a NArray object not supported yet.")
         return false
       elsif @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: Returning false.")
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method.")
         return false
       end
       # Gather information about the dimensions of the pixel data:
@@ -235,6 +233,7 @@ module DICOM
 
 
     # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
+    # Returns false if it fails to retrieve image data.
     # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
@@ -242,10 +241,10 @@ module DICOM
     def get_image_magick(options={})
       # Are we able to make an image?
       if @compression == nil
-        add_msg("It seems pixel data is not present in this DICOM object: Returning false.")
+        add_msg("Notice: It seems pixel data is not present in this DICOM object.")
         return false
       elsif @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method: Returning false.")
+        add_msg("Warning: Unpacking color pixel data is not supported yet for this method.")
         return false
       end
       # Gather information about the dimensions of the image data:
@@ -259,7 +258,7 @@ module DICOM
       pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
       # Handling of pixel data will depend on whether we have one or more frames,
       # and if it is located in one or more data elements:
-      if pixel_element_pos.size == 1
+      if pixel_element_pos.length == 1
         # All of the pixel data is located in one data element:
         if frames > 1
           add_msg("Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.")
@@ -291,17 +290,17 @@ module DICOM
       image_element_pos = get_pos("7FE0,0010")
       item_pos = get_pos("FFFE,E000")
       # Proceed only if an image element actually exists:
-      if image_element_pos == false
+      if image_element_pos.length == 0
         return false
       else
         # Check if we have item elements:
-        if item_pos == false
+        if item_pos.length == 0
           return image_element_pos
         else
           # Extract item positions that occur after the image element position:
           late_item_pos = item_pos.select {|item| image_element_pos[0] < item}
           # Check if there are items appearing after the image element.
-          if late_item_pos.size == 0
+          if late_item_pos.length == 0
             # None occured after the image element position:
             return image_element_pos
           else
@@ -310,15 +309,15 @@ module DICOM
             # the first item contain an image frame:
             frames = get_frames
             if frames != false  # note: function get_frames will never return false
-              if late_item_pos.size == frames.to_i+1
-                return late_item_pos[1..late_item_pos.size-1]
+              if late_item_pos.length == frames.to_i+1
+                return late_item_pos[1..late_item_pos.length-1]
               else
-                add_msg("Warning: Unexpected behaviour in DICOM file for method get_image_pos. Expected number of image data items not equal to number of frames+1, returning false.")
-                return false
+                add_msg("Warning: Unexpected behaviour in DICOM file for method get_image_pos. Expected number of image data items not equal to number of frames+1.")
+                return Array.new
               end
             else
-              add_msg("Warning: 'Number of Frames' data element not found. Method get_image_pos will return false.")
-              return false
+              add_msg("Warning: 'Number of Frames' data element not found.")
+              return Array.new
             end
           end
         end
@@ -330,79 +329,70 @@ module DICOM
     # If no match is found, the method will return false.
     # Additional options:
     # :selection => mySelection - tells the method to search for matches in this specific array of positions instead of searching
-    #                                  through the entire DICOM object. If mySelection equals false, the method will return false.
-    # :partial => true - get_pos will not only search for exact matches, but will search the names and tags arrays for
-    #                             strings that contain the given search string.
+    #                                  through the entire DICOM object. If mySelection is empty, the returned array will also be empty.
+    # :partial => true - get_pos will not only search for exact matches, but will search the names and tags arrays for strings that contain the given search string.
+    # :parent => element  - This method will return only matches that are children of the specified (parent) data element.
     def get_pos(query, options={})
+      search_array = Array.new
       indexes = Array.new
       # For convenience, allow query to be a one-element array (its value will be extracted):
       if query.is_a?(Array)
         if query.length > 1 or query.length == 0
-          add_msg("Invalid array length supplied to method get_pos. Returning false.")
-          return false
+          add_msg("Warning: Invalid array length supplied to method get_pos().")
+          return Array.new
         else
           query = query[0]
         end
       end
-      if options[:selection] == false
-        # If the supplied array option equals false, it signals that the user tries to search for an element
-        # in an invalid position, and as such, this method will also return false:
-        add_msg("Warning: Attempted to call get_pos with query #{query}, but since keyword :array is false I will return false.")
-        indexes = false
-      else
-        # Check if query is a number (some methods want to have the ability to call get_pos with a number):
-        if query.is_a?(Integer)
-          # Return the position if it is valid:
-          indexes = [query] if query >= 0 and query < @names.length
-        elsif query.is_a?(String)
-          # Has the user specified an array to search within?
-          if options[:selection].is_a?(Array)
-            search_array = options[:selection]
+      # Check if query is a number (some methods want to have the ability to call get_pos with a number):
+      if query.is_a?(Integer)
+        # Return the position if it is valid:
+        if query >= 0 and query < @names.length
+          indexes = [query]
+        else
+          add_msg("Error: The specified array position is out of range.")
+        end
+      elsif query.is_a?(String)
+        # Has the user specified an array to search within?
+        search_array = options[:selection] if options[:selection].is_a?(Array)
+        # Has the user specified a specific parent which will restrict our search to only it's children?
+        if options[:parent]
+          parent_pos = get_pos(options[:parent], :next_only => options[:next_only])
+          if parent_pos.length == 0
+            add_msg("Error: Invalid parent supplied to method get_pos().")
+            return Array.new
+          elsif parent_pos.length > 1
+            add_msg("Error: The parent you supplied to method get_pos() gives multiple hits. A more precise parent specification is needed.")
+            return Array.new
           end
-          # Has the user specified a specific parent which will restrict our search to only it's children?
-          if options[:parent]
-            parent_pos = get_pos(options[:parent])
-            if parent_pos == false
-              add_msg("Invalid parent supplied to method get_pos. Returning false.")
-              return false
-            else
-              if parent_pos.length > 1
-                add_msg("The parent you supplied to method get_pos gives multiple hits. A more precise parent specification is needed. Returning false.")
-                return false
-              else
-                # Find the children of this particular tag:
-                children_pos = children(parent_pos)
-                # If selection has also been specified along with parent, we need to extract the array positions that are common to the two arrays:
-                if search_array
-                  search_array = search_array & children_pos
-                else
-                  search_array = children_pos
-                end
-              end
-            end
-          end
-          # Search the entire DICOM object if no restrictions have been set:
-          search_array = Array.new(@names.length) {|i| i} unless search_array
-          # Perform search:
-          if options[:partial] == true
-            # Search for partial string matches:
-            partial_indexes = search_array.all_indices_partial_match(@tags, query.upcase)
-            if partial_indexes.length > 0
-              indexes = partial_indexes
-            else
-              indexes = search_array.all_indices_partial_match(@names, query)
-            end
+          # Find the children of this particular tag:
+          children_pos = children(parent_pos)
+          # If selection has also been specified along with parent, we need to extract the array positions that are common to the two arrays:
+          if search_array.length > 0
+            search_array = search_array & children_pos
           else
-            # Search for identical matches:
-            if query[4..4] == ","
-              indexes = search_array.all_indices(@tags, query.upcase)
-            else
-              indexes = search_array.all_indices(@names, query)
-            end
+            search_array = children_pos
           end
         end
-        # Policy: If no matches found, return false instead of an empty array:
-        indexes = false if indexes.length == 0
+        # Search the entire DICOM object if no restrictions have been set:
+        search_array = Array.new(@names.length) {|i| i} unless options[:selection] or options[:parent]
+        # Perform search:
+        if options[:partial] == true
+          # Search for partial string matches:
+          partial_indexes = search_array.all_indices_partial_match(@tags, query.upcase)
+          if partial_indexes.length > 0
+            indexes = partial_indexes
+          else
+            indexes = search_array.all_indices_partial_match(@names, query)
+          end
+        else
+          # Search for identical matches:
+          if query[4..4] == ","
+            indexes = search_array.all_indices(@tags, query.upcase)
+          else
+            indexes = search_array.all_indices(@names, query)
+          end
+        end
       end
       return indexes
     end # of get_pos
@@ -411,70 +401,59 @@ module DICOM
     # Dumps the binary content of the Pixel Data element to file.
     def image_to_file(file)
       pos = get_image_pos
-      if pos
+      # Pixel data may be located in several elements:
+      pos.each_index do |i|
+        pixel_data = get_bin(pos[i])
         if pos.length == 1
-          # Pixel data located in one element:
-          pixel_data = get_bin(pos[0])
           f = File.new(file, "wb")
-          f.write(pixel_data)
-          f.close
         else
-          # Pixel data located in several elements:
-          pos.each_index do |i|
-            pixel_data = get_bin(pos[i])
-            f = File.new(file + i.to_s, "wb")
-            f.write(pixel_data)
-            f.close
-          end
+          f = File.new(file + i.to_s, "wb")
         end
+        f.write(pixel_data)
+        f.close
       end
     end
 
 
     # Returns the positions of all data elements inside the hierarchy of a sequence or an item.
     # Options:
-    # :next_only => true - The method will only search immediately below the specified
-    # item or sequence (that is, in the level of parent + 1).
+    # :next_only => true - The method will only search immediately below the specified item or sequence (that is, in the level of parent + 1).
     def children(element, options={})
       # Process option values, setting defaults for the ones that are not specified:
       opt_next_only = options[:next_only] || false
-      value = false
+      children_pos = Array.new
       # Retrieve array position:
       pos = get_pos(element)
-      if pos == false
-        add_msg("Warning: Invalid data element provided to method children. Returning false.")
+      if pos.length == 0
+        add_msg("Warning: Invalid data element provided to method children().")
+      elsif pos.length > 1
+        add_msg("Warning: Method children() does not allow a query which yields multiple array hits. Please use array position instead of tag/name.")
       else
-        if pos.size > 1
-          add_msg("Warning: Method children does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
-        else
-          # Proceed to find the value:
-          # First we need to establish in which positions to perform the search:
-          below_pos = Array.new
-          pos.each do |p|
-            parent_level = @levels[p]
-            remain_array = @levels[p+1..@levels.size-1]
-            extract = true
-            remain_array.each_index do |i|
-              if (remain_array[i] > parent_level) and (extract == true)
-                # If search is targetted at any specific level, we can just add this position:
-                if not opt_next_only == true
-                  below_pos << (p+1+i)
-                else
-                  # As search is restricted to parent level + 1, do a test for this:
-                  if remain_array[i] == parent_level + 1
-                    below_pos << (p+1+i)
-                  end
-                end
+        # Proceed to find the value:
+        # First we need to establish in which positions to perform the search:
+        pos.each do |p|
+          parent_level = @levels[p]
+          remain_array = @levels[p+1..@levels.length-1]
+          extract = true
+          remain_array.each_index do |i|
+            if (remain_array[i] > parent_level) and (extract == true)
+              # If search is targetted at any specific level, we can just add this position:
+              if not opt_next_only == true
+                children_pos << (p+1+i)
               else
-                # If we encounter a position who's level is not deeper than the original level, we can not extract any more values:
-                extract = false
+                # As search is restricted to parent level + 1, do a test for this:
+                if remain_array[i] == parent_level + 1
+                  children_pos << (p+1+i)
+                end
               end
+            else
+              # If we encounter a position who's level is not deeper than the original level, we can not extract any more values:
+              extract = false
             end
           end
-          value = below_pos if below_pos.size != 0
         end
       end
-      return value
+      return children_pos
     end
 
 
@@ -485,31 +464,29 @@ module DICOM
     #                  DICOM object. Values will be returned in an array with length equal to the number
     #                  of occurances of the tag. If keyword is not specified, the method returns false in this case.
     # :silent => true - As this method is also used internally, we want the possibility of warnings not being
-    #                  raised even if verbose is set to true by the user, in order to avoid confusion.
+    #                  raised even if verbose is set to true by the user, in order to avoid unnecessary confusion.
     def get_value(element, options={})
       value = false
       # Retrieve array position:
       pos = get_pos(element)
-      if pos == false
-        add_msg("Warning: Invalid data element provided to method get_value. Returning false.") unless options[:silent]
-      else
-        if pos.size > 1
-          # Multiple 'hits':
-          if options[:array] == true
-            # Retrieve all values into an array:
-            value = Array.new
-            pos.each do |i|
-              value << @values[i]
-            end
-          else
-            add_msg("Warning: Method get_value does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.") unless options[:silent]
+      if pos.length == 0
+        add_msg("Warning: Invalid data element provided to method get_value().") unless options[:silent]
+      elsif pos.length > 1
+        # Multiple 'hits':
+        if options[:array] == true
+          # Retrieve all values into an array:
+          value = Array.new
+          pos.each do |i|
+            value << @values[i]
           end
         else
-          # One single match:
-          value = @values[pos[0]]
-          # Return the single value in an array if keyword :array used:
-          value = [value] if options[:array]
+          add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true).") unless options[:silent]
         end
+      else
+        # One single match:
+        value = @values[pos[0]]
+        # Return the single value in an array if keyword :array used:
+        value = [value] if options[:array]
       end
       return value
     end
@@ -525,26 +502,24 @@ module DICOM
       value = false
       # Retrieve array position:
       pos = get_pos(element)
-      if pos == false
-        add_msg("Warning: Invalid data element provided to method get_bin. Returning false.")
-      else
-        if pos.size > 1
-          # Multiple 'hits':
-          if options[:array] == true
-            # Retrieve all values into an array:
-            value = Array.new
-            pos.each do |i|
-              value << @bin[i]
-            end
-          else
-            add_msg("Warning: Method get_bin does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true). Returning false.")
+      if pos.length == 0
+        add_msg("Warning: Invalid data element provided to method get_bin().")
+      elsif pos.length > 1
+        # Multiple 'hits':
+        if options[:array] == true
+          # Retrieve all values into an array:
+          value = Array.new
+          pos.each do |i|
+            value << @bin[i]
           end
         else
-          # One single match:
-          value = @bin[pos[0]]
-          # Return the single value in an array if keyword :array used:
-          value = [value] if options[:array]
+          add_msg("Warning: Method get_bin() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true).")
         end
+      else
+        # One single match:
+        value = @bin[pos[0]]
+        # Return the single value in an array if keyword :array used:
+        value = [value] if options[:array]
       end
       return value
     end
@@ -552,37 +527,33 @@ module DICOM
 
     # Returns the position of (possible) parents of the specified data element in the hierarchy structure of the DICOM object.
     def parents(element)
-      value = false
+      parent_pos = Array.new
       # Retrieve array position:
       pos = get_pos(element)
-      if pos == false
-        add_msg("Warning: Invalid data element provided to method parents. Returning false.")
+      if pos.length == 0
+        add_msg("Warning: Invalid data element provided to method parents().")
+      elsif pos.length > 1
+        add_msg("Warning: Method parents() does not allow a query which yields multiple array hits. Please use array position instead of tag/name.")
       else
-        if pos.length > 1
-          add_msg("Warning: Method parents does not allow a query which yields multiple array hits. Please use array position instead of tag/name. Returning false.")
-        else
-          # Proceed to find the value:
-          # Get the level of our element:
-          level = @levels[pos[0]]
-          # Element can obviously only have parents if it is not a top level element:
-          unless level == 0
-            # Search backwards, and record the position every time we encounter an upwards change in the level number.
-            parents = Array.new
-            prev_level = level
-            search_arr = @levels[0..pos[0]-1].reverse
-            search_arr.each_index do |i|
-              if search_arr[i] < prev_level
-                parents << search_arr.length-i-1
-                prev_level = search_arr[i]
-              end
+        # Proceed to find the value:
+        # Get the level of our element:
+        level = @levels[pos[0]]
+        # Element can obviously only have parents if it is not a top level element:
+        unless level == 0
+          # Search backwards, and record the position every time we encounter an upwards change in the level number.
+          prev_level = level
+          search_arr = @levels[0..pos[0]-1].reverse
+          search_arr.each_index do |i|
+            if search_arr[i] < prev_level
+              parent_pos << search_arr.length-i-1
+              prev_level = search_arr[i]
             end
-            # When the element has several generations of parents, we want its top parent to be first in the returned array:
-            parents = parents.reverse
-            value = parents if parents.length > 0
           end
+          # When the element has several generations of parents, we want its top parent to be first in the returned array:
+          parent_pos = parent_pos.reverse
         end
       end
-      return value
+      return parent_pos
     end
 
 
@@ -610,17 +581,12 @@ module DICOM
       opt_levels = options[:levels] || false
       opt_tree = options[:tree] || false
       opt_file = options[:file] || false
-      # If pos is false, abort, and inform the user:
-      if pos == false
-        add_msg("Warning: Method print was supplied false instead of a valid position. Aborting print.")
-        return
-      end
-      if not pos.is_a?(Array) and pos != true
-        # Convert to array if number:
-        pos_valid = [pos]
-      elsif pos == true
+      if pos == true
         # Create a complete array of indices:
         pos_valid = Array.new(@names.length) {|i| i}
+      elsif not pos.is_a?(Array)
+        # Convert number to array:
+        pos_valid = [pos]
       else
         # Use the supplied array of numbers:
         pos_valid = pos
@@ -815,45 +781,41 @@ module DICOM
     #    (default behaviour is to remove any children if a sequence or item is removed)
     def remove(element, options={})
       positions = get_pos(element)
-      if positions != false
-        if positions.length > 1
-          add_msg("Warning: Method remove does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT removed.")
-        else
-          # Check if the tag selected for removal has children (relevant for sequence/item tags):
-          unless options[:ignore_children]
-            child_pos = children(positions)
-            if child_pos
-              # Add the positions of the children to our original tag's position array:
-              positions << child_pos
-            end
-          end
-          positions.flatten!
-          # Loop through all positions (important to do this in reverse to retain predictable array positions):
-          positions.reverse.each do |pos|
-            # Update group length
-            # (Possible weakness: Group length tag contained inside a sequence/item. Code needs a slight rewrite to make it more robust)
-            if @tags[pos][5..8] != "0000"
-              # Note: When removing an item/sequence, its length value must not be used for 'change' (it's value is in reality nil):
-              if @types[pos] == "()" or @types[pos] == "SQ"
-                change = 0
-              else
-                change = @lengths[pos]
-              end
-              vr = @types[pos]
-              update_group_and_parents_length(pos, vr, change, -1)
-            end
-            # Remove entry from arrays:
-            @tags.delete_at(pos)
-            @levels.delete_at(pos)
-            @names.delete_at(pos)
-            @types.delete_at(pos)
-            @lengths.delete_at(pos)
-            @values.delete_at(pos)
-            @bin.delete_at(pos)
-          end
-        end
+      if positions.length == 0
+        add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove() has no data element to remove.")
+      elsif positions.length > 1
+        add_msg("Warning: Method remove() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value(s) NOT removed.")
       else
-        add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove has no data element to remove.")
+        # Check if the tag selected for removal has children (relevant for sequence/item tags):
+        unless options[:ignore_children]
+          child_pos = children(positions)
+          # Add the positions of the children (if they exist) to our original tag's position array:
+          positions << child_pos if child_pos.length > 0
+        end
+        positions.flatten!
+        # Loop through all positions (important to do this in reverse to retain predictable array positions):
+        positions.reverse.each do |pos|
+          # Update group length
+          # (Possible weakness: Group length tag contained inside a sequence/item. Code needs a slight rewrite to make it more robust)
+          if @tags[pos][5..8] != "0000"
+            # Note: When removing an item/sequence, its length value must not be used for 'change' (it's value is in reality nil):
+            if @types[pos] == "()" or @types[pos] == "SQ"
+              change = 0
+            else
+              change = @lengths[pos]
+            end
+            vr = @types[pos]
+            update_group_and_parents_length(pos, vr, change, -1)
+          end
+          # Remove entry from arrays:
+          @tags.delete_at(pos)
+          @levels.delete_at(pos)
+          @names.delete_at(pos)
+          @types.delete_at(pos)
+          @lengths.delete_at(pos)
+          @values.delete_at(pos)
+          @bin.delete_at(pos)
+        end
       end
     end
 
@@ -864,11 +826,9 @@ module DICOM
       odd_group = ["1,","3,","5,","7,","9,","B,","D,","F,"]
       odd_group.each do |odd|
         positions = get_pos(odd, :partial => true)
-        if positions
-          # Delete all entries (important to do this in reverse order).
-          positions.reverse.each do |pos|
-            remove(pos)
-          end
+        # Delete all entries (important to do this in reverse order).
+        positions.reverse.each do |pos|
+          remove(pos)
         end
       end
     end
@@ -888,21 +848,19 @@ module DICOM
       # Retrieve array position:
       pos = get_pos(element, options)
       # We do not support changing multiple data elements:
-      if pos.is_a?(Array)
-        if pos.length > 1
-          add_msg("Warning: Method set_value does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value NOT saved.")
-          return
-        end
+      if pos.length > 1
+        add_msg("Warning: Method set_value() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value(s) NOT saved.")
+        return
       end
-      if pos == false and options[:create] == false
+      if pos.length == 0 and options[:create] == false
         # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
-        add_msg("Warning: Invalid data element provided to method set_value. Value NOT updated.")
+        add_msg("Warning: Invalid data element provided to method set_value(). Value NOT updated.")
       elsif options[:create] == false
         # Modify element:
         modify_element(value, pos[0], :bin => bin)
       else
         # User wants to create an element (or modify it if it is already present).
-        unless pos == false
+        unless pos.length == 0
           # The data element already exist, so we modify instead of creating:
           modify_element(value, pos[0], :bin => bin)
         else
@@ -916,13 +874,13 @@ module DICOM
           else
             # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
             # We will do this by finding the array position of the last element that will (alphabetically/numerically) stay in front of this element.
-            if @tags.size > 0
+            if @tags.length > 0
               if options[:parent]
                 # Parent specified:
                 parent_pos = get_pos(options[:parent])
                 if parent_pos.length > 1
-                  add_msg("Error: Method set_value could not create data element, because the specified parent element returns multiple hits.")
-                  return false
+                  add_msg("Error: Method set_value() could not create data element, because the specified parent element returns multiple hits.")
+                  return
                 end
                 indexes = children(parent_pos, :next_only => true)
                 level = @levels[parent_pos.first]+1
@@ -946,7 +904,12 @@ module DICOM
               end
               # Determine the index to pass on:
               if index == -1
-                full_index = indexes.first-1
+                # Empty parent tag or new tag belongs in front of our indexes:
+                if indexes.length == 0
+                  full_index = parent_pos.first
+                else
+                  full_index = indexes.first-1
+                end
               else
                 full_index = indexes[index]
               end
@@ -1062,8 +1025,6 @@ module DICOM
           @bin = @bin[0..last_pos] + [bin] + @bin[(last_pos+1)..(@bin.length-1)]
           pos = last_pos + 1
         end
-        # Update last index variable as we have added to our arrays:
-        @last_index += 1
         # Update group length (as long as it was not a top-level group length element that was created):
         if @tags[pos][5..8] != "0000" or level != 0
           change = bin.length
@@ -1123,7 +1084,7 @@ module DICOM
 
 
     # Find the position(s) of the group length tag(s) that the given tag is associated with.
-    # If a group length tag does not exist, return false.
+    # If a group length tag does not exist, return an empty array.
     def find_group_length(pos)
       positions = Array.new
       group = @tags[pos][0..4]
@@ -1132,24 +1093,20 @@ module DICOM
         # Add (possible) group length of top parent:
         parent_positions = parents(pos)
         first_parent_gl_pos = find_group_length(parent_positions.first)
-        positions << first_parent_gl_pos.first if first_parent_gl_pos
+        positions << first_parent_gl_pos.first if first_parent_gl_pos.length > 0
         # Add (possible) group length at current tag's level:
         valid_positions = children(parent_positions.last)
         level_gl_pos = get_pos(group+"0000", :array => valid_positions)
-        positions << level_gl_pos.first if level_gl_pos
+        positions << level_gl_pos.first if level_gl_pos.length > 0
       else
         # We are dealing with a top level tag:
         gl_pos = get_pos(group+"0000")
         # Note: Group level tags of this type may be found elsewhere in the DICOM object inside other
         # sequences/items. We must make sure that such tags are not added to our list:
-        if gl_pos
-          gl_pos.each do |gl|
-            positions << gl if @levels[gl] == 0
-          end
+        gl_pos.each do |gl|
+          positions << gl if @levels[gl] == 0
         end
       end
-      # If we didnt find any positions, we return false:
-      positions = false unless positions.length > 0
       return positions
     end
 
@@ -1362,8 +1319,8 @@ module DICOM
     # Returns one or more RMagick image objects from the binary string pixel data,
     # performing decompression of data if necessary.
     def read_image_magick(pos, columns, rows, frames, options={})
-      if pos == false or columns == false or rows == false
-        add_msg("Error: Method read_image_magick does not have enough data available to build an image object. Returning false.")
+      if columns == false or rows == false
+        add_msg("Error: Method read_image_magick() does not have enough data available to build an image object.")
         return false
       end
       unless @compression
@@ -1393,7 +1350,7 @@ module DICOM
           image = Magick::Image.from_blob(@bin[pos])
           return image
         rescue
-          add_msg("RMagick did not succeed in decoding the compressed image data. Returning false.")
+          add_msg("RMagick did not succeed in decoding the compressed image data.")
           return false
         end
       end
@@ -1442,16 +1399,21 @@ module DICOM
         parent_positions = parents(pos)
         parent_positions.each do |parent|
           # If the parent has a length value, then it must be added to our list of tags that will have its length updated:
-          update_positions << parent if @lengths[parent] > 0
+          if @lengths[parent] > 0
+            update_positions << parent
+          else
+            # However, a (previously) empty sequence/item that does not use delimiation items, should also have its length updated:
+            # The search for a delimitation item is somewhat slow, so only do this if the length was 0.
+            children_positions = children(parent, :next_only => true)
+            update_positions << parent if children_positions.length == 1 and @tags[children_positions[0]][0..7] != "FFFE,E0"
+          end
         end
       end
       # Check for a corresponding group length tag:
       gl_pos = find_group_length(pos)
       # Join the arrays if group length tag(s) were actually discovered (Operator | can be used here for simplicity, but seems to be not working in Ruby 1.8)
-      if gl_pos
-        gl_pos.each do |gl|
-          update_positions << gl
-        end
+      gl_pos.each do |gl|
+        update_positions << gl
       end
       existance = 0 unless existance
       # If group length(s)/parent(s) to be updated exists, calculate change:
