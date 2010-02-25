@@ -5,23 +5,21 @@ module DICOM
   # This class contains code for setting up a Service Class Provider (SCP),
   # which will act as a simple storage node (a server that receives images).
   class DServer
-    
-    
-    # Run the server and take a block for initializing
-    
-    def self.run(port=11112, path='/tmp/', &block)
+
+
+    # Run the server and take a block for initializing.
+    def self.run(port=104, path='./received/', &block)
       server = DServer.new(port)
       server.instance_eval(&block)
       server.start_scp(path)
     end
-    
-    #
 
+    # Accessible attributes:
     attr_accessor :host_ae, :max_package_size, :port, :timeout, :verbose, :file_handler
     attr_reader :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
-    def initialize(port, options={})
+    def initialize(port=104, options={})
       require 'socket'
       # Required parameters:
       @port = port
@@ -83,7 +81,7 @@ module DICOM
 
     # Start a Service Class Provider (SCP).
     # This service will receive and store DICOM files in a specified folder.
-    def start_scp(path)
+    def start_scp(path='./received/')
       add_notice("Starting SCP server...")
       add_notice("*********************************")
       # Initiate server:
@@ -111,14 +109,14 @@ module DICOM
                   link.handle_release(session)
                 else
                   # Process the incoming data:
-                  success_message = link.handle_incoming_data(session, path)
-                  if success_message
-                    add_notice(success_message)
+                  success, message = link.handle_incoming_data(session, path)
+                  if success
+                    add_notice(message)
                     # Send a receipt for received data:
                     link.handle_response(session)
                   else
                     # Something has gone wrong:
-                    add_error("Invalid data received (either the data was too small to be a valid DICOM file, or it was not parsed succesfully).")
+                    add_error(message)
                   end
                   # Release the connection:
                   link.handle_release(session)

@@ -351,12 +351,13 @@ module DICOM
         # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
         # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
         # their own customised solutions for handling the incoming DICOM files:
-        success_message = @file_handler.receive_file(obj, path, @transfer_syntax)
+        success, message = @file_handler.receive_file(obj, path, @transfer_syntax)
       else
         # Valid DICOM data not received:
-        success_message = false
+        success = false
+        message = "Error: Invalid data received (the data was too small to be a valid DICOM file)."
       end
-      return success_message
+      return success, message
     end
 
 

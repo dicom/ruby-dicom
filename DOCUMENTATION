@@ -424,10 +424,17 @@ PUBLIC CLASS METHODS
 
   new(port, options={})
     Initialize a new DServer instance.
-    Example:
+    Example 1:
       server = DICOM::DServer.new(104)
+    Example 2: (Initialize a DServer using a customized FileHandler placed in your local folder)
+      require 'MyFileHandler'
+      server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
 
 ACCESSORS (Read & write)
+  :file_handler
+    You may write your own, customized FileHandler (the file that determines how incoming DICOM files are handled),
+    put it in your local execution environment, and hook it to your DServer instance by using this accessor.
+    This is quite a powerful option, as it will enable you to do practically whatever you want with incoming DICOM files.
   :host_ae
     Called application entity (name of the service class provider - server).
   :max_package_size

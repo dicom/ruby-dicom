@@ -9,6 +9,7 @@
 # - Modify the folder structure in which DICOM files are saved to disk.
 # - Store DICOM contents in a database (highly relevant if you are building a Ruby on Rails application).
 # - Retransmit the DICOM object to another network destination using the DClient class.
+# - Write information to a log file.
 
 module DICOM
 
@@ -21,7 +22,7 @@ module DICOM
     def self.receive_file(obj, path_prefix, transfer_syntax)
       # Did we receive a valid DICOM file?
       if obj.read_success
-        # File name will be equal to the SOP Instance UID
+        # File name is set using the SOP Instance UID
         file_name = obj.get_value("0008,0018") || "no_SOP_UID.dcm"
         # File will be saved with the following path:
         # path_prefix/<PatientID>/<StudyDate>/<Modality>/
@@ -33,13 +34,16 @@ module DICOM
         full_path = path_prefix + local_path
         # Save the DICOM object to disk:
         obj.write(full_path, transfer_syntax)
-        # As the file has been received successfully, return a 'success message':
+        # As the file has been received successfully, set the success boolean and a corresponding 'success string':
+        success = true
         message = "DICOM file saved to: #{full_path}"
       else
         # Received data was not successfully read as a DICOM file.
-        message = false
+        success = false
+        message = "Error: The received file was not successfully parsed as a DICOM object."
       end
-      return message
+      # A boolean indicating success/failure, and a message string must be returned:
+      return success, message
     end
 
   end # of class
