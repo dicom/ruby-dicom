@@ -190,13 +190,32 @@ PUBLIC INSTANCE METHODS
       items = obj.get_pos("FFFE,E000", :parent => "0040,0275")
       obj.set_value("CT1", "0040,0007", :parent => items.first)
 
-  set_image_magick(object)
-    Inserts a RMagick image object to the pixel data tag of your DICOM object.
+  set_image(array)
+    Encodes and inserts the content of your array to the pixel data element of your DICOM object.
+    Note that this method does not create or update tags related to image information in the DICOM object.
 
   set_image_file(file)
     Inserts the binary content of a file to the Pixel Data tag in your DICOM object.
     This can be useful if you have processed some image data using a custom program
     and just wants to put that data back into a DICOM object.
+
+  set_image_magick(object, options={})
+    Encodes and inserts a RMagick image object to the pixel data element of your DICOM object.
+    Note that this method does not create or update tags related to image information in the DICOM object.
+    If pixel value rescaling is desired, this can be specified by using both the :min and :max options.
+    NB! Because of rescaling when importing pixel values to a RMagick object, and the possible
+    difference between presentation values and original pixel values, the use of set_image_magick() may
+    result in pixel data that is completely different from what is expected.
+    This method should be used only with great care: Do not be suprised if your resulting DICOM image looks strange!
+    Example: (Encode an image object and requesting a specific pixel value range to be encoded)
+      obj.set_image_magick(myImage, :min => -2000, :max => 3000)
+
+  set_image_narray(object, options={})
+    Encodes and inserts a NArray object to the pixel data element of your DICOM object.
+    Note that this method does not create or update tags related to image information in the DICOM object.
+    If pixel value rescaling is desired, this can be specified by using both the :min and :max options.
+    Example: (Encode a numerical pixel data array and requesting a specific pixel value range to be encoded)
+      obj.set_image_narray(myArray, :min => -2000, :max => 3000)
 
   write(file)
     Writes the DICOM object to the specified file.

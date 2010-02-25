@@ -16,16 +16,16 @@
 #--------------------------------------------------------------------------------------------------
 
 # TODO:
-# -Improve the retrieve file network functionality
-# -Make the networking more intelligent in its handling of (unexpected) messages
-# -Support for writing complex (hierarchical) DICOM files (basic write support is featured).
+# -The retrieve file network functionality (get_image in DClient class) has not been tested.
+# -Make the networking code more intelligent in its handling of unexpected network communication.
 # -Full support for compressed image data.
-# -Read 12 bit image data correctly.
-# -Support for color image data to get_image_narray and get_image_magick.
-# -Complete support for Big endian (basic support is already featured).
+# -Read/Write 12 bit image data.
+# -Support for color image data.
+# -Complete support for Big endian (Everything but signed short and signed long has been implemented).
 # -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
-# -Make the image handling more intelligent with respect to interpreting data elements that hold information on the image and its properties.
+# -Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
 # -More robust and flexible options for reorienting extracted pixel arrays?
+# -Could the usage of arrays in DObject be replaced with something better, or at least improved upon, to give cleaner code and more efficient execution?
 
 module DICOM
 
@@ -745,7 +745,14 @@ module DICOM
     ####################################################
 
 
-    # Reads binary information from file and inserts it in the pixel data element:
+    # Writes pixel data from a Ruby Array object to the pixel data element.
+    def set_image(pixel_array)
+      # Encode this array using the standard class method:
+      set_value(pixel_array, "7FE0,0010", :create => true)
+    end
+
+
+    # Reads binary information from file and inserts it in the pixel data element.
     def set_image_file(file)
       # Try to read file:
       begin
@@ -766,10 +773,53 @@ module DICOM
     end
 
 
-    # Transfers pixel data from a RMagick object to the pixel data element:
-    def set_image_magick(magick_obj)
+    # Transfers pixel data from a RMagick object to the pixel data element.
+    # NB! Because of rescaling when importing pixel values to a RMagick object, and the possible
+    # difference between presentation values and pixel values, the use of set_image_magick() may 
+    # result in pixel data that is completely different from what is expected.
+    # This method should be used only with great care!
+    # If value rescaling is wanted, both :min and :max must be set!
+    # Options:
+    # :max => value  - Pixel values will be rescaled using this as the new maximum value.
+    # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
+    def set_image_magick(magick_obj, options={})
       # Export the RMagick object to a standard Ruby array of numbers:
       pixel_array = magick_obj.export_pixels(x=0, y=0, columns=magick_obj.columns, rows=magick_obj.rows, map="I")
+      # Rescale pixel values?
+      if options[:min] and options[:max]
+        p_min = pixel_array.min
+        p_max = pixel_array.max
+        if p_min != options[:min] or p_max != options[:max]
+          wanted_range = options[:max] - options[:min]
+          factor = wanted_range.to_f/(pixel_array.max - pixel_array.min).to_f
+          offset = pixel_array.min - options[:min]
+          pixel_array.collect!{|x| ((x*factor)-offset).round}
+        end
+      end
+      # Encode this array using the standard class method:
+      set_value(pixel_array, "7FE0,0010", :create => true)
+    end
+    
+    
+    # Transfers pixel data from a NArray object to the pixel data element.
+    # If value rescaling is wanted, both :min and :max must be set!
+    # Options:
+    # :max => value  - Pixel values will be rescaled using this as the new maximum value.
+    # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
+    def set_image_narray(narray, options={})
+      # Rescale pixel values?
+      if options[:min] and options[:max]
+        n_min = narray.min
+        n_max = narray.max
+        if n_min != options[:min] or n_max != options[:max]
+          wanted_range = options[:max] - options[:min]
+          factor = wanted_range.to_f/(n_max - n_min).to_f
+          offset = n_min - options[:min]
+          narray = narray*factor-offset
+        end
+      end
+      # Export the NArray object to a standard Ruby array of numbers:
+      pixel_array = narray.to_a.flatten!
       # Encode this array using the standard class method:
       set_value(pixel_array, "7FE0,0010", :create => true)
     end
@@ -1037,6 +1087,8 @@ module DICOM
 
 
     # Encodes a value to binary (used for inserting values into a DICOM object).
+    # Future development: Encoding of tags should be moved to the Stream class,
+    # and encoding of image data should be 'outsourced' to a method of its own (encode_image).
     def encode(value, vr)
       # VR will decide how to encode this value:
       case vr
@@ -1055,12 +1107,12 @@ module DICOM
         # Image related value representations:
         when "OW"
           # What bit depth to use when encoding the pixel data?
-          bit_depth = get_value("0028,0100")
+          bit_depth = get_value("0028,0100", :array => true)[0]
           if bit_depth == false
             # Data element not specified:
-            add_msg("Attempted to encode pixel data, but 'Bit Depth' data element is missing (0028,0100).")
+            add_msg("Attempted to encode pixel data, but the 'Bit Depth' Data Element (0028,0100) is missing.")
           else
-            # 8,12 or 16 bits?
+            # 8, 12 or 16 bits per pixel?
             case bit_depth
               when 8
                 bin = @stream.encode(value, "BY")
@@ -1068,7 +1120,19 @@ module DICOM
                 # 12 bit not supported yet!
                 add_msg("Encoding 12 bit pixel values not supported yet. Please change the bit depth to 8 or 16 bits.")
               when 16
-                bin = @stream.encode(value, "US")
+                # Signed or unsigned integer?
+                pixel_representation = get_value("0028,0103", :array => true)[0]
+                if pixel_representation
+                  if pixel_representation.to_i == 1
+                    # Signed integers:
+                    bin = @stream.encode(value, "SS")
+                  else
+                    # Unsigned integers:
+                    bin = @stream.encode(value, "US")
+                  end
+                else
+                  add_msg("Attempted to encode pixel data, but the 'Pixel Representation' Data Element (0028,0103) is missing.")
+                end
               else
                 # Unknown bit depth:
                 add_msg("Unknown bit depth #{bit_depth}. No data encoded.")
@@ -1116,7 +1180,7 @@ module DICOM
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth = get_value("0028,0100", :array => true)[0]
-      pixel_rep = get_value("0028,0103", :array => true)[0]
+      pixel_representation = get_value("0028,0103", :array => true)[0]
       unless bit_depth == false
         # Load the binary pixel data to the Stream instance:
         @stream.set_string(get_bin(pos))
@@ -1125,10 +1189,14 @@ module DICOM
           when 8
             pixels = @stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
           when 16
-            if pixel_rep == 1
-              pixels = @stream.decode_all("SS") # Signed short (2 bytes)
+            if pixel_representation
+              if pixel_representation.to_i == 1
+                pixels = @stream.decode_all("SS") # Signed short (2 bytes)
+              else
+                pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
+              end
             else
-              pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
+              add_msg("Error: Attempted to decode pixel data, but the 'Pixel Representation' Data Element (0028,0103) is missing.")
             end
           when 12
             # 12 BIT SIMPLY NOT WORKING YET!
@@ -1139,7 +1207,7 @@ module DICOM
             raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
         end
       else
-        add_msg("Error: DICOM object does not contain the 'Bit Depth' data element (0028,0010).")
+        add_msg("Error: Attempted to decode pixel data, but the 'Bit Depth' Data Element (0028,0010) is missing.")
       end
       return pixels
     end
