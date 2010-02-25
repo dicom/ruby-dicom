@@ -11,7 +11,7 @@ module DICOM
   # Class for reading the data from a DICOM file:
   class DRead
 
-    attr_reader :success, :names, :tags, :types, :lengths, :values, :bin, :levels, :explicit, :file_endian, :msg
+    attr_reader :success, :names, :tags, :vr, :lengths, :values, :bin, :levels, :explicit, :file_endian, :msg
 
     # Initialize the DRead instance.
     def initialize(string=nil, options={})
@@ -175,17 +175,17 @@ module DICOM
         return false
       end
       # STEP 2: ------------------------------------------------------
-      # Access library to retrieve the data element name and type (VR) from the tag we just read:
+      # Access library to retrieve the data element name and VR from the tag we just read:
       lib_data = LIBRARY.get_name_vr(tag)
       name = lib_data[0]
       vr = lib_data[1]
       # (Note: VR will be overwritten if the DICOM file contains VR)
 
       # STEP 3: ----------------------------------------------------
-      # Read type (VR) (if it exists) and the length value:
-      tag_info = read_type_length(vr,tag)
-      type = tag_info[0]
-      level_type = type
+      # Read VR (if it exists) and the length value:
+      tag_info = read_vr_length(vr,tag)
+      vr = tag_info[0]
+      level_vr = vr
       length = tag_info[1]
 
       # STEP 4: ----------------------------------------
@@ -194,34 +194,34 @@ module DICOM
       if @enc_image and tag == "FFFE,E000"
         # The first item appearing after the image element is a 'normal' item, the rest hold image data.
         # Note that the first item will contain data if there are multiple images, and so must be read.
-        type = "OW" # how about alternatives like OB?
+        vr = "OW" # how about alternatives like OB?
         # Modify name of item if this is an item that holds pixel data:
         if @tags.last != "7FE0,0010"
           name = "Pixel Data Item"
         end
       end
       # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
-      if length.to_i > 0 and type != "SQ" and type != "()"
+      if length.to_i > 0 and vr != "SQ" and vr != "()"
         # Read the element's value (data):
-        data = read_value(type,length)
+        data = read_value(vr,length)
         value = data[0]
         bin = data[1]
       else
         # Data element has no value (data).
         # Special case: Check if pixel data element is sequenced:
         if tag == "7FE0,0010"
-          # Change name and type of pixel data element if it does not contain data itself:
+          # Change name and vr of pixel data element if it does not contain data itself:
           name = "Encapsulated Pixel Data"
-          level_type = "SQ"
+          level_vr = "SQ"
           @enc_image = true
         end
       end # of if length.to_i > 0
       # Set the hiearchy level of this data element:
-      set_level(level_type, length, tag, name)
+      set_level(level_vr, length, tag, name)
       # Transfer the gathered data to arrays and return true:
       @names << name
       @tags << tag
-      @types << type
+      @vr << vr
       @lengths << length
       @values << value
       @bin << bin
@@ -251,8 +251,8 @@ module DICOM
     end
 
 
-    # Reads and returns data element TYPE (VR) (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
-    def read_type_length(type,tag)
+    # Reads and returns data element VR (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
+    def read_vr_length(vr,tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       pre_skip = 0
       bytes = 0
@@ -260,13 +260,13 @@ module DICOM
       if @explicit == true
         # Step 1: Read VR (if it exists)
         unless tag == "FFFE,E000" or tag == "FFFE,E00D" or tag == "FFFE,E0DD"
-          # Read the element's type (2 bytes - since we are not dealing with an item related element):
-          type = @stream.decode(2, "STR")
+          # Read the element's vr (2 bytes - since we are not dealing with an item related element):
+          vr = @stream.decode(2, "STR")
           @integrated_lengths[@integrated_lengths.length-1] += 2
         end
         # Step 2: Read length
-        # Three possible structures for value length here, dependent on element type:
-        case type
+        # Three possible structures for value length here, dependent on element vr:
+        case vr
           when "OB","OW","SQ","UN","UT"
             # 6 bytes total:
             # Two empty bytes first:
@@ -279,7 +279,7 @@ module DICOM
             bytes = 4
           else
             # 2 bytes:
-            # For all the other element types, value length is 2 bytes:
+            # For all the other element vr, value length is 2 bytes:
             bytes = 2
         end
       else
@@ -305,23 +305,23 @@ module DICOM
         # If it is not, it may indicate a file that is not standards compliant or it might even not be a DICOM file.
         @msg += ["Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."]
       end
-      return [type, length]
-    end # of read_type_length
+      return [vr, length]
+    end # of read_vr_length
 
 
     # Reads and returns data element VALUE (Of varying length - which is determined at an earlier stage).
-    def read_value(type, length)
+    def read_value(vr, length)
       # Extract the binary data:
       bin = @stream.extract(length)
       @integrated_lengths[@integrated_lengths.size-1] += length
       # Decode data?
       # Some data elements (like those containing image data, compressed data or unknown data),
       # will not be decoded here.
-      unless type == "OW" or type == "OB" or type == "OF" or type == "UN"
+      unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
         # "Rewind" and extract the value from this binary data:
         @stream.skip(-length)
         # Decode data:
-        value = @stream.decode(length, type)
+        value = @stream.decode(length, vr)
         if not value.is_a?(Array)
           data = value
         else
@@ -340,7 +340,7 @@ module DICOM
 
     # Sets the level of the current element in the hiearchy.
     # The default (top) level is zero.
-    def set_level(type, length, tag, name)
+    def set_level(vr, length, tag, name)
       # Set the level of this element:
       @levels += [@current_level]
       # Determine if there is a level change for the following element:
@@ -349,7 +349,7 @@ module DICOM
       # Note the following exception:
       # If data element is an "Item", and it contains data (image fragment) directly, which is to say,
       # not in its sub-elements, we should not increase the level. (This is fixed in the process_data_element method.)
-      if type == "SQ"
+      if vr == "SQ"
         increase = true
       elsif name == "Item"
         increase = true
@@ -362,7 +362,7 @@ module DICOM
         if length.to_i != 0
           @hierarchy << [length, @integrated_lengths.last]
         else
-          @hierarchy << type
+          @hierarchy << vr
         end
       end
       # Need to check whether a previous sequence or item has ended, if so the level must be decreased by one:
@@ -486,7 +486,7 @@ module DICOM
       # Arrays that will hold information from the elements of the DICOM file:
       @names = Array.new
       @tags = Array.new
-      @types = Array.new
+      @vr = Array.new
       @lengths = Array.new
       @values = Array.new
       @bin = Array.new

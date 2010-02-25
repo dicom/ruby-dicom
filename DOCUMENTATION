@@ -46,7 +46,7 @@ ACCESSORS (read only)
   As such, their length is equal to the number of tags in a DICOM object.
   :names
   :tags
-  :types
+  :vr
   :lengths
   :values
   :bin
@@ -147,7 +147,7 @@ PUBLIC INSTANCE METHODS
 
   print(pos, options={})
     Prints the information gathered on one or several/all tag(s) in the DICOM object:
-      (index, [hierarchy level,] label, name, type, length, value)
+      (index, [hierarchy level,] label, name, vr, length, value)
     The method can print to both screen or to a text file. If print to file is chosen,
     the text file will be put in the folder of the original DICOM file with a '.txt' extension.
     The argument pos may be a number (array position), an array of numbers, or true.

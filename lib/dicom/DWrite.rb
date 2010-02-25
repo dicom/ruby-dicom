@@ -14,7 +14,7 @@ module DICOM
   # Class for writing the data from a DObject to a valid DICOM file.
   class DWrite
 
-    attr_writer :tags, :types, :lengths, :bin, :rest_endian, :rest_explicit
+    attr_writer :tags, :vr, :lengths, :bin, :rest_endian, :rest_explicit
     attr_reader :success, :msg
 
     # Initialize the DWrite instance.
@@ -26,7 +26,7 @@ module DICOM
 
       # Create arrays used for storing data element information:
       @tags = Array.new
-      @types = Array.new
+      @vr = Array.new
       @lengths = Array.new
       @bin = Array.new
       # Array for storing error/warning messages:
@@ -98,9 +98,9 @@ module DICOM
         if value_length > size
           # Start writing content from this data element,
           # then continue writing its content in the next segments.
-          # Write tag & type/length:
+          # Write tag & vr/length:
           write_tag(i)
-          write_type_length(i)
+          write_vr_length(i)
           # Find out how much of this element's value we can write, then add it:
           available = size - @stream.length
           value_first_part = @bin[i].slice(0, available)
@@ -200,9 +200,9 @@ module DICOM
       # Length:
       length = @stream.encode(4, "US")
       @stream.add_first(length)
-      # Type:
-      type = @stream.encode("UL", "STR")
-      @stream.add_first(type)
+      # VR:
+      vr = @stream.encode("UL", "STR")
+      @stream.add_first(vr)
       # Tag:
       tag = @stream.encode_tag("0002,0000")
       @stream.add_first(tag)
@@ -215,8 +215,8 @@ module DICOM
     def write_data_element(i)
       # Step 1: Write tag:
       write_tag(i)
-      # Step 2: Write [type] and value length:
-      write_type_length(i)
+      # Step 2: Write [vr] and value length:
+      write_vr_length(i)
       # Step 3: Write value:
       write_value(i)
       # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
@@ -241,9 +241,9 @@ module DICOM
     end
 
 
-    # Writes the type (VR) (if it is to be written) and length value
+    # Writes the VR (if it is to be written) and length value
     # (these two are the middle part of the data element):
-    def write_type_length(i)
+    def write_vr_length(i)
       # First some preprocessing:
       # Set length value:
       if @lengths[i] == nil
@@ -264,13 +264,13 @@ module DICOM
       if @explicit == true
         # Step 1: Write VR (if it is to be written)
         unless @tags[i] == "FFFE,E000" or @tags[i] == "FFFE,E00D" or @tags[i] == "FFFE,E0DD"
-          # Write data element type (VR) (2 bytes - since we are not dealing with an item related element):
-          vr = @stream.encode(@types[i], "STR")
+          # Write data element VR (2 bytes - since we are not dealing with an item related element):
+          vr = @stream.encode(@vr[i], "STR")
           add(vr)
         end
         # Step 2: Write length
-        # Three possible structures for value length here, dependent on data element type:
-        case @types[i]
+        # Three possible structures for value length here, dependent on data element vr:
+        case @vr[i]
           when "OB","OW","SQ","UN","UT"
             if @enc_image
               # Item under an encapsulated Pixel Data (7FE0,0010):
@@ -290,16 +290,16 @@ module DICOM
             add(length4)
           else
             # 2 bytes:
-            # For all the other data element types, value length is 2 bytes:
+            # For all the other data element vr, value length is 2 bytes:
             add(length2)
-        end # of case type
+        end
       else
         # *****IMPLICIT*****:
         # No VR written.
         # Writing value length (4 bytes):
         add(length4)
       end
-    end # of write_type_length
+    end # of write_vr_length
 
 
     # Writes the value (last part of the data element):

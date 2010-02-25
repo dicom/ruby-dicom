@@ -571,7 +571,7 @@ module DICOM
     end
 
 
-    # Set user information [item type code, vr/type, value]
+    # Set user information [item type code, VR, value]
     def set_user_information_array
       @user_information = [
         ["51", "UL", @max_package_size], # Max PDU Length

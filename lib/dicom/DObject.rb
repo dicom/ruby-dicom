@@ -33,7 +33,7 @@ module DICOM
   class DObject
 
     attr_reader :read_success, :write_success, :modality, :errors, :segments,
-                      :names, :tags, :types, :lengths, :values, :bin, :levels
+                      :names, :tags, :vr, :lengths, :values, :bin, :levels
 
     # Initialize the DObject instance.
     def initialize(string=nil, options={})
@@ -48,7 +48,7 @@ module DICOM
       # Initialize variables that will be used for the DICOM object:
       @names = Array.new
       @tags = Array.new
-      @types = Array.new
+      @vr = Array.new
       @lengths = Array.new
       @values = Array.new
       @bin = Array.new
@@ -88,7 +88,7 @@ module DICOM
         @read_success = true
         @names = r.names
         @tags = r.tags
-        @types = r.types
+        @vr = r.vr
         @lengths = r.lengths
         @values = r.values
         @bin = r.bin
@@ -570,7 +570,7 @@ module DICOM
     end
 
 
-    # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] tag, name, type, length, value
+    # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] tag, name, vr, length, value
     # The supplied variable may be a single position, an array of positions, or true - which will make the method print all elements.
     # Optional arguments:
     # :levels => true - method will print the level numbers for each element.
@@ -604,7 +604,7 @@ module DICOM
         tags << @tags[pos]
         levels << @levels[pos].to_s
         names << @names[pos]
-        types << @types[pos]
+        types << @vr[pos]
         lengths << @lengths[pos].to_s
         values << @values[pos].to_s
       end
@@ -775,7 +775,7 @@ module DICOM
 
     # Transfers pixel data from a RMagick object to the pixel data element.
     # NB! Because of rescaling when importing pixel values to a RMagick object, and the possible
-    # difference between presentation values and pixel values, the use of set_image_magick() may 
+    # difference between presentation values and pixel values, the use of set_image_magick() may
     # result in pixel data that is completely different from what is expected.
     # This method should be used only with great care!
     # If value rescaling is wanted, both :min and :max must be set!
@@ -799,8 +799,8 @@ module DICOM
       # Encode this array using the standard class method:
       set_value(pixel_array, "7FE0,0010", :create => true)
     end
-    
-    
+
+
     # Transfers pixel data from a NArray object to the pixel data element.
     # If value rescaling is wanted, both :min and :max must be set!
     # Options:
@@ -849,19 +849,19 @@ module DICOM
           # (Possible weakness: Group length tag contained inside a sequence/item. Code needs a slight rewrite to make it more robust)
           if @tags[pos][5..8] != "0000"
             # Note: When removing an item/sequence, its length value must not be used for 'change' (it's value is in reality nil):
-            if @types[pos] == "()" or @types[pos] == "SQ"
+            if @vr[pos] == "()" or @vr[pos] == "SQ"
               change = 0
             else
               change = @lengths[pos]
             end
-            vr = @types[pos]
+            vr = @vr[pos]
             update_group_and_parents_length(pos, vr, change, -1)
           end
           # Remove entry from arrays:
           @tags.delete_at(pos)
           @levels.delete_at(pos)
           @names.delete_at(pos)
-          @types.delete_at(pos)
+          @vr.delete_at(pos)
           @lengths.delete_at(pos)
           @values.delete_at(pos)
           @bin.delete_at(pos)
@@ -1027,7 +1027,7 @@ module DICOM
           # Encode:
           bin = encode(value, vr)
         else
-          add_msg("Error. Unable to encode data element value of unknown type (Value Representation)!")
+          add_msg("Error. Unable to encode data element value with unknown Value Representation!")
         end
       end
       # Put the information of this data element into the arrays:
@@ -1039,7 +1039,7 @@ module DICOM
           @tags = [tag]
           @levels = [level]
           @names = [name]
-          @types = [vr]
+          @vr = [vr]
           @lengths = [bin.length]
           @values = [value]
           @bin = [bin]
@@ -1049,7 +1049,7 @@ module DICOM
           @tags = [tag] + @tags
           @levels = [level] + @levels
           @names = [name] + @names
-          @types = [vr] + @types
+          @vr = [vr] + @vr
           @lengths = [bin.length] + @lengths
           @values = [value] + @values
           @bin = [bin] + @bin
@@ -1059,7 +1059,7 @@ module DICOM
           @tags = @tags + [tag]
           @levels = @levels + [level]
           @names = @names + [name]
-          @types = @types + [vr]
+          @vr = @vr + [vr]
           @lengths = @lengths + [bin.length]
           @values = @values + [value]
           @bin = @bin + [bin]
@@ -1069,7 +1069,7 @@ module DICOM
           @tags = @tags[0..last_pos] + [tag] + @tags[(last_pos+1)..(@tags.length-1)]
           @levels = @levels[0..last_pos] + [level] + @levels[(last_pos+1)..(@levels.length-1)]
           @names = @names[0..last_pos] + [name] + @names[(last_pos+1)..(@names.length-1)]
-          @types = @types[0..last_pos] + [vr] + @types[(last_pos+1)..(@types.length-1)]
+          @vr = @vr[0..last_pos] + [vr] + @vr[(last_pos+1)..(@vr.length-1)]
           @lengths = @lengths[0..last_pos] + [bin.length] + @lengths[(last_pos+1)..(@lengths.length-1)]
           @values = @values[0..last_pos] + [value] + @values[(last_pos+1)..(@values.length-1)]
           @bin = @bin[0..last_pos] + [bin] + @bin[(last_pos+1)..(@bin.length-1)]
@@ -1217,7 +1217,7 @@ module DICOM
     def modify_element(value, pos, options={})
       bin_only = options[:bin]
       # Fetch the VR and old length:
-      vr = @types[pos]
+      vr = @vr[pos]
       old_length = @lengths[pos]
       # Encode binary (if a binary is not provided):
       if bin_only == true
@@ -1229,13 +1229,13 @@ module DICOM
           # Encode:
           bin = encode(value, vr)
         else
-          add_msg("Error. Unable to encode data element value of unknown type (Value Representation)!")
+          add_msg("Error. Unable to encode data element with unknown Value Representation!")
         end
       end
       # Update the arrays with this new information:
       if bin
         # Replace array entries for this element:
-        #@types[pos] = vr # for the time being there is no logic for updating type.
+        #@vr[pos] = vr # for the time being there is no logic for updating/changing vr.
         @lengths[pos] = bin.length
         @values[pos] = value
         @bin[pos] = bin
@@ -1445,7 +1445,7 @@ module DICOM
       end
       w = DWrite.new(file_name, :sys_endian => @sys_endian, :transfer_syntax => transfer_syntax)
       w.tags = @tags
-      w.types = @types
+      w.vr = @vr
       w.lengths = @lengths
       w.bin = @bin
       w.rest_endian = @file_endian
@@ -1460,7 +1460,7 @@ module DICOM
     # (value_change_length should be positive when a data element is removed - it will only be negative when editing an element to a shorter value)
     # The variable existance is -1 if data element has been removed, +1 if element has been added and 0 if it has been updated.
     # There is some repetition of code in this method, so there is possible a potential to clean it up somewhat.
-    def update_group_and_parents_length(pos, type, value_change_length, existance)
+    def update_group_and_parents_length(pos, vr, value_change_length, existance)
       update_positions = Array.new
       # Is this a tag with parents?
       if @levels[pos] > 0
@@ -1507,7 +1507,7 @@ module DICOM
               element_length += 2
             end
             # Length value:
-            case @types[pos]
+            case @vr[pos]
               when "OB","OW","SQ","UN"
                 if pos > @tags.index("7FE0,0010").to_i and @tags.index("7FE0,0010").to_i != 0
                   element_length += 4
