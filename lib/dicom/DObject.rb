@@ -37,6 +37,7 @@ module DICOM
 
     # Initialize the DObject instance.
     def initialize(string=nil, options={})
+puts string
       # Process option values, setting defaults for the ones that are not specified:
       @verbose = options[:verbose]
       segment_size = options[:segment_size]
@@ -1467,13 +1468,17 @@ module DICOM
         parent_positions = parents(pos)
         parent_positions.each do |parent|
           # If the parent has a length value, then it must be added to our list of tags that will have its length updated:
-          if @lengths[parent] > 0
-            update_positions << parent
-          else
-            # However, a (previously) empty sequence/item that does not use delimiation items, should also have its length updated:
-            # The search for a delimitation item is somewhat slow, so only do this if the length was 0.
-            children_positions = children(parent, :next_only => true)
-            update_positions << parent if children_positions.length == 1 and @tags[children_positions[0]][0..7] != "FFFE,E0"
+          # Items/sequences that use delimitation items, have their lengths set to "UNDEFINED" by Ruby DICOM.
+          # Obviously, these items/sequences will not have their lengths changed.
+          unless @lengths[parent].is_a?(String)
+            if @lengths[parent] > 0
+              update_positions << parent
+            else
+              # However, a (previously) empty sequence/item that does not use delimiation items, should also have its length updated:
+              # The search for a delimitation item is somewhat slow, so only do this if the length was 0.
+              children_positions = children(parent, :next_only => true)
+              update_positions << parent if children_positions.length == 1 and @tags[children_positions[0]][0..7] != "FFFE,E0"
+            end
           end
         end
       end
