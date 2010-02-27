@@ -53,7 +53,11 @@ module DICOM
 
     # Adds an exception folder that is to be avoided when anonymizing:
     def add_exception(path)
-      @exceptions << path if path
+      if path
+        # Remove last character if the path ends with a file separator:
+        path.chop! if path[-1..-1] == File::SEPARATOR
+        @exceptions << path if path
+      end
     end
 
 
