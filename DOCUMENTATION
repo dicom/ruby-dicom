@@ -157,7 +157,7 @@ PUBLIC INSTANCE METHODS
       obj.print([4,5,6])
 
   print_all
-    Prints information of all tags stored in the DICOM object to the screen.
+    Prints information of all tags stored in the DICOM object to the screen (This is equal to using print(true)).
 
   print_properties
     Prints the key structural properties of the DICOM file to the screen.
@@ -175,20 +175,6 @@ PUBLIC INSTANCE METHODS
 
   remove_private
     Removes all private data elements from the DICOM object.
-
-  set_value(value, element, options={})
-    This method can be used both to edit an existing data element, or to create
-    new data elements in your DICOM object.
-    Element may be an array index, element name or element tag.
-    Example 1: (Edit patient name)
-      obj.set_value("Anonymous", "0010,0010", :create => false)
-    Example 2: (Insert binary data for a specific tag)
-      obj.set_value(data, 52, :bin => true, :create => false)
-    Example 3: (Create a private data element)
-      obj.set_value("Test", "0011,0010", :vr => "LO")
-    Example 4: (Create/edit a data element in a specific item in a given sequence)
-      items = obj.get_pos("FFFE,E000", :parent => "0040,0275")
-      obj.set_value("CT1", "0040,0007", :parent => items.first)
 
   set_image(array)
     Encodes and inserts the content of your array to the pixel data element of your DICOM object.
@@ -216,6 +202,20 @@ PUBLIC INSTANCE METHODS
     If pixel value rescaling is desired, this can be specified by using both the :min and :max options.
     Example: (Encode a numerical pixel data array and requesting a specific pixel value range to be encoded)
       obj.set_image_narray(myArray, :min => -2000, :max => 3000)
+
+  set_value(value, element, options={})
+    This method can be used both to edit an existing data element, or to create
+    new data elements in your DICOM object.
+    Element may be an array index, element name or element tag.
+    Example 1: (Edit patient name)
+      obj.set_value("Anonymous", "0010,0010", :create => false)
+    Example 2: (Insert binary data for a specific tag)
+      obj.set_value(data, 52, :bin => true, :create => false)
+    Example 3: (Create a private data element)
+      obj.set_value("Test", "0011,0010", :vr => "LO")
+    Example 4: (Create/edit a data element in a specific item in a given sequence)
+      items = obj.get_pos("FFFE,E000", :parent => "0040,0275")
+      obj.set_value("CT1", "0040,0007", :parent => items.first)
 
   write(file)
     Writes the DICOM object to the specified file.
@@ -257,13 +257,13 @@ ACCESSORS (Read & write)
 
 PUBLIC INSTANCE METHODS
 
+  add_exception(path)
+    Adds a folder who's files (including all files in its subfolders) will be excluded from anonymization.
+
   add_folder(path)
     Adds a folder who's files (including all files in subfolders) will be anonymized.
     Example:
       a.add_folder("/home/dicom")
-
-  add_exception(path)
-    Adds a folder who's files (including all files in its subfolders) will be excluded from anonymization.
 
   add_tag(tag, options={})
     Adds a tag to the list of tags that will be anonymized. As options you can specify value to be used
@@ -327,16 +327,6 @@ ACCESSORS (Read only)
 
 PUBLIC INSTANCE METHODS
 
-  get_image(path, options={})
-    Retrieve a DICOM image file from a server (C-GET-RQ) (this method is untested (might not work)).
-    Accepted options:
-      "0008,0018" (SOP Instance UID)
-      "0008,0052" (Query/Retrieve Level)
-      "0020,000D" (Study Instance UID)
-      "0020,000E" (Series Instance UID)
-    Example:
-      node.get_image("/home/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
-
   find_images(options={})
     Query a server for DICOM images that matches your specified criteria.
     Accepted options:
@@ -389,6 +379,16 @@ PUBLIC INSTANCE METHODS
       "0020,0010" (Study ID)
     Example:
       result = node.find_studies("0008,0020" => study_date, "0010,000D" => patient_id)
+
+  get_image(path, options={})
+    Retrieve a DICOM image file from a server (C-GET-RQ) (this method is untested (might not work)).
+    Accepted options:
+      "0008,0018" (SOP Instance UID)
+      "0008,0052" (Query/Retrieve Level)
+      "0020,000D" (Study Instance UID)
+      "0020,000E" (Series Instance UID)
+    Example:
+      node.get_image("/home/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
 
   move_image(destination, options={})
     Move an image to a dicom node other than yourself.
