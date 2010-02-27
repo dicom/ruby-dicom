@@ -966,6 +966,7 @@ module DICOM
             else
               # We are dealing with an empty DICOM object:
               full_index = nil
+              level = 0
             end
             # The necessary information is gathered; create new data element:
             create_element(value, tag, full_index, level, :bin => bin, :vr => vr)
