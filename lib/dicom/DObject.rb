@@ -37,7 +37,6 @@ module DICOM
 
     # Initialize the DObject instance.
     def initialize(string=nil, options={})
-puts string
       # Process option values, setting defaults for the ones that are not specified:
       @verbose = options[:verbose]
       segment_size = options[:segment_size]
