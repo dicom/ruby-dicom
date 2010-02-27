@@ -26,6 +26,7 @@
 # -Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
 # -More robust and flexible options for reorienting extracted pixel arrays?
 # -Could the usage of arrays in DObject be replaced with something better, or at least improved upon, to give cleaner code and more efficient execution?
+# -A curious observation: Loading the DLibrary is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
 
 module DICOM
 
@@ -350,7 +351,7 @@ module DICOM
         if query >= 0 and query < @names.length
           indexes = [query]
         else
-          add_msg("Error: The specified array position is out of range.")
+          add_msg("Error: The specified array position (#{query}) is out of range (valid: 0-#{@tags.length}).")
         end
       elsif query.is_a?(String)
         # Has the user specified an array to search within?
@@ -899,12 +900,15 @@ module DICOM
       pos = get_pos(element, options)
       # We do not support changing multiple data elements:
       if pos.length > 1
-        add_msg("Warning: Method set_value() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value(s) NOT saved.")
+        add_msg("Warning: Method set_value() does not allow an element query (#{element}) which yields multiple array hits. Please use array position instead of tag/name. Value(s) NOT saved.")
         return
       end
       if pos.length == 0 and options[:create] == false
         # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
-        add_msg("Warning: Invalid data element provided to method set_value(). Value NOT updated.")
+        add_msg("Warning: Invalid data element (#{element}) provided to method set_value(). Value NOT updated.")
+      elsif pos.length == 0 and element.is_a?(Fixnum)
+        # User has specified data element using an array position that is invalid:
+        add_msg("Warning: Invalid data element (array position: #{element}) provided to method set_value(). Value NOT updated.")
       elsif options[:create] == false
         # Modify element:
         modify_element(value, pos[0], :bin => bin)
@@ -920,7 +924,7 @@ module DICOM
           # If this doesnt give a match, we may be dealing with a private tag:
           tag = element unless tag
           unless element.is_a_tag?
-            add_msg("Warning: Method set_value could not create data element, because the data element tag is invalid (Expected format of tags is 'GGGG,EEEE').")
+            add_msg("Warning: Method set_value could not create data element, because the data element tag (#{element}) is invalid (Expected format of tags is 'GGGG,EEEE').")
           else
             # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
             # We will do this by finding the array position of the last element that will (alphabetically/numerically) stay in front of this element.
@@ -929,7 +933,7 @@ module DICOM
                 # Parent specified:
                 parent_pos = get_pos(options[:parent])
                 if parent_pos.length > 1
-                  add_msg("Error: Method set_value() could not create data element, because the specified parent element returns multiple hits.")
+                  add_msg("Error: Method set_value() could not create data element, because the specified parent element (#{options[:parent]}) returns multiple hits.")
                   return
                 end
                 indexes = children(parent_pos, :next_only => true)
