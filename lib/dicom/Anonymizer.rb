@@ -147,23 +147,25 @@ module DICOM
             if obj.read_success
               # Anonymize the desired tags:
               @tags.each_index do |j|
-                if @blank
-                  value = ""
-                elsif @enumeration
-                  # Get old value:
-                  current = obj.get_value(@tags[j])
-                  # Only launch enumeration logic if tag exists:
-                  if current != false
-                    value = get_enumeration_value(current, j)
-                  else
+                positions = obj.get_pos(@tags[j])
+                positions.each do |pos|
+                  if @blank
                     value = ""
+                  elsif @enumeration
+                    old_value = obj.get_value(pos, :silent => true)
+                    # Only launch enumeration logic if tag exists:
+                    if old_value
+                      value = get_enumeration_value(old_value, j)
+                    else
+                      value = ""
+                    end
+                  else
+                    # Value is simply value in array:
+                    value = @values[j]
                   end
-                else
-                  # Value is simply value in array:
-                  value = @values[j]
-                end # of if @blank..else..
-                # Update DICOM object with new value:
-                obj.set_value(value, @tags[j], :create => false)
+                  # Update DICOM object with new value:
+                  obj.set_value(value, pos, :create => false, :silent => true)
+                end
               end
               # Remove private tags?
               obj.remove_private if @remove_private
