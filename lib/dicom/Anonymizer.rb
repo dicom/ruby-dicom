@@ -145,6 +145,8 @@ module DICOM
           # Monitor whether every file read/write was successful:
           all_read = true
           all_write = true
+          files_written = 0
+          files_failed_read = 0
           @files.each_index do |i|
             # Read existing file to DICOM object:
             obj = DICOM::DObject.new(@files[i], :verbose => verbose)
@@ -175,9 +177,14 @@ module DICOM
               obj.remove_private if @remove_private
               # Write DICOM file:
               obj.write(@write_paths[i])
-              all_write = false unless obj.write_success
+              if obj.write_success
+                files_written += 1
+              else
+                all_write = false
+              end
             else
               all_read = false
+              files_failed_read += 1
             end
           end
           # Finished anonymizing files. Print elapsed time and status of anonymization:
@@ -186,12 +193,12 @@ module DICOM
           if all_read
             puts "All files in specified folder(s) were SUCCESSFULLY read to DICOM objects."
           else
-            puts "Some files were NOT successfully read. If folder(s) contain non-DICOM files, then this is probably the reason."
+            puts "Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason."
           end
           if all_write
-            puts "All DICOM objects were SUCCESSFULLY written as DICOM files."
+            puts "All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files)."
           else
-            puts "Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look."
+            puts "Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written)."
           end
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
           if @enumeration and @identity_file
