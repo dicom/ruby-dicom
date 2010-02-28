@@ -1,3 +1,35 @@
+= 0.7
+
+=== 28th February, 2010
+
+* Added set_image() and set_image_narray() methods to write pixel data to the DICOM object, complementing set_image_magick().
+* Added method get_image() which retrieves pixel data to a standard Ruby Array.
+* Added a method for removing all private data elements in the DICOM object.
+* Anonymizer class has gained the ability to remove all private data elements when anonymizing.
+* Fixed an issue where Anonymizer failed to anonymize tags which had multiple instances in a DICOM file.
+* Fixed an issue where Anonymizer failed to honor an expception folder if it ended with a file separation character.
+* Private data elements can now be added to a DICOM object.
+* Created a new FileHandler class where the user can customize the way incoming DICOM files are handled in DServer.
+* Methods set_image_narray() and set_image_magick() takes options :min and :max to rescale pixel values.
+* The magick and narray image retrieval methods now takes the option :rescale to convert pixel values to presentation values.
+* Method get_pos() now takes the option :parent to narrow a search down.
+* Improved the set_value() method to handle the creation of data elements inside sequences/items.
+* All DObject methods who return Data Element positions now return an empty array instead of false if no matches are found.
+* Improved handling of private tags in the library.
+* Network transmissions with implicit encoding are now handled properly.
+* Improved the handling of associations in the networking code.
+* Some minor formatting improvements to the print() method.
+* Improve the logic of updating group/sequence/item lengths to handle changes to Data Elements in sequence hierarchies.
+* DLibrary class is permanently loaded when the gem is loaded and no longer needs to be specified by the user.
+* Method get_image_magick() now handles pixel representation and window leveling.
+* Program files was moved to a sub-directory and a module version string added, in accordance with gem guidelines.
+* Renamed DObject attribute :types to :vr in accordance with the terminology of the official DICOM standard.
+* Renamed method get_raw() to get_bin() and attribute :raw to :bin.
+* Renamed get_pos() option :array to :selection.
+* Updated Dictionary in accordance with the 2009 version of the official DICOM base standard.
+* Various "under the hood" improvements and code cleanups.
+
+
 = 0.6.1
 
 === 23rd August, 2009
@@ -36,8 +68,8 @@
   See documentation for details.
 * Several methods have been cleaned up, making execution in some cases somewhat snappier.
 * Several methods have been made more robust.
-* Added new keyword :partial to the get_pos() method, which will enable search for partial string matches.
-* Added new keyword :array to the get_value() and get_raw() methods which enables easy extraction of
+* Added new option :partial to the get_pos() method, which will enable search for partial string matches.
+* Added new option :array to the get_value() and get_raw() methods which enables easy extraction of
   multiple values of a given tag to an array (relevant for tags present at multiple places in a DICOM file).
 * Fixed a bug where exception folders where ignored in the Anonymizer class.
 
@@ -46,7 +78,7 @@
 
 === 3rd February, 2009
 
-* Change of syntax: Keywords are now supplied as hash.
+* Change of syntax: Options are now supplied as hash.
 * Method below() renamed to children().
 * Added method parents() which returns the position of all items/sequences that are the parent of
   the specified tag. This method is only relevant for DICOM tags that exist inside a hierarchy.
@@ -103,21 +135,12 @@ The library does have several known issues and lacks some features I would like 
 offer basic functionality and should be usable for people interested in working with DICOM files in Ruby.
 The reading algorithm has been tested succesfully with some 40 different DICOM files, so it should be fairly robust.
 
-Features:
-* Reads DICOM files
-* Retrieve tags, formatted
-* Retrieve tags, unformatted
-* Retrieve image data as NArray object
-* Retrieve image data as RMagick object
-* Print file properties
-* Print tag information
-
 
 Known issues:
-* Network communication is highly experimental.
-* 12 bit image data not supported.
-* Color images not supported in NArray and RMagick retrieve methods.
-* Unpacking compressed image data has basic support but is not properly tested yet.
-* Reading Big Endian files has fairly good, but possibly not full, support.
-* Reading on a Big Endian system is not tested.
-* Reading of multiple frame image data to RMagick does not work in all cases.
+* The retrieve file network functionality (get_image() in DClient class) has not been tested.
+* Compressed pixel data is poorly handled.
+* Read/Write 12 bit image data not available.
+* Color image data is poorly handled.
+* Incomplete support for Big endian (Everything but signed short and signed long has been implemented).
+* Incomplete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
+* Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
