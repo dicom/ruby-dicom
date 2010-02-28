@@ -833,9 +833,9 @@ module DICOM
     def remove(element, options={})
       positions = get_pos(element)
       if positions.length == 0
-        add_msg("Warning: The data element #{element} could not be found in the DICOM object. Method remove() has no data element to remove.")
+        add_msg("Warning: The given data element (#{element}) could not be found in the DICOM object. Method remove() has no data element to remove.")
       elsif positions.length > 1
-        add_msg("Warning: Method remove() does not allow an element query which yields multiple array hits. Please use array position instead of tag/name. Value(s) NOT removed.")
+        add_msg("Warning: Method remove() does not allow an element query which yields multiple array hits (#{element}). Please use array position instead of tag/name. Value(s) NOT removed.")
       else
         # Check if the tag selected for removal has children (relevant for sequence/item tags):
         unless options[:ignore_children]
@@ -906,9 +906,6 @@ module DICOM
       if pos.length == 0 and options[:create] == false
         # Since user has requested an element shall only be updated, we can not do so as the element position is not valid:
         add_msg("Warning: Invalid data element (#{element}) provided to method set_value(). Value NOT updated.")
-      elsif pos.length == 0 and element.is_a?(Fixnum)
-        # User has specified data element using an array position that is invalid:
-        add_msg("Warning: Invalid data element (array position: #{element}) provided to method set_value(). Value NOT updated.")
       elsif options[:create] == false
         # Modify element:
         modify_element(value, pos[0], :bin => bin)
@@ -923,57 +920,61 @@ module DICOM
           tag = LIBRARY.get_tag(element)
           # If this doesnt give a match, we may be dealing with a private tag:
           tag = element unless tag
-          unless element.is_a_tag?
-            add_msg("Warning: Method set_value could not create data element, because the data element tag (#{element}) is invalid (Expected format of tags is 'GGGG,EEEE').")
+          unless element.is_a?(String)
+            add_msg("Warning: Invalid data element (#{element}) provided to method set_value(). Value NOT updated.")
           else
-            # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
-            # We will do this by finding the array position of the last element that will (alphabetically/numerically) stay in front of this element.
-            if @tags.length > 0
-              if options[:parent]
-                # Parent specified:
-                parent_pos = get_pos(options[:parent])
-                if parent_pos.length > 1
-                  add_msg("Error: Method set_value() could not create data element, because the specified parent element (#{options[:parent]}) returns multiple hits.")
-                  return
+            unless element.is_a_tag?
+              add_msg("Warning: Method set_value could not create data element, because the data element tag (#{element}) is invalid (Expected format of tags is 'GGGG,EEEE').")
+            else
+              # As we wish to create a new data element, we need to find out where to insert it in the element arrays:
+              # We will do this by finding the array position of the last element that will (alphabetically/numerically) stay in front of this element.
+              if @tags.length > 0
+                if options[:parent]
+                  # Parent specified:
+                  parent_pos = get_pos(options[:parent])
+                  if parent_pos.length > 1
+                    add_msg("Error: Method set_value() could not create data element, because the specified parent element (#{options[:parent]}) returns multiple hits.")
+                    return
+                  end
+                  indexes = children(parent_pos, :next_only => true)
+                  level = @levels[parent_pos.first]+1
+                else
+                  # No parent (fetch top level elements):
+                  full_array = Array.new(@levels.length) {|i| i}
+                  indexes = full_array.all_indices(@levels, 0)
+                  level = 0
                 end
-                indexes = children(parent_pos, :next_only => true)
-                level = @levels[parent_pos.first]+1
+                # Loop through the selection:
+                index = -1
+                quit = false
+                while quit != true do
+                  if index+1 >= indexes.length # We have reached end of array.
+                    quit = true
+                  elsif tag < @tags[indexes[index+1]]
+                    quit = true
+                  else # Increase index in anticipation of a 'hit'.
+                    index += 1
+                  end
+                end
+                # Determine the index to pass on:
+                if index == -1
+                  # Empty parent tag or new tag belongs in front of our indexes:
+                  if indexes.length == 0
+                    full_index = parent_pos.first
+                  else
+                    full_index = indexes.first-1
+                  end
+                else
+                  full_index = indexes[index]
+                end
               else
-                # No parent (fetch top level elements):
-                full_array = Array.new(@levels.length) {|i| i}
-                indexes = full_array.all_indices(@levels, 0)
+                # We are dealing with an empty DICOM object:
+                full_index = nil
                 level = 0
               end
-              # Loop through the selection:
-              index = -1
-              quit = false
-              while quit != true do
-                if index+1 >= indexes.length # We have reached end of array.
-                  quit = true
-                elsif tag < @tags[indexes[index+1]]
-                  quit = true
-                else # Increase index in anticipation of a 'hit'.
-                  index += 1
-                end
-              end
-              # Determine the index to pass on:
-              if index == -1
-                # Empty parent tag or new tag belongs in front of our indexes:
-                if indexes.length == 0
-                  full_index = parent_pos.first
-                else
-                  full_index = indexes.first-1
-                end
-              else
-                full_index = indexes[index]
-              end
-            else
-              # We are dealing with an empty DICOM object:
-              full_index = nil
-              level = 0
+              # The necessary information is gathered; create new data element:
+              create_element(value, tag, full_index, level, :bin => bin, :vr => vr)
             end
-            # The necessary information is gathered; create new data element:
-            create_element(value, tag, full_index, level, :bin => bin, :vr => vr)
           end
         end
       end
