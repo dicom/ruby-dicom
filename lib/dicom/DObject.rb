@@ -471,7 +471,7 @@ module DICOM
       # Retrieve array position:
       pos = get_pos(element)
       if pos.length == 0
-        add_msg("Warning: Invalid data element provided to method get_value().") unless options[:silent]
+        add_msg("Warning: Invalid data element provided to method get_value() (#{element}).") unless options[:silent]
       elsif pos.length > 1
         # Multiple 'hits':
         if options[:array] == true
@@ -481,7 +481,7 @@ module DICOM
             value << @values[i]
           end
         else
-          add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits. Please use array position instead of tag/name, or use keyword (:array => true).") unless options[:silent]
+          add_msg("Warning: Method get_value() does not allow a query which yields multiple array hits (#{element}). Please use array position instead of tag/name, or use option (:array => true) to return all values.") unless options[:silent]
         end
       else
         # One single match:
