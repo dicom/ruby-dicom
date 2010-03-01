@@ -35,7 +35,7 @@ end
 # Genereate the RDoc documentation
 Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_dir = 'doc'
-  rdoc.title    = "Dicom library"
+  rdoc.title    = "DICOM Library"
   rdoc.options << '--line-numbers' << '--inline-source' << '--main=README'
   rdoc.rdoc_files.include('README', 'CHANGELOG')
   rdoc.rdoc_files.include('lib/*.rb')

@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 $:.unshift(File.dirname(__FILE__) + '/../lib')
-require File.dirname(__FILE__) + '/../lib/dicom'
+$:.unshift(File.dirname(__FILE__) + '/../lib/dicom')
 
-dicom_test_file = File.dirname(__FILE__) + '/test.dcm'
+require 'rubygems'
+require 'test/unit'
+
+require File.dirname(__FILE__) + '/../lib/dicom'
+include DICOM
+
+DICOM_TEST_FILE = File.dirname(__FILE__) + '/test.dcm'
