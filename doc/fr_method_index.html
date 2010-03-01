@@ -1,0 +1,152 @@
+
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!--
+
+    Methods
+
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Methods</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <link rel="stylesheet" href="rdoc-style.css" type="text/css" />
+  <base target="docwin" />
+</head>
+<body>
+<div id="index">
+  <h1 class="section-bar">Methods</h1>
+  <div id="index-entries">
+    <a href="classes/DICOM/DServer.html#M000007">add_abstract_syntax (DICOM::DServer)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000117">add_exception (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/Stream.html#M000043">add_first (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000116">add_folder (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/Stream.html#M000044">add_last (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000118">add_tag (DICOM::Anonymizer)</a><br />
+    <a href="classes/Array.html#M000001">all_indices (Array)</a><br />
+    <a href="classes/Array.html#M000002">all_indices_partial_match (Array)</a><br />
+    <a href="classes/DICOM/Link.html#M000066">build_association_abort (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000067">build_association_accept (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000068">build_association_reject (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000069">build_association_request (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000070">build_command_fragment (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000071">build_data_fragment (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000072">build_release_request (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000073">build_release_response (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000074">build_storage_fragment (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000119">change_enum (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000120">change_value (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000099">check_ts_validity (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DObject.html#M000028">children (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Stream.html#M000045">decode (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000046">decode_all (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000047">decode_tag (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000048">encode (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000049">encode_first (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000050">encode_last (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DObject.html#M000020">encode_segments (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DWrite.html#M000126">encode_segments (DICOM::DWrite)</a><br />
+    <a href="classes/DICOM/Stream.html#M000051">encode_string_with_trailing_spaces (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000052">encode_tag (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000053">encode_value (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000121">execute (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/Stream.html#M000054">extract (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Link.html#M000075">extract_abstract_syntax (DICOM::Link)</a><br />
+    <a href="classes/DICOM/DRead.html#M000096">extract_segments (DICOM::DRead)</a><br />
+    <a href="classes/DICOM/Link.html#M000076">extract_transfer_syntax (DICOM::Link)</a><br />
+    <a href="classes/DICOM/DClient.html#M000106">find_images (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/DClient.html#M000107">find_patients (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/DClient.html#M000108">find_series (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/DClient.html#M000109">find_studies (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/Link.html#M000077">forward_to_interpret (DICOM::Link)</a><br />
+    <a href="classes/DICOM/DObject.html#M000030">get_bin (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000100">get_compression (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DObject.html#M000024">get_frames (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000021">get_image (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DClient.html#M000110">get_image (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/DObject.html#M000023">get_image_magick (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000022">get_image_narray (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000025">get_image_pos (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000101">get_name_vr (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DObject.html#M000026">get_pos (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000102">get_tag (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000103">get_uid (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DObject.html#M000029">get_value (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Link.html#M000078">handle_abort (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000079">handle_association_accept (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000080">handle_incoming_data (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000081">handle_rejection (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000082">handle_release (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000083">handle_response (DICOM::Link)</a><br />
+    <a href="classes/DICOM/DObject.html#M000027">image_to_file (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Link.html#M000084">interpret (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000085">interpret_abort (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000086">interpret_association_accept (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000087">interpret_association_reject (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000088">interpret_association_request (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000089">interpret_command_and_data (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000090">interpret_release_request (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000091">interpret_release_response (DICOM::Link)</a><br />
+    <a href="classes/String.html#M000003">is_a_tag? (String)</a><br />
+    <a href="classes/DICOM/Stream.html#M000055">length (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Dictionary.html#M000016">load_data_elements (DICOM::Dictionary)</a><br />
+    <a href="classes/DICOM/Dictionary.html#M000015">load_frame_of_ref (DICOM::Dictionary)</a><br />
+    <a href="classes/DICOM/Dictionary.html#M000012">load_image_types (DICOM::Dictionary)</a><br />
+    <a href="classes/DICOM/Dictionary.html#M000014">load_uid (DICOM::Dictionary)</a><br />
+    <a href="classes/DICOM/Dictionary.html#M000013">load_vr (DICOM::Dictionary)</a><br />
+    <a href="classes/DICOM/DClient.html#M000111">move_image (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/DClient.html#M000112">move_study (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/Stream.html#M000042">new (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DObject.html#M000017">new (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DClient.html#M000105">new (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/Link.html#M000065">new (DICOM::Link)</a><br />
+    <a href="classes/DICOM/DRead.html#M000095">new (DICOM::DRead)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000098">new (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DWrite.html#M000124">new (DICOM::DWrite)</a><br />
+    <a href="classes/DICOM/DServer.html#M000006">new (DICOM::DServer)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000115">new (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/DObject.html#M000031">parents (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000122">print (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/DObject.html#M000033">print (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000032">print_all (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000034">print_properties (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DServer.html#M000008">print_syntaxes (DICOM::DServer)</a><br />
+    <a href="classes/String.html#M000004">private? (String)</a><br />
+    <a href="classes/DICOM/DLibrary.html#M000104">process_transfer_syntax (DICOM::DLibrary)</a><br />
+    <a href="classes/DICOM/DObject.html#M000018">read (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/FileHandler.html#M000097">receive_file (DICOM::FileHandler)</a><br />
+    <a href="classes/DICOM/Link.html#M000092">receive_multiple_transmissions (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Link.html#M000093">receive_single_transmission (DICOM::Link)</a><br />
+    <a href="classes/DICOM/DObject.html#M000039">remove (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DServer.html#M000009">remove_abstract_syntax (DICOM::DServer)</a><br />
+    <a href="classes/DICOM/DServer.html#M000010">remove_all_abstract_syntaxes (DICOM::DServer)</a><br />
+    <a href="classes/DICOM/DObject.html#M000040">remove_private (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Anonymizer.html#M000123">remove_tag (DICOM::Anonymizer)</a><br />
+    <a href="classes/DICOM/Stream.html#M000058">reset (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000059">reset_index (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000056">rest_length (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000057">rest_string (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DServer.html#M000005">run (DICOM::DServer)</a><br />
+    <a href="classes/DICOM/DClient.html#M000113">send (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/Stream.html#M000060">set_endian (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/Stream.html#M000061">set_file (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DObject.html#M000035">set_image (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000036">set_image_file (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000037">set_image_magick (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/DObject.html#M000038">set_image_narray (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Stream.html#M000062">set_string (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DObject.html#M000041">set_value (DICOM::DObject)</a><br />
+    <a href="classes/DICOM/Stream.html#M000063">skip (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DServer.html#M000011">start_scp (DICOM::DServer)</a><br />
+    <a href="classes/DICOM/DClient.html#M000114">test (DICOM::DClient)</a><br />
+    <a href="classes/DICOM/Link.html#M000094">transmit (DICOM::Link)</a><br />
+    <a href="classes/DICOM/Stream.html#M000064">write (DICOM::Stream)</a><br />
+    <a href="classes/DICOM/DWrite.html#M000125">write (DICOM::DWrite)</a><br />
+    <a href="classes/DICOM/DObject.html#M000019">write (DICOM::DObject)</a><br />
+  </div>
+</div>
+</body>
+</html>

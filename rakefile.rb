@@ -40,3 +40,23 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('lib/*.rb')
   rdoc.rdoc_files.include('lib/dicom/*.rb')
 end
+
+desc "Default Task"
+task :default => 'test:units'
+
+# Run the unit tests
+namespace :test do
+
+  Rake::TestTask.new(:units) do |t|
+    t.pattern = 'test/unit/**/*_test.rb'
+    t.ruby_opts << '-rubygems'
+    t.verbose = true
+  end
+
+  Rake::TestTask.new(:remote) do |t|
+    t.pattern = 'test/remote/**/*_test.rb'
+    t.ruby_opts << '-rubygems'
+    t.verbose = true
+  end
+
+end

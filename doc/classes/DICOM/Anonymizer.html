@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Class: DICOM::Anonymizer</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Class</strong></td>
+          <td class="class-name-in-header">DICOM::Anonymizer</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../../files/lib/dicom/Anonymizer_rb.html">
+                lib/dicom/Anonymizer.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        <tr class="top-aligned-row">
+            <td><strong>Parent:</strong></td>
+            <td>
+                Object
+            </td>
+        </tr>
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+    <div id="description">
+      <p>
+Class for anonymizing <a href="../DICOM.html">DICOM</a> files: A good
+resource on this topic (report from the <a href="../DICOM.html">DICOM</a>
+standards committee, work group 18): <a
+href="ftp://medical.nema.org/medical/dicom/Supps/sup142_03.pdf">medical.nema.org/medical/dicom/Supps/sup142_03.pdf</a>
+</p>
+
+    </div>
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000117">add_exception</a>&nbsp;&nbsp;
+      <a href="#M000116">add_folder</a>&nbsp;&nbsp;
+      <a href="#M000118">add_tag</a>&nbsp;&nbsp;
+      <a href="#M000119">change_enum</a>&nbsp;&nbsp;
+      <a href="#M000120">change_value</a>&nbsp;&nbsp;
+      <a href="#M000121">execute</a>&nbsp;&nbsp;
+      <a href="#M000115">new</a>&nbsp;&nbsp;
+      <a href="#M000122">print</a>&nbsp;&nbsp;
+      <a href="#M000123">remove_tag</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+    <div id="attribute-list">
+      <h3 class="section-bar">Attributes</h3>
+
+      <div class="name-list">
+        <table>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">blank</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">enumeration</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">identity_file</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">remove_private</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">verbose</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">write_path</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        </table>
+      </div>
+    </div>
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Class methods</h3>
+
+      <div id="method-M000115" class="method-detail">
+        <a name="M000115"></a>
+
+        <div class="method-heading">
+          <a href="#M000115" class="method-signature">
+          <span class="method-name">new</span><span class="method-args">(opts={})</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Initialize the <a href="Anonymizer.html">Anonymizer</a> instance:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000115-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000115-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 13</span>
+13:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">opts</span>={})
+14:       <span class="ruby-comment cmt"># Default verbosity is true: # NB: verbosity is not used currently</span>
+15:       <span class="ruby-ivar">@verbose</span> = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:verbose</span>]
+16:       <span class="ruby-ivar">@verbose</span> = <span class="ruby-keyword kw">true</span> <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@verbose</span> <span class="ruby-operator">==</span> <span class="ruby-keyword kw">nil</span>
+17:       <span class="ruby-comment cmt"># Default value of accessors:</span>
+18:       <span class="ruby-comment cmt"># Replace all values with a blank string?</span>
+19:       <span class="ruby-ivar">@blank</span> = <span class="ruby-keyword kw">false</span>
+20:       <span class="ruby-comment cmt"># Enumerate selected replacement values?</span>
+21:       <span class="ruby-ivar">@enumeration</span> = <span class="ruby-keyword kw">false</span>
+22:       <span class="ruby-comment cmt"># All private tags may be removed if desired:</span>
+23:       <span class="ruby-ivar">@remove_private</span> = <span class="ruby-keyword kw">false</span>
+24:       <span class="ruby-comment cmt"># A separate path may be selected for writing the anonymized files:</span>
+25:       <span class="ruby-ivar">@write_path</span> = <span class="ruby-keyword kw">nil</span>
+26:       <span class="ruby-comment cmt"># Array of folders to be processed for anonymization:</span>
+27:       <span class="ruby-ivar">@folders</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+28:       <span class="ruby-comment cmt"># Folders that will be skipped:</span>
+29:       <span class="ruby-ivar">@exceptions</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+30:       <span class="ruby-comment cmt"># Data elements which will be anonymized (the array will hold a list of tag strings):</span>
+31:       <span class="ruby-ivar">@tags</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+32:       <span class="ruby-comment cmt"># Default values to use on anonymized data elements:</span>
+33:       <span class="ruby-ivar">@values</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+34:       <span class="ruby-comment cmt"># Which data elements will have enumeration applied, if requested by the user:</span>
+35:       <span class="ruby-ivar">@enum</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+36:       <span class="ruby-comment cmt"># We use a hash to store information from DICOM files if enumeration is desired:</span>
+37:       <span class="ruby-ivar">@enum_old_hash</span> = {}
+38:       <span class="ruby-ivar">@enum_new_hash</span> = {}
+39:       <span class="ruby-comment cmt"># All the files to be anonymized will be put in this array:</span>
+40:       <span class="ruby-ivar">@files</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+41:       <span class="ruby-comment cmt"># Write paths will be determined later and put in this array:</span>
+42:       <span class="ruby-ivar">@write_paths</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+43:       <span class="ruby-comment cmt"># Set the default data elements to be anonymized:</span>
+44:       <span class="ruby-identifier">set_defaults</span>
+45:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000117" class="method-detail">
+        <a name="M000117"></a>
+
+        <div class="method-heading">
+          <a href="#M000117" class="method-signature">
+          <span class="method-name">add_exception</span><span class="method-args">(path)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Adds an exception folder that is to be avoided when anonymizing:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000117-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000117-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 55</span>
+55:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">add_exception</span>(<span class="ruby-identifier">path</span>)
+56:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">path</span>
+57:         <span class="ruby-comment cmt"># Remove last character if the path ends with a file separator:</span>
+58:         <span class="ruby-identifier">path</span>.<span class="ruby-identifier">chop!</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">path</span>[<span class="ruby-value">-1</span><span class="ruby-operator">..</span><span class="ruby-value">-1</span>] <span class="ruby-operator">==</span> <span class="ruby-constant">File</span><span class="ruby-operator">::</span><span class="ruby-constant">SEPARATOR</span>
+59:         <span class="ruby-ivar">@exceptions</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">path</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">path</span>
+60:       <span class="ruby-keyword kw">end</span>
+61:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000116" class="method-detail">
+        <a name="M000116"></a>
+
+        <div class="method-heading">
+          <a href="#M000116" class="method-signature">
+          <span class="method-name">add_folder</span><span class="method-args">(path)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Adds a folder who&#8216;s files will be anonymized:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000116-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000116-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 49</span>
+49:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">add_folder</span>(<span class="ruby-identifier">path</span>)
+50:       <span class="ruby-ivar">@folders</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">path</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">path</span>
+51:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000118" class="method-detail">
+        <a name="M000118"></a>
+
+        <div class="method-heading">
+          <a href="#M000118" class="method-signature">
+          <span class="method-name">add_tag</span><span class="method-args">(tag, opts={})</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Adds a tag to the list of tags that will be anonymized:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000118-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000118-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 65</span>
+65:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">add_tag</span>(<span class="ruby-identifier">tag</span>, <span class="ruby-identifier">opts</span>={})
+66:       <span class="ruby-comment cmt"># Options and defaults:</span>
+67:       <span class="ruby-identifier">value</span> =  <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:value</span>]  <span class="ruby-operator">||</span> <span class="ruby-value str">&quot;&quot;</span>
+68:       <span class="ruby-identifier">enum</span> =  <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:enum</span>]  <span class="ruby-operator">||</span> <span class="ruby-keyword kw">false</span>
+69:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">tag</span>
+70:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">tag</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>)
+71:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">tag</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">==</span> <span class="ruby-value">9</span>
+72:             <span class="ruby-comment cmt"># Add anonymization information for this tag:</span>
+73:             <span class="ruby-ivar">@tags</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">tag</span>
+74:             <span class="ruby-ivar">@values</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">value</span>
+75:             <span class="ruby-ivar">@enum</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">enum</span>
+76:           <span class="ruby-keyword kw">else</span>
+77:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Warning: Invalid tag length. Please use the form 'GGGG,EEEE'.&quot;</span>
+78:           <span class="ruby-keyword kw">end</span>
+79:         <span class="ruby-keyword kw">else</span>
+80:           <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Warning: Tag is not a string. Can not add tag.&quot;</span>
+81:         <span class="ruby-keyword kw">end</span>
+82:       <span class="ruby-keyword kw">else</span>
+83:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Warning: No tag supplied. Nothing to add.&quot;</span>
+84:       <span class="ruby-keyword kw">end</span>
+85:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000119" class="method-detail">
+        <a name="M000119"></a>
+
+        <div class="method-heading">
+          <a href="#M000119" class="method-signature">
+          <span class="method-name">change_enum</span><span class="method-args">(tag, enum)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Set enumeration status for a specific tag (toggle true/false)
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000119-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000119-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 89</span>
+ 89:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">change_enum</span>(<span class="ruby-identifier">tag</span>, <span class="ruby-identifier">enum</span>)
+ 90:       <span class="ruby-identifier">pos</span> = <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">index</span>(<span class="ruby-identifier">tag</span>)
+ 91:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">pos</span>
+ 92:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">enum</span>
+ 93:           <span class="ruby-ivar">@enum</span>[<span class="ruby-identifier">pos</span>] = <span class="ruby-keyword kw">true</span>
+ 94:         <span class="ruby-keyword kw">else</span>
+ 95:           <span class="ruby-ivar">@enum</span>[<span class="ruby-identifier">pos</span>] = <span class="ruby-keyword kw">false</span>
+ 96:         <span class="ruby-keyword kw">end</span>
+ 97:       <span class="ruby-keyword kw">else</span>
+ 98:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Specified tag not found in anonymization array. No changes made.&quot;</span>
+ 99:       <span class="ruby-keyword kw">end</span>
+100:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000120" class="method-detail">
+        <a name="M000120"></a>
+
+        <div class="method-heading">
+          <a href="#M000120" class="method-signature">
+          <span class="method-name">change_value</span><span class="method-args">(tag, value)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Changes the value used in anonymization for a specific tag:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000120-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000120-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 104</span>
+104:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">change_value</span>(<span class="ruby-identifier">tag</span>, <span class="ruby-identifier">value</span>)
+105:       <span class="ruby-identifier">pos</span> = <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">index</span>(<span class="ruby-identifier">tag</span>)
+106:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">pos</span>
+107:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">value</span>
+108:           <span class="ruby-ivar">@values</span>[<span class="ruby-identifier">pos</span>] = <span class="ruby-identifier">value</span>
+109:         <span class="ruby-keyword kw">else</span>
+110:           <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;No value were specified. No changes made.&quot;</span>
+111:         <span class="ruby-keyword kw">end</span>
+112:       <span class="ruby-keyword kw">else</span>
+113:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Specified tag not found in anonymization array. No changes made.&quot;</span>
+114:       <span class="ruby-keyword kw">end</span>
+115:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000121" class="method-detail">
+        <a name="M000121"></a>
+
+        <div class="method-heading">
+          <a href="#M000121" class="method-signature">
+          <span class="method-name">execute</span><span class="method-args">(verbose=false)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Executes the anonymization process:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000121-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000121-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 119</span>
+119:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">execute</span>(<span class="ruby-identifier">verbose</span>=<span class="ruby-keyword kw">false</span>)
+120:       <span class="ruby-comment cmt"># Search through the folders to gather all the files to be anonymized:</span>
+121:       <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;*******************************************************&quot;</span>
+122:       <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Initiating anonymization process.&quot;</span>
+123:       <span class="ruby-identifier">start_time</span> = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">to_f</span>
+124:       <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Searching for files...&quot;</span>
+125:       <span class="ruby-identifier">load_files</span>
+126:       <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Done.&quot;</span>
+127:       <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@files</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">0</span>
+128:         <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">0</span>
+129:           <span class="ruby-identifier">puts</span> <span class="ruby-ivar">@files</span>.<span class="ruby-identifier">length</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">+</span> <span class="ruby-value str">&quot; files have been identified in the specified folder(s).&quot;</span>
+130:           <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@write_path</span>
+131:             <span class="ruby-comment cmt"># Determine the write paths, as anonymized files will be written to a separate location:</span>
+132:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Processing write paths...&quot;</span>
+133:             <span class="ruby-identifier">process_write_paths</span>
+134:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Done&quot;</span>
+135:           <span class="ruby-keyword kw">else</span>
+136:             <span class="ruby-comment cmt"># Overwriting old files:</span>
+137:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Separate write folder not specified. Will overwrite existing DICOM files.&quot;</span>
+138:             <span class="ruby-ivar">@write_paths</span> = <span class="ruby-ivar">@files</span>
+139:           <span class="ruby-keyword kw">end</span>
+140:           <span class="ruby-comment cmt"># If the user wants enumeration, we need to prepare variables for storing</span>
+141:           <span class="ruby-comment cmt"># existing information associated with each tag:</span>
+142:           <span class="ruby-identifier">create_enum_hash</span> <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@enumeration</span>
+143:           <span class="ruby-comment cmt"># Start the read/update/write process:</span>
+144:           <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Initiating read/update/write process (This may take some time)...&quot;</span>
+145:           <span class="ruby-comment cmt"># Monitor whether every file read/write was successful:</span>
+146:           <span class="ruby-identifier">all_read</span> = <span class="ruby-keyword kw">true</span>
+147:           <span class="ruby-identifier">all_write</span> = <span class="ruby-keyword kw">true</span>
+148:           <span class="ruby-identifier">files_written</span> = <span class="ruby-value">0</span>
+149:           <span class="ruby-identifier">files_failed_read</span> = <span class="ruby-value">0</span>
+150:           <span class="ruby-ivar">@files</span>.<span class="ruby-identifier">each_index</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">i</span><span class="ruby-operator">|</span>
+151:             <span class="ruby-comment cmt"># Read existing file to DICOM object:</span>
+152:             <span class="ruby-identifier">obj</span> = <span class="ruby-constant">DICOM</span><span class="ruby-operator">::</span><span class="ruby-constant">DObject</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@files</span>[<span class="ruby-identifier">i</span>], <span class="ruby-identifier">:verbose</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">verbose</span>)
+153:             <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">read_success</span>
+154:               <span class="ruby-comment cmt"># Anonymize the desired tags:</span>
+155:               <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">each_index</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">j</span><span class="ruby-operator">|</span>
+156:                 <span class="ruby-identifier">positions</span> = <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">get_pos</span>(<span class="ruby-ivar">@tags</span>[<span class="ruby-identifier">j</span>])
+157:                 <span class="ruby-identifier">positions</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">pos</span><span class="ruby-operator">|</span>
+158:                   <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@blank</span>
+159:                     <span class="ruby-identifier">value</span> = <span class="ruby-value str">&quot;&quot;</span>
+160:                   <span class="ruby-keyword kw">elsif</span> <span class="ruby-ivar">@enumeration</span>
+161:                     <span class="ruby-identifier">old_value</span> = <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">get_value</span>(<span class="ruby-identifier">pos</span>, <span class="ruby-identifier">:silent</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>)
+162:                     <span class="ruby-comment cmt"># Only launch enumeration logic if tag exists:</span>
+163:                     <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">old_value</span>
+164:                       <span class="ruby-identifier">value</span> = <span class="ruby-identifier">get_enumeration_value</span>(<span class="ruby-identifier">old_value</span>, <span class="ruby-identifier">j</span>)
+165:                     <span class="ruby-keyword kw">else</span>
+166:                       <span class="ruby-identifier">value</span> = <span class="ruby-value str">&quot;&quot;</span>
+167:                     <span class="ruby-keyword kw">end</span>
+168:                   <span class="ruby-keyword kw">else</span>
+169:                     <span class="ruby-comment cmt"># Value is simply value in array:</span>
+170:                     <span class="ruby-identifier">value</span> = <span class="ruby-ivar">@values</span>[<span class="ruby-identifier">j</span>]
+171:                   <span class="ruby-keyword kw">end</span>
+172:                   <span class="ruby-comment cmt"># Update DICOM object with new value:</span>
+173:                   <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">set_value</span>(<span class="ruby-identifier">value</span>, <span class="ruby-identifier">pos</span>, <span class="ruby-identifier">:create</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:silent</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>)
+174:                 <span class="ruby-keyword kw">end</span>
+175:               <span class="ruby-keyword kw">end</span>
+176:               <span class="ruby-comment cmt"># Remove private tags?</span>
+177:               <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">remove_private</span> <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@remove_private</span>
+178:               <span class="ruby-comment cmt"># Write DICOM file:</span>
+179:               <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">write</span>(<span class="ruby-ivar">@write_paths</span>[<span class="ruby-identifier">i</span>])
+180:               <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">obj</span>.<span class="ruby-identifier">write_success</span>
+181:                 <span class="ruby-identifier">files_written</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+182:               <span class="ruby-keyword kw">else</span>
+183:                 <span class="ruby-identifier">all_write</span> = <span class="ruby-keyword kw">false</span>
+184:               <span class="ruby-keyword kw">end</span>
+185:             <span class="ruby-keyword kw">else</span>
+186:               <span class="ruby-identifier">all_read</span> = <span class="ruby-keyword kw">false</span>
+187:               <span class="ruby-identifier">files_failed_read</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+188:             <span class="ruby-keyword kw">end</span>
+189:           <span class="ruby-keyword kw">end</span>
+190:           <span class="ruby-comment cmt"># Finished anonymizing files. Print elapsed time and status of anonymization:</span>
+191:           <span class="ruby-identifier">end_time</span> = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">to_f</span>
+192:           <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Anonymization process completed!&quot;</span>
+193:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">all_read</span>
+194:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;All files in specified folder(s) were SUCCESSFULLY read to DICOM objects.&quot;</span>
+195:           <span class="ruby-keyword kw">else</span>
+196:             <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason.&quot;</span>
+197:           <span class="ruby-keyword kw">end</span>
+198:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">all_write</span>
+199:             <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files).&quot;</span>
+200:           <span class="ruby-keyword kw">else</span>
+201:             <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written).&quot;</span>
+202:           <span class="ruby-keyword kw">end</span>
+203:           <span class="ruby-comment cmt"># Has user requested enumeration and specified an identity file in which to store the anonymized values?</span>
+204:           <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@enumeration</span> <span class="ruby-keyword kw">and</span> <span class="ruby-ivar">@identity_file</span>
+205:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Writing identity file.&quot;</span>
+206:             <span class="ruby-identifier">write_identity_file</span>
+207:             <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Done&quot;</span>
+208:           <span class="ruby-keyword kw">end</span>
+209:           <span class="ruby-identifier">elapsed</span> = (<span class="ruby-identifier">end_time</span><span class="ruby-operator">-</span><span class="ruby-identifier">start_time</span>).<span class="ruby-identifier">to_s</span>
+210:           <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Elapsed time: &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">elapsed</span>[<span class="ruby-value">0</span><span class="ruby-operator">..</span><span class="ruby-identifier">elapsed</span>.<span class="ruby-identifier">index</span>(<span class="ruby-value str">&quot;.&quot;</span>)<span class="ruby-operator">+</span><span class="ruby-value">1</span>] <span class="ruby-operator">+</span> <span class="ruby-value str">&quot; seconds&quot;</span>
+211:         <span class="ruby-keyword kw">else</span>
+212:           <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;No tags have been selected for anonymization. Aborting.&quot;</span>
+213:         <span class="ruby-keyword kw">end</span>
+214:       <span class="ruby-keyword kw">else</span>
+215:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;No files were found in specified folders. Aborting.&quot;</span>
+216:       <span class="ruby-keyword kw">end</span>
+217:       <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;*******************************************************&quot;</span>
+218:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000122" class="method-detail">
+        <a name="M000122"></a>
+
+        <div class="method-heading">
+          <a href="#M000122" class="method-signature">
+          <span class="method-name">print</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Prints a list of which tags are currently selected for anonymization along
+with replacement values that will be used and enumeration status.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000122-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000122-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 223</span>
+223:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">print</span>
+224:       <span class="ruby-comment cmt"># Extract the string lengths which are needed to make the formatting nice:</span>
+225:       <span class="ruby-identifier">names</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+226:       <span class="ruby-identifier">types</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+227:       <span class="ruby-identifier">tag_lengths</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+228:       <span class="ruby-identifier">name_lengths</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+229:       <span class="ruby-identifier">type_lengths</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+230:       <span class="ruby-identifier">value_lengths</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+231:       <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">each_index</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">i</span><span class="ruby-operator">|</span>
+232:         <span class="ruby-identifier">arr</span> = <span class="ruby-constant">LIBRARY</span>.<span class="ruby-identifier">get_name_vr</span>(<span class="ruby-ivar">@tags</span>[<span class="ruby-identifier">i</span>])
+233:         <span class="ruby-identifier">names</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">arr</span>[<span class="ruby-value">0</span>]
+234:         <span class="ruby-identifier">types</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">arr</span>[<span class="ruby-value">1</span>]
+235:         <span class="ruby-identifier">tag_lengths</span>[<span class="ruby-identifier">i</span>] = <span class="ruby-ivar">@tags</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">length</span>
+236:         <span class="ruby-identifier">name_lengths</span>[<span class="ruby-identifier">i</span>] = <span class="ruby-identifier">names</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">length</span>
+237:         <span class="ruby-identifier">type_lengths</span>[<span class="ruby-identifier">i</span>] = <span class="ruby-identifier">types</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">length</span>
+238:         <span class="ruby-identifier">value_lengths</span>[<span class="ruby-identifier">i</span>] = <span class="ruby-ivar">@values</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">length</span> <span class="ruby-keyword kw">unless</span> <span class="ruby-ivar">@blank</span>
+239:         <span class="ruby-identifier">value_lengths</span>[<span class="ruby-identifier">i</span>] = <span class="ruby-value str">&quot;&quot;</span> <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@blank</span>
+240:       <span class="ruby-keyword kw">end</span>
+241:       <span class="ruby-comment cmt"># To give the printed output a nice format we need to check the string lengths of some of these arrays:</span>
+242:       <span class="ruby-identifier">tag_maxL</span> = <span class="ruby-identifier">tag_lengths</span>.<span class="ruby-identifier">max</span>
+243:       <span class="ruby-identifier">name_maxL</span> = <span class="ruby-identifier">name_lengths</span>.<span class="ruby-identifier">max</span>
+244:       <span class="ruby-identifier">type_maxL</span> = <span class="ruby-identifier">type_lengths</span>.<span class="ruby-identifier">max</span>
+245:       <span class="ruby-identifier">value_maxL</span> = <span class="ruby-identifier">value_lengths</span>.<span class="ruby-identifier">max</span>
+246:       <span class="ruby-comment cmt"># Format string array for print output:</span>
+247:       <span class="ruby-identifier">lines</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+248:       <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">each_index</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">i</span><span class="ruby-operator">|</span>
+249:         <span class="ruby-comment cmt"># Configure empty spaces:</span>
+250:         <span class="ruby-identifier">s</span> = <span class="ruby-value str">&quot; &quot;</span>
+251:         <span class="ruby-identifier">f1</span> = <span class="ruby-value str">&quot; &quot;</span><span class="ruby-operator">*</span>(<span class="ruby-identifier">tag_maxL</span><span class="ruby-operator">-</span><span class="ruby-ivar">@tags</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">length</span><span class="ruby-operator">+</span><span class="ruby-value">1</span>)
+252:         <span class="ruby-identifier">f2</span> = <span class="ruby-value str">&quot; &quot;</span><span class="ruby-operator">*</span>(<span class="ruby-identifier">name_maxL</span><span class="ruby-operator">-</span><span class="ruby-identifier">names</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">length</span><span class="ruby-operator">+</span><span class="ruby-value">1</span>)
+253:         <span class="ruby-identifier">f3</span> = <span class="ruby-value str">&quot; &quot;</span><span class="ruby-operator">*</span>(<span class="ruby-identifier">type_maxL</span><span class="ruby-operator">-</span><span class="ruby-identifier">types</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">length</span><span class="ruby-operator">+</span><span class="ruby-value">1</span>)
+254:         <span class="ruby-identifier">f4</span> = <span class="ruby-value str">&quot; &quot;</span> <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@blank</span>
+255:         <span class="ruby-identifier">f4</span> = <span class="ruby-value str">&quot; &quot;</span><span class="ruby-operator">*</span>(<span class="ruby-identifier">value_maxL</span><span class="ruby-operator">-</span><span class="ruby-ivar">@values</span>[<span class="ruby-identifier">i</span>].<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">length</span><span class="ruby-operator">+</span><span class="ruby-value">1</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-ivar">@blank</span>
+256:         <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@enumeration</span>
+257:           <span class="ruby-identifier">enum</span> = <span class="ruby-ivar">@enum</span>[<span class="ruby-identifier">i</span>]
+258:         <span class="ruby-keyword kw">else</span>
+259:           <span class="ruby-identifier">enum</span> = <span class="ruby-value str">&quot;&quot;</span>
+260:         <span class="ruby-keyword kw">end</span>
+261:         <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@blank</span>
+262:           <span class="ruby-identifier">value</span> = <span class="ruby-value str">&quot;&quot;</span>
+263:         <span class="ruby-keyword kw">else</span>
+264:           <span class="ruby-identifier">value</span> = <span class="ruby-ivar">@values</span>[<span class="ruby-identifier">i</span>]
+265:         <span class="ruby-keyword kw">end</span>
+266:         <span class="ruby-identifier">tag</span> = <span class="ruby-ivar">@tags</span>[<span class="ruby-identifier">i</span>]
+267:         <span class="ruby-identifier">lines</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">tag</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">f1</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">names</span>[<span class="ruby-identifier">i</span>] <span class="ruby-operator">+</span> <span class="ruby-identifier">f2</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">types</span>[<span class="ruby-identifier">i</span>] <span class="ruby-operator">+</span> <span class="ruby-identifier">f3</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">f4</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">enum</span>.<span class="ruby-identifier">to_s</span>
+268:       <span class="ruby-keyword kw">end</span>
+269:       <span class="ruby-comment cmt"># Print to screen:</span>
+270:       <span class="ruby-identifier">lines</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">line</span><span class="ruby-operator">|</span>
+271:         <span class="ruby-identifier">puts</span> <span class="ruby-identifier">line</span>
+272:       <span class="ruby-keyword kw">end</span>
+273:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000123" class="method-detail">
+        <a name="M000123"></a>
+
+        <div class="method-heading">
+          <a href="#M000123" class="method-signature">
+          <span class="method-name">remove_tag</span><span class="method-args">(tag)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Removes a tag from the list of tags that will be anonymized:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000123-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000123-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Anonymizer.rb, line 277</span>
+277:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">remove_tag</span>(<span class="ruby-identifier">tag</span>)
+278:       <span class="ruby-identifier">pos</span> = <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">index</span>(<span class="ruby-identifier">tag</span>)
+279:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">pos</span>
+280:         <span class="ruby-ivar">@tags</span>.<span class="ruby-identifier">delete_at</span>(<span class="ruby-identifier">pos</span>)
+281:         <span class="ruby-ivar">@values</span>.<span class="ruby-identifier">delete_at</span>(<span class="ruby-identifier">pos</span>)
+282:         <span class="ruby-ivar">@enum</span>.<span class="ruby-identifier">delete_at</span>(<span class="ruby-identifier">pos</span>)
+283:       <span class="ruby-keyword kw">else</span>
+284:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;Specified tag not found in anonymization array. No changes made.&quot;</span>
+285:       <span class="ruby-keyword kw">end</span>
+286:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>

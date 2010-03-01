@@ -1,0 +1,1687 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Class: DICOM::Link</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Class</strong></td>
+          <td class="class-name-in-header">DICOM::Link</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../../files/lib/dicom/Link_rb.html">
+                lib/dicom/Link.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        <tr class="top-aligned-row">
+            <td><strong>Parent:</strong></td>
+            <td>
+                Object
+            </td>
+        </tr>
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+    <div id="description">
+      <p>
+This class handles the construction and interpretation of network packages
+as well as network communication.
+</p>
+
+    </div>
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000066">build_association_abort</a>&nbsp;&nbsp;
+      <a href="#M000067">build_association_accept</a>&nbsp;&nbsp;
+      <a href="#M000068">build_association_reject</a>&nbsp;&nbsp;
+      <a href="#M000069">build_association_request</a>&nbsp;&nbsp;
+      <a href="#M000070">build_command_fragment</a>&nbsp;&nbsp;
+      <a href="#M000071">build_data_fragment</a>&nbsp;&nbsp;
+      <a href="#M000072">build_release_request</a>&nbsp;&nbsp;
+      <a href="#M000073">build_release_response</a>&nbsp;&nbsp;
+      <a href="#M000074">build_storage_fragment</a>&nbsp;&nbsp;
+      <a href="#M000075">extract_abstract_syntax</a>&nbsp;&nbsp;
+      <a href="#M000076">extract_transfer_syntax</a>&nbsp;&nbsp;
+      <a href="#M000077">forward_to_interpret</a>&nbsp;&nbsp;
+      <a href="#M000078">handle_abort</a>&nbsp;&nbsp;
+      <a href="#M000079">handle_association_accept</a>&nbsp;&nbsp;
+      <a href="#M000080">handle_incoming_data</a>&nbsp;&nbsp;
+      <a href="#M000081">handle_rejection</a>&nbsp;&nbsp;
+      <a href="#M000082">handle_release</a>&nbsp;&nbsp;
+      <a href="#M000083">handle_response</a>&nbsp;&nbsp;
+      <a href="#M000084">interpret</a>&nbsp;&nbsp;
+      <a href="#M000085">interpret_abort</a>&nbsp;&nbsp;
+      <a href="#M000086">interpret_association_accept</a>&nbsp;&nbsp;
+      <a href="#M000087">interpret_association_reject</a>&nbsp;&nbsp;
+      <a href="#M000088">interpret_association_request</a>&nbsp;&nbsp;
+      <a href="#M000089">interpret_command_and_data</a>&nbsp;&nbsp;
+      <a href="#M000090">interpret_release_request</a>&nbsp;&nbsp;
+      <a href="#M000091">interpret_release_response</a>&nbsp;&nbsp;
+      <a href="#M000065">new</a>&nbsp;&nbsp;
+      <a href="#M000092">receive_multiple_transmissions</a>&nbsp;&nbsp;
+      <a href="#M000093">receive_single_transmission</a>&nbsp;&nbsp;
+      <a href="#M000094">transmit</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+    <div id="attribute-list">
+      <h3 class="section-bar">Attributes</h3>
+
+      <div class="name-list">
+        <table>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">errors</td>
+          <td class="context-item-value">&nbsp;[R]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">file_handler</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">max_package_size</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">notices</td>
+          <td class="context-item-value">&nbsp;[R]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">verbose</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"></td>
+        </tr>
+        </table>
+      </div>
+    </div>
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Class methods</h3>
+
+      <div id="method-M000065" class="method-detail">
+        <a name="M000065"></a>
+
+        <div class="method-heading">
+          <a href="#M000065" class="method-signature">
+          <span class="method-name">new</span><span class="method-args">(options={})</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Initialize the instance with a host adress and a port number.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000065-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000065-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 13</span>
+13:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">options</span>={})
+14:       <span class="ruby-identifier">require</span> <span class="ruby-value str">'socket'</span>
+15:       <span class="ruby-comment cmt"># Optional parameters (and default values):</span>
+16:       <span class="ruby-ivar">@file_handler</span> = <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:file_handler</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">FileHandler</span>
+17:       <span class="ruby-ivar">@ae</span> =  <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:ae</span>]  <span class="ruby-operator">||</span> <span class="ruby-value str">&quot;RUBY_DICOM&quot;</span>
+18:       <span class="ruby-ivar">@host_ae</span> =  <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:host_ae</span>]  <span class="ruby-operator">||</span> <span class="ruby-value str">&quot;DEFAULT&quot;</span>
+19:       <span class="ruby-ivar">@max_package_size</span> = <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:max_package_size</span>] <span class="ruby-operator">||</span> <span class="ruby-value">32768</span> <span class="ruby-comment cmt"># 16384</span>
+20:       <span class="ruby-ivar">@max_receive_size</span> = <span class="ruby-ivar">@max_package_size</span>
+21:       <span class="ruby-ivar">@timeout</span> = <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:timeout</span>] <span class="ruby-operator">||</span> <span class="ruby-value">10</span> <span class="ruby-comment cmt"># seconds</span>
+22:       <span class="ruby-ivar">@min_length</span> = <span class="ruby-value">12</span> <span class="ruby-comment cmt"># minimum number of bytes to expect in an incoming transmission</span>
+23:       <span class="ruby-ivar">@verbose</span> = <span class="ruby-identifier">options</span>[<span class="ruby-identifier">:verbose</span>]
+24:       <span class="ruby-ivar">@verbose</span> = <span class="ruby-keyword kw">true</span> <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@verbose</span> <span class="ruby-operator">==</span> <span class="ruby-keyword kw">nil</span> <span class="ruby-comment cmt"># Default verbosity is 'on'.</span>
+25:       <span class="ruby-comment cmt"># Other instance variables:</span>
+26:       <span class="ruby-ivar">@errors</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span> <span class="ruby-comment cmt"># errors and warnings are put in this array</span>
+27:       <span class="ruby-ivar">@notices</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span> <span class="ruby-comment cmt"># information on successful transmissions are put in this array</span>
+28:       <span class="ruby-comment cmt"># Variables used for monitoring state of transmission:</span>
+29:       <span class="ruby-ivar">@connection</span> = <span class="ruby-keyword kw">nil</span> <span class="ruby-comment cmt"># TCP connection status</span>
+30:       <span class="ruby-ivar">@association</span> = <span class="ruby-keyword kw">nil</span> <span class="ruby-comment cmt"># DICOM Association status</span>
+31:       <span class="ruby-ivar">@request_approved</span> = <span class="ruby-keyword kw">nil</span> <span class="ruby-comment cmt"># Status of our DICOM request</span>
+32:       <span class="ruby-ivar">@release</span> = <span class="ruby-keyword kw">nil</span> <span class="ruby-comment cmt"># Status of received, valid release response</span>
+33:       <span class="ruby-identifier">set_default_values</span>
+34:       <span class="ruby-identifier">set_user_information_array</span>
+35:       <span class="ruby-ivar">@outgoing</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword kw">nil</span>, <span class="ruby-keyword kw">true</span>, <span class="ruby-keyword kw">true</span>)
+36:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000066" class="method-detail">
+        <a name="M000066"></a>
+
+        <div class="method-heading">
+          <a href="#M000066" class="method-signature">
+          <span class="method-name">build_association_abort</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the abort message which is transmitted when the server wishes to
+(abruptly) abort the connection. For the moment: NO REASONS WILL BE
+PROVIDED. (and source of problems will always be set as client side)
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000066-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000066-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 41</span>
+41:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_association_abort</span>
+42:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+43:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+44:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+45:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+46:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;07&quot;</span>
+47:       <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+48:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;00&quot;</span><span class="ruby-operator">*</span><span class="ruby-value">2</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+49:       <span class="ruby-comment cmt"># Source (1 byte)</span>
+50:       <span class="ruby-identifier">source</span> = <span class="ruby-value str">&quot;00&quot;</span> <span class="ruby-comment cmt"># (client side error)</span>
+51:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">source</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+52:       <span class="ruby-comment cmt"># Reason/Diag. (1 byte)</span>
+53:       <span class="ruby-identifier">reason</span> = <span class="ruby-value str">&quot;00&quot;</span> <span class="ruby-comment cmt"># (Reason not specified)</span>
+54:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">reason</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+55:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+56:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000067" class="method-detail">
+        <a name="M000067"></a>
+
+        <div class="method-heading">
+          <a href="#M000067" class="method-signature">
+          <span class="method-name">build_association_accept</span><span class="method-args">(info, ac_uid, ui, result)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the Association
+accept response.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000067-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000067-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 60</span>
+60:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_association_accept</span>(<span class="ruby-identifier">info</span>, <span class="ruby-identifier">ac_uid</span>, <span class="ruby-identifier">ui</span>, <span class="ruby-identifier">result</span>)
+61:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+62:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+63:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+64:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+65:       <span class="ruby-comment cmt"># Set item types (pdu and presentation context):</span>
+66:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;02&quot;</span>
+67:       <span class="ruby-identifier">pc_type</span> = <span class="ruby-value str">&quot;21&quot;</span>
+68:       <span class="ruby-comment cmt"># No abstract syntax in association response:</span>
+69:       <span class="ruby-identifier">abstract_syntax</span> = <span class="ruby-keyword kw">nil</span>
+70:       <span class="ruby-comment cmt"># Note: The order of which these components are built is not arbitrary.</span>
+71:       <span class="ruby-identifier">append_application_context</span>(<span class="ruby-identifier">ac_uid</span>)
+72:       <span class="ruby-comment cmt"># Return one presentation context for each of the proposed abstract syntaxes:</span>
+73:       <span class="ruby-identifier">abstract_syntaxes</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+74:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pc</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">pc</span><span class="ruby-operator">|</span>
+75:         <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">abstract_syntaxes</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:abstract_syntax</span>])
+76:           <span class="ruby-identifier">abstract_syntaxes</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:abstract_syntax</span>]
+77:           <span class="ruby-identifier">context_id</span> = <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:presentation_context_id</span>]
+78:           <span class="ruby-identifier">transfer_syntax</span> = <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:ts</span>].<span class="ruby-identifier">first</span>[<span class="ruby-identifier">:transfer_syntax</span>]
+79:           <span class="ruby-identifier">append_presentation_context</span>(<span class="ruby-identifier">abstract_syntax</span>, <span class="ruby-identifier">pc_type</span>, <span class="ruby-identifier">transfer_syntax</span>, <span class="ruby-identifier">context_id</span>, <span class="ruby-identifier">result</span>)
+80:         <span class="ruby-keyword kw">end</span>
+81:       <span class="ruby-keyword kw">end</span>
+82:       <span class="ruby-identifier">append_user_information</span>(<span class="ruby-identifier">ui</span>)
+83:       <span class="ruby-comment cmt"># Header must be built last, because we need to know the length of the other components.</span>
+84:       <span class="ruby-identifier">append_association_header</span>(<span class="ruby-identifier">pdu</span>)
+85:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000068" class="method-detail">
+        <a name="M000068"></a>
+
+        <div class="method-heading">
+          <a href="#M000068" class="method-signature">
+          <span class="method-name">build_association_reject</span><span class="method-args">(info)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the association
+rejection. NB: For the moment, this method will only customize the
+&quot;reason&quot; value. For a list of error codes, see the official dicom
+PS3.8 document, page 41.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000068-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000068-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 91</span>
+ 91:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_association_reject</span>(<span class="ruby-identifier">info</span>)
+ 92:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+ 93:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+ 94:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+ 95:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+ 96:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;03&quot;</span>
+ 97:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+ 98:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;00&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+ 99:       <span class="ruby-comment cmt"># Result (1 byte)</span>
+100:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;01&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># 1 for permament, 2 for transient</span>
+101:       <span class="ruby-comment cmt"># Source (1 byte)</span>
+102:       <span class="ruby-comment cmt"># (1: Service user, 2: Service provider (ACSE related function), 3: Service provider (Presentation related function)</span>
+103:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;01&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+104:       <span class="ruby-comment cmt"># Reason (1 byte)</span>
+105:       <span class="ruby-identifier">reason</span> = <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:reason</span>]
+106:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">reason</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+107:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+108:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000069" class="method-detail">
+        <a name="M000069"></a>
+
+        <div class="method-heading">
+          <a href="#M000069" class="method-signature">
+          <span class="method-name">build_association_request</span><span class="method-args">(ac_uid, as, ts, ui)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the Association
+request.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000069-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000069-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 112</span>
+112:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_association_request</span>(<span class="ruby-identifier">ac_uid</span>, <span class="ruby-identifier">as</span>, <span class="ruby-identifier">ts</span>, <span class="ruby-identifier">ui</span>)
+113:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+114:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+115:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+116:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+117:       <span class="ruby-comment cmt"># Set item types (pdu and presentation context):</span>
+118:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;01&quot;</span>
+119:       <span class="ruby-identifier">pc</span> = <span class="ruby-value str">&quot;20&quot;</span>
+120:       <span class="ruby-comment cmt"># Note: The order of which these components are built is not arbitrary.</span>
+121:       <span class="ruby-comment cmt"># (The first three are built 'in order of appearance', the header is built last, but is put first in the message)</span>
+122:       <span class="ruby-identifier">append_application_context</span>(<span class="ruby-identifier">ac_uid</span>)
+123:       <span class="ruby-identifier">append_presentation_context</span>(<span class="ruby-identifier">as</span>, <span class="ruby-identifier">pc</span>, <span class="ruby-identifier">ts</span>)
+124:       <span class="ruby-identifier">append_user_information</span>(<span class="ruby-identifier">ui</span>)
+125:       <span class="ruby-comment cmt"># Header must be built last, because we need to know the length of the other components.</span>
+126:       <span class="ruby-identifier">append_association_header</span>(<span class="ruby-identifier">pdu</span>)
+127:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000070" class="method-detail">
+        <a name="M000070"></a>
+
+        <div class="method-heading">
+          <a href="#M000070" class="method-signature">
+          <span class="method-name">build_command_fragment</span><span class="method-args">(pdu, context, flags, command_elements)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the query command
+fragment. Typical values: pdu = &quot;04&quot; (data), context =
+&quot;01&quot;, flags = &quot;03&quot;
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000070-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000070-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 133</span>
+133:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_command_fragment</span>(<span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">context</span>, <span class="ruby-identifier">flags</span>, <span class="ruby-identifier">command_elements</span>)
+134:       <span class="ruby-comment cmt"># Little endian encoding:</span>
+135:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@data_endian</span>)
+136:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+137:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+138:       <span class="ruby-comment cmt"># Build the last part first, the Command items:</span>
+139:       <span class="ruby-identifier">command_elements</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">element</span><span class="ruby-operator">|</span>
+140:         <span class="ruby-comment cmt"># Tag (4 bytes)</span>
+141:         <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">add_last</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_tag</span>(<span class="ruby-identifier">element</span>[<span class="ruby-value">0</span>]))
+142:         <span class="ruby-comment cmt"># Encode the value first, so we know its length:</span>
+143:         <span class="ruby-identifier">value</span> = <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_value</span>(<span class="ruby-identifier">element</span>[<span class="ruby-value">2</span>], <span class="ruby-identifier">element</span>[<span class="ruby-value">1</span>])
+144:         <span class="ruby-comment cmt"># Length (2 bytes)</span>
+145:         <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">value</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+146:         <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+147:         <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;0000&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+148:         <span class="ruby-comment cmt"># Value (variable length)</span>
+149:         <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">add_last</span>(<span class="ruby-identifier">value</span>)
+150:       <span class="ruby-keyword kw">end</span>
+151:       <span class="ruby-comment cmt"># The rest of the command fragment will be buildt in reverse, all the time</span>
+152:       <span class="ruby-comment cmt"># putting the elements first in the outgoing binary string.</span>
+153:       <span class="ruby-comment cmt"># Group length item:</span>
+154:       <span class="ruby-comment cmt"># Value (4 bytes)</span>
+155:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+156:       <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+157:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-value str">&quot;0000&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+158:       <span class="ruby-comment cmt"># Length (2 bytes)</span>
+159:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-value">4</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+160:       <span class="ruby-comment cmt"># Tag (4 bytes)</span>
+161:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">add_first</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_tag</span>(<span class="ruby-value str">&quot;0000,0000&quot;</span>))
+162:       <span class="ruby-comment cmt"># Big endian encoding from now on:</span>
+163:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+164:       <span class="ruby-comment cmt"># Flags (1 byte)</span>
+165:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-identifier">flags</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># Command, last fragment (identifier)</span>
+166:       <span class="ruby-comment cmt"># Presentation context ID (1 byte)</span>
+167:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-identifier">context</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># Explicit VR Little Endian, Study Root Query/Retrieve.... (what does this reference, the earlier abstract syntax? transfer syntax?)</span>
+168:       <span class="ruby-comment cmt"># Length (of remaining data) (4 bytes)</span>
+169:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+170:       <span class="ruby-comment cmt"># PRESENTATION DATA VALUE (the above)</span>
+171:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+172:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000071" class="method-detail">
+        <a name="M000071"></a>
+
+        <div class="method-heading">
+          <a href="#M000071" class="method-signature">
+          <span class="method-name">build_data_fragment</span><span class="method-args">(data_elements)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the query data
+fragment. The style of encoding will depend on whether we have an implicit
+or explicit transfer syntax.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000071-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000071-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 177</span>
+177:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_data_fragment</span>(<span class="ruby-identifier">data_elements</span>)
+178:       <span class="ruby-comment cmt"># Endianness of data fragment:</span>
+179:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@data_endian</span>)
+180:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+181:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+182:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;04&quot;</span>
+183:       <span class="ruby-comment cmt"># Build the last part first, the Data items:</span>
+184:       <span class="ruby-identifier">data_elements</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">element</span><span class="ruby-operator">|</span>
+185:         <span class="ruby-comment cmt"># Encode all tags (even tags which are empty):</span>
+186:         <span class="ruby-comment cmt"># Tag (4 bytes)</span>
+187:         <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">add_last</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_tag</span>(<span class="ruby-identifier">element</span>[<span class="ruby-value">0</span>]))
+188:         <span class="ruby-comment cmt"># Encode the value in advance of putting it into the message, so we know its length:</span>
+189:         <span class="ruby-identifier">vr</span> = <span class="ruby-constant">LIBRARY</span>.<span class="ruby-identifier">get_name_vr</span>(<span class="ruby-identifier">element</span>[<span class="ruby-value">0</span>])[<span class="ruby-value">1</span>]
+190:         <span class="ruby-identifier">value</span> = <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_value</span>(<span class="ruby-identifier">element</span>[<span class="ruby-value">1</span>], <span class="ruby-identifier">vr</span>)
+191:         <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@explicit</span>
+192:           <span class="ruby-comment cmt"># Type (VR) (2 bytes)</span>
+193:           <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">vr</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+194:           <span class="ruby-comment cmt"># Length (2 bytes)</span>
+195:           <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">value</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+196:         <span class="ruby-keyword kw">else</span>
+197:           <span class="ruby-comment cmt"># Implicit:</span>
+198:           <span class="ruby-comment cmt"># Length (4 bytes)</span>
+199:           <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-identifier">value</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+200:         <span class="ruby-keyword kw">end</span>
+201:         <span class="ruby-comment cmt"># Value (variable length)</span>
+202:         <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">add_last</span>(<span class="ruby-identifier">value</span>)
+203:       <span class="ruby-keyword kw">end</span>
+204:       <span class="ruby-comment cmt"># The rest of the data fragment will be built in reverse, all the time</span>
+205:       <span class="ruby-comment cmt"># putting the elements first in the outgoing binary string.</span>
+206:       <span class="ruby-comment cmt"># Big endian encoding from now on:</span>
+207:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+208:       <span class="ruby-comment cmt"># Flags (1 byte)</span>
+209:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-value str">&quot;02&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># Data, last fragment (identifier)</span>
+210:       <span class="ruby-comment cmt"># Presentation context ID (1 byte)</span>
+211:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-value str">&quot;01&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># Explicit VR Little Endian, Study Root Query/Retrieve.... (what does this reference, the earlier abstract syntax? transfer syntax?)</span>
+212:       <span class="ruby-comment cmt"># Length (of remaining data) (4 bytes)</span>
+213:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+214:       <span class="ruby-comment cmt"># PRESENTATION DATA VALUE (the above)</span>
+215:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+216:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000072" class="method-detail">
+        <a name="M000072"></a>
+
+        <div class="method-heading">
+          <a href="#M000072" class="method-signature">
+          <span class="method-name">build_release_request</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the association
+release request:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000072-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000072-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 220</span>
+220:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_release_request</span>
+221:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+222:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+223:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+224:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+225:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;05&quot;</span>
+226:       <span class="ruby-comment cmt"># Reserved (4 bytes)</span>
+227:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;00&quot;</span><span class="ruby-operator">*</span><span class="ruby-value">4</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+228:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+229:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000073" class="method-detail">
+        <a name="M000073"></a>
+
+        <div class="method-heading">
+          <a href="#M000073" class="method-signature">
+          <span class="method-name">build_release_response</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that will be sent as TCP data in the association
+release response.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000073-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000073-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 233</span>
+233:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_release_response</span>
+234:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+235:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+236:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+237:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+238:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;06&quot;</span>
+239:       <span class="ruby-comment cmt"># Reserved (4 bytes)</span>
+240:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_last</span>(<span class="ruby-value str">&quot;00000000&quot;</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+241:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+242:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000074" class="method-detail">
+        <a name="M000074"></a>
+
+        <div class="method-heading">
+          <a href="#M000074" class="method-signature">
+          <span class="method-name">build_storage_fragment</span><span class="method-args">(pdu, context, flags, body)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Build the binary string that makes up a storage data fragment. Typical
+value: flags = &quot;00&quot; (more fragments following), flags =
+&quot;02&quot; (last fragment) pdu = &quot;04&quot;, context =
+&quot;01&quot;
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000074-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000074-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 248</span>
+248:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">build_storage_fragment</span>(<span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">context</span>, <span class="ruby-identifier">flags</span>, <span class="ruby-identifier">body</span>)
+249:       <span class="ruby-comment cmt"># Big endian encoding:</span>
+250:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@net_endian</span>)
+251:       <span class="ruby-comment cmt"># Clear the outgoing binary string:</span>
+252:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">reset</span>
+253:       <span class="ruby-comment cmt"># Build in reverse, putting elements in front of the binary string:</span>
+254:       <span class="ruby-comment cmt"># Insert the data (body):</span>
+255:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">add_last</span>(<span class="ruby-identifier">body</span>)
+256:       <span class="ruby-comment cmt"># Flags (1 byte)</span>
+257:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-identifier">flags</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+258:       <span class="ruby-comment cmt"># Context ID (1 byte)</span>
+259:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-identifier">context</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+260:       <span class="ruby-comment cmt"># PDV Length (of remaining data) (4 bytes)</span>
+261:       <span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">encode_first</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+262:       <span class="ruby-comment cmt"># PRESENTATION DATA VALUE (the above)</span>
+263:       <span class="ruby-identifier">append_header</span>(<span class="ruby-identifier">pdu</span>)
+264:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000075" class="method-detail">
+        <a name="M000075"></a>
+
+        <div class="method-heading">
+          <a href="#M000075" class="method-signature">
+          <span class="method-name">extract_abstract_syntax</span><span class="method-args">(info)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Extracts the abstrax syntax from the first presentation context in the info
+hash object:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000075-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000075-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 268</span>
+268:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">extract_abstract_syntax</span>(<span class="ruby-identifier">info</span>)
+269:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pc</span>].<span class="ruby-identifier">first</span>[<span class="ruby-identifier">:abstract_syntax</span>]
+270:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000076" class="method-detail">
+        <a name="M000076"></a>
+
+        <div class="method-heading">
+          <a href="#M000076" class="method-signature">
+          <span class="method-name">extract_transfer_syntax</span><span class="method-args">(info)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Extracts the (first) transfer syntax from the first presentation context in
+the info hash object:
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000076-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000076-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 274</span>
+274:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">extract_transfer_syntax</span>(<span class="ruby-identifier">info</span>)
+275:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pc</span>].<span class="ruby-identifier">first</span>[<span class="ruby-identifier">:ts</span>].<span class="ruby-identifier">first</span>[<span class="ruby-identifier">:transfer_syntax</span>]
+276:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000077" class="method-detail">
+        <a name="M000077"></a>
+
+        <div class="method-heading">
+          <a href="#M000077" class="method-signature">
+          <span class="method-name">forward_to_interpret</span><span class="method-args">(message, pdu, file = nil)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Delegates an incoming message to its correct interpreter method, based on
+pdu type.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000077-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000077-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 280</span>
+280:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">forward_to_interpret</span>(<span class="ruby-identifier">message</span>, <span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">file</span> = <span class="ruby-keyword kw">nil</span>)
+281:       <span class="ruby-keyword kw">case</span> <span class="ruby-identifier">pdu</span>
+282:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;01&quot;</span> <span class="ruby-comment cmt"># Associatin request</span>
+283:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_association_request</span>(<span class="ruby-identifier">message</span>)
+284:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;02&quot;</span> <span class="ruby-comment cmt"># Accepted association</span>
+285:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_association_accept</span>(<span class="ruby-identifier">message</span>)
+286:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;03&quot;</span> <span class="ruby-comment cmt"># Rejected association</span>
+287:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_association_reject</span>(<span class="ruby-identifier">message</span>)
+288:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;04&quot;</span> <span class="ruby-comment cmt"># Data</span>
+289:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_command_and_data</span>(<span class="ruby-identifier">message</span>, <span class="ruby-identifier">file</span>)
+290:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;05&quot;</span>
+291:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_release_request</span>(<span class="ruby-identifier">message</span>)
+292:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;06&quot;</span> <span class="ruby-comment cmt"># Release response</span>
+293:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_release_response</span>(<span class="ruby-identifier">message</span>)
+294:         <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;07&quot;</span> <span class="ruby-comment cmt"># Abort connection</span>
+295:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">interpret_abort</span>(<span class="ruby-identifier">message</span>)
+296:         <span class="ruby-keyword kw">else</span>
+297:           <span class="ruby-identifier">info</span> = {<span class="ruby-identifier">:valid</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>}
+298:           <span class="ruby-identifier">add_error</span>(<span class="ruby-node">&quot;An unknown pdu type was received in the incoming transmission. Can not decode this message. (pdu: #{pdu})&quot;</span>)
+299:       <span class="ruby-keyword kw">end</span>
+300:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+301:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000078" class="method-detail">
+        <a name="M000078"></a>
+
+        <div class="method-heading">
+          <a href="#M000078" class="method-signature">
+          <span class="method-name">handle_abort</span><span class="method-args">(session)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handles the abortion of a session, when a non-valid message has been
+received.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000078-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000078-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 305</span>
+305:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">handle_abort</span>(<span class="ruby-identifier">session</span>)
+306:       <span class="ruby-identifier">add_notice</span>(<span class="ruby-value str">&quot;An unregonizable (non-DICOM) message was received.&quot;</span>)
+307:       <span class="ruby-identifier">build_association_abort</span>
+308:       <span class="ruby-identifier">transmit</span>(<span class="ruby-identifier">session</span>)
+309:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000079" class="method-detail">
+        <a name="M000079"></a>
+
+        <div class="method-heading">
+          <a href="#M000079" class="method-signature">
+          <span class="method-name">handle_association_accept</span><span class="method-args">(session, info, syntax_result)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handles the association accept.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000079-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000079-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 313</span>
+313:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">handle_association_accept</span>(<span class="ruby-identifier">session</span>, <span class="ruby-identifier">info</span>, <span class="ruby-identifier">syntax_result</span>)
+314:       <span class="ruby-comment cmt"># Update the variable for calling ae (information gathered in the association request):</span>
+315:       <span class="ruby-ivar">@ae</span> = <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:calling_ae</span>]
+316:       <span class="ruby-identifier">application_context</span> = <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_context</span>]
+317:       <span class="ruby-identifier">set_user_information_array</span>(<span class="ruby-identifier">info</span>)
+318:       <span class="ruby-identifier">build_association_accept</span>(<span class="ruby-identifier">info</span>, <span class="ruby-identifier">application_context</span>, <span class="ruby-ivar">@user_information</span>, <span class="ruby-identifier">syntax_result</span>)
+319:       <span class="ruby-identifier">transmit</span>(<span class="ruby-identifier">session</span>)
+320:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000080" class="method-detail">
+        <a name="M000080"></a>
+
+        <div class="method-heading">
+          <a href="#M000080" class="method-signature">
+          <span class="method-name">handle_incoming_data</span><span class="method-args">(session, path)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Process the data that was received from the user. We expect this to be an
+initial C-STORE-RQ followed by a bunch of data fragments.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000080-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000080-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 325</span>
+325:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">handle_incoming_data</span>(<span class="ruby-identifier">session</span>, <span class="ruby-identifier">path</span>)
+326:       <span class="ruby-comment cmt"># Wait for incoming data:</span>
+327:       <span class="ruby-identifier">segments</span> = <span class="ruby-identifier">receive_multiple_transmissions</span>(<span class="ruby-identifier">session</span>, <span class="ruby-identifier">file</span> = <span class="ruby-keyword kw">true</span>)
+328:       <span class="ruby-comment cmt"># Reset command results arrays:</span>
+329:       <span class="ruby-ivar">@command_results</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+330:       <span class="ruby-ivar">@data_results</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+331:       <span class="ruby-comment cmt"># Try to extract data:</span>
+332:       <span class="ruby-identifier">file_data</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+333:       <span class="ruby-identifier">segments</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">info</span><span class="ruby-operator">|</span>
+334:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>]
+335:           <span class="ruby-comment cmt"># Determine if it is command or data:</span>
+336:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;00&quot;</span> <span class="ruby-keyword kw">or</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;02&quot;</span>
+337:             <span class="ruby-comment cmt"># Data (last fragment)</span>
+338:             <span class="ruby-ivar">@data_results</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:results</span>]
+339:             <span class="ruby-identifier">file_data</span>  <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:bin</span>]
+340:           <span class="ruby-keyword kw">elsif</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;03&quot;</span>
+341:             <span class="ruby-comment cmt"># Command (last fragment):</span>
+342:             <span class="ruby-ivar">@command_results</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:results</span>]
+343:             <span class="ruby-ivar">@presentation_context_id</span> = <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_id</span>]
+344:           <span class="ruby-keyword kw">end</span>
+345:         <span class="ruby-keyword kw">end</span>
+346:       <span class="ruby-keyword kw">end</span>
+347:       <span class="ruby-identifier">data</span> = <span class="ruby-identifier">file_data</span>.<span class="ruby-identifier">join</span>
+348:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">data</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">8</span>
+349:         <span class="ruby-comment cmt"># Read the received data stream and load it as a DICOM object:</span>
+350:         <span class="ruby-identifier">obj</span> = <span class="ruby-constant">DObject</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">data</span>, <span class="ruby-identifier">:bin</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:syntax</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-ivar">@transfer_syntax</span>)
+351:         <span class="ruby-comment cmt"># The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)</span>
+352:         <span class="ruby-comment cmt"># is handled by the external FileHandler class, in order to make it as easy as possible for users to write</span>
+353:         <span class="ruby-comment cmt"># their own customised solutions for handling the incoming DICOM files:</span>
+354:         <span class="ruby-identifier">success</span>, <span class="ruby-identifier">message</span> = <span class="ruby-ivar">@file_handler</span>.<span class="ruby-identifier">receive_file</span>(<span class="ruby-identifier">obj</span>, <span class="ruby-identifier">path</span>, <span class="ruby-ivar">@transfer_syntax</span>)
+355:       <span class="ruby-keyword kw">else</span>
+356:         <span class="ruby-comment cmt"># Valid DICOM data not received:</span>
+357:         <span class="ruby-identifier">success</span> = <span class="ruby-keyword kw">false</span>
+358:         <span class="ruby-identifier">message</span> = <span class="ruby-value str">&quot;Error: Invalid data received (the data was too small to be a valid DICOM file).&quot;</span>
+359:       <span class="ruby-keyword kw">end</span>
+360:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">success</span>, <span class="ruby-identifier">message</span>
+361:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000081" class="method-detail">
+        <a name="M000081"></a>
+
+        <div class="method-heading">
+          <a href="#M000081" class="method-signature">
+          <span class="method-name">handle_rejection</span><span class="method-args">(session)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handles the rejection of an association, when the formalities of the
+association is not correct.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000081-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000081-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 365</span>
+365:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">handle_rejection</span>(<span class="ruby-identifier">session</span>)
+366:       <span class="ruby-identifier">add_notice</span>(<span class="ruby-node">&quot;An incoming association request was rejected. Error code: #{association_error}&quot;</span>)
+367:       <span class="ruby-comment cmt"># Insert the error code in the info hash:</span>
+368:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:reason</span>] = <span class="ruby-identifier">association_error</span>
+369:       <span class="ruby-comment cmt"># Send an association rejection:</span>
+370:       <span class="ruby-identifier">build_association_reject</span>(<span class="ruby-identifier">info</span>)
+371:       <span class="ruby-identifier">transmit</span>(<span class="ruby-identifier">session</span>)
+372:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000082" class="method-detail">
+        <a name="M000082"></a>
+
+        <div class="method-heading">
+          <a href="#M000082" class="method-signature">
+          <span class="method-name">handle_release</span><span class="method-args">(session)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handles the release of an association.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000082-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000082-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 376</span>
+376:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">handle_release</span>(<span class="ruby-identifier">session</span>)
+377:       <span class="ruby-identifier">segments</span> = <span class="ruby-identifier">receive_single_transmission</span>(<span class="ruby-identifier">session</span>)
+378:       <span class="ruby-identifier">info</span> = <span class="ruby-identifier">segments</span>.<span class="ruby-identifier">first</span>
+379:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pdu</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;05&quot;</span>
+380:         <span class="ruby-identifier">add_notice</span>(<span class="ruby-value str">&quot;Received a release request. Releasing association.&quot;</span>)
+381:         <span class="ruby-identifier">build_release_response</span>
+382:         <span class="ruby-identifier">transmit</span>(<span class="ruby-identifier">session</span>)
+383:       <span class="ruby-keyword kw">end</span>
+384:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000083" class="method-detail">
+        <a name="M000083"></a>
+
+        <div class="method-heading">
+          <a href="#M000083" class="method-signature">
+          <span class="method-name">handle_response</span><span class="method-args">(session)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handles the response (C-STORE-RSP) when a <a href="../DICOM.html">DICOM</a>
+object has been (successfully) received.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000083-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000083-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 388</span>
+388:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">handle_response</span>(<span class="ruby-identifier">session</span>)
+389:       <span class="ruby-identifier">tags</span> = <span class="ruby-ivar">@command_results</span>.<span class="ruby-identifier">first</span>
+390:       <span class="ruby-comment cmt"># Need to construct the command elements array:</span>
+391:       <span class="ruby-identifier">command_elements</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+392:       <span class="ruby-comment cmt"># SOP Class UID:</span>
+393:       <span class="ruby-identifier">command_elements</span> <span class="ruby-operator">&lt;&lt;</span> [<span class="ruby-value str">&quot;0000,0002&quot;</span>, <span class="ruby-value str">&quot;UI&quot;</span>, <span class="ruby-identifier">tags</span>[<span class="ruby-value str">&quot;0000,0002&quot;</span>]]
+394:       <span class="ruby-comment cmt"># Command Field:</span>
+395:       <span class="ruby-identifier">command_elements</span> <span class="ruby-operator">&lt;&lt;</span> [<span class="ruby-value str">&quot;0000,0100&quot;</span>, <span class="ruby-value str">&quot;US&quot;</span>, <span class="ruby-value">32769</span>] <span class="ruby-comment cmt"># C-STORE-RSP</span>
+396:       <span class="ruby-comment cmt"># Message ID Being Responded To:</span>
+397:       <span class="ruby-identifier">command_elements</span> <span class="ruby-operator">&lt;&lt;</span> [<span class="ruby-value str">&quot;0000,0120&quot;</span>, <span class="ruby-value str">&quot;US&quot;</span>, <span class="ruby-identifier">tags</span>[<span class="ruby-value str">&quot;0000,0110&quot;</span>]] <span class="ruby-comment cmt"># (Message ID)</span>
+398:       <span class="ruby-comment cmt"># Data Set Type:</span>
+399:       <span class="ruby-identifier">command_elements</span> <span class="ruby-operator">&lt;&lt;</span> [<span class="ruby-value str">&quot;0000,0800&quot;</span>, <span class="ruby-value str">&quot;US&quot;</span>, <span class="ruby-value">257</span>]
+400:       <span class="ruby-comment cmt"># Status:</span>
+401:       <span class="ruby-identifier">command_elements</span> <span class="ruby-operator">&lt;&lt;</span> [<span class="ruby-value str">&quot;0000,0900&quot;</span>, <span class="ruby-value str">&quot;US&quot;</span>, <span class="ruby-value">0</span>] <span class="ruby-comment cmt"># (Success)</span>
+402:       <span class="ruby-comment cmt"># Affected SOP Instance UID:</span>
+403:       <span class="ruby-identifier">command_elements</span> <span class="ruby-operator">&lt;&lt;</span> [<span class="ruby-value str">&quot;0000,1000&quot;</span>, <span class="ruby-value str">&quot;UI&quot;</span>, <span class="ruby-identifier">tags</span>[<span class="ruby-value str">&quot;0000,1000&quot;</span>]]
+404:       <span class="ruby-identifier">pdu</span> = <span class="ruby-value str">&quot;04&quot;</span>
+405:       <span class="ruby-identifier">context</span> = <span class="ruby-ivar">@presentation_context_id</span>
+406:       <span class="ruby-identifier">flag</span> = <span class="ruby-value str">&quot;03&quot;</span> <span class="ruby-comment cmt"># (Command, last fragment)</span>
+407:       <span class="ruby-identifier">build_command_fragment</span>(<span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">context</span>, <span class="ruby-identifier">flag</span>, <span class="ruby-identifier">command_elements</span>)
+408:       <span class="ruby-identifier">transmit</span>(<span class="ruby-identifier">session</span>)
+409:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000084" class="method-detail">
+        <a name="M000084"></a>
+
+        <div class="method-heading">
+          <a href="#M000084" class="method-signature">
+          <span class="method-name">interpret</span><span class="method-args">(message, file = nil)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode an incoming transmission., decide its type, and forward its content
+to the various methods that process these.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000084-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000084-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 413</span>
+413:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret</span>(<span class="ruby-identifier">message</span>, <span class="ruby-identifier">file</span> = <span class="ruby-keyword kw">nil</span>)
+414:       <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@first_part</span>
+415:         <span class="ruby-identifier">message</span> = <span class="ruby-ivar">@first_part</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">message</span>
+416:         <span class="ruby-ivar">@first_part</span> = <span class="ruby-keyword kw">nil</span>
+417:       <span class="ruby-keyword kw">end</span>
+418:       <span class="ruby-identifier">segments</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+419:       <span class="ruby-comment cmt"># If the message is at least 8 bytes we can start decoding it:</span>
+420:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">message</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">8</span>
+421:         <span class="ruby-comment cmt"># Create a new Stream instance to handle this response.</span>
+422:         <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+423:         <span class="ruby-comment cmt"># PDU type ( 1 byte)</span>
+424:         <span class="ruby-identifier">pdu</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+425:         <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+426:         <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+427:         <span class="ruby-comment cmt"># Length of remaining data (4 bytes)</span>
+428:         <span class="ruby-identifier">specified_length</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">4</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+429:         <span class="ruby-comment cmt"># Analyze the remaining length of the message versurs the specified_length value:</span>
+430:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">specified_length</span>
+431:           <span class="ruby-comment cmt"># If the remaining length of the string itself is bigger than this specified_length value,</span>
+432:           <span class="ruby-comment cmt"># then it seems that we have another message appended in our incoming transmission.</span>
+433:           <span class="ruby-identifier">fragment</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">extract</span>(<span class="ruby-identifier">specified_length</span>)
+434:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">forward_to_interpret</span>(<span class="ruby-identifier">fragment</span>, <span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">file</span>)
+435:           <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pdu</span>] = <span class="ruby-identifier">pdu</span>
+436:           <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">info</span>
+437:           <span class="ruby-comment cmt"># It is possible that a fragment contains both a command and a data fragment. If so, we need to make sure we collect all the information:</span>
+438:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:rest_string</span>]
+439:             <span class="ruby-identifier">additional_info</span> = <span class="ruby-identifier">forward_to_interpret</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:rest_string</span>], <span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">file</span>)
+440:             <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">additional_info</span>
+441:           <span class="ruby-keyword kw">end</span>
+442:           <span class="ruby-comment cmt"># The information gathered from the interpretation is appended to a segments array,</span>
+443:           <span class="ruby-comment cmt"># and in the case of a recursive call some special logic is needed to build this array in the expected fashion.</span>
+444:           <span class="ruby-identifier">remaining_segments</span> = <span class="ruby-identifier">interpret</span>(<span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_string</span>, <span class="ruby-identifier">file</span>)
+445:           <span class="ruby-identifier">remaining_segments</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">remaining</span><span class="ruby-operator">|</span>
+446:             <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">remaining</span>
+447:           <span class="ruby-keyword kw">end</span>
+448:         <span class="ruby-keyword kw">elsif</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_length</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">specified_length</span>
+449:           <span class="ruby-comment cmt"># Proceed to analyze the rest of the message:</span>
+450:           <span class="ruby-identifier">fragment</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">extract</span>(<span class="ruby-identifier">specified_length</span>)
+451:           <span class="ruby-identifier">info</span> = <span class="ruby-identifier">forward_to_interpret</span>(<span class="ruby-identifier">fragment</span>, <span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">file</span>)
+452:           <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pdu</span>] = <span class="ruby-identifier">pdu</span>
+453:           <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">info</span>
+454:           <span class="ruby-comment cmt"># It is possible that a fragment contains both a command and a data fragment. If so, we need to make sure we collect all the information:</span>
+455:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:rest_string</span>]
+456:             <span class="ruby-identifier">additional_info</span> = <span class="ruby-identifier">forward_to_interpret</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:rest_string</span>], <span class="ruby-identifier">pdu</span>, <span class="ruby-identifier">file</span>)
+457:             <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">additional_info</span>
+458:           <span class="ruby-keyword kw">end</span>
+459:         <span class="ruby-keyword kw">else</span>
+460:           <span class="ruby-comment cmt"># Length of the message is less than what is specified in the message. Need to listen for more. This is hopefully handled properly now.</span>
+461:           <span class="ruby-comment cmt">#add_error(&quot;Error. The length of the received message (#{msg.rest_length}) is smaller than what it claims (#{specified_length}). Aborting.&quot;)</span>
+462:           <span class="ruby-ivar">@first_part</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">string</span>
+463:         <span class="ruby-keyword kw">end</span>
+464:       <span class="ruby-keyword kw">else</span>
+465:         <span class="ruby-comment cmt"># Assume that this is only the start of the message, and add it to the next incoming string:</span>
+466:         <span class="ruby-ivar">@first_part</span> = <span class="ruby-identifier">message</span>
+467:       <span class="ruby-keyword kw">end</span>
+468:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">segments</span>
+469:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000085" class="method-detail">
+        <a name="M000085"></a>
+
+        <div class="method-heading">
+          <a href="#M000085" class="method-signature">
+          <span class="method-name">interpret_abort</span><span class="method-args">(message)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the binary string received when the provider wishes to abort the
+connection, for some reason.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000085-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000085-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 473</span>
+473:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_abort</span>(<span class="ruby-identifier">message</span>)
+474:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+475:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+476:       <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+477:       <span class="ruby-identifier">reserved_bytes</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">2</span>)
+478:       <span class="ruby-comment cmt"># Source (1 byte)</span>
+479:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:source</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+480:       <span class="ruby-comment cmt"># Reason/Diag. (1 byte)</span>
+481:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:reason</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+482:       <span class="ruby-comment cmt"># Analyse the results:</span>
+483:       <span class="ruby-identifier">process_source</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:source</span>])
+484:       <span class="ruby-identifier">process_reason</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:reason</span>])
+485:       <span class="ruby-identifier">stop_receiving</span>
+486:       <span class="ruby-ivar">@abort</span> = <span class="ruby-keyword kw">true</span>
+487:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+488:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+489:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000086" class="method-detail">
+        <a name="M000086"></a>
+
+        <div class="method-heading">
+          <a href="#M000086" class="method-signature">
+          <span class="method-name">interpret_association_accept</span><span class="method-args">(message)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the binary string received in the association response, and <a
+href="Link.html#M000084">interpret</a> its content.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000086-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000086-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 493</span>
+493:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_association_accept</span>(<span class="ruby-identifier">message</span>)
+494:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+495:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+496:       <span class="ruby-comment cmt"># Protocol version (2 bytes)</span>
+497:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:protocol_version</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+498:       <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+499:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">2</span>)
+500:       <span class="ruby-comment cmt"># Called AE (shall be identical to the one sent in the request, but not tested against) (16 bytes)</span>
+501:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:called_ae</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">16</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+502:       <span class="ruby-comment cmt"># Calling AE (shall be identical to the one sent in the request, but not tested against) (16 bytes)</span>
+503:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:calling_ae</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">16</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+504:       <span class="ruby-comment cmt"># Reserved (32 bytes)</span>
+505:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">32</span>)
+506:       <span class="ruby-comment cmt"># APPLICATION CONTEXT:</span>
+507:       <span class="ruby-comment cmt"># Item type (1 byte)</span>
+508:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+509:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+510:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+511:       <span class="ruby-comment cmt"># Application item length (2 bytes)</span>
+512:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+513:       <span class="ruby-comment cmt"># Application context (variable length)</span>
+514:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_context</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_item_length</span>], <span class="ruby-value str">&quot;STR&quot;</span>)
+515:       <span class="ruby-comment cmt"># PRESENTATION CONTEXT:</span>
+516:       <span class="ruby-comment cmt"># Item type (1 byte)</span>
+517:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+518:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+519:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+520:       <span class="ruby-comment cmt"># Presentation item length (2 bytes)</span>
+521:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+522:       <span class="ruby-comment cmt"># Presentation context ID (1 byte)</span>
+523:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_id</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+524:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+525:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+526:       <span class="ruby-comment cmt"># Result (&amp; Reason) (1 byte)</span>
+527:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:result</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;BY&quot;</span>)
+528:       <span class="ruby-identifier">process_result</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:result</span>])
+529:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+530:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+531:       <span class="ruby-comment cmt"># Transfer syntax sub-item:</span>
+532:       <span class="ruby-comment cmt"># Item type (1 byte)</span>
+533:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:transfer_syntax_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+534:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+535:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+536:       <span class="ruby-comment cmt"># Transfer syntax item length (2 bytes)</span>
+537:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:transfer_syntax_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+538:       <span class="ruby-comment cmt"># Transfer syntax name (variable length)</span>
+539:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:transfer_syntax</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:transfer_syntax_item_length</span>], <span class="ruby-value str">&quot;STR&quot;</span>)
+540:       <span class="ruby-comment cmt"># USER INFORMATION:</span>
+541:       <span class="ruby-comment cmt"># Item type (1 byte) (&quot;50&quot;)</span>
+542:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:user_info_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+543:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+544:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+545:       <span class="ruby-comment cmt"># User information item length (2 bytes)</span>
+546:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:user_info_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+547:       <span class="ruby-keyword kw">while</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">index</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">length</span> <span class="ruby-keyword kw">do</span>
+548:         <span class="ruby-comment cmt"># Item type (1 byte)</span>
+549:         <span class="ruby-identifier">item_type</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+550:         <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+551:         <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+552:         <span class="ruby-comment cmt"># Item length (2 bytes)</span>
+553:         <span class="ruby-identifier">item_length</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+554:         <span class="ruby-keyword kw">case</span> <span class="ruby-identifier">item_type</span>
+555:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;51&quot;</span>
+556:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:max_pdu_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+557:             <span class="ruby-ivar">@max_receive_size</span> = <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:max_pdu_length</span>]
+558:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;52&quot;</span>
+559:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:implementation_class_uid</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+560:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;53&quot;</span>
+561:             <span class="ruby-comment cmt"># Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)</span>
+562:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:maxnum_operations_invoked</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+563:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:maxnum_operations_performed</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+564:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;55&quot;</span>
+565:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:implementation_version</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+566:           <span class="ruby-keyword kw">else</span>
+567:             <span class="ruby-comment cmt"># Value (variable length)</span>
+568:             <span class="ruby-identifier">value</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+569:             <span class="ruby-identifier">add_error</span>(<span class="ruby-value str">&quot;Unknown user info item type received. Please update source code or contact author. (item type: &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">item_type</span> <span class="ruby-operator">+</span> <span class="ruby-value str">&quot;)&quot;</span>)
+570:         <span class="ruby-keyword kw">end</span>
+571:       <span class="ruby-keyword kw">end</span>
+572:       <span class="ruby-identifier">stop_receiving</span>
+573:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+574:       <span class="ruby-comment cmt"># Update transfer syntax settings for this instance:</span>
+575:       <span class="ruby-identifier">set_transfer_syntax</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:transfer_syntax</span>])
+576:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+577:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000087" class="method-detail">
+        <a name="M000087"></a>
+
+        <div class="method-heading">
+          <a href="#M000087" class="method-signature">
+          <span class="method-name">interpret_association_reject</span><span class="method-args">(message)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the association reject message and extract the error reasons given.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000087-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000087-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 581</span>
+581:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_association_reject</span>(<span class="ruby-identifier">message</span>)
+582:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+583:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+584:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+585:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+586:       <span class="ruby-comment cmt"># Result (1 byte)</span>
+587:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:result</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;BY&quot;</span>) <span class="ruby-comment cmt"># 1 for permanent and 2 for transient rejection</span>
+588:       <span class="ruby-comment cmt"># Source (1 byte)</span>
+589:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:source</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;BY&quot;</span>)
+590:       <span class="ruby-comment cmt"># Reason (1 byte)</span>
+591:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:reason</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;BY&quot;</span>)
+592:       <span class="ruby-identifier">add_error</span>(<span class="ruby-node">&quot;Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM PS3.8: Table 9-21 for details.)&quot;</span>)
+593:       <span class="ruby-identifier">stop_receiving</span>
+594:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+595:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+596:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000088" class="method-detail">
+        <a name="M000088"></a>
+
+        <div class="method-heading">
+          <a href="#M000088" class="method-signature">
+          <span class="method-name">interpret_association_request</span><span class="method-args">(message)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the binary string received in the association request, and <a
+href="Link.html#M000084">interpret</a> its content.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000088-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000088-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 600</span>
+600:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_association_request</span>(<span class="ruby-identifier">message</span>)
+601:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+602:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+603:       <span class="ruby-comment cmt"># Protocol version (2 bytes)</span>
+604:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:protocol_version</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+605:       <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+606:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">2</span>)
+607:       <span class="ruby-comment cmt"># Called AE (shall be returned in the association response) (16 bytes)</span>
+608:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:called_ae</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">16</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+609:       <span class="ruby-comment cmt"># Calling AE (shall be returned in the association response) (16 bytes)</span>
+610:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:calling_ae</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">16</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+611:       <span class="ruby-comment cmt"># Reserved (32 bytes)</span>
+612:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">32</span>)
+613:       <span class="ruby-comment cmt"># APPLICATION CONTEXT:</span>
+614:       <span class="ruby-comment cmt"># Item type (1 byte)</span>
+615:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># &quot;10&quot;</span>
+616:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+617:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+618:       <span class="ruby-comment cmt"># Application item length (2 bytes)</span>
+619:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+620:       <span class="ruby-comment cmt"># Application context (variable length)</span>
+621:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_context</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:application_item_length</span>], <span class="ruby-value str">&quot;STR&quot;</span>)
+622:       <span class="ruby-comment cmt"># PRESENTATION CONTEXT:</span>
+623:       <span class="ruby-comment cmt"># As multiple presentation contexts may occur, we need a loop to catch them all:</span>
+624:       <span class="ruby-comment cmt"># Each presentation context hash will be put in an array, which will be put in the info hash.</span>
+625:       <span class="ruby-identifier">presentation_contexts</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+626:       <span class="ruby-identifier">pc_loop</span> = <span class="ruby-keyword kw">true</span>
+627:       <span class="ruby-keyword kw">while</span> <span class="ruby-identifier">pc_loop</span> <span class="ruby-keyword kw">do</span>
+628:         <span class="ruby-comment cmt"># Item type (1 byte)</span>
+629:         <span class="ruby-identifier">item_type</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+630:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">item_type</span> <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;20&quot;</span>
+631:           <span class="ruby-identifier">pc</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+632:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:presentation_item_type</span>] = <span class="ruby-identifier">item_type</span>
+633:           <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+634:           <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+635:           <span class="ruby-comment cmt"># Presentation context item length (2 bytes)</span>
+636:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:presentation_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+637:           <span class="ruby-comment cmt"># Presentation context id (1 byte)</span>
+638:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:presentation_context_id</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+639:           <span class="ruby-comment cmt"># Reserved (3 bytes)</span>
+640:           <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">3</span>)
+641:           <span class="ruby-identifier">presentation_contexts</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">pc</span>
+642:           <span class="ruby-comment cmt"># A presentation context contains an abstract syntax and one or more transfer syntaxes.</span>
+643:           <span class="ruby-comment cmt"># ABSTRACT SYNTAX SUB-ITEM:</span>
+644:           <span class="ruby-comment cmt"># Abstract syntax item type (1 byte)</span>
+645:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:abstract_syntax_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># &quot;30&quot;</span>
+646:           <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+647:           <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+648:           <span class="ruby-comment cmt"># Abstract syntax item length (2 bytes)</span>
+649:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:abstract_syntax_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+650:           <span class="ruby-comment cmt"># Abstract syntax (variable length)</span>
+651:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:abstract_syntax</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:abstract_syntax_item_length</span>], <span class="ruby-value str">&quot;STR&quot;</span>)
+652:           <span class="ruby-comment cmt">## TRANSFER SYNTAX SUB-ITEM(S):</span>
+653:           <span class="ruby-comment cmt"># As multiple transfer syntaxes may occur, we need a loop to catch them all:</span>
+654:           <span class="ruby-comment cmt"># Each transfer syntax hash will be put in an array, which will be put in the presentation context hash.</span>
+655:           <span class="ruby-identifier">transfer_syntaxes</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+656:           <span class="ruby-identifier">ts_loop</span> = <span class="ruby-keyword kw">true</span>
+657:           <span class="ruby-keyword kw">while</span> <span class="ruby-identifier">ts_loop</span> <span class="ruby-keyword kw">do</span>
+658:             <span class="ruby-comment cmt"># Item type (1 byte)</span>
+659:             <span class="ruby-identifier">item_type</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+660:             <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">item_type</span> <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;40&quot;</span>
+661:               <span class="ruby-identifier">ts</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+662:               <span class="ruby-identifier">ts</span>[<span class="ruby-identifier">:transfer_syntax_item_type</span>] = <span class="ruby-identifier">item_type</span>
+663:               <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+664:               <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+665:               <span class="ruby-comment cmt"># Transfer syntax item length (2 bytes)</span>
+666:               <span class="ruby-identifier">ts</span>[<span class="ruby-identifier">:transfer_syntax_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+667:               <span class="ruby-comment cmt"># Transfer syntax name (variable length)</span>
+668:               <span class="ruby-identifier">ts</span>[<span class="ruby-identifier">:transfer_syntax</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">ts</span>[<span class="ruby-identifier">:transfer_syntax_item_length</span>], <span class="ruby-value str">&quot;STR&quot;</span>)
+669:               <span class="ruby-identifier">transfer_syntaxes</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">ts</span>
+670:             <span class="ruby-keyword kw">else</span>
+671:               <span class="ruby-comment cmt"># Break the transfer syntax loop, as we have probably reached the next stage,</span>
+672:               <span class="ruby-comment cmt"># which is either user info or a new presentation context entry. Rewind:</span>
+673:               <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">-1</span>)
+674:               <span class="ruby-identifier">ts_loop</span> = <span class="ruby-keyword kw">false</span>
+675:             <span class="ruby-keyword kw">end</span>
+676:           <span class="ruby-keyword kw">end</span>
+677:           <span class="ruby-identifier">pc</span>[<span class="ruby-identifier">:ts</span>] = <span class="ruby-identifier">transfer_syntaxes</span>
+678:         <span class="ruby-keyword kw">else</span>
+679:           <span class="ruby-comment cmt"># Break the presentation context loop, as we have probably reached the next stage, which is user info. Rewind:</span>
+680:           <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">-1</span>)
+681:           <span class="ruby-identifier">pc_loop</span> = <span class="ruby-keyword kw">false</span>
+682:         <span class="ruby-keyword kw">end</span>
+683:       <span class="ruby-keyword kw">end</span>
+684:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:pc</span>] = <span class="ruby-identifier">presentation_contexts</span>
+685:       <span class="ruby-comment cmt"># USER INFORMATION:</span>
+686:       <span class="ruby-comment cmt"># Item type (1 byte)</span>
+687:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:user_info_item_type</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+688:       <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+689:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+690:       <span class="ruby-comment cmt"># User information item length (2 bytes)</span>
+691:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:user_info_item_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+692:       <span class="ruby-comment cmt"># User data (variable length):</span>
+693:       <span class="ruby-keyword kw">while</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">index</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">length</span> <span class="ruby-keyword kw">do</span>
+694:         <span class="ruby-comment cmt"># Item type (1 byte)</span>
+695:         <span class="ruby-identifier">item_type</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+696:         <span class="ruby-comment cmt"># Reserved (1 byte)</span>
+697:         <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">1</span>)
+698:         <span class="ruby-comment cmt"># Item length (2 bytes)</span>
+699:         <span class="ruby-identifier">item_length</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+700:         <span class="ruby-keyword kw">case</span> <span class="ruby-identifier">item_type</span>
+701:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;51&quot;</span>
+702:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:max_pdu_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+703:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;52&quot;</span>
+704:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:implementation_class_uid</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+705:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;53&quot;</span>
+706:             <span class="ruby-comment cmt"># Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)</span>
+707:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:maxnum_operations_invoked</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+708:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:maxnum_operations_performed</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+709:           <span class="ruby-keyword kw">when</span> <span class="ruby-value str">&quot;55&quot;</span>
+710:             <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:implementation_version</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+711:           <span class="ruby-keyword kw">else</span>
+712:             <span class="ruby-comment cmt"># Unknown item type:</span>
+713:             <span class="ruby-comment cmt"># Value (variable length)</span>
+714:             <span class="ruby-identifier">value</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">item_length</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+715:             <span class="ruby-identifier">add_error</span>(<span class="ruby-value str">&quot;Notice: Unknown user info item type received. Please update source code or contact author. (item type: &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">item_type</span> <span class="ruby-operator">+</span> <span class="ruby-value str">&quot;)&quot;</span>)
+716:         <span class="ruby-keyword kw">end</span>
+717:       <span class="ruby-keyword kw">end</span>
+718:       <span class="ruby-identifier">stop_receiving</span>
+719:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+720:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+721:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000089" class="method-detail">
+        <a name="M000089"></a>
+
+        <div class="method-heading">
+          <a href="#M000089" class="method-signature">
+          <span class="method-name">interpret_command_and_data</span><span class="method-args">(message, file = nil)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the received command/data binary string, and <a
+href="Link.html#M000084">interpret</a> its content. Decoding of data
+fragment will depend on the explicitness of the transmission.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000089-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000089-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 726</span>
+726:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_command_and_data</span>(<span class="ruby-identifier">message</span>, <span class="ruby-identifier">file</span> = <span class="ruby-keyword kw">nil</span>)
+727:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+728:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+729:       <span class="ruby-comment cmt"># Length (of remaining PDV data) (4 bytes)</span>
+730:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_data_value_length</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">4</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+731:       <span class="ruby-comment cmt"># Calculate the last index position of this message element:</span>
+732:       <span class="ruby-identifier">last_index</span> = <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_data_value_length</span>] <span class="ruby-operator">+</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">index</span>
+733:       <span class="ruby-comment cmt"># Presentation context ID (1 byte)</span>
+734:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_id</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># &quot;01&quot; expected</span>
+735:       <span class="ruby-comment cmt"># Flags (1 byte)</span>
+736:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">1</span>, <span class="ruby-value str">&quot;HEX&quot;</span>) <span class="ruby-comment cmt"># &quot;03&quot; for command (last fragment), &quot;02&quot; for data</span>
+737:       <span class="ruby-comment cmt"># Little endian encoding from now on:</span>
+738:       <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">set_endian</span>(<span class="ruby-ivar">@data_endian</span>)
+739:       <span class="ruby-comment cmt"># We will put the results in a hash:</span>
+740:       <span class="ruby-identifier">results</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+741:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;03&quot;</span>
+742:         <span class="ruby-comment cmt"># COMMAND, LAST FRAGMENT:</span>
+743:         <span class="ruby-keyword kw">while</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">index</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">last_index</span> <span class="ruby-keyword kw">do</span>
+744:           <span class="ruby-comment cmt"># Tag (4 bytes)</span>
+745:           <span class="ruby-identifier">tag</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode_tag</span>
+746:           <span class="ruby-comment cmt"># Length (2 bytes)</span>
+747:           <span class="ruby-identifier">length</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+748:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_length</span>
+749:             <span class="ruby-identifier">add_error</span>(<span class="ruby-value str">&quot;Error: Specified length of command element value exceeds remaining length of the received message! Something is wrong.&quot;</span>)
+750:           <span class="ruby-keyword kw">end</span>
+751:           <span class="ruby-comment cmt"># Reserved (2 bytes)</span>
+752:           <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">skip</span>(<span class="ruby-value">2</span>)
+753:           <span class="ruby-comment cmt"># Type (VR) (from library - not the stream):</span>
+754:           <span class="ruby-identifier">result</span> = <span class="ruby-constant">LIBRARY</span>.<span class="ruby-identifier">get_name_vr</span>(<span class="ruby-identifier">tag</span>)
+755:           <span class="ruby-identifier">name</span> = <span class="ruby-identifier">result</span>[<span class="ruby-value">0</span>]
+756:           <span class="ruby-identifier">type</span> = <span class="ruby-identifier">result</span>[<span class="ruby-value">1</span>]
+757:           <span class="ruby-comment cmt"># Value (variable length)</span>
+758:           <span class="ruby-identifier">value</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">length</span>, <span class="ruby-identifier">type</span>)
+759:           <span class="ruby-comment cmt"># Put tag and value in a hash:</span>
+760:           <span class="ruby-identifier">results</span>[<span class="ruby-identifier">tag</span>] = <span class="ruby-identifier">value</span>
+761:         <span class="ruby-keyword kw">end</span>
+762:         <span class="ruby-comment cmt"># The results hash is put in an array along with (possibly) other results:</span>
+763:         <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:results</span>] = <span class="ruby-identifier">results</span>
+764:         <span class="ruby-comment cmt"># Check if the command fragment indicates that this was the last of the response fragments for this query:</span>
+765:         <span class="ruby-identifier">status</span> = <span class="ruby-identifier">results</span>[<span class="ruby-value str">&quot;0000,0900&quot;</span>]
+766:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">status</span>
+767:           <span class="ruby-comment cmt"># Note: This method will also stop the packet receiver if indicated by the status mesasge.</span>
+768:           <span class="ruby-identifier">process_status</span>(<span class="ruby-identifier">status</span>)
+769:         <span class="ruby-keyword kw">end</span>
+770:       <span class="ruby-keyword kw">elsif</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;00&quot;</span> <span class="ruby-keyword kw">or</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;02&quot;</span>
+771:         <span class="ruby-comment cmt"># DATA FRAGMENT:</span>
+772:         <span class="ruby-comment cmt"># If this is a file transmission, we will delay the decoding for later:</span>
+773:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">file</span>
+774:           <span class="ruby-comment cmt"># Just store the binary string:</span>
+775:           <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:bin</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_string</span>
+776:           <span class="ruby-comment cmt"># Abort the listening if this is last data fragment:</span>
+777:           <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:presentation_context_flag</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;02&quot;</span>
+778:             <span class="ruby-identifier">stop_receiving</span>
+779:           <span class="ruby-keyword kw">end</span>
+780:         <span class="ruby-keyword kw">else</span>
+781:           <span class="ruby-comment cmt"># Decode data elements:</span>
+782:           <span class="ruby-keyword kw">while</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">index</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">last_index</span> <span class="ruby-keyword kw">do</span>
+783:             <span class="ruby-comment cmt"># Tag (4 bytes)</span>
+784:             <span class="ruby-identifier">tag</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode_tag</span>
+785:             <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@explicit</span>
+786:               <span class="ruby-comment cmt"># Type (VR) (2 bytes):</span>
+787:               <span class="ruby-identifier">type</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;STR&quot;</span>)
+788:               <span class="ruby-comment cmt"># Length (2 bytes)</span>
+789:               <span class="ruby-identifier">length</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">2</span>, <span class="ruby-value str">&quot;US&quot;</span>)
+790:             <span class="ruby-keyword kw">else</span>
+791:               <span class="ruby-comment cmt"># Implicit:</span>
+792:               <span class="ruby-identifier">type</span> = <span class="ruby-keyword kw">nil</span> <span class="ruby-comment cmt"># (needs to be defined as nil here or it will take the value from the previous step in the loop)</span>
+793:               <span class="ruby-comment cmt"># Length (4 bytes)</span>
+794:               <span class="ruby-identifier">length</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">4</span>, <span class="ruby-value str">&quot;UL&quot;</span>)
+795:             <span class="ruby-keyword kw">end</span>
+796:             <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_length</span>
+797:               <span class="ruby-identifier">add_error</span>(<span class="ruby-value str">&quot;Error: Specified length of data element value exceeds remaining length of the received message! Something is wrong.&quot;</span>)
+798:             <span class="ruby-keyword kw">end</span>
+799:             <span class="ruby-comment cmt"># Fetch the name (&amp; type if not defined already) for this data element:</span>
+800:             <span class="ruby-identifier">result</span> = <span class="ruby-constant">LIBRARY</span>.<span class="ruby-identifier">get_name_vr</span>(<span class="ruby-identifier">tag</span>)
+801:             <span class="ruby-identifier">name</span> = <span class="ruby-identifier">result</span>[<span class="ruby-value">0</span>]
+802:             <span class="ruby-identifier">type</span> = <span class="ruby-identifier">result</span>[<span class="ruby-value">1</span>] <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">type</span>
+803:             <span class="ruby-comment cmt"># Value (variable length)</span>
+804:             <span class="ruby-identifier">value</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">length</span>, <span class="ruby-identifier">type</span>)
+805:             <span class="ruby-comment cmt"># Put tag and value in a hash:</span>
+806:             <span class="ruby-identifier">results</span>[<span class="ruby-identifier">tag</span>] = <span class="ruby-identifier">value</span>
+807:           <span class="ruby-keyword kw">end</span>
+808:           <span class="ruby-comment cmt"># The results hash is put in an array along with (possibly) other results:</span>
+809:           <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:results</span>] = <span class="ruby-identifier">results</span>
+810:         <span class="ruby-keyword kw">end</span>
+811:       <span class="ruby-keyword kw">else</span>
+812:         <span class="ruby-comment cmt"># Unknown.</span>
+813:         <span class="ruby-identifier">add_error</span>(<span class="ruby-node">&quot;Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})&quot;</span>)
+814:         <span class="ruby-identifier">stop_receiving</span>
+815:       <span class="ruby-keyword kw">end</span>
+816:       <span class="ruby-comment cmt"># If only parts of the string was read, return the rest:</span>
+817:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:rest_string</span>] = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">rest_string</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">last_index</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">length</span>
+818:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+819:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+820:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000090" class="method-detail">
+        <a name="M000090"></a>
+
+        <div class="method-heading">
+          <a href="#M000090" class="method-signature">
+          <span class="method-name">interpret_release_request</span><span class="method-args">(message)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the binary string received in the release request, and <a
+href="Link.html#M000084">interpret</a> its content.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000090-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000090-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 824</span>
+824:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_release_request</span>(<span class="ruby-identifier">message</span>)
+825:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+826:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+827:       <span class="ruby-comment cmt"># Reserved (4 bytes)</span>
+828:       <span class="ruby-identifier">reserved_bytes</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">4</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+829:       <span class="ruby-identifier">stop_receiving</span>
+830:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+831:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+832:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000091" class="method-detail">
+        <a name="M000091"></a>
+
+        <div class="method-heading">
+          <a href="#M000091" class="method-signature">
+          <span class="method-name">interpret_release_response</span><span class="method-args">(message)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Decode the binary string received in the release response, and <a
+href="Link.html#M000084">interpret</a> its content.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000091-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000091-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 836</span>
+836:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">interpret_release_response</span>(<span class="ruby-identifier">message</span>)
+837:       <span class="ruby-identifier">info</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>
+838:       <span class="ruby-identifier">msg</span> = <span class="ruby-constant">Stream</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">message</span>, <span class="ruby-ivar">@net_endian</span>, <span class="ruby-ivar">@explicit</span>)
+839:       <span class="ruby-comment cmt"># Reserved (4 bytes)</span>
+840:       <span class="ruby-identifier">reserved_bytes</span> = <span class="ruby-identifier">msg</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-value">4</span>, <span class="ruby-value str">&quot;HEX&quot;</span>)
+841:       <span class="ruby-identifier">stop_receiving</span>
+842:       <span class="ruby-identifier">info</span>[<span class="ruby-identifier">:valid</span>] = <span class="ruby-keyword kw">true</span>
+843:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">info</span>
+844:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000092" class="method-detail">
+        <a name="M000092"></a>
+
+        <div class="method-heading">
+          <a href="#M000092" class="method-signature">
+          <span class="method-name">receive_multiple_transmissions</span><span class="method-args">(session, file = nil)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handle multiple incoming transmissions and return the interpreted, received
+data.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000092-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000092-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 848</span>
+848:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">receive_multiple_transmissions</span>(<span class="ruby-identifier">session</span>, <span class="ruby-identifier">file</span> = <span class="ruby-keyword kw">nil</span>)
+849:       <span class="ruby-ivar">@listen</span> = <span class="ruby-keyword kw">true</span>
+850:       <span class="ruby-identifier">segments</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>
+851:       <span class="ruby-keyword kw">while</span> <span class="ruby-ivar">@listen</span>
+852:         <span class="ruby-comment cmt"># Receive data and append the current data to our segments array, which will be returned.</span>
+853:         <span class="ruby-identifier">data</span> = <span class="ruby-identifier">receive_transmission</span>(<span class="ruby-identifier">session</span>, <span class="ruby-ivar">@min_length</span>)
+854:         <span class="ruby-identifier">current_segments</span> = <span class="ruby-identifier">interpret</span>(<span class="ruby-identifier">data</span>, <span class="ruby-identifier">file</span>)
+855:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">current_segments</span>
+856:           <span class="ruby-identifier">current_segments</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cs</span><span class="ruby-operator">|</span>
+857:             <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">cs</span>
+858:           <span class="ruby-keyword kw">end</span>
+859:         <span class="ruby-keyword kw">end</span>
+860:       <span class="ruby-keyword kw">end</span>
+861:       <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> {<span class="ruby-identifier">:valid</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>} <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">segments</span>
+862:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">segments</span>
+863:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000093" class="method-detail">
+        <a name="M000093"></a>
+
+        <div class="method-heading">
+          <a href="#M000093" class="method-signature">
+          <span class="method-name">receive_single_transmission</span><span class="method-args">(session)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Handle an expected single incoming transmission and return the interpreted,
+received data.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000093-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000093-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 867</span>
+867:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">receive_single_transmission</span>(<span class="ruby-identifier">session</span>)
+868:       <span class="ruby-identifier">min_length</span> = <span class="ruby-value">8</span>
+869:       <span class="ruby-identifier">data</span> = <span class="ruby-identifier">receive_transmission</span>(<span class="ruby-identifier">session</span>, <span class="ruby-identifier">min_length</span>)
+870:       <span class="ruby-identifier">segments</span> = <span class="ruby-identifier">interpret</span>(<span class="ruby-identifier">data</span>)
+871:       <span class="ruby-identifier">segments</span> <span class="ruby-operator">&lt;&lt;</span> {<span class="ruby-identifier">:valid</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>} <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">segments</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">0</span>
+872:       <span class="ruby-keyword kw">return</span> <span class="ruby-identifier">segments</span>
+873:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000094" class="method-detail">
+        <a name="M000094"></a>
+
+        <div class="method-heading">
+          <a href="#M000094" class="method-signature">
+          <span class="method-name">transmit</span><span class="method-args">(session)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+Send the encoded binary string (package) to its destination.
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000094-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000094-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/dicom/Link.rb, line 877</span>
+877:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">transmit</span>(<span class="ruby-identifier">session</span>)
+878:       <span class="ruby-identifier">session</span>.<span class="ruby-identifier">send</span>(<span class="ruby-ivar">@outgoing</span>.<span class="ruby-identifier">string</span>, <span class="ruby-value">0</span>)
+879:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>
