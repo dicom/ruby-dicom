@@ -5,6 +5,7 @@
 
 require 'rubygems'
 require 'rake/gempackagetask'
+require 'rake/rdoctask'
 
 
 spec = Gem::Specification.new do |s|
@@ -28,4 +29,13 @@ end
 
 task :default => "pkg/#{spec.name}-#{spec.version}.gem" do
     puts "generated latest version"
+end
+
+# Genereate the RDoc documentation
+Rake::RDocTask.new do |rdoc|
+  rdoc.rdoc_dir = 'doc'
+  rdoc.title    = "Dicom library"
+  rdoc.options << '--line-numbers' << '--inline-source' << '--main=README'
+  rdoc.rdoc_files.include('README', 'CHANGELOG')
+  rdoc.rdoc_files.include('lib/*.rb')
 end
