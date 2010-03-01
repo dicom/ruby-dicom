@@ -6,6 +6,7 @@
 require 'rubygems'
 require 'rake/gempackagetask'
 require 'rake/rdoctask'
+require 'rake/testtask'
 
 
 spec = Gem::Specification.new do |s|
