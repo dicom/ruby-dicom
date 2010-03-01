@@ -38,4 +38,5 @@ Rake::RDocTask.new do |rdoc|
   rdoc.options << '--line-numbers' << '--inline-source' << '--main=README'
   rdoc.rdoc_files.include('README', 'CHANGELOG')
   rdoc.rdoc_files.include('lib/*.rb')
+  rdoc.rdoc_files.include('lib/dicom/*.rb')
 end
