@@ -330,14 +330,20 @@ module DICOM
       end
     end
 
-
+    
     # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, tag or name.
     # If no match is found, the method will return false.
-    # Additional options:
-    # :selection => mySelection - tells the method to search for matches in this specific array of positions instead of searching
-    #                                  through the entire DICOM object. If mySelection is empty, the returned array will also be empty.
-    # :partial => true - get_pos will not only search for exact matches, but will search the names and tags arrays for strings that contain the given search string.
-    # :parent => element  - This method will return only matches that are children of the specified (parent) data element.
+    #
+    # ==== Parameters
+    #
+    # * <tt>query</tt> -- The string of the DICOM element to retrive the position for (e.g "0010,0010")
+    # * <tt>options</tt> -- A hash of parameters. 
+    #
+    # ==== Options
+    #
+    # * <tt>:selection</tt> -- tells the method to search for matches in this specific array of positions instead of searching through the entire DICOM object. If mySelection is empty, the returned array will also be empty.
+    # * <tt>:partial</tt> -- Boolean. get_pos will not only search for exact matches, but will search the names and tags arrays for strings that contain the given search string.
+    # * <tt>:parent</tt> -- Element string. This method will return only matches that are children of the specified (parent) data element.
     def get_pos(query, options={})
       search_array = Array.new
       indexes = Array.new
@@ -461,18 +467,19 @@ module DICOM
       end
       return children_pos
     end
-
-
+    
     # Returns the value (processed binary data) of the requested DICOM data element.
     # Data element may be specified by array position, tag or name.
-    # 
-    # *Options*:
-    # * :array => Boolean. Setting this to true will return an array for a tag that has multiple occurances. Defaults to false.
-    # * :silent => Boolean. Setting this to true will overide _verbose_ option and suppress warning output. Defaults to true.
     #
-    # <tt>dcm.get_value("0010,0010") => "SMITH^JOHN"</tt>
+    # ==== Parameters
     #
-    # <tt>dcm.get_value("0008,0060") => "CT"</tt>
+    # * <tt>element</tt> -- The string of the DICOM element to be retrived (e.g "0010,0010")
+    # * <tt>options</tt> -- A hash of parameters. 
+    #
+    # ==== Options
+    #
+    # * <tt>:array</tt> -- Boolean. Setting this to true will return an array for a tag that has multiple occurances. Defaults to false.
+    # * <tt>:silent</tt> -- Boolean. Setting this to true will overide _verbose_ option and suppress warning output. Defaults to true.
     def get_value(element, options={})
       value = false
       # Retrieve array position:
@@ -576,14 +583,19 @@ module DICOM
     def print_all
       print(true)
     end
-
-
+  
     # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] tag, name, vr, length, value
-    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all elements.
-    # Optional arguments:
-    # :levels => true - method will print the level numbers for each element.
-    # :tree => true -   method will print a tree structure for the elements.
-    # :file => true -    method will print to file instead of printing to screen.
+    #
+    # ==== Parameters
+    #
+    # * <tt>pos</tt> -- May be a single position, an array of positions, or true - which will make the method print all elements.
+    # * <tt>options</tt> -- A hash of parameters. 
+    #
+    # ==== Options
+    #
+    # * <tt>:levels</tt> -- Boolean. Will print the level numbers for each element. Defaults to false.
+    # * <tt>:tree</tt> -- Boolean. Will print a tree structure for the elements. Defaults to false.
+    # * <tt>:file</tt> -- Boolean. Will print to file instead of printing to the standard output. Defaults to false.
     def print(pos, options={})
       # Process option values, setting defaults for the ones that are not specified:
       opt_levels = options[:levels] || false
@@ -780,16 +792,22 @@ module DICOM
       end
     end
 
-
+    
     # Transfers pixel data from a RMagick object to the pixel data element.
     # NB! Because of rescaling when importing pixel values to a RMagick object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
     # result in pixel data that is completely different from what is expected.
-    # This method should be used only with great care!
-    # If value rescaling is wanted, both :min and :max must be set!
-    # Options:
-    # :max => value  - Pixel values will be rescaled using this as the new maximum value.
-    # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
+    # <b>This method should be used only with great care!</b>
+    #
+    # ==== Parameters
+    #
+    # * <tt>magick_obj</tt> -- An RMagick object
+    # * <tt>options</tt> -- A hash of parameters. 
+    #
+    # ==== Options
+    #
+    # * <tt>:max</tt> -- Number. Pixel values will be rescaled using this as the new maximum value.
+    # * <tt>:min</tt> -- Number. Pixel values will be rescaled, using this as the new minimum value.
     def set_image_magick(magick_obj, options={})
       # Export the RMagick object to a standard Ruby array of numbers:
       pixel_array = magick_obj.export_pixels(x=0, y=0, columns=magick_obj.columns, rows=magick_obj.rows, map="I")
@@ -832,11 +850,16 @@ module DICOM
       set_value(pixel_array, "7FE0,0010", :create => true)
     end
 
-
     # Removes an element from the DICOM object.
-    # Options:
-    # :ignore_children => true  - Force the method to ignore children when removing an element.
-    #    (default behaviour is to remove any children if a sequence or item is removed)
+    #
+    # ==== Parameters
+    #
+    # * <tt>element</tt> -- The string of the DICOM element to be removed (e.g "0010,0010")
+    # * <tt>options</tt> -- A hash of parameters. 
+    #
+    # ==== Options
+    #
+    # * <tt>:ignore_children</tt> -- Boolean. Force the method to ignore children when removing an element. Default behaviour (false) is to remove any children if a sequence or item is removed.
     def remove(element, options={})
       positions = get_pos(element)
       if positions.length == 0
