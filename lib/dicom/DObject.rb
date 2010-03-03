@@ -36,7 +36,12 @@ module DICOM
     attr_reader :read_success, :write_success, :modality, :errors, :segments,
                       :names, :tags, :vr, :lengths, :values, :bin, :levels
 
-    # Initialize the DObject instance.
+    
+    # Initializes a DObject instance. Takes a path _string_ to a DICOM file as well as a hash of _options_ as parameters.
+    # _Options_ hash may contain {:verbose, :segment_size, :bin, :syntax}
+    # 
+    # <tt>dcm = DICOM::DObject.new("myFile.dcm", :verbose => true)</tt>
+    #
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
       @verbose = options[:verbose]
@@ -460,12 +465,14 @@ module DICOM
 
     # Returns the value (processed binary data) of the requested DICOM data element.
     # Data element may be specified by array position, tag or name.
-    # Options:
-    # :array => true - Allows the query of the value of a tag that occurs more than one time in the
-    #                  DICOM object. Values will be returned in an array with length equal to the number
-    #                  of occurances of the tag. If keyword is not specified, the method returns false in this case.
-    # :silent => true - As this method is also used internally, we want the possibility of warnings not being
-    #                  raised even if verbose is set to true by the user, in order to avoid unnecessary confusion.
+    # 
+    # *Options*:
+    # * :array => Boolean. Setting this to true will return an array for a tag that has multiple occurances. Defaults to false.
+    # * :silent => Boolean. Setting this to true will overide _verbose_ option and suppress warning output. Defaults to true.
+    #
+    # <tt>dcm.get_value("0010,0010") => "SMITH^JOHN"</tt>
+    #
+    # <tt>dcm.get_value("0008,0060") => "CT"</tt>
     def get_value(element, options={})
       value = false
       # Retrieve array position:
