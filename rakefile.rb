@@ -39,4 +39,5 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('README', 'CHANGELOG')
   rdoc.rdoc_files.include('lib/*.rb')
   rdoc.rdoc_files.include('lib/dicom/*.rb')
+  rdoc.rdoc_files.exclude('lib/dicom/Dictionary.rb')
 end
