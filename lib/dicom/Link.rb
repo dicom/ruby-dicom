@@ -561,6 +561,22 @@ module DICOM
             # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
             info[:maxnum_operations_invoked] = msg.decode(2, "US")
             info[:maxnum_operations_performed] = msg.decode(2, "US")
+          when "54"
+            # SCP/SCU Role Selection Negotiation (PS 3.7 D.3.3.4)
+            # Note: An association response may contain several instances of this item type (each with a different abstract syntax).
+            uid_length = msg.decode(2, "US")
+            role = Hash.new
+            # SOP Class UID (Abstract syntax):
+            role[:sop_uid] = msg.decode(uid_length, "STR")
+            # SCU Role (1 byte):
+            role[:scu] = msg.decode(1, "BY")
+            # SCP Role (1 byte):
+            role[:scp] = msg.decode(1, "BY")
+            if info[:role_negotiation]
+              info[:role_negotiation] << role
+            else
+              info[:role_negotiation] = [role]
+            end
           when "55"
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
@@ -706,6 +722,22 @@ module DICOM
             # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
             info[:maxnum_operations_invoked] = msg.decode(2, "US")
             info[:maxnum_operations_performed] = msg.decode(2, "US")
+          when "54"
+            # SCP/SCU Role Selection Negotiation (PS 3.7 D.3.3.4)
+            # Note: An association request may contain several instances of this item type (each with a different abstract syntax).
+            uid_length = msg.decode(2, "US")
+            role = Hash.new
+            # SOP Class UID (Abstract syntax):
+            role[:sop_uid] = msg.decode(uid_length, "STR")
+            # SCU Role (1 byte):
+            role[:scu] = msg.decode(1, "BY")
+            # SCP Role (1 byte):
+            role[:scp] = msg.decode(1, "BY")
+            if info[:role_negotiation]
+              info[:role_negotiation] << role
+            else
+              info[:role_negotiation] = [role]
+            end
           when "55"
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
@@ -1204,9 +1236,37 @@ module DICOM
         ["52", "STR", UID],
         ["55", "STR", NAME]
       ]
-      # A bit of a hack to include "asynchronous operations window negotiation", if this has been included in the association request:
+      # A bit of a hack to include "asynchronous operations window negotiation" and/or "role negotiation",
+      # in cases where this has been included in the association request:
       if info
-        @user_information.insert(2, ["53", "HEX", "00010001"]) if info[:maxnum_operations_invoked]
+        if info[:maxnum_operations_invoked]
+          @user_information.insert(2, ["53", "HEX", "00010001"])
+        end
+        if info[:role_negotiation]
+          pos = 3
+          info[:role_negotiation].each do |role|
+            msg = Stream.new(message, @net_endian, @explicit)
+            uid = role[:sop_uid]
+            # Length of UID (2 bytes):
+            msg.encode_first(uid.length, "US")
+            # SOP UID being negotiated (Variable length):
+            msg.encode_last(uid, "STR")
+            # SCU Role (Always accept SCU) (1 byte):
+            if role[:scu] == 1
+              msg.encode_last(1, "BY")
+            else
+              msg.encode_last(0, "BY")
+            end
+            # SCP Role (Never accept SCP) (1 byte):
+            if role[:scp] == 1
+              msg.encode_last(0, "BY")
+            else
+              msg.encode_last(1, "BY")
+            end
+            @user_information.insert(pos, ["54", "STR", msg.string])
+            pos += 1
+          end
+        end
       end
     end
 
