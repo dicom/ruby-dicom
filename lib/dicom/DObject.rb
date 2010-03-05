@@ -327,7 +327,7 @@ module DICOM
 
 
     # Returns an array of the index(es) of the element(s) in the DICOM file that match the supplied element position, tag or name.
-    # If no match is found, the method will return false.
+    # If no match is found, the method returns an empty array.
     # Additional options:
     # :selection => mySelection - tells the method to search for matches in this specific array of positions instead of searching
     #                                  through the entire DICOM object. If mySelection is empty, the returned array will also be empty.
