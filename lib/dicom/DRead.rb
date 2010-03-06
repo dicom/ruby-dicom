@@ -56,23 +56,31 @@ module DICOM
       end
 
       # Run a loop to read the data elements:
-      # (Data element information is stored in arrays by the method process_data_element)
+      # (Data Element information is stored in arrays by the method process_data_element)
       data_element = true
-      while data_element != false do
-        data_element = process_data_element
+      while data_element do
+        # Using a rescue clause since processing Data Elements can cause errors to be raised when parsing an invalid DICOM file.
+        begin
+          # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
+          data_element = process_data_element
+        rescue
+          # Something has gone wrong. Set data_element to false to break the read loop and signal that reading the file was unsuccessful.
+          @msg << "Error! Failed to process Data Element. This is probably the result of an invalid DICOM file."
+          @success = false
+          data_element = false
+        end
       end
 
-      # Post processing:
-      # Assume file has been read successfully:
-      @success = true
-      # Check if the last element was read out correctly (that the length of its data (@bin.last.length)
-      # corresponds to that expected by the length specified in the DICOM file (@lengths.last)).
-      # We only run this test if the last element has a positive expectation value, obviously.
-      if @lengths.last.to_i > 0
-        if @bin.last.length != @lengths.last
-          @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
-          @success = false
-          return
+      # Perform a final check on the last Data Element to see if it was really read successfully:
+      if @success
+        # Checking that the length of its data (@bin.last.length)
+        # corresponds to that expected by the length specified in the DICOM file (@lengths.last).
+        # This test only has meaning if the last element has a positive expectation value, obviously.
+        if @lengths.last.to_i > 0
+          if @bin.last.length != @lengths.last
+            @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
+            @success = false
+          end
         end
       end
     end # of initialize
@@ -170,8 +178,8 @@ module DICOM
       #STEP 1:
       # Attempt to read data element tag, but abort if we have reached end of file:
       tag = read_tag
-      # Return if we reached the end of file (Previous tag was the last one in the file):
-      return false unless tag
+      # Return nil if we reached the end of file (The previous tag was the last tag in the DICOM file):
+      return nil unless tag
       # STEP 2:
       # Access library to retrieve the data element name and VR from the tag we just read:
       # (Note: VR will be overwritten in the next step if the DICOM file contains VR (explicit encoding))
@@ -197,12 +205,7 @@ module DICOM
       # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
       if length.to_i > 0 and vr != "SQ" and vr != "()"
         # Read the element's processed value (and the binary data from which it was extracted).
-        # (Using a rescue clause since this can cause an error when parsing an invalid DICOM file results in a value length that is extremely large)
-        begin
-          bin, value = read_value(vr,length)
-        rescue
-          @msg << "Error! Could not extract the #{length} bytes long Data Element value for tag #{tag}. This is probably the result of an invalid DICOM file."
-        end
+        bin, value = read_value(vr,length)
       else
         # Data element has no value (data).
         # Special case: Check if pixel data element is sequenced:
@@ -517,6 +520,8 @@ module DICOM
       @enc_image = false
       # Assume header size is zero bytes until otherwise is determined:
       @header_length = 0
+      # Assume file will be read successfully and toggle it later if we experience otherwise:
+      @success = true
     end
 
   end # of class
