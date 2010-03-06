@@ -84,6 +84,13 @@ module DICOM
     # but in the future, when write support is added, this method may have to be called manually.
     def read(string, options = {})
       r = DRead.new(string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
+      # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
+      unless r.success
+        r_explicit = DRead.new(string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => "1.2.840.10008.1.2.1") # TS: Explicit, Little endian
+        # Only extract information from this new attempt if it was successful:
+        r = r_explicit if r_explicit.success
+      end
       # Store the data to the instance variables if the readout was a success:
       if r.success
         @read_success = true
