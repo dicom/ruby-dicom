@@ -15,7 +15,7 @@ require 'dicom/Anonymizer'
 require 'dicom/ruby_extensions'
 
 # Ruby DICOM version string:
-DICOM::VERSION = "0.7"
+DICOM::VERSION = "0.7.1b"
 
 # Load the DICOM Library class (dictionary):
 DICOM::LIBRARY =  DICOM::DLibrary.new

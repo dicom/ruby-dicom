@@ -56,23 +56,31 @@ module DICOM
       end
 
       # Run a loop to read the data elements:
-      # (Data element information is stored in arrays by the method process_data_element)
+      # (Data Element information is stored in arrays by the method process_data_element)
       data_element = true
-      while data_element != false do
-        data_element = process_data_element
+      while data_element do
+        # Using a rescue clause since processing Data Elements can cause errors to be raised when parsing an invalid DICOM file.
+        begin
+          # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
+          data_element = process_data_element
+        rescue
+          # Something has gone wrong. Set data_element to false to break the read loop and signal that reading the file was unsuccessful.
+          @msg << "Error! Failed to process Data Element. This is probably the result of an invalid DICOM file."
+          @success = false
+          data_element = false
+        end
       end
 
-      # Post processing:
-      # Assume file has been read successfully:
-      @success = true
-      # Check if the last element was read out correctly (that the length of its data (@bin.last.length)
-      # corresponds to that expected by the length specified in the DICOM file (@lengths.last)).
-      # We only run this test if the last element has a positive expectation value, obviously.
-      if @lengths.last.to_i > 0
-        if @bin.last.length != @lengths.last
-          @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
-          @success = false
-          return
+      # Perform a final check on the last Data Element to see if it was really read successfully:
+      if @success
+        # Checking that the length of its data (@bin.last.length)
+        # corresponds to that expected by the length specified in the DICOM file (@lengths.last).
+        # This test only has meaning if the last element has a positive expectation value, obviously.
+        if @lengths.last.to_i > 0
+          if @bin.last.length != @lengths.last
+            @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
+            @success = false
+          end
         end
       end
     end # of initialize
@@ -167,28 +175,22 @@ module DICOM
 
     # Governs the process of reading data elements from the DICOM file.
     def process_data_element
-      #STEP 1: ------------------------------------------------------
+      #STEP 1:
       # Attempt to read data element tag, but abort if we have reached end of file:
       tag = read_tag
-      if tag == false
-        # End of file, no more elements.
-        return false
-      end
-      # STEP 2: ------------------------------------------------------
+      # Return nil if we reached the end of file (The previous tag was the last tag in the DICOM file):
+      return nil unless tag
+      # STEP 2:
       # Access library to retrieve the data element name and VR from the tag we just read:
+      # (Note: VR will be overwritten in the next step if the DICOM file contains VR (explicit encoding))
       lib_data = LIBRARY.get_name_vr(tag)
       name = lib_data[0]
       vr = lib_data[1]
-      # (Note: VR will be overwritten if the DICOM file contains VR)
-
-      # STEP 3: ----------------------------------------------------
+      # STEP 3:
       # Read VR (if it exists) and the length value:
-      tag_info = read_vr_length(vr,tag)
-      vr = tag_info[0]
+      vr, length = read_vr_length(vr,tag)
       level_vr = vr
-      length = tag_info[1]
-
-      # STEP 4: ----------------------------------------
+      # STEP 4:
       # Reading value of data element.
       # Special handling needed for items in encapsulated image data:
       if @enc_image and tag == "FFFE,E000"
@@ -202,10 +204,8 @@ module DICOM
       end
       # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
       if length.to_i > 0 and vr != "SQ" and vr != "()"
-        # Read the element's value (data):
-        data = read_value(vr,length)
-        value = data[0]
-        bin = data[1]
+        # Read the element's processed value (and the binary data from which it was extracted).
+        bin, value = read_value(vr,length)
       else
         # Data element has no value (data).
         # Special case: Check if pixel data element is sequenced:
@@ -232,20 +232,20 @@ module DICOM
     # Reads and returns the data element's TAG (4 first bytes of element).
     def read_tag
       tag = @stream.decode_tag
-      # Do not proceed if we have reached end of file (tag is nil):
-      return false unless tag
-      # Tag was valid, so we add the length of the data element tag.
-      # If this was the first element read from file, we need to add the header length too:
-      if @integrated_lengths.length == 0
-        # Increase the array with the length of the header + the 4 bytes:
-        @integrated_lengths << (@header_length + 4)
-      else
-        # For the remaining elements, increase the array with the integrated length of the previous elements + the 4 bytes:
-        @integrated_lengths << (@integrated_lengths[@integrated_lengths.length-1] + 4)
-      end
-      # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-      if tag[0..3] != "0002" and @switched == false
-        switch_syntax
+      if tag
+        # Tag was valid, so we add the length of the data element tag.
+        # If this was the first element read from file, we need to add the header length too:
+        if @integrated_lengths.length == 0
+          # Increase the array with the length of the header + the 4 bytes:
+          @integrated_lengths << (@header_length + 4)
+        else
+          # For the remaining elements, increase the array with the integrated length of the previous elements + the 4 bytes:
+          @integrated_lengths << (@integrated_lengths[@integrated_lengths.length-1] + 4)
+        end
+        # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
+        if tag[0..3] != "0002" and @switched == false
+          switch_syntax
+        end
       end
       return tag
     end
@@ -303,13 +303,14 @@ module DICOM
       elsif length%2 >0
         # According to the DICOM standard, all data element lengths should be an even number.
         # If it is not, it may indicate a file that is not standards compliant or it might even not be a DICOM file.
-        @msg += ["Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."]
+        @msg << "Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."
       end
-      return [vr, length]
+      return vr, length
     end # of read_vr_length
 
 
     # Reads and returns data element VALUE (Of varying length - which is determined at an earlier stage).
+    # Both the original binary string and the processed, decoded value is returned.
     def read_value(vr, length)
       # Extract the binary data:
       bin = @stream.extract(length)
@@ -322,27 +323,21 @@ module DICOM
         @stream.skip(-length)
         # Decode data:
         value = @stream.decode(length, vr)
-        if not value.is_a?(Array)
-          data = value
-        else
-          # If the returned value is not a string, it is an array of multiple elements,
-          # which need to be joined to a string with the separator "\":
-          data = value.join("\\")
-        end
+        # If the returned value is an array of multiple elements, we will join it to a string with the separator "\":
+        value = value.join("\\") if value.is_a?(Array)
       else
-        # No decoded data:
-        data = nil
+        # No decoded value:
+        value = nil
       end
-      # Return the data:
-      return [data, bin]
-    end # of read_value
+      return bin, value
+    end
 
 
     # Sets the level of the current element in the hiearchy.
     # The default (top) level is zero.
     def set_level(vr, length, tag, name)
       # Set the level of this element:
-      @levels += [@current_level]
+      @levels << @current_level
       # Determine if there is a level change for the following element:
       # If element is a sequence, the level of the following elements will be increased by one.
       # If element is an item, the level of the following elements will likewise be increased by one.
@@ -379,7 +374,7 @@ module DICOM
         # (If performed, it will give false errors for the case when we have Encapsulated Pixel Data)
         check_level_end unless name == "Pixel Data Item" or tag == "FFFE,E0DD"
       end
-    end # of set_level
+    end
 
 
     # Checks how far we've read in the DICOM file to determine if we have reached a point
@@ -405,7 +400,7 @@ module DICOM
         elsif current_diff > described_length
           # Only register this type of error one time per file to avoid a spamming effect:
           if not @hierarchy_error
-            @msg += ["Unexpected hierarchy incident: Current length difference is greater than the expected value, which should not occur. This will not pose any problems unless you intend to query the object for elements based on hierarchy."]
+            @msg << "Unexpected hierarchy incident: Current length difference is greater than the expected value, which should not occur. This will not pose any problems unless you intend to query the object for elements based on hierarchy."
             @hierarchy_error = true
           end
         end
@@ -450,7 +445,7 @@ module DICOM
       result = LIBRARY.process_transfer_syntax(@transfer_syntax)
       # Result is a 3-element array: [Validity of ts, explicitness, endianness]
       unless result[0]
-        @msg+=["Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."]
+        @msg << "Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."
       end
       @rest_explicit = result[1]
       @rest_endian = result[2]
@@ -501,7 +496,6 @@ module DICOM
       @file_endian = false
       # Variable used to tell whether file was read succesfully or not:
       @success = false
-
       # Variables used internally when reading through the DICOM file:
       # Array for keeping track of how many bytes have been read from the file up to and including each data element:
       # (This is necessary for tracking the hiearchy in some DICOM files)
@@ -526,6 +520,8 @@ module DICOM
       @enc_image = false
       # Assume header size is zero bytes until otherwise is determined:
       @header_length = 0
+      # Assume file will be read successfully and toggle it later if we experience otherwise:
+      @success = true
     end
 
   end # of class
