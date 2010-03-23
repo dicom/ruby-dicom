@@ -81,7 +81,7 @@ module DICOM
       end
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
-      append_association_header(pdu)
+      append_association_header(pdu, info[:called_ae])
     end
 
 
@@ -945,7 +945,7 @@ module DICOM
 
 
     # Build the binary string that makes up the header part (part of the association request).
-    def append_association_header(pdu)
+    def append_association_header(pdu, called_ae)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Header will be encoded in opposite order, where the elements are being put first in the outgoing binary string.
@@ -955,9 +955,9 @@ module DICOM
       # Calling AE title (16 bytes)
       calling_ae = @outgoing.encode_string_with_trailing_spaces(@ae, 16)
       @outgoing.add_first(calling_ae) # (pre-encoded value)
-      # Called AE title (16 bytes)
-      called_ae = @outgoing.encode_string_with_trailing_spaces(@host_ae, 16)
-      @outgoing.add_first(called_ae) # (pre-encoded value)
+      # Called AE title (16 bytes) (return the name that the SCU used in the association request)
+      formatted_called_ae = @outgoing.encode_string_with_trailing_spaces(called_ae, 16)
+      @outgoing.add_first(formatted_called_ae) # (pre-encoded value)
       # Reserved (2 bytes)
       @outgoing.encode_first("0000", "HEX")
       # Protocol version (2 bytes)
