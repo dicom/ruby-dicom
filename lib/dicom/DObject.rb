@@ -880,14 +880,9 @@ module DICOM
 
     # Removes all private data elements from the DICOM object.
     def remove_private
-      # Private data elemements have a group tag that is odd.
-      odd_group = ["1,","3,","5,","7,","9,","B,","D,","F,"]
-      odd_group.each do |odd|
-        positions = get_pos(odd, :partial => true)
-        # Delete all entries (important to do this in reverse order).
-        positions.reverse.each do |pos|
-          remove(pos)
-        end
+      # Private data elemements have a group tag that is odd. This is checked with the private? String method.
+      (0...@tags.length).reverse_each do |pos|
+        remove(pos) if @tags[pos].private?
       end
     end
 
