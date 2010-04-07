@@ -852,7 +852,7 @@ module DICOM
         end
         positions.flatten!
         # Loop through all positions (important to do this in reverse to retain predictable array positions):
-        positions.reverse.each do |pos|
+        positions.reverse_each do |pos|
           # Update group length
           # (Possible weakness: Group length tag contained inside a sequence/item. Code needs a slight rewrite to make it more robust)
           if @tags[pos][5..8] != "0000"
