@@ -10,6 +10,8 @@ gem install dicom
 
 *************************************************************************
 
+****NB!!! The documentation will be outdated for some time while the rewrite is in progress!****
+
 DOCUMENTATION
 
 CLASS DObject
