@@ -8,6 +8,7 @@
 # querying of the DICOM object afterwards.
 
 module DICOM
+
   # Class for reading the data from a DICOM file:
   class DRead
 
@@ -183,9 +184,7 @@ module DICOM
       # STEP 2:
       # Access library to retrieve the data element name and VR from the tag we just read:
       # (Note: VR will be overwritten in the next step if the DICOM file contains VR (explicit encoding))
-      lib_data = LIBRARY.get_name_vr(tag)
-      name = lib_data[0]
-      vr = lib_data[1]
+      name, vr = LIBRARY.get_name_vr(tag)
       # STEP 3:
       # Read VR (if it exists) and the length value:
       vr, length = read_vr_length(vr,tag)
@@ -442,13 +441,10 @@ module DICOM
         end
       end
       # Query the library with our particular transfer syntax string:
-      result = LIBRARY.process_transfer_syntax(@transfer_syntax)
-      # Result is a 3-element array: [Validity of ts, explicitness, endianness]
-      unless result[0]
+      valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
+      unless valid_syntax
         @msg << "Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."
       end
-      @rest_explicit = result[1]
-      @rest_endian = result[2]
       # We only plan to run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:

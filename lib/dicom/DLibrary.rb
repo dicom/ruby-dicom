@@ -1,28 +1,20 @@
 #    Copyright 2008-2010 Christoffer Lervag
 
 module DICOM
-  # Class which holds the methods that interact with the DICOM dictionary.
+
+  # This class contains methods that interact with the DICOM dictionary.
   class DLibrary
 
     attr_reader :tags, :uid
 
-    # Initialize the DRead instance.
+    # Initializes the library instance.
     def initialize
-      # Dictionary content will be stored in a number of hash objects.
-      # Load the dictionary:
-      dic = Dictionary.new
-      # Data elements:
-      # Value of this hash is a two-element array [vr, name] (where vr itself is an array of 1-3 elements)
-      @tags = dic.load_data_elements
-      # UID (DICOM unique identifiers):
-      # Value of this hash is a two-element array [description, type]
-      @uid = dic.load_uid
-      # Photometric Interpretation: (not in use yet)
-      #@image_types = dic.load_image_types
-      # Value representation library: (not in use yet)
-      #@vr = dic.load_vr
-      # Frame of reference library: (not in use yet)
-      #@frame_of_ref = dic.load_frame_of_ref
+      # Load the data elements hash, where the keys are tag strings, and values
+      # are two-element arrays [vr, name] (where vr itself is an array of 1-3 elements).
+      @tags = Dictionary.load_data_elements
+      # Load UID hash (DICOM unique identifiers), where the keys are UID strings,
+      # and values are two-element arrays [description, type].
+      @uid = Dictionary.load_uid
     end
 
 
@@ -114,7 +106,7 @@ module DICOM
           end
         end
       end
-      return [name,vr]
+      return name, vr
     end
 
 
@@ -183,7 +175,7 @@ module DICOM
           explicit = true
           endian = false
       end
-      return [valid, explicit, endian]
+      return valid, explicit, endian
     end
 
 

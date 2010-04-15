@@ -1022,9 +1022,8 @@ module DICOM
       bin_only = options[:bin]
       vr = options[:vr].upcase if options[:vr].is_a?(String)
       # Fetch the VR:
-      info = LIBRARY.get_name_vr(tag)
-      vr = info[1] unless vr
-      name = info[0]
+      name, vr_temp = LIBRARY.get_name_vr(tag)
+      vr = vr_temp unless vr
       # Encode binary (if a binary is not provided):
       if bin_only == true
         # Data already encoded.
