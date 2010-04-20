@@ -26,15 +26,14 @@
 # -Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
 # -More robust and flexible options for reorienting extracted pixel arrays?
 # -Could the usage of arrays in DObject be replaced with something better, or at least improved upon, to give cleaner code and more efficient execution?
-# -A curious observation: Loading the DLibrary is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
+# -A curious observation: Instantiating the DLibrary class is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
 
 module DICOM
 
   # Class for interacting with the DICOM object.
-  class DObject
+  class DObject < SuperItem
 
-    attr_reader :read_success, :write_success, :modality, :errors, :segments,
-                      :names, :tags, :vr, :lengths, :values, :bin, :levels
+    attr_reader :errors, :modality, :parent, :read_success, :segments, :write_success
 
     # Initialize the DObject instance.
     def initialize(string=nil, options={})
@@ -47,17 +46,9 @@ module DICOM
       @verbose = true if @verbose == nil
 
       # Initialize variables that will be used for the DICOM object:
-      @names = Array.new
-      @tags = Array.new
-      @vr = Array.new
-      @lengths = Array.new
-      @values = Array.new
-      @bin = Array.new
-      @levels = Array.new
+      initialize_parent
       # Array that will holde any messages generated while reading the DICOM file:
       @errors = Array.new
-      # Array to keep track of sequences/structure of the dicom elements:
-      @sequence = Array.new
       # Structural information (default values):
       @compression = false
       @color = false
@@ -69,6 +60,8 @@ module DICOM
       @read_success = false
       # Initialize a Stream instance which is used for encoding/decoding:
       @stream = Stream.new(nil, @file_endian, @explicit)
+      # The DObject instance is the top of the hierarchy and unlike other elements it has no parent:
+      @parent = nil
 
       # If a (valid) file name string is supplied, call the method to read the DICOM file:
       if string.is_a?(String) and string != ""
@@ -83,33 +76,26 @@ module DICOM
     # For the time being, this method is called automatically when initializing the DObject class,
     # but in the future, when write support is added, this method may have to be called manually.
     def read(string, options = {})
-      r = DRead.new(string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
+      r = DRead.new(self, string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
       # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
       # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
       unless r.success
-        r_explicit = DRead.new(string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => "1.2.840.10008.1.2.1") # TS: Explicit, Little endian
+#        r_explicit = DRead.new(self, string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => "1.2.840.10008.1.2.1") # TS: Explicit, Little endian
         # Only extract information from this new attempt if it was successful:
-        r = r_explicit if r_explicit.success
+#        r = r_explicit if r_explicit.success
       end
       # Store the data to the instance variables if the readout was a success:
       if r.success
         @read_success = true
-        @names = r.names
-        @tags = r.tags
-        @vr = r.vr
-        @lengths = r.lengths
-        @values = r.values
-        @bin = r.bin
-        @levels = r.levels
         @explicit = r.explicit
         @file_endian = r.file_endian
         # Update Stream instance with settings from this DICOM file:
         @stream.set_endian(@file_endian)
         @stream.explicit = @explicit
         # Update status variables for this object:
-        check_properties
+        #check_properties
         # Set the modality of the DICOM object:
-        set_modality
+        #set_modality
       else
         @read_success = false
       end
@@ -569,7 +555,7 @@ module DICOM
     ####### START OF METHODS FOR PRINTING INFORMATION:######
     ##############################################
 
-
+=begin
     # Prints the information of all elements stored in the DICOM object.
     # This method is kept for backwards compatibility.
     # Instead of calling print_all you may use print(true) for the same functionality.
@@ -694,7 +680,7 @@ module DICOM
         print_screen(elements)
       end
     end # of print
-
+=end
 
     # Prints the key structural properties of the DICOM file.
     def print_properties
