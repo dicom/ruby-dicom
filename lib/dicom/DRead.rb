@@ -9,22 +9,24 @@
 
 module DICOM
 
-  # Class for reading the data from a DICOM file:
+  # This class parses the DICOM data from a binary string.
+  # The source of this binary string is typically either a DICOM file or a DICOM network transmission.
   class DRead
 
-    attr_reader :success, :names, :tags, :vr, :lengths, :values, :bin, :levels, :explicit, :file_endian, :msg
+    attr_reader :success, :obj, :explicit, :file_endian, :msg
 
     # Initialize the DRead instance.
-    def initialize(string=nil, options={})
-      # Process option values, setting defaults for the ones that are not specified:
+    # Options: :bin.....etc
+    def initialize(obj, string=nil, options={})
+      # Set the DICOM object as an instance variable:
+      @obj = obj
+      # Some of the options need to be transferred to instance variables:
       @sys_endian = options[:sys_endian] || false
-      @bin_string = options[:bin]
       @transfer_syntax = options[:syntax]
       # Initiate the variables that are used during file reading:
       init_variables
-
       # Are we going to read from a file, or read from a binary string:
-      if @bin_string
+      if options[:bin]
         # Read from the provided binary string:
         @str = string
       else
@@ -43,7 +45,7 @@ module DICOM
       # Create a Stream instance to handle the decoding of content from this binary string:
       @stream = Stream.new(@str, @file_endian, @explicit)
       # Do not check for header information when supplied a (network) binary string:
-      unless @bin_string
+      unless options[:bin]
         # Read and verify the DICOM header:
         header = check_header
         # If the file didnt have the expected header, we will attempt to read
@@ -55,7 +57,6 @@ module DICOM
           return
         end
       end
-
       # Run a loop to read the data elements:
       # (Data Element information is stored in arrays by the method process_data_element)
       data_element = true
@@ -66,29 +67,17 @@ module DICOM
           data_element = process_data_element
         rescue
           # Something has gone wrong. Set data_element to false to break the read loop and signal that reading the file was unsuccessful.
-          @msg << "Error! Failed to process Data Element. This is probably the result of an invalid DICOM file."
+          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
           @success = false
           data_element = false
         end
       end
-
-      # Perform a final check on the last Data Element to see if it was really read successfully:
-      if @success
-        # Checking that the length of its data (@bin.last.length)
-        # corresponds to that expected by the length specified in the DICOM file (@lengths.last).
-        # This test only has meaning if the last element has a positive expectation value, obviously.
-        if @lengths.last.to_i > 0
-          if @bin.last.length != @lengths.last
-            @msg << "Error! The data content read from file does not match the length specified for the tag #{@tags.last}. It seems this is either an invalid or corrupt DICOM file. Returning."
-            @success = false
-          end
-        end
-      end
-    end # of initialize
+    end
 
 
     # Extract an array of binary strings
     # (this is typically used if one intends to transmit the DICOM file through a network connection)
+    # FIXME: This method needs to be rewritten now that DRead has changed!!
     def extract_segments(size)
       # For this purpose we are not interested to include header or meta information.
       # We must therefore find the position of the first tag which is not a meta information tag.
@@ -177,9 +166,9 @@ module DICOM
     # Governs the process of reading data elements from the DICOM file.
     def process_data_element
       #STEP 1:
-      # Attempt to read data element tag, but abort if we have reached end of file:
+      # Attempt to read data element tag:
       tag = read_tag
-      # Return nil if we reached the end of file (The previous tag was the last tag in the DICOM file):
+      # Return nil if we have (naturally) reached the end of the data string.
       return nil unless tag
       # STEP 2:
       # Access library to retrieve the data element name and VR from the tag we just read:
@@ -192,55 +181,67 @@ module DICOM
       # STEP 4:
       # Reading value of data element.
       # Special handling needed for items in encapsulated image data:
-      if @enc_image and tag == "FFFE,E000"
+      if @enc_image and tag == ITEM_TAG
         # The first item appearing after the image element is a 'normal' item, the rest hold image data.
         # Note that the first item will contain data if there are multiple images, and so must be read.
         vr = "OW" # how about alternatives like OB?
         # Modify name of item if this is an item that holds pixel data:
-        if @tags.last != "7FE0,0010"
+        if @current_element.tag != PIXEL_TAG
           name = "Pixel Data Item"
         end
       end
+      # Read the binary string of the element:
+      bin = read_bin(length) if length > 0
       # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
-      if length.to_i > 0 and vr != "SQ" and vr != "()"
+      if length > 0 and vr != "SQ" and vr != ITEM_VR
         # Read the element's processed value (and the binary data from which it was extracted).
-        bin, value = read_value(vr,length)
+        value = read_value(vr, length)
       else
         # Data element has no value (data).
         # Special case: Check if pixel data element is sequenced:
-        if tag == "7FE0,0010"
+        if tag == PIXEL_TAG
           # Change name and vr of pixel data element if it does not contain data itself:
           name = "Encapsulated Pixel Data"
           level_vr = "SQ"
           @enc_image = true
         end
-      end # of if length.to_i > 0
-      # Set the hiearchy level of this data element:
-      set_level(level_vr, length, tag, name)
-      # Transfer the gathered data to arrays and return true:
-      @names << name
-      @tags << tag
-      @vr << vr
-      @lengths << length
-      @values << value
-      @bin << bin
+      end
+      # Create an Element from the gathered data:
+      if level_vr == "SQ" or tag == ITEM_TAG
+        if level_vr == "SQ"
+          # Create a Sequence:
+          @current_element = Sequence.new(tag, value, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+        elsif tag == ITEM_TAG
+          # Create an Item:
+          @current_element = Item.new(tag, value, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+        end
+        # Common operations on the two types of parent elements:
+        @current_parent = @current_element
+        # If length is specified (no delimitation items), load a new DRead instance to read these child elements and load them into the current sequence:
+        if length > 0
+          child_reader = DRead.new(@current_element, bin, :sys_endian => @sys_endian, :bin => true, :syntax => @transfer_syntax)
+          @msg << child_reader.msg
+          @success = child_reader.success
+        end
+      elsif DELIMITER_TAGS.include?(tag)
+        # We do not create an element for the delimiter items.
+        # The occurance of such a tag indicates that a sequence or item has ended, and the parent must be changed:
+        @current_parent = @current_parent.parent
+      else
+        # Create an ordinary Data Element:
+        @current_element = DataElement.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
+        # Check that the data stream didnt end abruptly:
+        set_abrupt_error if @current_element.length != @current_element.bin.length
+      end
+      # Return true to indicate success:
       return true
-    end # of process_data_element
+    end
 
 
     # Reads and returns the data element's TAG (4 first bytes of element).
     def read_tag
       tag = @stream.decode_tag
       if tag
-        # Tag was valid, so we add the length of the data element tag.
-        # If this was the first element read from file, we need to add the header length too:
-        if @integrated_lengths.length == 0
-          # Increase the array with the length of the header + the 4 bytes:
-          @integrated_lengths << (@header_length + 4)
-        else
-          # For the remaining elements, increase the array with the integrated length of the previous elements + the 4 bytes:
-          @integrated_lengths << (@integrated_lengths[@integrated_lengths.length-1] + 4)
-        end
         # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
         if tag[0..3] != "0002" and @switched == false
           switch_syntax
@@ -251,18 +252,14 @@ module DICOM
 
 
     # Reads and returns data element VR (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
-    def read_vr_length(vr,tag)
+    def read_vr_length(vr, tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       pre_skip = 0
       bytes = 0
       # *****EXPLICIT*****:
       if @explicit == true
-        # Step 1: Read VR (if it exists)
-        unless tag == "FFFE,E000" or tag == "FFFE,E00D" or tag == "FFFE,E0DD"
-          # Read the element's vr (2 bytes - since we are not dealing with an item related element):
-          vr = @stream.decode(2, "STR")
-          @integrated_lengths[@integrated_lengths.length-1] += 2
-        end
+        # Step 1: Read VR, 2 bytes (if it exists - which are all cases except for the item related elements)
+        vr = @stream.decode(2, "STR") unless ITEM_TAGS.include?(tag)
         # Step 2: Read length
         # Three possible structures for value length here, dependent on element vr:
         case vr
@@ -272,7 +269,7 @@ module DICOM
             pre_skip = 2
             # Value length (4 bytes):
             bytes = 4
-          when "()"
+          when ITEM_VR
             # 4 bytes:
             # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD":
             bytes = 4
@@ -291,34 +288,28 @@ module DICOM
       if bytes == 2
         length = @stream.decode(bytes, "US") # (2)
       else
-        length = @stream.decode(bytes, "UL") # (4)
+        length = @stream.decode(bytes, "SL") # (4)
       end
-      # Update integrated lengths array:
-      @integrated_lengths[@integrated_lengths.length-1] += (pre_skip + bytes)
-      # For encapsulated data, the element length will not be defined. To convey this,
-      # the hex sequence 'ff ff ff ff' is used (-1 converted to signed long, 4294967295 converted to unsigned long).
-      if length == 4294967295
-        length = @undef
-      elsif length%2 >0
+      if length%2 > 0 and length > 0
         # According to the DICOM standard, all data element lengths should be an even number.
         # If it is not, it may indicate a file that is not standards compliant or it might even not be a DICOM file.
         @msg << "Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."
       end
       return vr, length
-    end # of read_vr_length
+    end
 
 
-    # Reads and returns data element VALUE (Of varying length - which is determined at an earlier stage).
-    # Both the original binary string and the processed, decoded value is returned.
+    # Reads and return the binary value string of a Data Element (varying length).
+    def read_bin(length)
+      return @stream.extract(length)
+    end
+
+
+    # Reads and returns the decoded Data Element VALUE (varying length).
+    # NB! For some cases (pixel data, compressed data, unknown data), a value is not processed (nil is returned).
     def read_value(vr, length)
-      # Extract the binary data:
-      bin = @stream.extract(length)
-      @integrated_lengths[@integrated_lengths.size-1] += length
-      # Decode data?
-      # Some data elements (like those containing image data, compressed data or unknown data),
-      # will not be decoded here.
       unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
-        # "Rewind" and extract the value from this binary data:
+        # Since the binary string has already been extracted for this Data Elemnt, we must first "rewind":
         @stream.skip(-length)
         # Decode data:
         value = @stream.decode(length, vr)
@@ -328,82 +319,7 @@ module DICOM
         # No decoded value:
         value = nil
       end
-      return bin, value
-    end
-
-
-    # Sets the level of the current element in the hiearchy.
-    # The default (top) level is zero.
-    def set_level(vr, length, tag, name)
-      # Set the level of this element:
-      @levels << @current_level
-      # Determine if there is a level change for the following element:
-      # If element is a sequence, the level of the following elements will be increased by one.
-      # If element is an item, the level of the following elements will likewise be increased by one.
-      # Note the following exception:
-      # If data element is an "Item", and it contains data (image fragment) directly, which is to say,
-      # not in its sub-elements, we should not increase the level. (This is fixed in the process_data_element method.)
-      if vr == "SQ"
-        increase = true
-      elsif name == "Item"
-        increase = true
-      else
-        increase = false
-      end
-      if increase == true
-        @current_level = @current_level + 1
-        # If length of sequence/item is specified, we must note this length + the current element position in the arrays:
-        if length.to_i != 0
-          @hierarchy << [length, @integrated_lengths.last]
-        else
-          @hierarchy << vr
-        end
-      end
-      # Need to check whether a previous sequence or item has ended, if so the level must be decreased by one:
-      # In the case of tag specification:
-      if (tag == "FFFE,E00D") or (tag == "FFFE,E0DD")
-        @current_level = @current_level - 1
-      end
-      # In the case of sequence and item length specification:
-      # Check the last position in the hieararchy array.
-      # If it is an array (of length and position), then we need to check the integrated_lengths array
-      # to see if the current sub-level has expired.
-      if @hierarchy.size > 0
-        # Do not perform this check for Pixel Data Items or Sequence Delimitation Items:
-        # (If performed, it will give false errors for the case when we have Encapsulated Pixel Data)
-        check_level_end unless name == "Pixel Data Item" or tag == "FFFE,E0DD"
-      end
-    end
-
-
-    # Checks how far we've read in the DICOM file to determine if we have reached a point
-    # where sub-levels are ending. This method is recursive, as multiple sequences/items might end at the same point.
-    def check_level_end
-      # The test is only meaningful to perform if we are not expecting an 'end of sequence/item' element to signal the level-change.
-      if (@hierarchy.last).is_a?(Array)
-        described_length = (@hierarchy.last)[0]
-        previous_length = (@hierarchy.last)[1]
-        current_length = @integrated_lengths.last
-        current_diff = current_length - previous_length
-        if current_diff == described_length
-          # Decrease level by one:
-          @current_level = @current_level - 1
-          # Also we need to delete the last entry of the @hierarchy array:
-          if (@hierarchy.size > 1)
-            @hierarchy = @hierarchy[0..(@hierarchy.size-2)]
-            # There might be numerous levels that ends at this particular point, so we need to do a recursive repeat to check.
-            check_level_end
-          else
-            @hierarchy = Array.new()
-          end
-        elsif current_diff > described_length
-          # Only register this type of error one time per file to avoid a spamming effect:
-          if not @hierarchy_error
-            @msg << "Unexpected hierarchy incident: Current length difference is greater than the expected value, which should not occur. This will not pose any problems unless you intend to query the object for elements based on hierarchy."
-            @hierarchy_error = true
-          end
-        end
-      end
+      return value
     end
 
 
@@ -415,17 +331,25 @@ module DICOM
             if File.size(file) > 8
               @file = File.new(file, "rb")
             else
-              @msg << "Error! File is too small to contain DICOM information. Returning. (#{file})"
+              @msg << "Error! File is too small to contain DICOM information (#{file})."
             end
           else
-            @msg << "Error! File is a directory. Returning. (#{file})"
+            @msg << "Error! File is a directory (#{file})."
           end
         else
-          @msg << "Error! File exists but I don't have permission to read it. Returning. (#{file})"
+          @msg << "Error! File exists but I don't have permission to read it (#{file})."
         end
       else
-        @msg << "Error! The file you have supplied does not exist. Returning. (#{file})"
+        @msg << "Error! The file you have supplied does not exist (#{file})."
       end
+    end
+
+
+    # The DICOM data stream has ended abruptly in such a way that a Data Element's value was shorter than expected.
+    # Registers this error.
+    def set_abrupt_error
+      @msg << "Error! The parsed data of the last Data Element #{@current_element.tag} does not match it's specified length value. This is probably the result of invalid or corrupt DICOM data."
+      @success = false
     end
 
 
@@ -433,9 +357,9 @@ module DICOM
     def switch_syntax
       # Get the transfer syntax string, unless it has already been provided by keyword:
       unless @transfer_syntax
-        ts_pos = @tags.index("0002,0010")
-        if ts_pos
-          @transfer_syntax = @values[ts_pos].rstrip
+        ts_element = @obj["0002,0010"]
+        if ts_element
+          @transfer_syntax = ts_element.value
         else
           @transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
         end
@@ -473,15 +397,7 @@ module DICOM
 
     # Initiates the variables that are used during file reading.
     def init_variables
-      # Variables that hold data that will be available to the DObject class.
-      # Arrays that will hold information from the elements of the DICOM file:
-      @names = Array.new
-      @tags = Array.new
-      @vr = Array.new
-      @lengths = Array.new
-      @values = Array.new
-      @bin = Array.new
-      @levels = Array.new
+      # Some variables that will be made available to the DObject class:
       # Array that will holde any messages generated while reading the DICOM file:
       @msg = Array.new
       # Variables that contain properties of the DICOM file:
@@ -490,12 +406,7 @@ module DICOM
       @explicit = true
       # Default endianness of start of DICOM files is little endian:
       @file_endian = false
-      # Variable used to tell whether file was read succesfully or not:
-      @success = false
-      # Variables used internally when reading through the DICOM file:
-      # Array for keeping track of how many bytes have been read from the file up to and including each data element:
-      # (This is necessary for tracking the hiearchy in some DICOM files)
-      @integrated_lengths = Array.new
+      # Variables used internally when parsing the DICOM string:
       @header_length = 0
       # Array to keep track of the hierarchy of elements (this will be used to determine when a sequence or item is finished):
       @hierarchy = Array.new
@@ -508,10 +419,9 @@ module DICOM
       @switched = false
       # A length variable will be used at the end to check whether the last element was read correctly, or whether the file endend unexpectedly:
       @data_length = 0
-      # Keeping track of the data element's level while reading through the file:
-      @current_level = 0
-      # This variable's string will be inserted as the length of items/sq that dont have a specified length:
-      @undef = "UNDEFINED"
+      # Keeping track of the data element parent status while parsing the DICOM string:
+      @current_parent = @obj
+      @current_element = @obj
       # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
       @enc_image = false
       # Assume header size is zero bytes until otherwise is determined:
