@@ -2896,9 +2896,9 @@ module DICOM
         "7Fxx,0040" => [["OW"], "Variable Coefficients SDDN"], # RET
         "FFFA,FFFA" => [["SQ"], "Digital Signatures Sequence"],
         "FFFC,FFFC" => [["OB"], "Data Set Trailing Padding"],
-        "FFFE,E000" => [["()"], "Item"], # VR does not exist for this element
-        "FFFE,E00D" => [["()"], "Item Delimitation Item"], # VR does not exist for this element
-        "FFFE,E0DD" => [["()"], "Sequence Delimitation Item"] # VR does not exist for this element
+        "FFFE,E000" => [[ITEM_VR], "Item"], # VR does not exist for this element
+        "FFFE,E00D" => [[ITEM_VR], "Item Delimitation Item"], # VR does not exist for this element
+        "FFFE,E0DD" => [[ITEM_VR], "Sequence Delimitation Item"] # VR does not exist for this element
       }
     end # of load_data_elements
 
