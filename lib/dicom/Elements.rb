@@ -13,10 +13,10 @@ module Elements
       all_parents = Array.new
       # Extract all parents and add to array recursively:
       if parent
-        all_parents << parent
-        all_parents << parent.parents
+        all_parents = parent.parents if parent.parent
+        all_parents.insert(0, parent)
       end
-      return all_parents.flatten!
+      return all_parents
     end
 
     # Set the parent of this element to a referenced element.

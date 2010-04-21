@@ -409,48 +409,6 @@ module DICOM
     end
 
 
-    # Returns the positions of all data elements inside the hierarchy of a sequence or an item.
-    # Options:
-    # :next_only => true - The method will only search immediately below the specified item or sequence (that is, in the level of parent + 1).
-    def children(element, options={})
-      # Process option values, setting defaults for the ones that are not specified:
-      opt_next_only = options[:next_only] || false
-      children_pos = Array.new
-      # Retrieve array position:
-      pos = get_pos(element)
-      if pos.length == 0
-        add_msg("Warning: Invalid data element provided to method children().")
-      elsif pos.length > 1
-        add_msg("Warning: Method children() does not allow a query which yields multiple array hits. Please use array position instead of tag/name.")
-      else
-        # Proceed to find the value:
-        # First we need to establish in which positions to perform the search:
-        pos.each do |p|
-          parent_level = @levels[p]
-          remain_array = @levels[p+1..@levels.length-1]
-          extract = true
-          remain_array.each_index do |i|
-            if (remain_array[i] > parent_level) and (extract == true)
-              # If search is targetted at any specific level, we can just add this position:
-              if not opt_next_only == true
-                children_pos << (p+1+i)
-              else
-                # As search is restricted to parent level + 1, do a test for this:
-                if remain_array[i] == parent_level + 1
-                  children_pos << (p+1+i)
-                end
-              end
-            else
-              # If we encounter a position who's level is not deeper than the original level, we can not extract any more values:
-              extract = false
-            end
-          end
-        end
-      end
-      return children_pos
-    end
-
-
     # Returns the value (processed binary data) of the requested DICOM data element.
     # Data element may be specified by array position, tag or name.
     # Options:
@@ -519,168 +477,10 @@ module DICOM
     end
 
 
-    # Returns the position of (possible) parents of the specified data element in the hierarchy structure of the DICOM object.
-    def parents(element)
-      parent_pos = Array.new
-      # Retrieve array position:
-      pos = get_pos(element)
-      if pos.length == 0
-        add_msg("Warning: Invalid data element provided to method parents().")
-      elsif pos.length > 1
-        add_msg("Warning: Method parents() does not allow a query which yields multiple array hits. Please use array position instead of tag/name.")
-      else
-        # Proceed to find the value:
-        # Get the level of our element:
-        level = @levels[pos[0]]
-        # Element can obviously only have parents if it is not a top level element:
-        unless level == 0
-          # Search backwards, and record the position every time we encounter an upwards change in the level number.
-          prev_level = level
-          search_arr = @levels[0..pos[0]-1].reverse
-          search_arr.each_index do |i|
-            if search_arr[i] < prev_level
-              parent_pos << search_arr.length-i-1
-              prev_level = search_arr[i]
-            end
-          end
-          # When the element has several generations of parents, we want its top parent to be first in the returned array:
-          parent_pos = parent_pos.reverse
-        end
-      end
-      return parent_pos
-    end
-
-
     ##############################################
     ####### START OF METHODS FOR PRINTING INFORMATION:######
     ##############################################
 
-=begin
-    # Prints the information of all elements stored in the DICOM object.
-    # This method is kept for backwards compatibility.
-    # Instead of calling print_all you may use print(true) for the same functionality.
-    def print_all
-      print(true)
-    end
-
-
-    # Prints the information of the specified elements: Index, [hierarchy level, tree visualisation,] tag, name, vr, length, value
-    # The supplied variable may be a single position, an array of positions, or true - which will make the method print all elements.
-    # Optional arguments:
-    # :levels => true - method will print the level numbers for each element.
-    # :tree => true -   method will print a tree structure for the elements.
-    # :file => true -    method will print to file instead of printing to screen.
-    def print(pos, options={})
-      # Process option values, setting defaults for the ones that are not specified:
-      opt_levels = options[:levels] || false
-      opt_tree = options[:tree] || false
-      opt_file = options[:file] || false
-      if pos == true
-        # Create a complete array of indices:
-        pos_valid = Array.new(@names.length) {|i| i}
-      elsif not pos.is_a?(Array)
-        # Convert number to array:
-        pos_valid = [pos]
-      else
-        # Use the supplied array of numbers:
-        pos_valid = pos
-      end
-      # Extract the information to be printed from the object arrays:
-      indices = Array.new
-      levels = Array.new
-      tags = Array.new
-      names = Array.new
-      types = Array.new
-      lengths = Array.new
-      values = Array.new
-      # There may be a more elegant way to do this.
-      pos_valid.each do |pos|
-        tags << @tags[pos]
-        levels << @levels[pos].to_s
-        names << @names[pos]
-        types << @vr[pos]
-        lengths << @lengths[pos].to_s
-        values << @values[pos].to_s
-      end
-      # We have collected the data that is to be printed, now we need to do some string manipulation if hierarchy is to be displayed:
-      if opt_tree
-        # Tree structure requested.
-        front_symbol = "| "
-        tree_symbol = "|_"
-        tags.each_index do |i|
-          if levels[i] != "0"
-            tags[i] = front_symbol*(levels[i].to_i-1) + tree_symbol + tags[i]
-          end
-        end
-      end
-      # Extract the string lengths which are needed to make the formatting nice:
-      tag_lengths = Array.new
-      lev_lengths = Array.new
-      name_lengths = Array.new
-      type_lengths = Array.new
-      length_lengths = Array.new
-      names.each_index do |i|
-        tag_lengths[i] = tags[i].length
-        lev_lengths[i] = levels[i].length
-        name_lengths[i] = names[i].length
-        type_lengths[i] = types[i].length
-        length_lengths[i] = lengths[i].to_s.length
-      end
-      # To give the printed output a nice format we need to check the string lengths of some of these arrays:
-      index_maxL = pos_valid.max.to_s.length
-      lev_maxL = lev_lengths.max
-      tag_maxL = tag_lengths.max
-      name_maxL = name_lengths.max
-      type_maxL = type_lengths.max
-      length_maxL = length_lengths.max
-      # Construct the strings, one for each line of output, where each line contain the information of one data element:
-      elements = Array.new
-      # Start of loop which formats the element data:
-      # (This loop is what consumes most of the computing time of this method)
-      tags.each_index do |i|
-        # Configure empty spaces:
-        s = " "
-        f0 = " "*(index_maxL-pos_valid[i].to_s.length)
-        f1 = " "*(lev_maxL-levels[i].length)
-        f2 = " "*(tag_maxL-tags[i].length+1)
-        f3 = " "*(name_maxL-names[i].length+1)
-        f4 = " "*(type_maxL-types[i].length+1)
-        f5 = " "*(length_maxL-lengths[i].length)
-        # Display levels?
-        if opt_levels
-          lev = levels[i] + f1
-        else
-          lev = ""
-        end
-        # Restrict length of value string:
-        if values[i].length > 28
-          value = (values[i])[0..27]+" ..."
-        else
-          value = (values[i])
-        end
-        # Insert descriptive text for elements that hold binary data:
-        case types[i]
-          when "OW","OB","UN"
-            value = "(Binary Data)"
-          when "SQ"
-            value = "(Encapsulated Elements)"
-          when "()"
-            if tags[i].include?("FFFE,E000") # (Item)
-              value = "(Encapsulated Elements)"
-            else
-              value = ""
-            end
-        end
-        elements << (f0 + pos_valid[i].to_s + s + lev + s + tags[i] + f2 + names[i] + f3 + types[i] + f4 + f5 + lengths[i].to_s + s + s + value.rstrip)
-      end
-      # Print to either screen or file, depending on what the user requested:
-      if opt_file
-        print_file(elements)
-      else
-        print_screen(elements)
-      end
-    end # of print
-=end
 
     # Prints the key structural properties of the DICOM file.
     def print_properties
@@ -1239,26 +1039,6 @@ module DICOM
         end
       else
         add_msg("Binary is nil. Nothing to save.")
-      end
-    end
-
-
-    # Prints the selected elements to an ascii text file.
-    # The text file will be saved in the folder of the original DICOM file,
-    # with the original file name plus a .txt extension.
-    def print_file(elements)
-      File.open( @file + '.txt', 'w' ) do |output|
-        elements.each do | line |
-          output.print line + "\n"
-        end
-      end
-    end
-
-
-    # Prints the selected elements to screen.
-    def print_screen(elements)
-      elements.each do |element|
-        puts element
       end
     end
 

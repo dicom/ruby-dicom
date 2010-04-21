@@ -17,6 +17,7 @@ module DICOM
       @name = options[:name]
       @vr = options[:vr]
       @bin = options[:bin_data]
+      @length = options[:length]
       if options[:parent]
         @parent = options[:parent]
         @parent.add(self)

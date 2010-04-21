@@ -21,6 +21,7 @@ module DICOM
       @name = options[:name] || "Item"
       @vr = options[:vr] || ITEM_VR
       @bin = options[:bin_data]
+      @length = options[:length]
       if options[:parent]
         @parent = options[:parent]
         @parent.add_item(self)
