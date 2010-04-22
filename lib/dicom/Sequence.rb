@@ -24,24 +24,5 @@ module DICOM
       end
     end
 
-    # Adds a child item to this sequence.
-    # If no existing Item is specified, an empty item will be added.
-    # NB! Items are specified by index (starting at 1) instead of a tag string.
-    def add_item(item=nil)
-      if item
-        if item.is_a?(Item)
-          # Add the existing Item to this Sequence:
-          index = @tags.length + 1
-          @tags[index] = item
-        else
-          raise "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
-        end
-      else
-        # Create an empty Item with self as parent.
-        index = @tags.length + 1
-        item = Item.new(ITEM_TAG, 0, :parent => self)
-      end
-    end
-
   end # of class
 end # of module

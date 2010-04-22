@@ -57,16 +57,15 @@ module DICOM
           return
         end
       end
-      # Run a loop to read the data elements:
-      # (Data Element information is stored in arrays by the method process_data_element)
+      # Run a loop which parses Data Elements, one by one, until the end of the data string is reached:
       data_element = true
       while data_element do
-        # Using a rescue clause since processing Data Elements can cause errors to be raised when parsing an invalid DICOM file.
+        # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
         begin
           # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
           data_element = process_data_element
         rescue
-          # Something has gone wrong. Set data_element to false to break the read loop and signal that reading the file was unsuccessful.
+          # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
           @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
           @success = false
           data_element = false
@@ -164,6 +163,7 @@ module DICOM
 
 
     # Governs the process of reading data elements from the DICOM file.
+    # FIXME: This method has grown a bit messy and isn't very easy to follow. It would be nice if it could be cleaned up slightly.
     def process_data_element
       #STEP 1:
       # Attempt to read data element tag:
@@ -187,13 +187,13 @@ module DICOM
         vr = "OW" # how about alternatives like OB?
         # Modify name of item if this is an item that holds pixel data:
         if @current_element.tag != PIXEL_TAG
-          name = "Pixel Data Item"
+          name = PIXEL_ITEM_NAME
         end
       end
       # Read the binary string of the element:
       bin = read_bin(length) if length > 0
       # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
-      if length > 0 and vr != "SQ" and vr != ITEM_VR
+      if length > 0 and vr != "SQ" and tag != ITEM_TAG
         # Read the element's processed value (and the binary data from which it was extracted).
         value = read_value(vr, length)
       else
@@ -201,11 +201,12 @@ module DICOM
         # Special case: Check if pixel data element is sequenced:
         if tag == PIXEL_TAG
           # Change name and vr of pixel data element if it does not contain data itself:
-          name = "Encapsulated Pixel Data"
+          name = ENCAPSULATED_PIXEL_NAME
           level_vr = "SQ"
           @enc_image = true
         end
       end
+#puts "#{@current_parent.tag unless @current_parent.is_a?(DObject)}, #{tag}"
       # Create an Element from the gathered data:
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
@@ -216,10 +217,13 @@ module DICOM
           @current_element = Item.new(tag, value, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
         end
         # Common operations on the two types of parent elements:
-        @current_parent = @current_element
-        # If length is specified (no delimitation items), load a new DRead instance to read these child elements and load them into the current sequence:
-        if length > 0
+        # Elements following a pixel data item are not a child of that item:
+        @current_parent = @current_element unless @current_element.name == PIXEL_ITEM_NAME
+        # If length is specified (no delimitation items), load a new DRead instance to read these child elements
+        # and load them into the current sequence. The exception is when we have a pixel data item.
+        if length > 0 and not @enc_image
           child_reader = DRead.new(@current_element, bin, :sys_endian => @sys_endian, :bin => true, :syntax => @transfer_syntax)
+          @current_parent = @current_parent.parent
           @msg << child_reader.msg
           @success = child_reader.success
         end
@@ -229,7 +233,7 @@ module DICOM
         @current_parent = @current_parent.parent
       else
         # Create an ordinary Data Element:
-        @current_element = DataElement.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
+        @current_element = DataElement.new(tag, value, :bin_data => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
         set_abrupt_error if @current_element.length != @current_element.bin.length
       end
@@ -245,6 +249,11 @@ module DICOM
         # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
         if tag[0..3] != "0002" and @switched == false
           switch_syntax
+          # We may need to read our tag again if endian has switched (in which case it has been misread):
+          if @switched_endian
+            @stream.skip(-4)
+            tag = @stream.decode_tag
+          end
         end
       end
       return tag
@@ -309,7 +318,7 @@ module DICOM
     # NB! For some cases (pixel data, compressed data, unknown data), a value is not processed (nil is returned).
     def read_value(vr, length)
       unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
-        # Since the binary string has already been extracted for this Data Elemnt, we must first "rewind":
+        # Since the binary string has already been extracted for this Data Element, we must first "rewind":
         @stream.skip(-length)
         # Decode data:
         value = @stream.decode(length, vr)
@@ -372,6 +381,7 @@ module DICOM
       # We only plan to run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:
+      @switched_endian = true if @rest_endian != @file_endian
       @file_endian = @rest_endian
       @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
@@ -406,6 +416,7 @@ module DICOM
       @explicit = true
       # Default endianness of start of DICOM files is little endian:
       @file_endian = false
+      @switched_endian = false
       # Variables used internally when parsing the DICOM string:
       @header_length = 0
       # Array to keep track of the hierarchy of elements (this will be used to determine when a sequence or item is finished):

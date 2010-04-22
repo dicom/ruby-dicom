@@ -43,6 +43,8 @@ DICOM::ITEM_VR = "()"
 
 # Pixel tag:
 DICOM::PIXEL_TAG = "7FE0,0010"
+DICOM::ENCAPSULATED_PIXEL_NAME = "Encapsulated Pixel Data"
+DICOM::PIXEL_ITEM_NAME = "Pixel Data Item"
 
 # Load the DICOM Library class (dictionary):
 DICOM::LIBRARY =  DICOM::DLibrary.new

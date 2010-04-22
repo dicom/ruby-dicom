@@ -20,6 +20,44 @@ module DICOM
       return @tags[tag]
     end
 
+    # Adds a Data or Sequence Element to self (self should be either a DObject or an Item).
+    # Items are not allowed to be added with this method.
+    def add(element)
+      unless element.is_a?(Item)
+        unless self.is_a?(Sequence)
+          # Add the element:
+          @tags[element.tag] = element
+        else
+          raise "A Sequence is not allowed to have elements added to it. Use the method add_item() instead if the intention is to add an Item."
+        end
+      else
+        raise "An Item is not allowed as a parameter to the add() method. Use add_item() instead."
+      end
+    end
+
+    # Adds a child item to a Sequence (or Item in some cases where pixel data is encapsulated).
+    # If no existing Item is specified, an empty item will be added.
+    # NB! Items are specified by index (starting at 1) instead of a tag string.
+    def add_item(item=nil)
+      unless self.is_a?(DObject)
+        if item
+          if item.is_a?(Item)
+            # Add the existing Item to this Sequence:
+            index = @tags.length + 1
+            @tags[index] = item
+          else
+            raise "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
+          end
+        else
+          # Create an empty Item with self as parent.
+          index = @tags.length + 1
+          item = Item.new(ITEM_TAG, 0, :parent => self)
+        end
+      else
+        raise "An Item #{item} was attempted added to a DObject instance #{self}, which is not allowed."
+      end
+    end
+
     # Returns true (a boolean used to check whether an element has children or not).
     def children?
       return true
@@ -58,7 +96,7 @@ module DICOM
     def handle_print(index, max_digits, max_name, max_length, max_generations, visualization, options={})
       elements = Array.new
       s = " "
-      tree_symbol = "|_"
+      hook_symbol = "|_"
       last_item_symbol = "  "
       nonlast_item_symbol = "| "
       child_array.each_with_index do |child, i|
@@ -91,19 +129,26 @@ module DICOM
         # If we have child elements, print those elements recursively:
         if element.children?
           if n_parents > 1
+            child_visualization = Array.new
+            child_visualization.replace(visualization)
             if child == child_array.first
-              child_visualization = Array.new
-              child_visualization.replace(visualization)
               if child_array.length == 1
-                child_visualization.insert(2-n_parents, last_item_symbol)
+                # Last item:
+                child_visualization.insert(n_parents-2, last_item_symbol)
               else
-                child_visualization.insert(2-n_parents, nonlast_item_symbol)
+                # More items follows:
+                child_visualization.insert(n_parents-2, nonlast_item_symbol)
               end
             elsif child == child_array.last
-              child_visualization[2-n_parents] = last_item_symbol
+              # Last item:
+              child_visualization[n_parents-2] = last_item_symbol
+              child_visualization.insert(-1, hook_symbol)
+            else
+              # Neither first nor last (more items follows):
+              child_visualization.insert(n_parents-2, nonlast_item_symbol)
             end
           elsif n_parents == 1
-            child_visualization = Array.new(1, tree_symbol)
+            child_visualization = Array.new(1, hook_symbol)
           else
             child_visualization = Array.new
           end
