@@ -2972,7 +2972,7 @@ module DICOM
         "1.2.840.10008.1.2.4.64" => ["JPEG Full Progression, Hierarchical (Process 25 & 27)", "Transfer Syntax"], # RET
         "1.2.840.10008.1.2.4.65" => ["JPEG Lossless, Hierarchical (Process 28)", "Transfer Syntax"], # RET
         "1.2.840.10008.1.2.4.66" => ["JPEG Lossless, Hierarchical (Process 29)", "Transfer Syntax"], # RET
-        "1.2.840.10008.1.2.4.70" => ["JPEG Lossless, Non-Hierarchical, First-Order Prediction (Process 14 [Selection Value 1,): Default Transfer Syntax for Lossless JPEG Image Compression", "Transfer Syntax"],
+        "1.2.840.10008.1.2.4.70" => ["JPEG Lossless, Non-Hierarchical, First-Order Prediction (Process 14 [Selection Value 1]): Default Transfer Syntax for Lossless JPEG Image Compression", "Transfer Syntax"],
         "1.2.840.10008.1.2.4.80" => ["JPEG-LS Lossless Image Compression", "Transfer Syntax"],
         "1.2.840.10008.1.2.4.81" => ["JPEG-LS Lossy (Near-Lossless) Image Compression", "Transfer Syntax"],
         "1.2.840.10008.1.2.4.90" => ["JPEG 2000 Image Compression (Lossless Only)", "Transfer Syntax"],
