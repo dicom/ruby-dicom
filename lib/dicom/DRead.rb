@@ -21,7 +21,6 @@ module DICOM
       # Set the DICOM object as an instance variable:
       @obj = obj
       # Some of the options need to be transferred to instance variables:
-      @sys_endian = options[:sys_endian] || false
       @transfer_syntax = options[:syntax]
       # Initiate the variables that are used during file reading:
       init_variables
@@ -61,15 +60,15 @@ module DICOM
       data_element = true
       while data_element do
         # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
-        begin
+#        begin
           # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
           data_element = process_data_element
-        rescue
+#        rescue
           # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
-          @success = false
-          data_element = false
-        end
+#          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
+#          @success = false
+#          data_element = false
+#        end
       end
     end
 
@@ -206,7 +205,6 @@ module DICOM
           @enc_image = true
         end
       end
-#puts "#{@current_parent.tag unless @current_parent.is_a?(DObject)}, #{tag}"
       # Create an Element from the gathered data:
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
@@ -217,12 +215,17 @@ module DICOM
           @current_element = Item.new(tag, value, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
         end
         # Common operations on the two types of parent elements:
-        # Elements following a pixel data item are not a child of that item:
-        @current_parent = @current_element unless @current_element.name == PIXEL_ITEM_NAME
+        if length == 0 and @enc_image
+          # Set as parent. Exceptions when parent will not be set:
+          # Item/Sequence has zero length & Item is a pixel item (which contains pixels, not child elements).
+          @current_parent = @current_element
+        elsif length != 0
+          @current_parent = @current_element unless name == PIXEL_ITEM_NAME
+        end
         # If length is specified (no delimitation items), load a new DRead instance to read these child elements
         # and load them into the current sequence. The exception is when we have a pixel data item.
         if length > 0 and not @enc_image
-          child_reader = DRead.new(@current_element, bin, :sys_endian => @sys_endian, :bin => true, :syntax => @transfer_syntax)
+          child_reader = DRead.new(@current_element, bin, :bin => true, :syntax => @transfer_syntax)
           @current_parent = @current_parent.parent
           @msg << child_reader.msg
           @success = child_reader.success
