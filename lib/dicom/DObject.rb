@@ -36,70 +36,67 @@ module DICOM
     attr_reader :errors, :modality, :parent, :read_success, :segments, :write_success
 
     # Initialize the DObject instance.
+    # Parameters:
+    # string
+    # options
+    #
+    # Options:
+    # :bin
+    # :segment_size
+    # :syntax
+    # :verbose
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      @verbose = options[:verbose]
-      segment_size = options[:segment_size]
-      bin = options[:bin]
-      syntax = options[:syntax]
-      # Default verbosity is true:
-      @verbose = true if @verbose == nil
-
-      # Initialize variables that will be used for the DICOM object:
+      # Default verbosity is true if verbosity hasn't been specified (nil):
+      @verbose = (options[:verbose] == false ? false : true)
+      # Initialization of variables that DObject share with other parent elements:
       initialize_parent
-      # Array that will holde any messages generated while reading the DICOM file:
+      # Messages (errors, warnings or notices) will be accumulated in an array:
       @errors = Array.new
       # Structural information (default values):
       @compression = false
       @color = false
       @explicit = true
       @file_endian = false
-      # Information about the DICOM object:
-      @modality = nil
       # Control variables:
       @read_success = false
       # Initialize a Stream instance which is used for encoding/decoding:
       @stream = Stream.new(nil, @file_endian, @explicit)
       # The DObject instance is the top of the hierarchy and unlike other elements it has no parent:
       @parent = nil
-
-      # If a (valid) file name string is supplied, call the method to read the DICOM file:
+      # For convenience, call the read method if a string has been supplied:
       if string.is_a?(String) and string != ""
-        @file = string
-        read(string, :bin => bin, :segment_size => segment_size, :syntax => syntax)
+        @file = string unless options[:bin]
+        read(string, options)
       end
-    end # of initialize
+    end
 
 
     # Returns a DICOM object by reading the file specified.
     # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
     # For the time being, this method is called automatically when initializing the DObject class,
     # but in the future, when write support is added, this method may have to be called manually.
-    def read(string, options = {})
-      r = DRead.new(self, string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => options[:syntax])
+    def read(string, options={})
+      r = DRead.new(self, string, options)
       # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
       # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
       unless r.success
-#        r_explicit = DRead.new(self, string, :sys_endian => @sys_endian, :bin => options[:bin], :syntax => "1.2.840.10008.1.2.1") # TS: Explicit, Little endian
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => "1.2.840.10008.1.2.1") # TS: Explicit, Little endian
         # Only extract information from this new attempt if it was successful:
-#        r = r_explicit if r_explicit.success
+        r = r_explicit if r_explicit.success
       end
       # Store the data to the instance variables if the readout was a success:
       if r.success
         @read_success = true
+        # Update instance variables based on the properties of the DICOM object:
         @explicit = r.explicit
         @file_endian = r.file_endian
-        # Update Stream instance with settings from this DICOM file:
-        @stream.set_endian(@file_endian)
         @stream.explicit = @explicit
-        # Update status variables for this object:
-        #check_properties
-        # Set the modality of the DICOM object:
-        #set_modality
+        @stream.set_endian(@file_endian)
       else
         @read_success = false
       end
-      # Check if a partial extraction has been requested (used for network communication purposes)
+      # Check if a partial extraction has been requested (used for network communication purposes):
       if options[:segment_size]
         @segments = r.extract_segments(options[:segment_size])
       end
@@ -108,9 +105,9 @@ module DICOM
     end
 
 
-    # Transfers necessary information from the DObject to the DWrite class, which
-    # will attempt to write this information to a valid DICOM file.
-    def write(file_name, transfer_syntax = nil)
+    # Passes the DObject to the DWrite class, which recursively traverses the Data Element
+    # structure and encodes a proper binary string, which is then written to the specified file.
+    def write(file_name, transfer_syntax=nil)
       w = set_write_object(file_name, transfer_syntax)
       w.write
       # Write process succesful?
@@ -482,56 +479,118 @@ module DICOM
     ##############################################
 
 
-    # Prints the key structural properties of the DICOM file.
-    def print_properties
-      # Explicitness:
-      if @explicit
-        explicit = "Explicit"
+    # Gathers key information about the DICOM object in a string array.
+    # This array can be printed to screen (default), printed to a file specified by the user or simply returned to the caller.
+    def information
+      sys_info = Array.new
+      info = Array.new
+      # Version of Ruby DICOM used:
+      sys_info << "Ruby DICOM version:   #{VERSION}"
+      # System endian:
+      if CPU_ENDIAN
+        cpu = "Big Endian"
       else
-        explicit = "Implicit"
+        cpu = "Little Endian"
       end
-      # Endianness:
-      if @file_endian
-        endian = "Big Endian"
+      sys_info << "Byte Order (CPU):     #{cpu}"
+      # File path/name:
+      info << "File:                 #{@file}"
+      # Modality:
+      sop_class_uid = self["0008,0016"]
+      if sop_class_uid
+        modality = LIBRARY.get_uid(sop_class_uid.value)
       else
-        endian = "Little Endian"
+        modality = "SOP Class not specified!"
       end
+      info << "Modality:             #{modality}"
+      # Meta header presence (Simply check for the presence of the transfer syntax data element), VR and byte order:
+      transfer_syntax = self["0002,0010"]
+      if transfer_syntax
+        syntax_validity, explicit, endian = LIBRARY.process_transfer_syntax(transfer_syntax.value)
+        if syntax_validity
+          meta_comment = ""
+          explicit_comment = ""
+          encoding_comment = ""
+        else
+          meta_comment = " (But unknown/invalid transfer syntax: #{transfer_syntax})"
+          explicit_comment = " (Assumed)"
+          encoding_comment = " (Assumed)"
+        end
+        if explicit
+          explicitness = "Explicit"
+        else
+          explicitness = "Implicit"
+        end
+        if endian
+          encoding = "Big Endian"
+        else
+          encoding = "Little Endian"
+        end
+      else
+        meta = "No"
+        explicitness = "Implicit"
+        encoding = "Little Endian"
+        explicit_comment = " (Assumed)"
+        encoding_comment = " (Assumed)"
+      end
+      meta = "Yes#{meta_comment}"
+      explicit = "#{explicitness}#{explicit_comment}"
+      encoding = "#{encoding}#{encoding_comment}"
+      info << "Value Representation: #{explicitness}"
+      info << "Byte Order (File):    #{encoding}"
       # Pixel data:
-      if @compression == nil
-        pixels = "No"
+      pixels = self[PIXEL_TAG]
+      unless pixels
+        info << "Pixel Data:           No"
       else
-        pixels = "Yes"
+        info << "Pixel Data:           Yes"
+        # Image size:
+        cols = self["0028,0011"] || "Columns missing"
+        rows = self["0028,0010"] || "Rows missing"
+        info << "Image Size:           #{cols.value}*#{rows.value}"
+        # Frames:
+        frames = self["0028,0008"] || "1"
+        if frames != "1"
+          # Encapsulated or 3D pixel data:
+          if pixels.is_a?(DataElement)
+            frames = frames.value + " (3D Pixel Data)"
+          else
+            frames = frames.value + " (Encapsulated Multiframe Image)"
+          end
+        end
+        info << "Number of frames:     #{frames}"
+        # Color:
+        colors = self["0028,0004"] || "Not specified"
+        info << "Photometry:           #{colors.value}"
+        # Compression:
+        if transfer_syntax
+          compression = LIBRARY.get_compression(transfer_syntax.value)
+          if compression
+            compression = LIBRARY.get_uid(transfer_syntax.value)
+          else
+            compression = "No"
+          end
+        else
+          compression = "No (Assumed)"
+        end
+        info << "Compression:          #{compression}"
+        # Pixel bits (allocated):
+        bits = self["0028,0100"] || "Not specified"
+        info << "Bits per Pixel:       #{bits.value}"
       end
-      # Colors:
-      if @color
-        image = "Colors"
-      else
-        image = "Greyscale"
-      end
-      # Compression:
-      if @compression == true
-        compression = LIBRARY.get_uid(get_value("0002,0010").rstrip)
-      else
-        compression = "No"
-      end
-      # Bits per pixel (allocated):
-      bits = get_value("0028,0100", :array => true, :silent => true)
-      bits = bits[0].to_s if bits
-      # Print the file properties:
-      puts "Key properties of DICOM object:"
-      puts "-------------------------------"
-      puts "File:           " + @file
-      puts "Modality:       " + @modality.to_s
-      puts "Value repr.:    " + explicit
-      puts "Byte order:     " + endian
-      puts "Pixel data:     " + pixels
-      if pixels == "Yes"
-        puts "Image:          " + image if image
-        puts "Compression:    " + compression if compression
-        puts "Bits per pixel: " + bits if bits
-      end
-      puts "-------------------------------"
-    end # of print_properties
+      # Print the DICOM object's key properties:
+      separator = "-------------------------------------------"
+      puts "\n"
+      puts "System properties:"
+      puts separator
+      puts sys_info
+      puts "\n"
+      puts "Key properties of the DICOM object:"
+      puts separator
+      puts info
+      puts separator
+      return info
+    end # of information
 
 
     ####################################################
@@ -769,10 +828,10 @@ module DICOM
     end # of set_value
 
 
-    ##################################################
-    ############## START OF PRIVATE METHODS:  ########
-    ##################################################
+
+    # Following methods are private:
     private
+
 
 
     # Adds a warning or error message to the instance array holding messages, and if verbose variable is true, prints the message as well.
@@ -780,26 +839,6 @@ module DICOM
       puts msg if @verbose
       @errors << msg
       @errors.flatten
-    end
-
-
-    # Checks the status of the pixel data that has been read from the DICOM file: whether it exists at all and if its greyscale or color.
-    # Modifies instance variable @color if color image is detected and instance variable @compression if no pixel data is detected.
-    def check_properties
-      # Check if pixel data is present:
-      if @tags.index("7FE0,0010") == nil
-        # No pixel data in DICOM file:
-        @compression = nil
-      else
-        @compression = LIBRARY.get_compression(get_value("0002,0010", :silent => true))
-      end
-      # Set color variable as true if our object contain a color image:
-      col_string = get_value("0028,0004", :silent => true)
-      if col_string != false
-        if (col_string.include? "RGB") or (col_string.include? "COLOR") or (col_string.include? "COLOUR")
-          @color = true
-        end
-      end
     end
 
 
@@ -1198,29 +1237,13 @@ module DICOM
     end
 
 
-    # Sets the modality variable of the current DICOM object, by querying the library with the object's SOP Class UID.
-    def set_modality
-      value = get_value("0008,0016", :silent => true)
-      if value == false
-        @modality = "Not specified"
-      else
-        modality = LIBRARY.get_uid(value.rstrip)
-        @modality = modality
-      end
-    end
-
-
     # Handles the creation of a DWrite object, and returns this object to the calling method.
-    def set_write_object(file_name = nil, transfer_syntax = nil)
+    def set_write_object(file_name=nil, transfer_syntax=nil)
       unless transfer_syntax
         transfer_syntax = get_value("0002,0010", :silent => true)
         transfer_syntax = "1.2.840.10008.1.2" if not transfer_syntax # Default is implicit, little endian
       end
-      w = DWrite.new(file_name, :sys_endian => @sys_endian, :transfer_syntax => transfer_syntax)
-      w.tags = @tags
-      w.vr = @vr
-      w.lengths = @lengths
-      w.bin = @bin
+      w = DWrite.new(self, file_name, :transfer_syntax => transfer_syntax)
       w.rest_endian = @file_endian
       w.rest_explicit = @explicit
       return w
