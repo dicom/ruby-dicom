@@ -60,15 +60,15 @@ module DICOM
       data_element = true
       while data_element do
         # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
-#        begin
+        begin
           # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
           data_element = process_data_element
-#        rescue
+        rescue
           # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-#          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
-#          @success = false
-#          data_element = false
-#        end
+          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
+          @success = false
+          data_element = false
+        end
       end
     end
 
