@@ -1240,8 +1240,11 @@ module DICOM
     # Handles the creation of a DWrite object, and returns this object to the calling method.
     def set_write_object(file_name=nil, transfer_syntax=nil)
       unless transfer_syntax
-        transfer_syntax = get_value("0002,0010", :silent => true)
-        transfer_syntax = "1.2.840.10008.1.2" if not transfer_syntax # Default is implicit, little endian
+        if self["0002,0010"]
+          transfer_syntax = self["0002,0010"].value
+        else
+          transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
+        end
       end
       w = DWrite.new(self, file_name, :transfer_syntax => transfer_syntax)
       w.rest_endian = @file_endian

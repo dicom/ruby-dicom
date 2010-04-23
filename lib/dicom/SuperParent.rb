@@ -65,7 +65,7 @@ module DICOM
 
     # Returns all (immediate) child elements in a sorted array.
     def child_array
-      return @tags.sort
+      return @tags.sort.transpose[1]
     end
 
     # Returns the number of Elements contained directly in this parent (does not include number of elements of possible children).
@@ -99,11 +99,9 @@ module DICOM
       hook_symbol = "|_"
       last_item_symbol = "  "
       nonlast_item_symbol = "| "
-      child_array.each_with_index do |child, i|
-        # A two-element array where the first element is the tag string and the second is the Data/Item/Sequence element object.
-        tag = child[0]
-        element = child[1]
+      child_array.each_with_index do |element, i|
         n_parents = element.parents.length
+        tag = element.tag
         # Formatting: Index
         i_s = s*(max_digits-(index).to_s.length)
         # Formatting: Name (and Tag)
@@ -131,7 +129,7 @@ module DICOM
           if n_parents > 1
             child_visualization = Array.new
             child_visualization.replace(visualization)
-            if child == child_array.first
+            if element == child_array.first
               if child_array.length == 1
                 # Last item:
                 child_visualization.insert(n_parents-2, last_item_symbol)
@@ -139,7 +137,7 @@ module DICOM
                 # More items follows:
                 child_visualization.insert(n_parents-2, nonlast_item_symbol)
               end
-            elsif child == child_array.last
+            elsif element == child_array.last
               # Last item:
               child_visualization[n_parents-2] = last_item_symbol
               child_visualization.insert(-1, hook_symbol)
@@ -184,8 +182,7 @@ module DICOM
       max_name = 0
       max_length = 0
       max_generations = 0
-      child_array.each do |child|
-        element = child[1]
+      child_array.each do |element|
         if element.children?
           max_nc, max_lc, max_gc = element.max_lengths
           max_name = max_nc if max_nc > max_name

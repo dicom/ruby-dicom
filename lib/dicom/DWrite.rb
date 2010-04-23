@@ -11,27 +11,21 @@
 
 module DICOM
 
-  # Class for writing the data from a DObject to a valid DICOM file.
+  # This class handles the encoding of a DObject to a valid DICOM string and then writing this string to a file.
   class DWrite
 
-    attr_writer :tags, :vr, :lengths, :bin, :rest_endian, :rest_explicit
+    attr_writer :rest_endian, :rest_explicit
     attr_reader :success, :msg
 
-    # Initialize the DWrite instance.
-    def initialize(file_name=nil, options={})
+    # Initializes the DWrite instance.
+    def initialize(obj, file_name=nil, options={})
+      @obj = obj
       # Process option values, setting defaults for the ones that are not specified:
-      @sys_endian = options[:sys_endian] || false
       @file_name = file_name
       @transfer_syntax = options[:transfer_syntax] || "1.2.840.10008.1.2" # Implicit, little endian
-
-      # Create arrays used for storing data element information:
-      @tags = Array.new
-      @vr = Array.new
-      @lengths = Array.new
-      @bin = Array.new
       # Array for storing error/warning messages:
       @msg = Array.new
-      # Default values that may be overwritten by the user:
+      # Default values which the user may overwrite afterwards:
       # Explicitness of the remaining groups after the initial 0002 group:
       @rest_explicit = false
       # Endianness of the remaining groups after the first group:
@@ -40,34 +34,29 @@ module DICOM
 
 
     # Writes the DICOM information to file.
-    def write(body = nil)
+    def write(body=nil)
       # Check if we are able to create given file:
       open_file(@file_name)
       # Go ahead and write if the file was opened successfully:
-      if @file != nil
+      if @file
         # Initiate necessary variables:
         init_variables
-        # Create a Stream instance to handle the encoding of content to
-        # the binary string that will eventually be saved to file:
+        # Create a Stream instance to handle the encoding of content to a binary string:
         @stream = Stream.new(nil, @file_endian, @explicit)
         # Tell the Stream instance which file to write to:
         @stream.set_file(@file)
-        # Write header:
-        write_header
-        # Meta information:
-        # A simple check to determine whether we need to write meta information to the DICOM object:
-        if @tags.length > 0
-          write_meta unless @tags[0].include?("0002")
-        else
-          write_meta
-        end
+        # Write the DICOM signature:
+        write_signature
         # Write either body or data elements:
         if body
+          # Add meta information header:
+          write_meta
           @stream.add_last(body)
         else
-          @tags.each_index do |i|
-            write_data_element(i)
-          end
+          elements = @obj.child_array
+          # If the DICOM object lacks meta information header, it will be added:
+          write_meta unless elements.first.tag[0..3] == "0002"
+          write_data_elements(elements)
         end
         # As file has been written successfully, it can be closed.
         @file.close
@@ -150,8 +139,8 @@ module DICOM
     end
 
 
-    # Writes the official DICOM header:
-    def write_header
+    # Writes the official DICOM signature header.
+    def write_signature
       # Write the string "DICM" which along with the empty bytes that
       # will be put before it, identifies this as a valid DICOM file:
       identifier = @stream.encode("DICM", "STR")
@@ -212,65 +201,66 @@ module DICOM
 
 
     # Writes each data element to file:
-    def write_data_element(i)
-      # Step 1: Write tag:
-      write_tag(i)
-      # Step 2: Write [vr] and value length:
-      write_vr_length(i)
-      # Step 3: Write value:
-      write_value(i)
-      # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
-      if @tags[i] == "7FE0,0010"
-        @enc_image = true if @lengths[i].to_i == 0
+    def write_data_elements(elements)
+      elements.each do |element|
+        # Step 1: Write tag:
+        write_tag(element.tag)
+        # Step 2: Write [VR] and value length:
+        write_vr_length(element.tag, element.vr, element.length)
+        # Step 3: Write value (Insert the already encoded binary string):
+        write_value(element.bin)
+        # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
+        if element.tag == PIXEL_TAG and element.parent.is_a?(DObject)
+          @enc_image = true if element.length <= 0
+        end
+        # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
+        if element.children?
+          write_data_elements(element.child_array) if element.child_array
+        end
       end
     end
 
 
-    # Writes the tag (first part of the data element):
-    def write_tag(i)
-      # Extract current tag:
-      tag = @tags[i]
+    # Writes the tag (first part of the data element).
+    def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-      if tag[0..3] != "0002" and @switched == false
-        switch_syntax
-      end
+      switch_syntax if tag[0..3] != "0002" and @switched == false
       # Write to binary string:
       bin_tag = @stream.encode_tag(tag)
       add(bin_tag)
     end
 
 
-    # Writes the VR (if it is to be written) and length value
-    # (these two are the middle part of the data element):
-    def write_vr_length(i)
+    # Writes the VR (if it is to be written) and length value. These two are the middle part of the data element.
+    def write_vr_length(tag, vr, length)
       # First some preprocessing:
       # Set length value:
-      if @lengths[i] == nil
+      if length == nil
         # Set length value to 0:
-        length4 = @stream.encode(0, "UL")
+        length4 = @stream.encode(0, "SL")
         length2 = @stream.encode(0, "US")
-      elsif @lengths[i] == "UNDEFINED"
+      elsif length == -1
         # Set length to 'ff ff ff ff':
-        length4 = @stream.encode(4294967295, "UL")
+        length4 = @stream.encode(-1, "SL")
         # No length2 necessary for this case.
       else
         # Pick length value from array:
-        length4 = @stream.encode(@lengths[i], "UL")
-        length2 = @stream.encode(@lengths[i], "US")
+        length4 = @stream.encode(length, "SL")
+        length2 = @stream.encode(length, "US")
       end
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       # *****EXPLICIT*****:
       if @explicit == true
         # Step 1: Write VR (if it is to be written)
-        unless @tags[i] == "FFFE,E000" or @tags[i] == "FFFE,E00D" or @tags[i] == "FFFE,E0DD"
+        unless ITEM_TAGS.include?(tag)
           # Write data element VR (2 bytes - since we are not dealing with an item related element):
-          vr = @stream.encode(@vr[i], "STR")
-          add(vr)
+          bin_vr = @stream.encode(vr, "STR")
+          add(bin_vr)
         end
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element vr:
-        case @vr[i]
+        case vr
           when "OB","OW","SQ","UN","UT"
             if @enc_image
               # Item under an encapsulated Pixel Data (7FE0,0010):
@@ -284,7 +274,7 @@ module DICOM
               # Value length (4 bytes):
               add(length4)
             end
-          when "()"
+          when ITEM_VR
             # 4 bytes:
             # For tags "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
             add(length4)
@@ -302,25 +292,23 @@ module DICOM
     end # of write_vr_length
 
 
-    # Writes the value (last part of the data element):
-    def write_value(i)
+    # Writes the value (last part of the data element).
+    def write_value(bin)
       # This is pretty straightforward, just dump the binary data to the file/string:
-      add(@bin[i])
+      add(bin)
     end
 
 
-    # Tests if the file/path is writable, creates any folders
-    # if necessary, and opens the file for writing.
+    # Tests if the file/path is writable, creates any folders if necessary, and opens the file for writing.
     def open_file(file)
-      # Two cases: File already exists or it does not.
-      # Check if file exists:
+      # Check if file already exists:
       if File.exist?(file)
         # Is it writable?
         if File.writable?(file)
           @file = File.new(file, "wb")
         else
           # Existing file is not writable:
-          @msg << "Error! The program does not have permission or resources to create the file you specified. Returning. (#{file})"
+          @msg << "Error! The program does not have permission or resources to create the file you specified: (#{file})"
         end
       else
         # File does not exist.
@@ -337,35 +325,30 @@ module DICOM
             FileUtils.mkdir_p path
           end
         end
-        # The path to this non-existing file should now be prepared, and we proceed to creating the file:
+        # The path to this non-existing file is verified, and we can proceed to create the file:
         @file = File.new(file, "wb")
       end
     end
 
 
-    # Changes encoding variables as the file writing proceeds past the initial 0002 group of the DICOM file.
+    # Changes encoding variables as the string encoding proceeds past the initial 0002 group of the DICOM object.
     def switch_syntax
       # The information from the Transfer syntax element (if present), needs to be processed:
-      valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax.rstrip)
+      valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
       unless valid_syntax
         @msg << "Warning: Invalid/unknown transfer syntax! Will still write the file, but you should give this a closer look."
       end
       # We only plan to run this method once:
       @switched = true
       # Update explicitness and endianness (pack/unpack variables):
-      @file_endian = @rest_endian
-      @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
+      @file_endian = @rest_endian
       @stream.explicit = @rest_explicit
-      if @sys_endian == @file_endian
-        @endian = true
-      else
-        @endian = false
-      end
+      @stream.set_endian(@rest_endian)
     end
 
 
-    # Find the position of the first tag which is not a group "0002" tag:
+    # Finds the position of the first tag which is not a group "0002" tag.
     def first_non_meta
       i = 0
       go = true
@@ -393,12 +376,6 @@ module DICOM
       @file_endian = false
       # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
-      # Use a "relationship endian" variable to guide writing of file:
-      if @sys_endian == @file_endian
-        @endian = true
-      else
-        @endian = false
-      end
       # Items contained under the Pixel Data element needs some special attention to write correctly:
       @enc_image = false
     end
