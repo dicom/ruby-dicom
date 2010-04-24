@@ -581,11 +581,11 @@ module DICOM
       # Print the DICOM object's key properties:
       separator = "-------------------------------------------"
       puts "\n"
-      puts "System properties:"
+      puts "System Properties:"
       puts separator
       puts sys_info
       puts "\n"
-      puts "Key properties of the DICOM object:"
+      puts "DICOM Object Properties:"
       puts separator
       puts info
       puts separator

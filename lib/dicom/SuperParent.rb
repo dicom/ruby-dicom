@@ -63,9 +63,9 @@ module DICOM
       return true
     end
 
-    # Returns all (immediate) child elements in a sorted array.
+    # Returns all (immediate) child elements in a sorted array. If object has no children, an empty array is returned
     def child_array
-      return @tags.sort.transpose[1]
+      return @tags.sort.transpose[1] || Array.new
     end
 
     # Returns the number of Elements contained directly in this parent (does not include number of elements of possible children).
@@ -164,14 +164,18 @@ module DICOM
     # :value_max
     # :file
     def print(options={})
-      max_name, max_length, max_generations = max_lengths
-      max_digits = count_all.to_s.length
-      visualization = Array.new
-      elements, index = handle_print(start_index=1, max_digits, max_name, max_length, max_generations, visualization, options)
-      if options[:file]
-        print_file(elements, options[:file])
+      if count > 0
+        max_name, max_length, max_generations = max_lengths
+        max_digits = count_all.to_s.length
+        visualization = Array.new
+        elements, index = handle_print(start_index=1, max_digits, max_name, max_length, max_generations, visualization, options)
+        if options[:file]
+          print_file(elements, options[:file])
+        else
+          print_screen(elements)
+        end
       else
-        print_screen(elements)
+        puts "Notice: Object #{self} is empty (contains no Data Elements)!"
       end
     end
 
