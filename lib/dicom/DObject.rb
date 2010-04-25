@@ -338,15 +338,15 @@ module DICOM
         end
       else
         meta = "No"
-        explicitness = "Implicit"
-        encoding = "Little Endian"
+        explicitness = (@explicit == true ? "Explicit" : "Implicit")
+        encoding = (@file_endian == true ? "Big Endian" : "Little Endian")
         explicit_comment = " (Assumed)"
         encoding_comment = " (Assumed)"
       end
       meta = "Yes#{meta_comment}"
       explicit = "#{explicitness}#{explicit_comment}"
       encoding = "#{encoding}#{encoding_comment}"
-      info << "Value Representation: #{explicitness}"
+      info << "Value Representation: #{explicit}"
       info << "Byte Order (File):    #{encoding}"
       # Pixel data:
       pixels = self[PIXEL_TAG]

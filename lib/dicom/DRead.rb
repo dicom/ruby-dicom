@@ -238,7 +238,7 @@ module DICOM
         # Create an ordinary Data Element:
         @current_element = DataElement.new(tag, value, :bin_data => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
-        set_abrupt_error if @current_element.length != @current_element.bin.length
+        set_abrupt_error if length != @current_element.bin.length
       end
       # Return true to indicate success:
       return true
