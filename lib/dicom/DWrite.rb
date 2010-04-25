@@ -215,7 +215,13 @@ module DICOM
         end
         # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
         if element.children?
-          write_data_elements(element.child_array) if element.child_array
+          write_data_elements(element.child_array)
+        end
+        # We might need to add a Delimiter Item:
+        if element.length == -1
+          delimiter_tag = (element.tag == "FFFE,E00D" ? "FFFE,E00D" : "FFFE,E0DD")
+          write_tag(delimiter_tag)
+          write_vr_length(delimiter_tag, ITEM_VR, -1)
         end
       end
     end
