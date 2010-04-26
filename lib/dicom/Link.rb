@@ -123,7 +123,7 @@ module DICOM
       append_presentation_context(as, pc, ts)
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
-      append_association_header(pdu)
+      append_association_header(pdu, @host_ae)
     end
 
 

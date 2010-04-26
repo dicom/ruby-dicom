@@ -141,10 +141,10 @@ module DICOM
       obj = DObject.new(file_path, :verbose => false)
       if obj.read_success
         # Get the SOP Class UID (abstract syntax) from the DICOM obj:
-        @abstract_syntax = obj.get_value("0008,0016")
+        @abstract_syntax = obj["0008,0016"].value
         # Get the Transfer Syntax UID from the DICOM obj,
         # and if not available, set to default: Implicit, Little endian
-        @transfer_syntax = [obj.get_value("0002,0010")] || ["1.2.840.10008.1.2"]
+        @transfer_syntax = [obj["0002,0010"].value] || ["1.2.840.10008.1.2"]
         # Open a DICOM link:
         establish_association
         if @association
@@ -348,7 +348,7 @@ module DICOM
     # conveys the information from the original DICOM file.
     def perform_send(obj)
       # Set the command array to be used:
-      sop_uid = obj.get_value("SOP Instance UID") # 0008,0018
+      sop_uid = obj["0008,0018"].value # "SOP Instance UID"
       if sop_uid
         set_command_fragment_store(sop_uid)
         pdu_type = "04"
