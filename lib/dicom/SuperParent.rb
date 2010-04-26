@@ -101,19 +101,18 @@ module DICOM
       nonlast_item_symbol = "| "
       child_array.each_with_index do |element, i|
         n_parents = element.parents.length
-        tag = element.tag
         # Formatting: Index
         i_s = s*(max_digits-(index).to_s.length)
         # Formatting: Name (and Tag)
-        unless tag.is_a?(String)
-          name = "#{element.name} (\##{tag})"
-          tag = ITEM_TAG
+        if element.tag == ITEM_TAG
+          # Add index numbers to the Item names:
+          name = "#{element.name} (\##{i+1})"
         else
           name = element.name
         end
         n_s = s*(max_name-name.length)
         # Formatting: Tag
-        tag = "#{visualization.join}#{tag}" if visualization.length > 0
+        tag = "#{visualization.join}#{element.tag}" #if visualization.length > 0
         t_s = s*((max_generations-1)*2+9-tag.length)
         # Formatting: Length
         l_s = s*(max_length-element.length.to_s.length)
