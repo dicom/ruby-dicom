@@ -15,7 +15,7 @@ module DICOM
   class DWrite
 
     attr_writer :rest_endian, :rest_explicit
-    attr_reader :success, :msg
+    attr_reader :msg, :success, :segments
 
     # Initializes the DWrite instance.
     def initialize(obj, file_name=nil, options={})
@@ -69,59 +69,21 @@ module DICOM
     # Write DICOM content to a series of size-limited binary strings
     # (typically used when transmitting DICOM objects through network connections)
     # The method returns an array of binary strings.
-    def encode_segments(size)
+    def encode_segments(max_size)
       # Initiate necessary variables:
       init_variables
+      @segments = Array.new
+      elements = @obj.child_array
       # When sending a DICOM file across the network, no header or meta information is needed.
       # We must therefore find the position of the first tag which is not a meta information tag.
-      first_pos = first_non_meta
-      last_pos = @tags.length - 1
+      first_pos = first_non_meta(elements)
+      selected_elements = elements[first_pos..-1]
       # Create a Stream instance to handle the encoding of content to
       # the binary string that will eventually be saved to file:
       @stream = Stream.new(nil, @file_endian, @explicit)
-      # Start encoding data elements, and start on a new string when the size limit is reached:
-      segments = Array.new
-      (first_pos..last_pos).each do |i|
-        value_length = @lengths[i].to_i
-        # Test the length of the upcoming data element against our size limitation:
-        if value_length > size
-          # Start writing content from this data element,
-          # then continue writing its content in the next segments.
-          # Write tag & vr/length:
-          write_tag(i)
-          write_vr_length(i)
-          # Find out how much of this element's value we can write, then add it:
-          available = size - @stream.length
-          value_first_part = @bin[i].slice(0, available)
-          @stream.add_last(value_first_part)
-          # Add segment and reset:
-          segments << @stream.string
-          @stream.reset
-          # Find out how many more segments our data element value will fill:
-          remaining_segments = ((value_length - available).to_f / size.to_f).ceil
-          index = available
-          # Iterate through the data element's value until we have added it entirely:
-          remaining_segments.times do
-            value = @bin[i].slice(index, size)
-            index = index + size
-            @stream.add_last(value)
-            # Add segment and reset:
-            segments << @stream.string
-            @stream.reset
-          end
-        elsif (10 + value_length + @stream.length) >= size
-          # End the current segment, and start on a new segment for the next data element.
-          segments << @stream.string
-          @stream.reset
-          write_data_element(i)
-        else
-          # Write the next data element to the current segment:
-          write_data_element(i)
-        end
-      end
+      write_data_elements_to_segments(selected_elements, max_size)
       # Mark this write session as successful:
       @success = true
-      return segments
     end
 
 
@@ -200,29 +162,83 @@ module DICOM
     end
 
 
-    # Writes each data element to file:
+    # Cycles through the data elements in order to write.
     def write_data_elements(elements)
       elements.each do |element|
-        # Step 1: Write tag:
-        write_tag(element.tag)
-        # Step 2: Write [VR] and value length:
-        write_vr_length(element.tag, element.vr, element.length)
-        # Step 3: Write value (Insert the already encoded binary string):
-        write_value(element.bin)
-        # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
-        if element.tag == PIXEL_TAG and element.parent.is_a?(DObject)
-          @enc_image = true if element.length <= 0
-        end
+        write_data_element(element)
         # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
-        if element.children?
-          write_data_elements(element.child_array)
-        end
+        write_data_elements(element.child_array) if element.children?
         # We might need to add a Delimiter Item:
-        if element.length == -1
-          delimiter_tag = (element.tag == "FFFE,E00D" ? "FFFE,E00D" : "FFFE,E0DD")
-          write_tag(delimiter_tag)
-          write_vr_length(delimiter_tag, ITEM_VR, -1)
+        write_delimiter(element) if element.length == -1
+      end
+    end
+    
+    
+    # Writes a single data element.
+    def write_data_element(element)
+      # Step 1: Write tag:
+      write_tag(element.tag)
+      # Step 2: Write [VR] and value length:
+      write_vr_length(element.tag, element.vr, element.length)
+      # Step 3: Write value (Insert the already encoded binary string):
+      write_value(element.bin)
+      check_encapsulated_image(element)
+    end
+    
+    
+    # Writes an item/sequence delimiter for a given item/sequence.
+    def write_delimiter(element)
+      delimiter_tag = (element.tag == ITEM_TAG ? ITEM_DELIMITER : SEQUENCE_DELIMITER)
+      write_tag(delimiter_tag)
+      write_vr_length(delimiter_tag, ITEM_VR, -1)
+    end
+    
+    
+    # Writes each data element to file:
+    def write_data_elements_to_segments(elements, max_size)
+      # Start encoding data elements, and start on a new string when the size limit is reached:
+      elements.each do |element|
+        value_length = element.length
+        # Test the length of the upcoming data element against our size limitation:
+        if value_length > max_size
+          # Start writing content from this data element,
+          # then continue writing its content in the next segments.
+          # Write tag & vr/length:
+          write_tag(element.tag)
+          write_vr_length(element.tag, element.vr, element.length)
+          # Find out how much of this element's value we can write, then add it:
+          available = max_size - @stream.length
+          value_first_part = element.bin.slice(0, available)
+          @stream.add_last(value_first_part)
+          # Add segment and reset:
+          @segments << @stream.string
+          @stream.reset
+          # Find out how many more segments our data element value will fill:
+          remaining_segments = ((value_length - available).to_f / max_size.to_f).ceil
+          index = available
+          # Iterate through the data element's value until we have added it entirely:
+          remaining_segments.times do
+            value = element.bin.slice(index, max_size)
+            index = index + max_size
+            @stream.add_last(value)
+            # Add segment and reset:
+            @segments << @stream.string
+            @stream.reset
+          end
+        elsif (20 + value_length + @stream.length) >= max_size
+          # End the current segment, and start on a new segment for the next data element.
+          @segments << @stream.string
+          @stream.reset
+          write_data_element(element)
+        else
+          # Write the next data element to the current segment:
+          write_data_element(element)
         end
+        check_encapsulated_image(element)
+        # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
+        write_data_elements_to_segments(element.child_array, max_size) if element.children?
+        # We might need to add a Delimiter Item:
+        write_delimiter(element) if element.length == -1
       end
     end
 
@@ -335,6 +351,15 @@ module DICOM
         @file = File.new(file, "wb")
       end
     end
+    
+    
+    # Toggle the status for enclosed pixel data.
+    def check_encapsulated_image(element)
+      # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
+      if element.tag == PIXEL_TAG and element.parent.is_a?(DObject)
+        @enc_image = true if element.length <= 0
+      end
+    end
 
 
     # Changes encoding variables as the string encoding proceeds past the initial 0002 group of the DICOM object.
@@ -354,19 +379,16 @@ module DICOM
     end
 
 
-    # Finds the position of the first tag which is not a group "0002" tag.
-    def first_non_meta
-      i = 0
-      go = true
-      while go == true and i < @tags.length do
-        tag = @tags[i]
-        if tag[0..3] == "0002"
-          i += 1
-        else
-          go = false
+    # Identifies and returns the index of the first element that does not have a group "0002" tag.
+    def first_non_meta(elements)
+      non_meta_index = 0
+      elements.each_index do |i|
+        if elements[i].tag[0..3] != "0002"
+          non_meta_index = i
+          break
         end
       end
-      return i
+      return non_meta_index
     end
 
 

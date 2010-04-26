@@ -73,8 +73,8 @@ module DICOM
     end
 
 
-    # Extract an array of binary strings
-    # (this is typically used if one intends to transmit the DICOM file through a network connection)
+    # Extracts an array of binary strings.
+    # (this could be used if one intends to transmit the DICOM file through a network connection, but is not currently used by any Ruby DICOM components.)
     # FIXME: This method needs to be rewritten now that DRead has changed!!
     def extract_segments(size)
       # For this purpose we are not interested to include header or meta information.
@@ -193,7 +193,7 @@ module DICOM
       bin = read_bin(length) if length > 0
       # Read the value of the element (if it contains data, and it is not a sequence or ordinary item):
       if length > 0 and vr != "SQ" and tag != ITEM_TAG
-        # Read the element's processed value (and the binary data from which it was extracted).
+        # Read the element's processed value:
         value = read_value(vr, length)
       else
         # Data element has no value (data).

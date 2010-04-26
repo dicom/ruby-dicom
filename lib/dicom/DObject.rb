@@ -96,10 +96,8 @@ module DICOM
       else
         @read_success = false
       end
-      # Check if a partial extraction has been requested (used for network communication purposes):
-      if options[:segment_size]
-        @segments = r.extract_segments(options[:segment_size])
-      end
+      # Check if a partial extraction has been requested (Could be used for network communication purposes - but is not currently in use by any component of Ruby DICOM):
+      @segments = r.extract_segments(options[:segment_size]) if options[:segment_size]
       # If any messages has been recorded, send these to the message handling method:
       add_msg(r.msg) if r.msg.length > 0
     end
@@ -118,9 +116,10 @@ module DICOM
 
 
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
-    def encode_segments(size)
+    def encode_segments(max_size)
       w = set_write_object
-      @segments = w.encode_segments(size)
+      w.encode_segments(max_size)
+      @segments = w.segments
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
