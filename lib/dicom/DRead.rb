@@ -283,7 +283,7 @@ module DICOM
             bytes = 4
           when ITEM_VR
             # 4 bytes:
-            # For elements "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD":
+            # For the item elements: "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD":
             bytes = 4
           else
             # 2 bytes:

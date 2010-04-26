@@ -172,8 +172,8 @@ module DICOM
         write_delimiter(element) if element.length == -1
       end
     end
-    
-    
+
+
     # Writes a single data element.
     def write_data_element(element)
       # Step 1: Write tag:
@@ -184,16 +184,16 @@ module DICOM
       write_value(element.bin)
       check_encapsulated_image(element)
     end
-    
-    
+
+
     # Writes an item/sequence delimiter for a given item/sequence.
     def write_delimiter(element)
       delimiter_tag = (element.tag == ITEM_TAG ? ITEM_DELIMITER : SEQUENCE_DELIMITER)
       write_tag(delimiter_tag)
       write_vr_length(delimiter_tag, ITEM_VR, -1)
     end
-    
-    
+
+
     # Writes each data element to file:
     def write_data_elements_to_segments(elements, max_size)
       # Start encoding data elements, and start on a new string when the size limit is reached:
@@ -298,7 +298,7 @@ module DICOM
             end
           when ITEM_VR
             # 4 bytes:
-            # For tags "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
+            # For the item elements: "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
             add(length4)
           else
             # 2 bytes:
@@ -351,8 +351,8 @@ module DICOM
         @file = File.new(file, "wb")
       end
     end
-    
-    
+
+
     # Toggle the status for enclosed pixel data.
     def check_encapsulated_image(element)
       # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
