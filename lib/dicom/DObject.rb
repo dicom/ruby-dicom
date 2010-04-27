@@ -54,8 +54,6 @@ module DICOM
       # Messages (errors, warnings or notices) will be accumulated in an array:
       @errors = Array.new
       # Structural information (default values):
-      @compression = false
-      @color = false
       @explicit = true
       @file_endian = false
       # Control variables:
@@ -131,152 +129,135 @@ module DICOM
 
 
     # Returns the image pixel data in a standard Ruby array.
-    # Returns false if it fails to retrieve image data.
-    # The array does not carry the dimensions of the pixel data, it will be a one dimensional array (vector).
+    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
+    # The returned array does not carry the dimensions of the pixel data: It will be a one dimensional array (vector).
+    # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
+    # :narray => true  - Performs the rescale process with NArray instead of Ruby Array, which is faster.
     def get_image(options={})
-      pixel_data = false
-      pixel_element_pos = get_image_pos
-      # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
-      pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
-      # For now we only support returning pixel data if the image is located in a single pixel data element:
-      if pixel_element_pos.length == 1
-        # All of the pixel data is located in one element:
-        pixel_data = get_pixels(pixel_element_pos[0])
-      else
-        add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images!")
-      end
-      # Remap the image from pixel values to presentation values if the user has requested this:
-      if options[:rescale] == true and pixel_data
-        # Process pixel data for presentation according to the image information in the DICOM object:
-        center, width, intercept, slope = window_level_values
-        if options[:narray] == true
-          # Use numerical array (faster):
-          pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, -65535, 65535).to_a
+      pixel_data_element = self[PIXEL_TAG]
+      if pixel_data_element
+        # For now we only support returning pixel data if the image is located in a single pixel data element:
+        if pixel_data_element.is_a?(DataElement)
+          pixels = get_pixels(pixel_data_element.bin)
+          # Remap the image from pixel values to presentation values if the user has requested this:
+          if options[:rescale]
+            if options[:narray]
+              # Use numerical array (faster):
+              pixels = process_presentation_values_narray(pixels, -65535, 65535).to_a
+            else
+              # Use standard Ruby array (slower):
+              pixels = process_presentation_values(pixels, -65535, 65535)
+            end
+          end
         else
-          # Use standard Ruby array (slower):
-          pixel_data = process_presentation_values(pixel_data, center, width, slope, intercept, -65535, 65535)
+          add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images.")
+          pixels = false
         end
+      else
+        pixels = nil
       end
-      return pixel_data
+      return pixels
     end
 
 
     # Returns a 3d NArray object where the array dimensions corresponds to [frames, columns, rows].
-    # Returns false if it fails to retrieve image data.
+    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     # To call this method the user needs to loaded the NArray library in advance (require 'narray').
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     def get_image_narray(options={})
-      # Are we able to make a pixel array?
-      if @compression == nil
-        add_msg("It seems pixel data is not present in this DICOM object.")
-        return false
-      elsif @compression == true
-        add_msg("Reading compressed data to a NArray object not supported yet.")
-        return false
-      elsif @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method.")
-        return false
-      end
-      # Gather information about the dimensions of the pixel data:
-      rows = get_value("0028,0010", :array => true)[0]
-      columns = get_value("0028,0011", :array => true)[0]
-      frames = get_frames
-      pixel_element_pos = get_image_pos
-      # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
-      pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
-      # Creating a NArray object using int to make sure we have the necessary range for our numbers:
-      pixel_data = NArray.int(frames,columns,rows)
-      pixel_frame = NArray.int(columns,rows)
-      # Handling of pixel data will depend on whether we have one or more frames,
-      # and if it is located in one or more data elements:
-      if pixel_element_pos.length == 1
-        # All of the pixel data is located in one element:
-        pixel_array = get_pixels(pixel_element_pos[0])
-        frames.times do |i|
-          (columns*rows).times do |j|
-            pixel_frame[j] = pixel_array[j+i*columns*rows]
+      color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
+      pixel_data_element = self[PIXEL_TAG]
+      if pixel_data_element
+        # For now we only support returning pixel data if the image is located in a single pixel data element:
+        if pixel_data_element.is_a?(DataElement)
+          if color.upcase.include?("MONOCHROME")
+            # Creating a NArray object using int to make sure we have the necessary range for our numbers:
+            rows, columns, frames = image_properties
+            pixel_data = NArray.int(frames,columns,rows)
+            pixel_frame = NArray.int(columns,rows)
+            pixels = get_pixels(pixel_data_element.bin)
+            # Read frame by frame:
+            frames.times do |i|
+              (columns*rows).times do |j|
+                pixel_frame[j] = pixels[j+i*columns*rows]
+              end
+              pixel_data[i, true, true] = pixel_frame
+            end
+            # Remap the image from pixel values to presentation values if the user has requested this:
+            pixels = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
+          else
+            add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
+            pixels = false
           end
-          pixel_data[i,true,true] = pixel_frame
+        else
+          add_msg("Warning: Method get_image_narray() does not currently support returning pixel data from encapsulated images.")
+          pixels = false
         end
       else
-        # Pixel data is encapsulated in items:
-        frames.times do |i|
-          pixel_array = get_pixels(pixel_element_pos[i])
-          (columns*rows).times do |j|
-            pixel_frame[j] = pixel_array[j+i*columns*rows]
-          end
-          pixel_data[i,true,true] = pixel_frame
-        end
+        pixels = nil
       end
-      # Remap the image from pixel values to presentation values if the user has requested this:
-      if options[:rescale] == true
-        # Process pixel data for presentation according to the image information in the DICOM object:
-        center, width, intercept, slope = window_level_values
-        pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, -65535, 65535)
-      end
-      return pixel_data
-    end # of get_image_narray
+      return pixels
+    end
 
 
-    # Returns an array of RMagick image objects, where the size of the array corresponds to the number of frames in the image data.
-    # Returns false if it fails to retrieve image data.
+    # Returns a RMagick image, built from the pixel data and image information in the DICOM object.
+    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     # :narray => true  - Use NArray when rescaling pixel values (faster than using RMagick/Ruby array).
     def get_image_magick(options={})
-      # Are we able to make an image?
-      if @compression == nil
-        add_msg("Notice: It seems pixel data is not present in this DICOM object.")
-        return false
-      elsif @color
-        add_msg("Warning: Unpacking color pixel data is not supported yet for this method.")
-        return false
-      end
-      # Gather information about the dimensions of the image data:
-      rows = get_value("0028,0010", :array => true)[0]
-      columns = get_value("0028,0011", :array => true)[0]
-      frames = get_frames
-      pixel_element_pos = get_image_pos
-      # Array that will hold the RMagick image objects, one object for each frame:
-      images = Array.new(frames)
-      # A hack for the special case (some MR files), where two images are stored (one is a smaller thumbnail image):
-      pixel_element_pos = [pixel_element_pos.last] if pixel_element_pos.length > 1 and get_value("0028,0011", :array => true).length > 1
-      # Handling of pixel data will depend on whether we have one or more frames,
-      # and if it is located in one or more data elements:
-      if pixel_element_pos.length == 1
-        # All of the pixel data is located in one data element:
-        if frames > 1
-          add_msg("Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.")
+      color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
+      pixel_data_element = self[PIXEL_TAG]
+      if pixel_data_element
+        # For now we only support returning pixel data if the image is located in a single pixel data element:
+        if pixel_data_element.is_a?(DataElement)
+          if color.upcase.include?("MONOCHROME")
+            # Creating a NArray object using int to make sure we have the necessary range for our numbers:
+            rows, columns, frames = image_properties
+            pixels = get_pixels(pixel_data_element.bin)
+            image = read_image_magick(pixels, columns, rows, frames, options)
+            add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
+          else
+            add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
+            image = false
+          end
+        else
+          add_msg("Warning: Method get_image_magick() does not currently support returning pixel data from encapsulated images.")
+          image = false
         end
-        images = read_image_magick(pixel_element_pos[0], columns, rows, frames, options)
-        images = [images] unless images.is_a?(Array)
       else
-        # Image data is encapsulated in items:
-        frames.times do |i|
-          image = read_image_magick(pixel_element_pos[i], columns, rows, 1, options)
-          images[i] = image
-        end
+        image = nil
       end
-      return images
-    end # of get_image_magick
+      return image
+    end
 
 
     # Dumps the binary content of the Pixel Data element to file.
     def image_to_file(file)
-      pos = get_image_pos
-      # Pixel data may be located in several elements:
-      pos.each_index do |i|
-        pixel_data = get_bin(pos[i])
-        if pos.length == 1
-          f = File.new(file, "wb")
+      pixel_element = self[PIXEL_TAG]
+      pixel_data = Array.new
+      if pixel_element
+        # Pixel data may be a single binary string, or located in several item elements:
+        if pixel_element.is_a?(DataElement)
+          pixel_data << pixel_element.bin
         else
-          f = File.new(file + i.to_s, "wb")
+          pixel_items = pixel_element.child_array.first.child_array
+          pixel_items.each do |item|
+            pixel_data << item.bin
+          end
         end
-        f.write(pixel_data)
-        f.close
+        pixel_data.each_index do |i|
+          if pixel_data.length == 1
+            f = File.new(file, "wb")
+          else
+            f = File.new("#{file}_#{i}", "wb")
+          end
+          f.write(pixel_data[i])
+          f.close
+        end
       end
     end
 
@@ -398,6 +379,20 @@ module DICOM
       puts separator
       return info
     end # of information
+
+
+    # Returns data regarding the geometrical properties of the image(s): rows, columns & number of frames.
+    def image_properties
+      row_element = self["0028,0010"]
+      column_element = self["0028,0011"]
+      frames = (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
+      if row_element and column_element
+        return row_element.value, column_element.value, frames
+      else
+        raise "The Data Element which specifies Rows is missing. Unable to gather enough information to constuct an image." unless row_element
+        raise "The Data Element which specifies Columns is missing. Unable to gather enough information to constuct an image." unless column_element
+      end
+    end
 
 
     ####################################################
@@ -597,47 +592,44 @@ module DICOM
     end
 
 
-    # Unpacks and returns pixel data from a specified data element array position:
-    def get_pixels(pos)
+    # Unpacks and returns pixel values in an Array from the specified binary string.
+    def get_pixels(bin)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
-      bit_depth = get_value("0028,0100", :array => true)[0]
-      pixel_representation = get_value("0028,0103", :array => true)[0]
-      unless bit_depth == false
+      bit_depth_element = self["0028,0100"]
+      pixel_representation_element = self["0028,0103"]
+      if bit_depth_element and pixel_representation_element
         # Load the binary pixel data to the Stream instance:
-        @stream.set_string(get_bin(pos))
+        @stream.set_string(bin)
         # Number of bytes used per pixel will determine how to unpack this:
-        case bit_depth
+        case bit_depth_element.value.to_i
           when 8
             pixels = @stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
           when 16
-            if pixel_representation
-              if pixel_representation.to_i == 1
-                pixels = @stream.decode_all("SS") # Signed short (2 bytes)
-              else
-                pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
-              end
+            if pixel_representation_element.value.to_i == 1
+              pixels = @stream.decode_all("SS") # Signed short (2 bytes)
             else
-              add_msg("Error: Attempted to decode pixel data, but the 'Pixel Representation' Data Element (0028,0103) is missing.")
+              pixels = @stream.decode_all("US") # Unsigned short (2 bytes)
             end
           when 12
             # 12 BIT SIMPLY NOT WORKING YET!
-            # This one is a bit more tricky to extract.
-            # I havent really given this priority so far as 12 bit image data is rather rare.
-            add_msg("Warning: Decoding bit depth 12 is not implemented yet! Please contact the author.")
+            # This one is a bit tricky to extract. I havent really given this priority so far as 12 bit image data is rather rare.
+            raise "Decoding bit depth 12 is not implemented yet! Please contact the author (or edit the source code)."
           else
-            raise "Bit depth ["+bit_depth.to_s+"] has not received implementation in this procedure yet. Please contact the author."
+            raise "The Bit Depth #{bit_depth} has not received implementation in this procedure yet. Please contact the author (or edit the source code)."
         end
       else
-        add_msg("Error: Attempted to decode pixel data, but the 'Bit Depth' Data Element (0028,0010) is missing.")
+        raise "The Data Element which specifies Bit Depth is missing. Unable to decode pixel data." unless bit_depth_element
+        raise "The Data Element which specifies Pixel Representation is missing. Unable to decode pixel data." unless pixel_representation_element
       end
       return pixels
     end
 
 
     # Converts original pixel data values to presentation values.
-    def process_presentation_values(pixel_data, center, width, slope, intercept, min_allowed, max_allowed)
-      # Rescale:
+    def process_presentation_values(pixel_data, min_allowed, max_allowed)
+      # Process pixel data for presentation according to the image information in the DICOM object:
+      center, width, intercept, slope = window_level_values
       # PixelOutput = slope * pixel_values + intercept
       if intercept != 0 or slope != 1
         pixel_data.collect!{|x| (slope * x) + intercept}
@@ -675,8 +667,9 @@ module DICOM
 
 
     # Converts original pixel data values to a RMagick image object containing presentation values.
-    def process_presentation_values_magick(pixel_data, center, width, slope, intercept, max_allowed, columns, rows)
-      # Rescale:
+    def process_presentation_values_magick(pixel_data, max_allowed, columns, rows)
+      # Process pixel data for presentation according to the image information in the DICOM object:
+      center, width, intercept, slope = window_level_values
       # PixelOutput = slope * pixel_values + intercept
       if intercept != 0 or slope != 1
         pixel_data.collect!{|x| (slope * x) + intercept}
@@ -711,7 +704,10 @@ module DICOM
     # Converts original pixel data values to presentation values, using the faster numerical array.
     # If a Ruby array is supplied, this returns a one-dimensional NArray object (i.e. no columns & rows).
     # If a NArray is supplied, the NArray is returned with its original dimensions.
-    def process_presentation_values_narray(pixel_data, center, width, slope, intercept, min_allowed, max_allowed)
+    def process_presentation_values_narray(pixel_data, min_allowed, max_allowed)
+      # Process pixel data for presentation according to the image information in the DICOM object:
+      center, width, intercept, slope = window_level_values
+      # Need to convert to NArray?
       if pixel_data.is_a?(Array)
         n_arr = NArray.to_na(pixel_data)
       else
@@ -751,42 +747,25 @@ module DICOM
 
     # Returns one or more RMagick image objects from the binary string pixel data,
     # performing decompression of data if necessary.
-    def read_image_magick(pos, columns, rows, frames, options={})
-      if columns == false or rows == false
-        add_msg("Error: Method read_image_magick() does not have enough data available to build an image object.")
-        return false
-      end
-      unless @compression
-        # Non-compressed, just return the array contained on the particular element:
-        pixel_data = get_pixels(pos)
-        # Remap the image from pixel values to presentation values if the user has requested this:
-        if options[:rescale] == true
-          # Process pixel data for presentation according to the image information in the DICOM object:
-          center, width, intercept, slope = window_level_values
-          # What tools will be used to process the pixel presentation values?
-          if options[:narray] == true
-            # Use numerical array (fast):
-            pixel_data = process_presentation_values_narray(pixel_data, center, width, slope, intercept, 0, Magick::QuantumRange).to_a
-            image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
-          else
-            # Use a combination of ruby array and RMagick processing:
-            image = process_presentation_values_magick(pixel_data, center, width, slope, intercept, Magick::QuantumRange, columns, rows)
-          end
-        else
-          # Load original pixel values to a RMagick object:
+    # Reading compressed data has been removed for now as it never seemed to work on any of the samples.
+    # Tested with RMagick and something like: image = Magick::Image.from_blob(element.bin)
+    def read_image_magick(pixel_data, columns, rows, frames, options={})
+      # Remap the image from pixel values to presentation values if the user has requested this:
+      if options[:rescale] == true
+        # What tools will be used to process the pixel presentation values?
+        if options[:narray] == true
+          # Use numerical array (fast):
+          pixel_data = process_presentation_values_narray(pixel_data, 0, Magick::QuantumRange).to_a
           image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
+        else
+          # Use a combination of ruby array and RMagick processing:
+          image = process_presentation_values_magick(pixel_data, Magick::QuantumRange, columns, rows)
         end
-        return image
       else
-        # Image data is compressed, we will attempt to deflate it using RMagick (ImageMagick):
-        begin
-          image = Magick::Image.from_blob(@bin[pos])
-          return image
-        rescue
-          add_msg("RMagick did not succeed in decoding the compressed image data.")
-          return false
-        end
+        # Load original pixel values to a RMagick object:
+        image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, "I", pixel_data)
       end
+      return image
     end
 
 
@@ -807,15 +786,13 @@ module DICOM
 
 
     # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
+    # If some of these values are missing in the DICOM object, default values are used instead
+    # for intercept and slope, while center and width are set to nil. No errors are raised.
     def window_level_values
-      center = get_value("0028,1050", :silent => true)
-      width = get_value("0028,1051", :silent => true)
-      intercept = get_value("0028,1052", :silent => true) || 0
-      slope = get_value("0028,1053", :silent => true) || 1
-      center = center.to_i if center
-      width = width.to_i if width
-      intercept = intercept.to_i
-      slope = slope.to_i
+      center = (self["0028,1050"].is_a?(DataElement) == true ? self["0028,1050"].value.to_i : nil)
+      width = (self["0028,1051"].is_a?(DataElement) == true ? self["0028,1051"].value.to_i : nil)
+      intercept = (self["0028,1052"].is_a?(DataElement) == true ? self["0028,1052"].value.to_i : 0)
+      slope = (self["0028,1053"].is_a?(DataElement) == true ? self["0028,1053"].value.to_i : 1)
       return center, width, intercept, slope
     end
 
