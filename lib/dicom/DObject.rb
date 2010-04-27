@@ -81,7 +81,7 @@ module DICOM
       # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
       # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
       unless r.success
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => "1.2.840.10008.1.2.1") # TS: Explicit, Little endian
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
         # Only extract information from this new attempt if it was successful:
         r = r_explicit if r_explicit.success
       end
@@ -96,8 +96,6 @@ module DICOM
       else
         @read_success = false
       end
-      # Check if a partial extraction has been requested (Could be used for network communication purposes - but is not currently in use by any component of Ruby DICOM):
-      @segments = r.extract_segments(options[:segment_size]) if options[:segment_size]
       # If any messages has been recorded, send these to the message handling method:
       add_msg(r.msg) if r.msg.length > 0
     end
@@ -798,7 +796,7 @@ module DICOM
         if self["0002,0010"]
           transfer_syntax = self["0002,0010"].value
         else
-          transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
+          transfer_syntax = IMPLICIT_LITTLE_ENDIAN
         end
       end
       w = DWrite.new(self, file_name, :transfer_syntax => transfer_syntax)

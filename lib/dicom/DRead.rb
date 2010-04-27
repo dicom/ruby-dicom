@@ -73,60 +73,6 @@ module DICOM
     end
 
 
-    # Extracts an array of binary strings.
-    # (this could be used if one intends to transmit the DICOM file through a network connection, but is not currently used by any Ruby DICOM components.)
-    # FIXME: This method needs to be rewritten now that DRead has changed!!
-    def extract_segments(size)
-      # For this purpose we are not interested to include header or meta information.
-      # We must therefore find the position of the first tag which is not a meta information tag.
-      pos = first_non_meta
-      # Start position:
-      if pos == 0
-        start = 0
-      else
-        # First byte after the integrated length of the previous tag is our start:
-        start = @integrated_lengths[pos-1]
-      end
-      # Iterate through the tags and monitor the integrated_lengths values to determine
-      # when we need to start a new segment.
-      segments = Array.new
-      last_pos = pos
-      @tags.each_index do |i|
-        # Have we passed the size limit?
-        if (@integrated_lengths[i] - start) > size
-          # We either need to stop the current segment at the previous tag, or if
-          # this is a long tag (typically image data), we need to split its data
-          # and put it in several segments.
-          if (@integrated_lengths[i] - @integrated_lengths[i-1]) > size
-            # This element's value needs to be split up into several segments.
-            # How many segments are needed to fit this element?
-            number = ((@integrated_lengths[i] - start).to_f / size.to_f).ceil
-            number.times do
-              # Extract data and add to segments:
-              last_pos = (start+size-1)
-              segments << @stream.string[start..last_pos]
-              # Update start position for next segment:
-              start = last_pos + 1
-            end
-          else
-            # End the current segment at the last data element, then start the new segment with this element.
-            last_pos = @integrated_lengths[i-1]
-            segments << @stream.string[start..last_pos]
-            # Update start position for next segment:
-            start = last_pos + 1
-          end
-        end
-      end
-      # After running the above iteration, it is possible that we have some data elements remaining
-      # at the end of the file who's length are beneath the size limit, and thus has not been put into a segment.
-      if (last_pos + 1) < @stream.string.length
-        # Add the remaining data elements to a segment:
-        segments << @stream.string[start..@stream.string.length]
-      end
-      return segments
-    end
-
-
     # Following methods are private:
     private
 
@@ -250,7 +196,7 @@ module DICOM
       tag = @stream.decode_tag
       if tag
         # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-        if tag[0..3] != "0002" and @switched == false
+        if tag.group != META_GROUP and @switched == false
           switch_syntax
           # We may need to read our tag again if endian has switched (in which case it has been misread):
           if @switched_endian
@@ -373,7 +319,7 @@ module DICOM
         if ts_element
           @transfer_syntax = ts_element.value
         else
-          @transfer_syntax = "1.2.840.10008.1.2" # Default is implicit, little endian
+          @transfer_syntax = IMPLICIT_LITTLE_ENDIAN
         end
       end
       # Query the library with our particular transfer syntax string:
@@ -389,22 +335,6 @@ module DICOM
       @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
       @stream.explicit = @rest_explicit
-    end
-
-
-    # Find the position of the first tag which is not a group "0002" tag:
-    def first_non_meta
-      i = 0
-      go = true
-      while go == true and i < @tags.length do
-        tag = @tags[i]
-        if tag[0..3] == "0002"
-          i += 1
-        else
-          go = false
-        end
-      end
-      return i
     end
 
 

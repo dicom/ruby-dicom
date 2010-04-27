@@ -51,7 +51,7 @@ module DICOM
     # Returns data element name and value representation from the dictionary unless the data element
     # is private. If a non-private tag is not recognized, "Unknown Name" and "UN" is returned.
     def get_name_vr(tag)
-      if tag.private? and tag[5..8] != "0000"
+      if tag.private? and tag.element != GROUP_LENGTH
         name = "Private"
         vr = "UN"
       else
@@ -62,10 +62,7 @@ module DICOM
           vr = values[0][0]
         else
           # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
-          # Split tag in group and element:
-          group = tag[0..3]
-          element = tag[5..8]
-          if element == "0000"
+          if tag.element == GROUP_LENGTH
             # Group length:
             name = "Group Length"
             vr = "UL"
@@ -74,13 +71,13 @@ module DICOM
             values = @tags["0020,31xx"]
             name = values[1]
             vr = values[0][0]
-          elsif group == "1000" and element =~ /\A\h{3}[0-5]\z/
+          elsif tag.group == "1000" and tag.element =~ /\A\h{3}[0-5]\z/
             # Group 1000,xxx[0-5] (Retired):
-            new_tag = group + "xx" + element[3..3]
+            new_tag = tag.group + "xx" + tag.element[3..3]
             values = @tags[new_tag]
-          elsif group == "1010"
+          elsif tag.group == "1010"
             # Group 1010,xxxx (Retired):
-            new_tag = group + "xxxx"
+            new_tag = tag.group + "xxxx"
             values = @tags[new_tag]
           elsif tag[0..1] == "50" or tag[0..1] == "60"
             # Group 50xx (Retired) and 60xx:
@@ -153,21 +150,17 @@ module DICOM
       valid = check_ts_validity(value)
       case value
         # Some variations with uncompressed pixel data:
-        when "1.2.840.10008.1.2"
-          # Implicit VR, Little Endian
+        when IMPLICIT_LITTLE_ENDIAN
           explicit = false
           endian = false
-        when "1.2.840.10008.1.2.1"
-          # Explicit VR, Little Endian
+        when EXPLICIT_LITTLE_ENDIAN
           explicit = true
           endian = false
-        when "1.2.840.10008.1.2.1.99"
-          # Deflated Explicit VR, Little Endian
-          #@msg += ["Warning: Transfer syntax 'Deflated Explicit VR, Little Endian' is untested. Unknown if this is handled correctly!"]
+        when "1.2.840.10008.1.2.1.99" # Deflated Explicit VR, Little Endian
+          # Note: Has this transfer syntax been tested yet?
           explicit = true
           endian = false
-        when "1.2.840.10008.1.2.2"
-          # Explicit VR, Big Endian
+        when EXPLICIT_BIG_ENDIAN
           explicit = true
           endian = true
         else

@@ -22,7 +22,7 @@ module DICOM
       @obj = obj
       # Process option values, setting defaults for the ones that are not specified:
       @file_name = file_name
-      @transfer_syntax = options[:transfer_syntax] || "1.2.840.10008.1.2" # Implicit, little endian
+      @transfer_syntax = options[:transfer_syntax] || IMPLICIT_LITTLE_ENDIAN
       # Array for storing error/warning messages:
       @msg = Array.new
       # Default values which the user may overwrite afterwards:
@@ -55,7 +55,7 @@ module DICOM
         else
           elements = @obj.child_array
           # If the DICOM object lacks meta information header, it will be added:
-          write_meta unless elements.first.tag[0..3] == "0002"
+          write_meta unless elements.first.tag.group == META_GROUP
           write_data_elements(elements)
         end
         # As file has been written successfully, it can be closed.
@@ -247,7 +247,7 @@ module DICOM
     def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-      switch_syntax if tag[0..3] != "0002" and @switched == false
+      switch_syntax if tag.group != META_GROUP and @switched == false
       # Write to binary string:
       bin_tag = @stream.encode_tag(tag)
       add(bin_tag)
@@ -379,11 +379,11 @@ module DICOM
     end
 
 
-    # Identifies and returns the index of the first element that does not have a group "0002" tag.
+    # Identifies and returns the index of the first element that does not have a group ("0002") tag.
     def first_non_meta(elements)
       non_meta_index = 0
       elements.each_index do |i|
-        if elements[i].tag[0..3] != "0002"
+        if elements[i].tag.group != META_GROUP
           non_meta_index = i
           break
         end

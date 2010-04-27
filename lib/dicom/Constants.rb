@@ -27,6 +27,17 @@ module DICOM
   ENCAPSULATED_PIXEL_NAME = "Encapsulated Pixel Data"
   PIXEL_ITEM_NAME = "Pixel Data Item"
 
+  # File Meta Group:
+  META_GROUP = "0002"
+  
+  # Group length element:
+  GROUP_LENGTH = "0000"
+  
+  # A few commonly used transfer syntaxes:
+  IMPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2"
+  EXPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2.1"
+  EXPLICIT_BIG_ENDIAN = "1.2.840.10008.1.2.2"
+
   # System (CPU) Endianness:
   x = 0xdeadbeef
   endian_type = {
