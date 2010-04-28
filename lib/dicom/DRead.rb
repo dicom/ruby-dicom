@@ -60,15 +60,15 @@ module DICOM
       data_element = true
       while data_element do
         # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
-        begin
+        #begin
           # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
           data_element = process_data_element
-        rescue
+        #rescue
           # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
-          @success = false
-          data_element = false
-        end
+          #@msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
+          #@success = false
+          #data_element = false
+        #end
       end
     end
 
@@ -143,6 +143,7 @@ module DICOM
         value = read_value(vr, length)
       else
         # Data element has no value (data).
+        value = nil
         # Special case: Check if pixel data element is sequenced:
         if tag == PIXEL_TAG
           # Change name and vr of pixel data element if it does not contain data itself:
@@ -155,10 +156,10 @@ module DICOM
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
           # Create a Sequence:
-          @current_element = Sequence.new(tag, value, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          @current_element = Sequence.new(tag, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
         elsif tag == ITEM_TAG
           # Create an Item:
-          @current_element = Item.new(tag, value, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          @current_element = Item.new(tag, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
         end
         # Common operations on the two types of parent elements:
         if length == 0 and @enc_image
@@ -182,7 +183,7 @@ module DICOM
         @current_parent = @current_parent.parent
       else
         # Create an ordinary Data Element:
-        @current_element = DataElement.new(tag, value, :bin_data => bin, :name => name, :parent => @current_parent, :vr => vr)
+        @current_element = DataElement.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
         set_abrupt_error if length != @current_element.bin.length
       end

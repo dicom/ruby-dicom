@@ -18,23 +18,38 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean needs to be set.
-    # * <tt>:bin_data</tt> -- String. If both value and binary string has been decoded/encoded, this option can be supplied to avoid double processing.
+    # * <tt>:bin</tt> -- String. If both value and binary string has already been decoded/encoded, the binary string can be supplied with this option to avoid it being processed again.
+    # * <tt>:encoded</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean needs to be set. In this case the DataElement will not have a formatted value.
     # * <tt>:name</tt> - String. The name of the Data Element may be specified upon creation. If not, a query will be done against the library.
     # * <tt>:parent</tt> - Item or DObject instance which the newly created DataElement instance belongs to.
     # * <tt>:vr</tt> -- String. If a private Data Element is created with a custom value, this needs to be specified to enable the encoding of the value.
     def initialize(tag, value, options={})
       # Set instance variables:
       @tag = tag
-      @value = value
-      @name = options[:name]
-      @vr = options[:vr]
-      @bin = options[:bin_data] || ""
+      # Value may in some cases be the binary string:
+      unless options[:encoded]
+        @value = value
+        @bin = options[:bin] || ""
+      else
+        @bin = value
+      end
+      # We may beed to retrieve name and vr from the library:
+      if options[:name] and options[:vr]
+        @name = options[:name]
+        @vr = options[:vr]
+      else
+        name, vr = LIBRARY.get_name_vr(tag)
+        @name = options[:name] || name
+        @vr = options[:vr] || vr
+      end
+      # Let the binary decide the length:
+      @length = @bin.length
+      # Manage the parent relation if specified:
       if options[:parent]
         @parent = options[:parent]
         @parent.add(self)
       end
-      @length = @bin.length
+      
     end
 
     # Returns false (a boolean used to check whether an element has children or not).

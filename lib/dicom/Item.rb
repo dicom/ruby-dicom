@@ -12,15 +12,15 @@ module DICOM
     #
     # === Parameters
     #
-    def initialize(tag, value, options={})
+    def initialize(tag, options={})
       # Set common parent variables:
       initialize_parent
       # Set instance variables:
       @tag = tag
-      @value = value
+      @value = nil
       @name = options[:name] || "Item"
       @vr = options[:vr] || ITEM_VR
-      @bin = options[:bin_data]
+      @bin = options[:bin]
       @length = options[:length]
       if options[:parent]
         @parent = options[:parent]
