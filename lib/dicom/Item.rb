@@ -27,6 +27,23 @@ module DICOM
         @parent.add_item(self)
       end
     end
+    
+    # Set the binary string of a (Data) Item.
+    # NB! Need to also modify the length of parents and group lengths!!!
+    def bin=(new_bin)
+      if new_bin.is_a?(String)
+        # Add an empty byte at the end if the length of the binary is odd:
+        if new_bin.length[0] == 1
+          @bin = new_bin + "\x00"
+        else
+          @bin = new_bin
+        end
+        @value = nil
+        @length = @bin.length
+      else
+        raise "Invalid parameter type. String was expected, got #{new_bin.class}."
+      end
+    end
 
   end # of class
 end # of module

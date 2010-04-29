@@ -49,12 +49,47 @@ module DICOM
         @parent = options[:parent]
         @parent.add(self)
       end
-      
+    end
+    
+    # Set the binary string of a DataElement.
+    # NB! Need to also modify the length of parents and group lengths!!!
+    def bin=(new_bin)
+      if new_bin.is_a?(String)
+        # Add an empty byte at the end if the length of the binary is odd:
+        if new_bin.length[0] == 1
+          @bin = new_bin + "\x00"
+        else
+          @bin = new_bin
+        end
+        @value = nil
+        @length = @bin.length
+      else
+        raise "Invalid parameter type. String was expected, got #{new_bin.class}."
+      end
     end
 
     # Returns false (a boolean used to check whether an element has children or not).
     def children?
       return false
+    end
+    
+    # Set the value of a DataElement. The specified, formatted value will be encoded and the DataElement's binary string will be updated.
+    # NB! Need to also modify the length of parents and group lengths!!!
+    def value=(new_value)
+      # Use the stream instance of DObject or create a new one (with assumed Little Endian encoding)?
+      if top_parent.is_a?(DObject)
+        s = top_parent.stream
+      else
+        s = Stream.new(nil, file_endian=false, true)
+      end
+      # Number or string to be encoded? If String, we must ensure that we get an even length:
+      if new_value.is_a?(String)
+        @bin = s.encode_value(new_value, @vr)
+      else
+        @bin = s.encode(new_value, @vr)
+      end
+      @value = new_value
+      @length = @bin.length
     end
 
   end # of class

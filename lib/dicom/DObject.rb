@@ -33,7 +33,7 @@ module DICOM
   # Class for interacting with the DICOM object.
   class DObject < SuperItem
 
-    attr_reader :errors, :modality, :parent, :read_success, :segments, :write_success
+    attr_reader :errors, :modality, :parent, :read_success, :segments, :stream, :write_success
 
     # Initialize the DObject instance.
     # Parameters:
