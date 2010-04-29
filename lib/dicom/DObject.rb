@@ -89,6 +89,7 @@ module DICOM
         # Update instance variables based on the properties of the DICOM object:
         @explicit = r.explicit
         @file_endian = r.file_endian
+        @signature = r.signature
         @stream.explicit = @explicit
         @stream.set_endian(@file_endian)
       else
@@ -101,8 +102,8 @@ module DICOM
 
     # Passes the DObject to the DWrite class, which recursively traverses the Data Element
     # structure and encodes a proper binary string, which is then written to the specified file.
-    def write(file_name, transfer_syntax=nil)
-      w = set_write_object(file_name, transfer_syntax)
+    def write(file_name, options={})
+      w = set_write_object(file_name, options)
       w.write
       # Write process succesful?
       @write_success = w.success
@@ -770,15 +771,15 @@ module DICOM
 
 
     # Handles the creation of a DWrite object, and returns this object to the calling method.
-    def set_write_object(file_name=nil, transfer_syntax=nil)
-      unless transfer_syntax
+    def set_write_object(file_name=nil, options={})
+      unless options[:transfer_syntax]
         if self["0002,0010"]
-          transfer_syntax = self["0002,0010"].value
+          options[:transfer_syntax] = self["0002,0010"].value
         else
-          transfer_syntax = IMPLICIT_LITTLE_ENDIAN
+          options[:transfer_syntax] = IMPLICIT_LITTLE_ENDIAN
         end
       end
-      w = DWrite.new(self, file_name, :transfer_syntax => transfer_syntax)
+      w = DWrite.new(self, file_name, options)
       w.rest_endian = @file_endian
       w.rest_explicit = @explicit
       return w

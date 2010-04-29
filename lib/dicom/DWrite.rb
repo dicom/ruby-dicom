@@ -23,6 +23,9 @@ module DICOM
       # Process option values, setting defaults for the ones that are not specified:
       @file_name = file_name
       @transfer_syntax = options[:transfer_syntax] || IMPLICIT_LITTLE_ENDIAN
+      # As default, signature will be written and meta header added:
+      @signature = (options[:signature] == false ? false : true)
+      @add_meta = (options[:add_meta] == false ? false : true)
       # Array for storing error/warning messages:
       @msg = Array.new
       # Default values which the user may overwrite afterwards:
@@ -46,7 +49,7 @@ module DICOM
         # Tell the Stream instance which file to write to:
         @stream.set_file(@file)
         # Write the DICOM signature:
-        write_signature
+        write_signature if @signature
         # Write either body or data elements:
         if body
           # Add meta information header:
@@ -54,8 +57,8 @@ module DICOM
           @stream.add_last(body)
         else
           elements = @obj.child_array
-          # If the DICOM object lacks meta information header, it will be added:
-          write_meta unless elements.first.tag.group == META_GROUP
+          # If the DICOM object lacks meta information header, it will be added, unless it has been requested that it should not.
+          write_meta if @add_meta and elements.first.tag.group != META_GROUP
           write_data_elements(elements)
         end
         # As file has been written successfully, it can be closed.

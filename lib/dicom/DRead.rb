@@ -13,7 +13,7 @@ module DICOM
   # The source of this binary string is typically either a DICOM file or a DICOM network transmission.
   class DRead
 
-    attr_reader :success, :obj, :explicit, :file_endian, :msg
+    attr_reader :success, :obj, :explicit, :file_endian, :msg, :signature
 
     # Initialize the DRead instance.
     # Options: :bin.....etc
@@ -60,15 +60,15 @@ module DICOM
       data_element = true
       while data_element do
         # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
-        #begin
+        begin
           # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
           data_element = process_data_element
-        #rescue
+        rescue
           # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-          #@msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
-          #@success = false
-          #data_element = false
-        #end
+          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
+          @success = false
+          data_element = false
+        end
       end
     end
 
@@ -77,11 +77,10 @@ module DICOM
     private
 
 
-    # Checks the initial header of the DICOM file.
+    # Checks for the official DICOM header signature.
     def check_header
-      # According to the official DICOM standard, a DICOM file shall contain 128
-      # consequtive (zero) bytes followed by 4 bytes that spell the string 'DICM'.
-      # Apparently, some providers seems to skip this in their DICOM files.
+      # According to the official DICOM standard, a DICOM file shall contain 128 consequtive (zero) bytes,
+      # followed by 4 bytes that spell the string 'DICM'. Apparently, some providers seems to skip this in their DICOM files.
       # Check that the file is long enough to contain a valid header:
       if @str.length < 132
         # This does not seem to be a valid DICOM file and so we return.
@@ -92,7 +91,7 @@ module DICOM
         identifier = @stream.decode(4, "STR")
         @header_length += 132
         if identifier != "DICM" then
-          # Header is not valid (we will still try to read it is a DICOM file though):
+          # Header signature is not valid (we will still try to read it is a DICOM file though):
           @msg << "Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."
           # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
           # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
@@ -100,7 +99,8 @@ module DICOM
           @stream.explicit = false
           return false
         else
-          # Header is valid:
+          # Header signature is valid:
+          @signature = true
           return true
         end
       end
@@ -345,7 +345,8 @@ module DICOM
       # Array that will holde any messages generated while reading the DICOM file:
       @msg = Array.new
       # Variables that contain properties of the DICOM file:
-      # Variable to keep track of whether the image pixel data in this file are compressed or not, and if it exists at all:
+      # Presence of the official DICOM signature:
+      @signature = false
       # Default explicitness of start of DICOM file::
       @explicit = true
       # Default endianness of start of DICOM files is little endian:
@@ -353,17 +354,12 @@ module DICOM
       @switched_endian = false
       # Variables used internally when parsing the DICOM string:
       @header_length = 0
-      # Array to keep track of the hierarchy of elements (this will be used to determine when a sequence or item is finished):
-      @hierarchy = Array.new
-      @hierarchy_error = false
       # Explicitness of the remaining groups after the initial 0002 group:
       @rest_explicit = false
       # Endianness of the remaining groups after the first group:
       @rest_endian = false
       # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
-      # A length variable will be used at the end to check whether the last element was read correctly, or whether the file endend unexpectedly:
-      @data_length = 0
       # Keeping track of the data element parent status while parsing the DICOM string:
       @current_parent = @obj
       @current_element = @obj
