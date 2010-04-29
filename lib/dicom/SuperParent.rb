@@ -201,6 +201,26 @@ module DICOM
       end
       return max_name, max_length, max_generations
     end
+    
+    # Removes an element from this parent.
+    # The parameter is normally a tag String, except in the case of an Item, where an index number is used.
+    def remove(tag)
+      # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
+      element = @tags[tag]
+      if element
+        element.parent = nil
+        @tags.delete(tag)
+      end
+    end
+    
+    # Removes all private data elements from the child elements of this parent.
+    def remove_private
+      # Cycle through all levels of children recursively and remove private data elements:
+      @tags.each_value do |element|
+        remove(element.tag) if element.tag.private?
+        element.remove_private if element.children?
+      end
+    end
 
     # Following methods are private:
     private
@@ -213,7 +233,6 @@ module DICOM
         end
       end
     end
-
 
     # Prints an array of Data Element ascii text lines gathered by the print() method to the screen (terminal).
     def print_screen(elements)
