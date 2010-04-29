@@ -17,8 +17,7 @@ module DICOM
     def initialize(string, str_endian, explicit, options={})
       # Set instance variables:
       @explicit = explicit # true or false
-      @string = string # input binary string
-      @string = "" unless @string # if nil, change it to an empty string
+      @string = string || "" # input binary string
       @index = options[:index] || 0
       @errors = Array.new
       set_endian(str_endian) # true or false
@@ -128,7 +127,7 @@ module DICOM
       elsif length == target_length
         return [string].pack(@str)
       else
-        raise "The string provided is longer than the allowed maximum length. (string: #{string}, target_length: #{target_length.to_s})"
+        raise "The specified string is longer than the allowed maximum length (String: #{string}, Target length: #{target_length})."
       end
     end
 
@@ -255,17 +254,10 @@ module DICOM
 
 
     # Determine the endianness of the system.
-    # Together with the specified endianness of the binary string,
-    # this will decide what encoding/decoding flags to use.
+    # Together with the specified endianness of the binary string, this will decide what encoding/decoding flags to use.
     def configure_endian
-      x = 0xdeadbeef
-      endian_type = {
-        Array(x).pack("V*") => false, #:little
-        Array(x).pack("N*") => true   #:big
-      }
-      @sys_endian = endian_type[Array(x).pack("L*")]
       # Use a "relationship endian" variable to guide encoding/decoding options:
-      if @sys_endian == @str_endian
+      if CPU_ENDIAN == @str_endian
         @endian = true
       else
         @endian = false
@@ -275,12 +267,12 @@ module DICOM
 
     # Convert a data element type (VR) to a encode/decode string.
     def vr_to_str(vr)
-      str = @format[vr]
-      if str == nil
+      unless @format[vr]
         errors << "Warning: Element type #{vr} does not have a reading method assigned to it. Something is not implemented correctly or the DICOM data analyzed is invalid."
-        str = @hex
+        return @hex
+      else
+        return @format[vr]
       end
-      return str
     end
 
 
