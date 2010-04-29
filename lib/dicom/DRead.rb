@@ -156,10 +156,14 @@ module DICOM
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
           # Create a Sequence:
-          @current_element = Sequence.new(tag, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
         elsif tag == ITEM_TAG
           # Create an Item:
-          @current_element = Item.new(tag, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          if @enc_image
+            @current_element = Item.new(tag, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          else
+            @current_element = Item.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          end
         end
         # Common operations on the two types of parent elements:
         if length == 0 and @enc_image
