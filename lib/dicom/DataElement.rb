@@ -26,13 +26,6 @@ module DICOM
     def initialize(tag, value, options={})
       # Set instance variables:
       @tag = tag
-      # Value may in some cases be the binary string:
-      unless options[:encoded]
-        @value = value
-        @bin = options[:bin] || ""
-      else
-        @bin = value
-      end
       # We may beed to retrieve name and vr from the library:
       if options[:name] and options[:vr]
         @name = options[:name]
@@ -42,6 +35,24 @@ module DICOM
         @name = options[:name] || name
         @vr = options[:vr] || vr
       end
+      # Value may in some cases be the binary string:
+      unless options[:encoded]
+        @value = value
+        # The Data Element may have a value, have no value and no binary, or have no value and only binary:
+        if value
+          # Is binary value provided or do we need to encode it?
+          if options[:bin]
+            @bin = options[:bin]
+          else
+            @bin = encode(new_value)
+          end
+        else
+          # When no value is present, we set the binary as an empty string, unless the binary is specified:
+          @bin = options[:bin] || ""
+        end
+      else
+        @bin = value
+      end
       # Let the binary decide the length:
       @length = @bin.length
       # Manage the parent relation if specified:
@@ -50,7 +61,7 @@ module DICOM
         @parent.add(self)
       end
     end
-    
+
     # Set the binary string of a DataElement.
     # NB! Need to also modify the length of parents and group lengths!!!
     def bin=(new_bin)
@@ -72,24 +83,36 @@ module DICOM
     def children?
       return false
     end
-    
+
     # Set the value of a DataElement. The specified, formatted value will be encoded and the DataElement's binary string will be updated.
     # NB! Need to also modify the length of parents and group lengths!!!
     def value=(new_value)
-      # Use the stream instance of DObject or create a new one (with assumed Little Endian encoding)?
-      if top_parent.is_a?(DObject)
-        s = top_parent.stream
-      else
-        s = Stream.new(nil, file_endian=false, true)
-      end
-      # Number or string to be encoded? If String, we must ensure that we get an even length:
-      if new_value.is_a?(String)
-        @bin = s.encode_value(new_value, @vr)
-      else
-        @bin = s.encode(new_value, @vr)
-      end
+      @bin = encode(new_value)
       @value = new_value
       @length = @bin.length
+    end
+
+    # Following methods are private.
+    private
+
+    # Encodes a formatted value to binary and returns it.
+    def encode(formatted_value)
+      # Number or string to be encoded? If String, we must ensure that we get an even length:
+      if formatted_value.is_a?(String)
+        return stream.encode_value(formatted_value, @vr)
+      else
+        return stream.encode(formatted_value, @vr)
+      end
+    end
+
+    # Returns a Stream instance which can be used for encoding a value to binary.
+    def stream
+      # Use the stream instance of DObject or create a new one (with assumed Little Endian encoding)?
+      if parents.last.is_a?(DObject)
+        return parents.last.stream
+      else
+        return Stream.new(nil, file_endian=false, true)
+      end
     end
 
   end # of class

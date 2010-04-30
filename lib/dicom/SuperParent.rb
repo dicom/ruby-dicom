@@ -25,6 +25,8 @@ module DICOM
     def add(element)
       unless element.is_a?(Item)
         unless self.is_a?(Sequence)
+          # If we are replacing an existing Element, we need to make sure that this Element's parent value is erased before proceeding.
+          self[element.tag].parent = nil if exists?(element.tag)
           # Add the element:
           @tags[element.tag] = element
         else
@@ -201,7 +203,7 @@ module DICOM
       end
       return max_name, max_length, max_generations
     end
-    
+
     # Removes an element from this parent.
     # The parameter is normally a tag String, except in the case of an Item, where an index number is used.
     def remove(tag)
@@ -212,7 +214,7 @@ module DICOM
         @tags.delete(tag)
       end
     end
-    
+
     # Removes all private data elements from the child elements of this parent.
     def remove_private
       # Cycle through all levels of children recursively and remove private data elements:
