@@ -33,7 +33,7 @@ module DICOM
   # Class for interacting with the DICOM object.
   class DObject < SuperItem
 
-    attr_reader :errors, :modality, :parent, :read_success, :segments, :signature, :stream, :write_success
+    attr_reader :errors, :modality, :parent, :read_success, :segments, :stream, :write_success
 
     # Initialize the DObject instance.
     # Parameters:
@@ -481,14 +481,12 @@ module DICOM
     end
 
 
-    # Removes all private data elements from the DICOM object.
-    def remove_private
-      # Private data elemements have a group tag that is odd. This is checked with the private? String method.
-      (0...@tags.length).reverse_each do |pos|
-        remove(pos) if @tags[pos].private?
+    # Removes all sequences from the DObject.
+    def remove_sequences
+      @tags.each_value do |element|
+        remove(element.tag) if element.is_a?(Sequence)
       end
     end
-
 
 
     # Following methods are private:
@@ -503,7 +501,7 @@ module DICOM
       @errors.flatten
     end
 
-
+=begin
     # Encodes a value to binary (used for inserting values into a DICOM object).
     # Future development: Encoding of tags should be moved to the Stream class,
     # and encoding of image data should be 'outsourced' to a method of its own (encode_image).
@@ -563,35 +561,7 @@ module DICOM
       end
       return bin
     end # of encode
-
-
-    # Find the position(s) of the group length tag(s) that the given tag is associated with.
-    # If a group length tag does not exist, return an empty array.
-    def find_group_length(pos)
-      positions = Array.new
-      group = @tags[pos][0..4]
-      # Check if our tag is part of a sequence/item:
-      if @levels[pos] > 0
-        # Add (possible) group length of top parent:
-        parent_positions = parents(pos)
-        first_parent_gl_pos = find_group_length(parent_positions.first)
-        positions << first_parent_gl_pos.first if first_parent_gl_pos.length > 0
-        # Add (possible) group length at current tag's level:
-        valid_positions = children(parent_positions.last)
-        level_gl_pos = get_pos(group+"0000", :array => valid_positions)
-        positions << level_gl_pos.first if level_gl_pos.length > 0
-      else
-        # We are dealing with a top level tag:
-        gl_pos = get_pos(group+"0000")
-        # Note: Group level tags of this type may be found elsewhere in the DICOM object inside other
-        # sequences/items. We must make sure that such tags are not added to our list:
-        gl_pos.each do |gl|
-          positions << gl if @levels[gl] == 0
-        end
-      end
-      return positions
-    end
-
+=end
 
     # Unpacks and returns pixel values in an Array from the specified binary string.
     def get_pixels(bin)
