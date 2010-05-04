@@ -108,8 +108,8 @@ module DICOM
     # Returns a Stream instance which can be used for encoding a value to binary.
     def stream
       # Use the stream instance of DObject or create a new one (with assumed Little Endian encoding)?
-      if parents.last.is_a?(DObject)
-        return parents.last.stream
+      if top_parent.is_a?(DObject)
+        return top_parent.stream
       else
         return Stream.new(nil, file_endian=false, true)
       end

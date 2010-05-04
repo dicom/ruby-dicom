@@ -24,5 +24,19 @@ module Elements
       # No testing for parent validity at the moment:
       @parent = new_parent
     end
+    
+    # Returns the top parent of a particular Element. Unless an Element, or one of its parents, are independent, the top parent will be the DObject.
+    def top_parent
+      # The top parent is determined recursively:
+      if parent
+        if parent.is_a?(DICOM::DObject)
+          return parent
+        else
+          return parent.top_parent
+        end
+      else
+        return self
+      end
+    end
 
 end # of module
