@@ -1,33 +1,7 @@
 # This file contains extensions to the Ruby library which are used by Ruby DICOM.
 
-# Note: These array extensions may not be needed anymore after the rewrite.
-class Array
-
-  # Searching all indices, or a subset of indices, in an array, and returning all indices
-  # where the array's value equals the queried value.
-  def all_indices(array, value)
-    result = []
-    self.each do |pos|
-      result << pos if array[pos] == value
-    end
-    return result
-  end
-
-  # Similar to method above, but this one returns the position of all strings that
-  # contain the query string (exact match not required).
-  def all_indices_partial_match(array, value)
-    result = []
-    self.each do |pos|
-      result << pos if array[pos].include?(value)
-    end
-    return result
-  end
-
-end
-
-
 # Extension to the String class. These extensions are focused on processing/analysing Data Element tags.
-# A tag (as used by the Ruby DICOM library), is 9 characters long and of the form: GGGG,EEEE
+# A tag string (as used by the Ruby DICOM library), is 9 characters long and of the form: "GGGG,EEEE"
 class String
 
   # Returns the element part of the tag: The last 4 characters.
@@ -40,21 +14,28 @@ class String
     return self[0..3]
   end
   
+  # Replaces the element part of a tag string with four zero bytes. The resulting Group Length tag is returned.
+  def group_length
+    if self.length == 4
+      return self + ",0000"
+    else
+      return self.group + ",0000"
+    end
+  end
+  
   # Checks if a given string appears to be a valid tag by performing regexp matching. Returns true or false based on the result.
   # The method tests that the string is exactly composed of 4 HEX characters, followed by a comma, then 4 more HEX characters.
+  # Returns true if it is a valid tag, false if not.
   def is_a_tag?
-    result = false
-    #result = true if self =~ /\A\h{4},\h{4}\z/ # (turns out the hex reference '\h' isnt compatible with ruby 1.8)
-    result = true if self =~ /\A[a-fA-F\d]{4},[a-fA-F\d]{4}\z/
-    return result
+    #return ((self.upcase =~ /\A\h{4},\h{4}\z/) == nil ? false : true) # (It turns out the hex reference '\h' isnt compatible with ruby 1.8)
+    return ((self.upcase =~ /\A[a-fA-F\d]{4},[a-fA-F\d]{4}\z/) == nil ? false : true)
   end
 
-  # Check if a given tag string indicates a private tag (Odd group number) by performing a regexp matching.
+  # Check if a given tag string is private (has an odd group number) by performing a regexp matching.
+  # Returns true if private, false if not.
   def private?
-    result = false
-    #result = true if self.upcase =~ /\A\h{3}[1,3,5,7,9,B,D,F],\h{4}\z/ # (incompatible with ruby 1.8)
-    result = true if self.upcase =~ /\A[a-fA-F\d]{3}[1,3,5,7,9,B,D,F],[a-fA-F\d]{4}\z/
-    return result
+    #return ((self.upcase =~ /\A\h{3}[1,3,5,7,9,B,D,F],\h{4}\z/) == nil ? false : true) # (incompatible with ruby 1.8)
+    return ((self.upcase =~ /\A[a-fA-F\d]{3}[1,3,5,7,9,B,D,F],[a-fA-F\d]{4}\z/) == nil ? false : true)
   end
 
 end
