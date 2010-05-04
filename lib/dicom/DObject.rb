@@ -140,7 +140,7 @@ module DICOM
       if pixel_data_element
         # For now we only support returning pixel data if the image is located in a single pixel data element:
         if pixel_data_element.is_a?(DataElement)
-          pixels = get_pixels(pixel_data_element.bin)
+          pixels = decode_pixels(pixel_data_element.bin)
           # Remap the image from pixel values to presentation values if the user has requested this:
           if options[:rescale]
             if options[:narray]
@@ -178,7 +178,7 @@ module DICOM
             rows, columns, frames = image_properties
             pixel_data = NArray.int(frames,columns,rows)
             pixel_frame = NArray.int(columns,rows)
-            pixels = get_pixels(pixel_data_element.bin)
+            pixels = decode_pixels(pixel_data_element.bin)
             # Read frame by frame:
             frames.times do |i|
               (columns*rows).times do |j|
@@ -218,7 +218,7 @@ module DICOM
           if color.upcase.include?("MONOCHROME")
             # Creating a NArray object using int to make sure we have the necessary range for our numbers:
             rows, columns, frames = image_properties
-            pixels = get_pixels(pixel_data_element.bin)
+            pixels = decode_pixels(pixel_data_element.bin)
             image = read_image_magick(pixels, columns, rows, frames, options)
             add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
           else
@@ -564,7 +564,7 @@ module DICOM
 =end
 
     # Unpacks and returns pixel values in an Array from the specified binary string.
-    def get_pixels(bin)
+    def decode_pixels(bin)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth_element = self["0028,0100"]
