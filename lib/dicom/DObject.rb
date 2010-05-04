@@ -387,11 +387,11 @@ module DICOM
       row_element = self["0028,0010"]
       column_element = self["0028,0011"]
       frames = (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
-      if row_element and column_element
-        return row_element.value, column_element.value, frames
-      else
+      unless row_element and column_element
         raise "The Data Element which specifies Rows is missing. Unable to gather enough information to constuct an image." unless row_element
         raise "The Data Element which specifies Columns is missing. Unable to gather enough information to constuct an image." unless column_element
+      else
+        return row_element.value, column_element.value, frames
       end
     end
 
@@ -401,64 +401,62 @@ module DICOM
     ####################################################
 
 
-    # Writes pixel data from a Ruby Array object to the pixel data element.
-    def set_image(pixel_array)
-      # Encode this array using the standard class method:
-      set_value(pixel_array, "7FE0,0010", :create => true)
-    end
-
-
-    # Reads binary information from file and inserts it in the pixel data element.
-    def set_image_file(file)
-      # Try to read file:
-      begin
-        f = File.new(file, "rb")
-        bin = f.read(f.stat.size)
-      rescue
-        # Reading file was not successful. Register an error message.
-        add_msg("Reading specified file was not successful for some reason. No data has been added.")
-        return
-      end
-      if bin.length > 0
-        pos = @tags.index("7FE0,0010")
-        # Modify element:
-        set_value(bin, "7FE0,0010", :create => true, :bin => true)
+    # Handles pixel data from a Ruby Array, encodes it and writes it to the Pixel Data Element.
+    def set_image(pixels)
+      if pixels.is_a?(Array)
+        # Encode the pixel data:
+        bin = encode_pixels(pixels)
+        # Write the binary data to the Pixel Data Element:
+        set_pixels(bin)
       else
-        add_msg("Content of file is of zero length. Nothing to store.")
+        raise "Unexpected object type (#{pixels.class}) for the pixels parameter. Array was expected."
       end
     end
 
 
-    # Transfers pixel data from a RMagick object to the pixel data element.
+    # Reads a binary string from the specified file and writes it to the Pixel Data Element.
+    def set_image_file(file)
+      # Read and extract:
+      f = File.new(file, "rb")
+      bin = f.read(f.stat.size)
+      if bin.length > 0
+        # Write the binary data to the Pixel Data Element:
+        set_pixels(bin)
+      else
+        add_msg("Notice: The specified file (#{file}) is empty. Nothing to store.")
+      end
+    end
+
+
+    # Handles pixel data from a RMagick image object, encodes it and writes it to the Pixel Data Element.
+    # NB: If value rescaling is wanted, both :min and :max must be set!
     # NB! Because of rescaling when importing pixel values to a RMagick object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
-    # result in pixel data that is completely different from what is expected.
-    # This method should be used only with great care!
-    # If value rescaling is wanted, both :min and :max must be set!
+    # result in pixel data that differs from what is expected. This method must be used with great care!
     # Options:
     # :max => value  - Pixel values will be rescaled using this as the new maximum value.
     # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
-    def set_image_magick(magick_obj, options={})
-      # Export the RMagick object to a standard Ruby array of numbers:
-      pixel_array = magick_obj.export_pixels(x=0, y=0, columns=magick_obj.columns, rows=magick_obj.rows, map="I")
+    def set_image_magick(magick_image, options={})
+      # Export the RMagick object to a standard Ruby Array:
+      pixels = magick_image.export_pixels(x=0, y=0, columns=magick_image.columns, rows=magick_image.rows, map="I")
       # Rescale pixel values?
       if options[:min] and options[:max]
-        p_min = pixel_array.min
-        p_max = pixel_array.max
+        p_min = pixels.min
+        p_max = pixels.max
         if p_min != options[:min] or p_max != options[:max]
           wanted_range = options[:max] - options[:min]
-          factor = wanted_range.to_f/(pixel_array.max - pixel_array.min).to_f
-          offset = pixel_array.min - options[:min]
-          pixel_array.collect!{|x| ((x*factor)-offset).round}
+          factor = wanted_range.to_f/(pixels.max - pixels.min).to_f
+          offset = pixels.min - options[:min]
+          pixels.collect!{|x| ((x*factor)-offset).round}
         end
       end
-      # Encode this array using the standard class method:
-      set_value(pixel_array, "7FE0,0010", :create => true)
+      # Encode and write to the Pixel Data Element:
+      set_image(pixels)
     end
 
 
-    # Transfers pixel data from a NArray object to the pixel data element.
-    # If value rescaling is wanted, both :min and :max must be set!
+    # Handles pixel data from a Numerical Array (NArray), encodes it and writes it to the Pixel Data Element.
+    # NB: If value rescaling is wanted, both :min and :max must be set!
     # Options:
     # :max => value  - Pixel values will be rescaled using this as the new maximum value.
     # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
@@ -474,10 +472,10 @@ module DICOM
           narray = narray*factor-offset
         end
       end
-      # Export the NArray object to a standard Ruby array of numbers:
-      pixel_array = narray.to_a.flatten!
-      # Encode this array using the standard class method:
-      set_value(pixel_array, "7FE0,0010", :create => true)
+      # Export the NArray object to a standard Ruby Array:
+      pixels = narray.to_a.flatten!
+      # Encode and write to the Pixel Data Element:
+      set_image(pixels)
     end
 
 
@@ -487,6 +485,7 @@ module DICOM
         remove(element.tag) if element.is_a?(Sequence)
       end
     end
+
 
 
     # Following methods are private:
@@ -501,69 +500,9 @@ module DICOM
       @errors.flatten
     end
 
-=begin
-    # Encodes a value to binary (used for inserting values into a DICOM object).
-    # Future development: Encoding of tags should be moved to the Stream class,
-    # and encoding of image data should be 'outsourced' to a method of its own (encode_image).
-    def encode(value, vr)
-      # VR will decide how to encode this value:
-      case vr
-        when "AT" # (Data element tag: Assume it has the format "GGGG,EEEE"
-          if value.is_a_tag?
-            bin = @stream.encode_tag(value)
-          else
-            add_msg("Invalid tag format (#{value}). Expected format: 'GGGG,EEEE'")
-          end
-        # We have a number of VRs that are encoded as string:
-        when 'AE','AS','CS','DA','DS','DT','IS','LO','LT','PN','SH','ST','TM','UI','UT'
-          # In case we are dealing with a number string element, the supplied value might be a number
-          # instead of a string, and as such, we convert to string just to make sure this will work nicely:
-          value = value.to_s
-          bin = @stream.encode_value(value, "STR")
-        # Image related value representations:
-        when "OW"
-          # What bit depth to use when encoding the pixel data?
-          bit_depth = get_value("0028,0100", :array => true)[0]
-          if bit_depth == false
-            # Data element not specified:
-            add_msg("Attempted to encode pixel data, but the 'Bit Depth' Data Element (0028,0100) is missing.")
-          else
-            # 8, 12 or 16 bits per pixel?
-            case bit_depth
-              when 8
-                bin = @stream.encode(value, "BY")
-              when 12
-                # 12 bit not supported yet!
-                add_msg("Encoding 12 bit pixel values not supported yet. Please change the bit depth to 8 or 16 bits.")
-              when 16
-                # Signed or unsigned integer?
-                pixel_representation = get_value("0028,0103", :array => true)[0]
-                if pixel_representation
-                  if pixel_representation.to_i == 1
-                    # Signed integers:
-                    bin = @stream.encode(value, "SS")
-                  else
-                    # Unsigned integers:
-                    bin = @stream.encode(value, "US")
-                  end
-                else
-                  add_msg("Attempted to encode pixel data, but the 'Pixel Representation' Data Element (0028,0103) is missing.")
-                end
-              else
-                # Unknown bit depth:
-                add_msg("Unknown bit depth #{bit_depth}. No data encoded.")
-            end
-          end
-        # All other VR's:
-        else
-          # Just encode:
-          bin = @stream.encode(value, vr)
-      end
-      return bin
-    end # of encode
-=end
 
     # Unpacks and returns pixel values in an Array from the specified binary string.
+    # Returns false if decode is unsuccesful.
     def decode_pixels(bin)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
@@ -595,7 +534,40 @@ module DICOM
       end
       return pixels
     end
+    
 
+    # Encodes a pixel array based on attributes defined in the DObject and returns the resulting binary string.
+    # Returns false if encode is unsuccesful.
+    def encode_pixels(pixels)
+      bin = false
+      # We need to know what kind of bith depth and integer type the pixel data is saved with:
+      bit_depth_element = self["0028,0100"]
+      pixel_representation_element = self["0028,0103"]
+      if bit_depth_element and pixel_representation_element
+        # Number of bytes used per pixel will determine how to pack this:
+        case bit_depth_element.value.to_i
+          when 8
+            bin = @stream.encode(pixels, "BY") # Byte/Character/Fixnum (1 byte)
+          when 16
+            if pixel_representation_element.value.to_i == 1
+              bin = @stream.encode(pixels, "SS") # Signed short (2 bytes)
+            else
+              bin = @stream.encode(pixels, "US") # Unsigned short (2 bytes)
+            end
+          when 12
+            # 12 BIT SIMPLY NOT WORKING YET!
+            # This one is a bit tricky to encode. I havent really given this priority so far as 12 bit image data is rather rare.
+            raise "Encoding bit depth 12 is not implemented yet! Please contact the author (or edit the source code)."
+          else
+            raise "The Bit Depth #{bit_depth} has not received implementation in this procedure yet. Please contact the author (or edit the source code)."
+        end
+      else
+        raise "The Data Element which specifies Bit Depth is missing. Unable to encode pixel data." unless bit_depth_element
+        raise "The Data Element which specifies Pixel Representation is missing. Unable to encode pixel data." unless pixel_representation_element
+      end
+      return bin
+    end
+    
 
     # Converts original pixel data values to presentation values.
     def process_presentation_values(pixel_data, min_allowed, max_allowed)
@@ -738,6 +710,18 @@ module DICOM
       end
       return image
     end
+    
+    
+    # Transfers a pre-encoded binary string to the Pixel Data Element, either by updating an existing one, or creating a new one.
+    def set_pixels(bin)
+      if self.exists?(PIXEL_TAG)
+        # Update existing Data Element:
+        self[PIXEL_TAG].bin = bin
+      else
+        # Create new Data Element:
+        pixel_element = DataElement.new(PIXEL_TAG, bin, :encoded => true, :parent => self)
+      end
+    end
 
 
     # Handles the creation of a DWrite object, and returns this object to the calling method.
@@ -749,10 +733,10 @@ module DICOM
           options[:transfer_syntax] = IMPLICIT_LITTLE_ENDIAN
         end
       end
-      w = DWrite.new(self, file_name, options)
-      w.rest_endian = @file_endian
-      w.rest_explicit = @explicit
-      return w
+      w_obj = DWrite.new(self, file_name, options)
+      w_obj.rest_endian = @file_endian
+      w_obj.rest_explicit = @explicit
+      return w_obj
     end
 
 
