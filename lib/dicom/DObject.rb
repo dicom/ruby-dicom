@@ -70,48 +70,6 @@ module DICOM
     end
 
 
-    # Returns a DICOM object by reading the file specified.
-    # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
-    # For the time being, this method is called automatically when initializing the DObject class,
-    # but in the future, when write support is added, this method may have to be called manually.
-    def read(string, options={})
-      r = DRead.new(self, string, options)
-      # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
-      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-      unless r.success
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
-        # Only extract information from this new attempt if it was successful:
-        r = r_explicit if r_explicit.success
-      end
-      # Store the data to the instance variables if the readout was a success:
-      if r.success
-        @read_success = true
-        # Update instance variables based on the properties of the DICOM object:
-        @explicit = r.explicit
-        @file_endian = r.file_endian
-        @signature = r.signature
-        @stream.explicit = @explicit
-        @stream.set_endian(@file_endian)
-      else
-        @read_success = false
-      end
-      # If any messages has been recorded, send these to the message handling method:
-      add_msg(r.msg) if r.msg.length > 0
-    end
-
-
-    # Passes the DObject to the DWrite class, which recursively traverses the Data Element
-    # structure and encodes a proper binary string, which is then written to the specified file.
-    def write(file_name, options={})
-      w = set_write_object(file_name, options)
-      w.write
-      # Write process succesful?
-      @write_success = w.success
-      # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.length > 0
-    end
-
-
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
     def encode_segments(max_size)
       w = set_write_object
@@ -122,11 +80,6 @@ module DICOM
       # If any messages has been recorded, send these to the message handling method:
       add_msg(w.msg) if w.msg.length > 0
     end
-
-
-    #################################################
-    # START OF METHODS FOR READING INFORMATION FROM DICOM OBJECT:
-    #################################################
 
 
     # Returns the image pixel data in a standard Ruby array.
@@ -159,6 +112,39 @@ module DICOM
         pixels = nil
       end
       return pixels
+    end
+
+
+    # Returns a RMagick image, built from the pixel data and image information in the DICOM object.
+    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
+    # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
+    # Options:
+    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
+    # :narray => true  - Use NArray when rescaling pixel values (faster than using RMagick/Ruby array).
+    def get_image_magick(options={})
+      color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
+      pixel_data_element = self[PIXEL_TAG]
+      if pixel_data_element
+        # For now we only support returning pixel data if the image is located in a single pixel data element:
+        if pixel_data_element.is_a?(DataElement)
+          if color.upcase.include?("MONOCHROME")
+            # Creating a NArray object using int to make sure we have the necessary range for our numbers:
+            rows, columns, frames = image_properties
+            pixels = decode_pixels(pixel_data_element.bin)
+            image = read_image_magick(pixels, columns, rows, frames, options)
+            add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
+          else
+            add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
+            image = false
+          end
+        else
+          add_msg("Warning: Method get_image_magick() does not currently support returning pixel data from encapsulated images.")
+          image = false
+        end
+      else
+        image = nil
+      end
+      return image
     end
 
 
@@ -203,36 +189,31 @@ module DICOM
     end
 
 
-    # Returns a RMagick image, built from the pixel data and image information in the DICOM object.
-    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
-    # To call this method the user needs to have loaded the ImageMagick library in advance (require 'RMagick').
-    # Options:
-    # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
-    # :narray => true  - Use NArray when rescaling pixel values (faster than using RMagick/Ruby array).
-    def get_image_magick(options={})
-      color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        if pixel_data_element.is_a?(DataElement)
-          if color.upcase.include?("MONOCHROME")
-            # Creating a NArray object using int to make sure we have the necessary range for our numbers:
-            rows, columns, frames = image_properties
-            pixels = decode_pixels(pixel_data_element.bin)
-            image = read_image_magick(pixels, columns, rows, frames, options)
-            add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
-          else
-            add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
-            image = false
-          end
-        else
-          add_msg("Warning: Method get_image_magick() does not currently support returning pixel data from encapsulated images.")
-          image = false
-        end
+    # Reads a binary string from the specified file and writes it to the Pixel Data Element.
+    def image_from_file(file)
+      # Read and extract:
+      f = File.new(file, "rb")
+      bin = f.read(f.stat.size)
+      if bin.length > 0
+        # Write the binary data to the Pixel Data Element:
+        set_pixels(bin)
       else
-        image = nil
+        add_msg("Notice: The specified file (#{file}) is empty. Nothing to store.")
       end
-      return image
+    end
+
+
+    # Returns data regarding the geometrical properties of the image(s): rows, columns & number of frames.
+    def image_properties
+      row_element = self["0028,0010"]
+      column_element = self["0028,0011"]
+      frames = (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
+      unless row_element and column_element
+        raise "The Data Element which specifies Rows is missing. Unable to gather enough information to constuct an image." unless row_element
+        raise "The Data Element which specifies Columns is missing. Unable to gather enough information to constuct an image." unless column_element
+      else
+        return row_element.value, column_element.value, frames
+      end
     end
 
 
@@ -261,11 +242,6 @@ module DICOM
         end
       end
     end
-
-
-    ##############################################
-    ####### START OF METHODS FOR PRINTING INFORMATION:######
-    ##############################################
 
 
     # Gathers key information about the DICOM object in a string array.
@@ -382,23 +358,42 @@ module DICOM
     end # of information
 
 
-    # Returns data regarding the geometrical properties of the image(s): rows, columns & number of frames.
-    def image_properties
-      row_element = self["0028,0010"]
-      column_element = self["0028,0011"]
-      frames = (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
-      unless row_element and column_element
-        raise "The Data Element which specifies Rows is missing. Unable to gather enough information to constuct an image." unless row_element
-        raise "The Data Element which specifies Columns is missing. Unable to gather enough information to constuct an image." unless column_element
-      else
-        return row_element.value, column_element.value, frames
+    # Returns a DICOM object by reading the file specified.
+    # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
+    # For the time being, this method is called automatically when initializing the DObject class,
+    # but in the future, when write support is added, this method may have to be called manually.
+    def read(string, options={})
+      r = DRead.new(self, string, options)
+      # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
+      unless r.success
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
+        # Only extract information from this new attempt if it was successful:
+        r = r_explicit if r_explicit.success
       end
+      # Store the data to the instance variables if the readout was a success:
+      if r.success
+        @read_success = true
+        # Update instance variables based on the properties of the DICOM object:
+        @explicit = r.explicit
+        @file_endian = r.file_endian
+        @signature = r.signature
+        @stream.explicit = @explicit
+        @stream.set_endian(@file_endian)
+      else
+        @read_success = false
+      end
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(r.msg) if r.msg.length > 0
     end
 
 
-    ####################################################
-    ### START OF METHODS FOR WRITING INFORMATION TO THE DICOM OBJECT:
-    ####################################################
+    # Removes all sequences from the DObject.
+    def remove_sequences
+      @tags.each_value do |element|
+        remove(element.tag) if element.is_a?(Sequence)
+      end
+    end
 
 
     # Handles pixel data from a Ruby Array, encodes it and writes it to the Pixel Data Element.
@@ -410,20 +405,6 @@ module DICOM
         set_pixels(bin)
       else
         raise "Unexpected object type (#{pixels.class}) for the pixels parameter. Array was expected."
-      end
-    end
-
-
-    # Reads a binary string from the specified file and writes it to the Pixel Data Element.
-    def set_image_file(file)
-      # Read and extract:
-      f = File.new(file, "rb")
-      bin = f.read(f.stat.size)
-      if bin.length > 0
-        # Write the binary data to the Pixel Data Element:
-        set_pixels(bin)
-      else
-        add_msg("Notice: The specified file (#{file}) is empty. Nothing to store.")
       end
     end
 
@@ -479,11 +460,15 @@ module DICOM
     end
 
 
-    # Removes all sequences from the DObject.
-    def remove_sequences
-      @tags.each_value do |element|
-        remove(element.tag) if element.is_a?(Sequence)
-      end
+    # Passes the DObject to the DWrite class, which recursively traverses the Data Element
+    # structure and encodes a proper binary string, which is then written to the specified file.
+    def write(file_name, options={})
+      w = set_write_object(file_name, options)
+      w.write
+      # Write process succesful?
+      @write_success = w.success
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(w.msg) if w.msg.length > 0
     end
 
 
