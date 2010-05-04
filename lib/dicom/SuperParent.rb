@@ -60,9 +60,14 @@ module DICOM
       end
     end
 
-    # Returns true (a boolean used to check whether an element has children or not).
+    # A boolean used to check whether whether or not an element actually has any child elements.
+    # Returns true if this parent have any child elements, false if not.
     def children?
-      return true
+      if @tags.length > 0
+        return true
+      else
+        return false
+      end
     end
 
     # Returns all (immediate) child elements in a sorted array. If object has no children, an empty array is returned
@@ -156,6 +161,12 @@ module DICOM
         end
       end
       return elements.flatten, index
+    end
+    
+    # A boolean used to check whether or not an element is a parent.
+    # Returns true.
+    def is_parent?
+      return true
     end
 
     # Prints the Elements contained in this Sequence/Item/DObject to the screen.

@@ -79,8 +79,15 @@ module DICOM
       end
     end
 
-    # Returns false (a boolean used to check whether an element has children or not).
+    # A boolean used to check whether whether or not an element actually has any child elements.
+    # Returns false.
     def children?
+      return false
+    end
+    
+    # A boolean used to check whether or not an element is a parent.
+    # Returns false.
+    def is_parent?
       return false
     end
 
