@@ -107,24 +107,19 @@ module DICOM
     end
 
 
-    # Returns the tag that matches the supplied data element name,
-    # or if a tag is supplied, return that tag.
+    # Returns the tag that matches the supplied data element name, or if a tag is supplied, return that tag.
     # (This method may be considered for removal: Does the usefulnes of being able to create a tag by Name,
     # outweigh the performance impact of having this method?)
-    def get_tag(name)
+    def get_tag(tag_or_name)
       tag = false
       # The supplied value should be a string:
-      if name.is_a?(String)
-        if name.is_a_tag?
-          # This is a tag:
-          tag = name
+      if tag_or_name.is_a?(String)
+        if tag_or_name.tag?
+          tag = tag_or_name
         else
-          # We have presumably been dealt a name. Search the dictionary to see if we can identify
-          # this name and return its corresponding tag:
+          # We have presumably been dealt a name. Search the dictionary to see if we can identify this name and return its corresponding tag:
           @tags.each_pair do |key, value|
-            if value[1] == name
-              tag = key
-            end
+            tag = key if value[1] == tag_or_name
           end
         end
       end
