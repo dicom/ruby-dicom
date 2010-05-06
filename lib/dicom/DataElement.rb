@@ -63,7 +63,6 @@ module DICOM
     end
 
     # Set the binary string of a DataElement.
-    # NB! Need to also modify the length of parents and group lengths!!!
     def bin=(new_bin)
       if new_bin.is_a?(String)
         # Add an empty byte at the end if the length of the binary is odd:
@@ -84,7 +83,7 @@ module DICOM
     def children?
       return false
     end
-    
+
     # A boolean used to check whether or not an element is a parent.
     # Returns false.
     def is_parent?
@@ -92,7 +91,6 @@ module DICOM
     end
 
     # Set the value of a DataElement. The specified, formatted value will be encoded and the DataElement's binary string will be updated.
-    # NB! Need to also modify the length of parents and group lengths!!!
     def value=(new_value)
       @bin = encode(new_value)
       @value = new_value

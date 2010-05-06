@@ -168,6 +168,15 @@ module DICOM
     def is_parent?
       return true
     end
+    
+    # Sets the length of a Sequence or Item.
+    def length=(length)
+      unless self.is_a?(DObject)
+        @length = length
+      else
+        raise "Length can not be set for DObject."
+      end
+    end
 
     # Prints the Elements contained in this Sequence/Item/DObject to the screen.
     # This method gathers the information that is necessary to produce a nicely formatted printout,
@@ -232,6 +241,16 @@ module DICOM
       @tags.each_value do |element|
         remove(element.tag) if element.tag.private?
         element.remove_private if element.children?
+      end
+    end
+
+    # Resets the length of a Sequence or Item to -1 (the 'undefined' length).
+    def reset_length
+      unless self.is_a?(DObject)
+        @length = -1
+        @bin = ""
+      else
+        raise "Length can not be set for DObject."
       end
     end
 

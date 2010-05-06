@@ -27,9 +27,8 @@ module DICOM
         @parent.add_item(self)
       end
     end
-    
+
     # Set the binary string of a (Data) Item.
-    # NB! Need to also modify the length of parents and group lengths!!!
     def bin=(new_bin)
       if new_bin.is_a?(String)
         # Add an empty byte at the end if the length of the binary is odd:
