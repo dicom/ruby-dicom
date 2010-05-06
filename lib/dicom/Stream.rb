@@ -166,6 +166,19 @@ module DICOM
         return [value].pack(type)
       end
     end
+    
+    
+    # Extracts and returns the entire binary string, or optionally, just the first part of it if a length is specified as a parameter.
+    # The extracted string is removed from the string of this instance.
+    def export(length=nil)
+      if length
+        string = @string.slice!(0, length)
+      else
+        string = @string
+        reset
+      end
+      return string
+    end
 
 
     # Extracts and returns a binary string of the given length from the current @index position and out.
