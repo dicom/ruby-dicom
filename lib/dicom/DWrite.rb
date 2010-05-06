@@ -75,6 +75,7 @@ module DICOM
     def encode_segments(max_size)
       # Initiate necessary variables:
       init_variables
+      @max_size = max_size
       @segments = Array.new
       elements = @obj.child_array
       # When sending a DICOM file across the network, no header or meta information is needed.
@@ -84,7 +85,9 @@ module DICOM
       # Create a Stream instance to handle the encoding of content to
       # the binary string that will eventually be saved to file:
       @stream = Stream.new(nil, @file_endian, @explicit)
-      write_data_elements_to_segments(selected_elements, max_size)
+      write_data_elements(selected_elements)
+      # Extract the remaining string in our stream instance to our array of strings:
+      @segments << @stream.export
       # Mark this write session as successful:
       @success = true
     end
@@ -99,7 +102,35 @@ module DICOM
       if @file
         @stream.write(string)
       else
-        @stream.add_last(string)
+        # Are we writing to a single (big) string, or multiple (smaller) strings?
+        unless @segments
+          @stream.add_last(string)
+        else
+          # As the encoded DICOM string will be cut in multiple, smaller pieces, we need to monitor the length of our encoded strings:
+          if (string.length + @stream.length) > @max_size
+            append = string.slice!(0, @max_size-@stream.length)
+            # Join these strings together and add them to the segments:
+            @segments << @stream.export + append
+            if (30 + string.length) > @max_size
+              # The remaining part of the string is bigger than the max limit, fill up more segments:
+              # How many full segments will this string fill?
+              number = (string.length/@max_size.to_f).floor
+              number.times {@segments << string.slice!(0, @max_size)}
+              # The remaining part is added to the stream:
+              @stream.add_last(string)
+            else
+              # The rest of the string is small enough that it can be added to the stream:
+              @stream.add_last(string)
+            end
+          elsif (30 + @stream.length) > @max_size
+            # End the current segment, and start on a new segment for this string.
+            @segments << @stream.export
+            @stream.add_last(string)
+          else
+            # We are nowhere near the limit, simply add the string:
+            @stream.add_last(string)
+          end
+        end
       end
     end
 
@@ -168,11 +199,26 @@ module DICOM
     # Cycles through the data elements in order to write.
     def write_data_elements(elements)
       elements.each do |element|
-        write_data_element(element)
         # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
-        write_data_elements(element.child_array) if element.children?
-        # We might need to add a Delimiter Item:
-        write_delimiter(element) if element.length == -1
+        if element.is_parent?
+          if element.children?
+            # Sequence/Item with child elements:
+            element.reset_length unless @enc_image
+            write_data_element(element)
+            write_data_elements(element.child_array)
+            if @enc_image
+              write_delimiter(element) if element.tag == PIXEL_TAG # (Write a delimiter for the pixel tag, but not for it's items)
+            else
+              write_delimiter(element)
+            end
+          else
+            # Empty sequence/item or item with binary data (We choose not to write empty, childless parents):
+            write_data_element(element) if element.bin.length > 0
+          end
+        else
+          # Ordinary Data Element:
+          write_data_element(element) unless element.tag.group_length? # (For simplicity, we avoid writing group length elements)
+        end
       end
     end
 
@@ -197,55 +243,6 @@ module DICOM
     end
 
 
-    # Writes each data element to file:
-    def write_data_elements_to_segments(elements, max_size)
-      # Start encoding data elements, and start on a new string when the size limit is reached:
-      elements.each do |element|
-        value_length = element.length
-        # Test the length of the upcoming data element against our size limitation:
-        if value_length > max_size
-          # Start writing content from this data element,
-          # then continue writing its content in the next segments.
-          # Write tag & vr/length:
-          write_tag(element.tag)
-          write_vr_length(element.tag, element.vr, element.length)
-          # Find out how much of this element's value we can write, then add it:
-          available = max_size - @stream.length
-          value_first_part = element.bin.slice(0, available)
-          @stream.add_last(value_first_part)
-          # Add segment and reset:
-          @segments << @stream.string
-          @stream.reset
-          # Find out how many more segments our data element value will fill:
-          remaining_segments = ((value_length - available).to_f / max_size.to_f).ceil
-          index = available
-          # Iterate through the data element's value until we have added it entirely:
-          remaining_segments.times do
-            value = element.bin.slice(index, max_size)
-            index = index + max_size
-            @stream.add_last(value)
-            # Add segment and reset:
-            @segments << @stream.string
-            @stream.reset
-          end
-        elsif (20 + value_length + @stream.length) >= max_size
-          # End the current segment, and start on a new segment for the next data element.
-          @segments << @stream.string
-          @stream.reset
-          write_data_element(element)
-        else
-          # Write the next data element to the current segment:
-          write_data_element(element)
-        end
-        check_encapsulated_image(element)
-        # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
-        write_data_elements_to_segments(element.child_array, max_size) if element.children?
-        # We might need to add a Delimiter Item:
-        write_delimiter(element) if element.length == -1
-      end
-    end
-
-
     # Writes the tag (first part of the data element).
     def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
@@ -259,52 +256,34 @@ module DICOM
 
     # Writes the VR (if it is to be written) and length value. These two are the middle part of the data element.
     def write_vr_length(tag, vr, length)
-      # First some preprocessing:
-      # Set length value:
-      if length == nil
-        # Set length value to 0:
-        length4 = @stream.encode(0, "SL")
-        length2 = @stream.encode(0, "US")
-      elsif length == -1
-        # Set length to 'ff ff ff ff':
-        length4 = @stream.encode(-1, "SL")
-        # No length2 necessary for this case.
-      else
-        # Pick length value from array:
-        length4 = @stream.encode(length, "SL")
-        length2 = @stream.encode(length, "US")
-      end
+      # Encode the length value (cover both scenarios of 2 and 4 bytes):
+      length4 = @stream.encode(length, "SL")
+      length2 = @stream.encode(length, "US")
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       # *****EXPLICIT*****:
       if @explicit == true
         # Step 1: Write VR (if it is to be written)
         unless ITEM_TAGS.include?(tag)
           # Write data element VR (2 bytes - since we are not dealing with an item related element):
-          bin_vr = @stream.encode(vr, "STR")
-          add(bin_vr)
+          add(@stream.encode(vr, "STR"))
         end
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element vr:
         case vr
           when "OB","OW","SQ","UN","UT"
-            if @enc_image
-              # Item under an encapsulated Pixel Data (7FE0,0010):
-              # 4 bytes:
+            if @enc_image # (4 bytes)
+              # Item under an encapsulated Pixel Data (7FE0,0010).
               add(length4)
-            else
-              # 6 bytes total:
-              # Two empty first:
-              empty = @stream.encode("00"*2, "HEX")
-              add(empty)
+            else # (6 bytes total)
+              # Two empty bytes first:
+              add(@stream.encode("00"*2, "HEX"))
               # Value length (4 bytes):
               add(length4)
             end
-          when ITEM_VR
-            # 4 bytes:
+          when ITEM_VR # (4 bytes)
             # For the item elements: "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
             add(length4)
-          else
-            # 2 bytes:
+          else # (2 bytes)
             # For all the other data element vr, value length is 2 bytes:
             add(length2)
         end
@@ -314,7 +293,7 @@ module DICOM
         # Writing value length (4 bytes):
         add(length4)
       end
-    end # of write_vr_length
+    end
 
 
     # Writes the value (last part of the data element).
