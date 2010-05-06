@@ -180,6 +180,7 @@ module DICOM
           @current_parent = @current_parent.parent
           @msg << child_reader.msg
           @success = child_reader.success
+          return false unless @success
         end
       elsif DELIMITER_TAGS.include?(tag)
         # We do not create an element for the delimiter items.
@@ -189,7 +190,10 @@ module DICOM
         # Create an ordinary Data Element:
         @current_element = DataElement.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
-        set_abrupt_error if length != @current_element.bin.length
+        if length != @current_element.bin.length
+          set_abrupt_error
+          return false # (Failed)
+        end
       end
       # Return true to indicate success:
       return true
@@ -227,23 +231,18 @@ module DICOM
         # Three possible structures for value length here, dependent on element vr:
         case vr
           when "OB","OW","SQ","UN","UT"
-            # 6 bytes total:
-            # Two empty bytes first:
+            # 6 bytes total (2 empty bytes preceeding the 4 byte value length)
             pre_skip = 2
-            # Value length (4 bytes):
             bytes = 4
           when ITEM_VR
-            # 4 bytes:
             # For the item elements: "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD":
             bytes = 4
           else
-            # 2 bytes:
             # For all the other element vr, value length is 2 bytes:
             bytes = 2
         end
       else
         # *****IMPLICIT*****:
-        # Value length (4 bytes):
         bytes = 4
       end
       # Handle skips and read out length value:
