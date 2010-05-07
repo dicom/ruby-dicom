@@ -253,6 +253,16 @@ module DICOM
         raise "Length can not be set for DObject."
       end
     end
+    
+    # Returns the value of a child of this instance, specified by the tag parameter.
+    # If the child element does not exist, nil is returned.
+    def value(tag)
+      if exists?(tag)
+        return @tags[tag].value
+      else
+        return nil
+      end
+    end
 
     # Following methods are private:
     private
