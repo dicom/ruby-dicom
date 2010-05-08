@@ -46,6 +46,8 @@ module DICOM
             # Add the existing Item to this Sequence:
             index = @tags.length + 1
             @tags[index] = item
+            # Let the Item know what index key it's got in it's parent's Hash:
+            item.index = index
           else
             raise "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
           end

@@ -7,6 +7,8 @@ module DICOM
 
     # Include the Elements mixin module:
     include Elements
+    
+    attr_accessor :index
 
     # Initializes an Item instance. Takes a Sequence as a parameter.
     #

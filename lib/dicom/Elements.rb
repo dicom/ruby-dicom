@@ -6,7 +6,7 @@ module DICOM
   module Elements
 
       # Accessible element variables:
-      attr_reader :bin, :length, :name, :parent, :tag, :value, :vr
+      attr_reader :bin, :length, :name, :parent, :tag, :vr
 
       # Returns the entire chain of parents in an array, where the first element is the
       # immediate parent and the last element is the top parent.

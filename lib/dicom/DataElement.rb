@@ -7,6 +7,8 @@ module DICOM
 
     # Include the Elements mixin module:
     include Elements
+    
+    attr_reader :value
 
     # Initialize a DataElement instance. Takes a tag string, a value and a hash of options as parameters.
     #
