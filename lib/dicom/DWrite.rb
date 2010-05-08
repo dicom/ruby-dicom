@@ -213,7 +213,9 @@ module DICOM
             end
           else
             # Empty sequence/item or item with binary data (We choose not to write empty, childless parents):
-            write_data_element(element) if element.bin.length > 0
+            if element.bin
+              write_data_element(element) if element.bin.length > 0
+            end
           end
         else
           # Ordinary Data Element:
