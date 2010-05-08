@@ -24,7 +24,8 @@ module DICOM
       # Sets the parent of this element to a referenced element.
       def parent=(new_parent)
         # Remove ourselves from the previous parent first:
-        self.parent.remove(self.tag)
+        # Don't do this if parent is set as nil (by the remove method), or we'll get an endless loop!
+        self.parent.remove(self.tag) if new_parent
         # Set the new parent (should we bother to test for parent validity here?):
         @parent = new_parent
       end

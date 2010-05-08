@@ -240,7 +240,7 @@ module DICOM
     # Removes all private data elements from the child elements of this parent.
     def remove_private
       # Cycle through all levels of children recursively and remove private data elements:
-      @tags.each_value do |element|
+      children.each do |element|
         remove(element.tag) if element.tag.private?
         element.remove_private if element.children?
       end
