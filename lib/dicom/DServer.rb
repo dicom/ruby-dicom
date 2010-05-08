@@ -104,7 +104,7 @@ module DICOM
               link.handle_association_accept(session, info, syntax_result)
               if syntax_result == "00" # Normal (no error)
                 add_notice("An incoming association request and its abstract syntax has been accepted.")
-                if info[:abstract_syntax] == "1.2.840.10008.1.1"
+                if info[:pc].first[:abstract_syntax] == "1.2.840.10008.1.1"
                   # Verification SOP Class (used for testing connections):
                   link.handle_release(session)
                 else

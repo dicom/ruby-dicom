@@ -33,7 +33,7 @@ module DICOM
         local_path = folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
         full_path = path_prefix + local_path
         # Save the DICOM object to disk:
-        obj.write(full_path, transfer_syntax)
+        obj.write(full_path, :transfer_syntax => transfer_syntax)
         # As the file has been received successfully, set the success boolean and a corresponding 'success string':
         success = true
         message = "DICOM file saved to: #{full_path}"
