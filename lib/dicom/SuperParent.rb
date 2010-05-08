@@ -5,9 +5,8 @@ module DICOM
   # Super class which contains common code for all parent elements (Item, Sequence and DObject).
   class SuperParent
 
-    attr_reader :children
-
     # Initialize common variables among the parent elements.
+    # Only for internal use (should be private).
     def initialize_parent
       # All child data elements and sequences are stored in a hash where tag string is used as key:
       @tags = Hash.new
@@ -20,7 +19,7 @@ module DICOM
       return @tags[tag]
     end
 
-    # Adds a Data or Sequence Element to self (self should be either a DObject or an Item).
+    # Adds a Data or Sequence Element to self (which can be either DObject or an Item).
     # Items are not allowed to be added with this method.
     def add(element)
       unless element.is_a?(Item)
@@ -60,6 +59,12 @@ module DICOM
       end
     end
 
+    # Returns all (immediate) child elements in an array (sorted by element tag).
+    # If this particular parent doesn't have any children, an empty array is returned
+    def children
+      return @tags.sort.transpose[1] || Array.new
+    end
+
     # A boolean used to check whether whether or not an element actually has any child elements.
     # Returns true if this parent have any child elements, false if not.
     def children?
@@ -68,11 +73,6 @@ module DICOM
       else
         return false
       end
-    end
-
-    # Returns all (immediate) child elements in a sorted array. If object has no children, an empty array is returned
-    def child_array
-      return @tags.sort.transpose[1] || Array.new
     end
 
     # Returns the number of Elements contained directly in this parent (does not include number of elements of possible children).
@@ -100,13 +100,14 @@ module DICOM
     end
 
     # Handles the print job.
+    # Only for internal use (should be private).
     def handle_print(index, max_digits, max_name, max_length, max_generations, visualization, options={})
       elements = Array.new
       s = " "
       hook_symbol = "|_"
       last_item_symbol = "  "
       nonlast_item_symbol = "| "
-      child_array.each_with_index do |element, i|
+      children.each_with_index do |element, i|
         n_parents = element.parents.length
         # Formatting: Index
         i_s = s*(max_digits-(index).to_s.length)
@@ -135,15 +136,15 @@ module DICOM
           if n_parents > 1
             child_visualization = Array.new
             child_visualization.replace(visualization)
-            if element == child_array.first
-              if child_array.length == 1
+            if element == children.first
+              if children.length == 1
                 # Last item:
                 child_visualization.insert(n_parents-2, last_item_symbol)
               else
                 # More items follows:
                 child_visualization.insert(n_parents-2, nonlast_item_symbol)
               end
-            elsif element == child_array.last
+            elsif element == children.last
               # Last item:
               child_visualization[n_parents-2] = last_item_symbol
               child_visualization.insert(-1, hook_symbol)
@@ -170,9 +171,9 @@ module DICOM
     end
     
     # Sets the length of a Sequence or Item.
-    def length=(length)
+    def length=(new_length)
       unless self.is_a?(DObject)
-        @length = length
+        @length = new_length
       else
         raise "Length can not be set for DObject."
       end
@@ -203,11 +204,12 @@ module DICOM
     # Finds and returns the maximum length of Name and Length which occurs for any child element,
     # as well as the maximum number of generations of elements.
     # This is used by the print method to achieve pretty printing.
+    # Only for internal use (should be private).
     def max_lengths
       max_name = 0
       max_length = 0
       max_generations = 0
-      child_array.each do |element|
+      children.each do |element|
         if element.children?
           max_nc, max_lc, max_gc = element.max_lengths
           max_name = max_nc if max_nc > max_name

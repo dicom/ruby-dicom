@@ -28,7 +28,7 @@ module DICOM
       end
     end
 
-    # Set the binary string of a (Data) Item.
+    # Sets the binary string of a (Data) Item.
     def bin=(new_bin)
       if new_bin.is_a?(String)
         # Add an empty byte at the end if the length of the binary is odd:

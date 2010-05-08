@@ -23,13 +23,13 @@ module DICOM
       # Did we receive a valid DICOM file?
       if obj.read_success
         # File name is set using the SOP Instance UID
-        file_name = obj["0008,0018"].value || "no_SOP_UID.dcm"
+        file_name = obj.value("0008,0018") || "no_SOP_UID.dcm"
         # File will be saved with the following path:
         # path_prefix/<PatientID>/<StudyDate>/<Modality>/
         folders = Array.new(3)
-        folders[0] = obj["0010,0020"].value || "PatientID"
-        folders[1] = obj["0008,0020"].value || "StudyDate"
-        folders[2] = obj["0008,0060"].value || "Modality"
+        folders[0] = obj.value("0010,0020") || "PatientID"
+        folders[1] = obj.value("0008,0020") || "StudyDate"
+        folders[2] = obj.value("0008,0060") || "Modality"
         local_path = folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
         full_path = path_prefix + local_path
         # Save the DICOM object to disk:

@@ -25,7 +25,6 @@
 # -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
 # -Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
 # -More robust and flexible options for reorienting extracted pixel arrays?
-# -Could the usage of arrays in DObject be replaced with something better, or at least improved upon, to give cleaner code and more efficient execution?
 # -A curious observation: Instantiating the DLibrary class is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
 
 module DICOM
@@ -33,7 +32,7 @@ module DICOM
   # Class for interacting with the DICOM object.
   class DObject < SuperItem
 
-    attr_reader :errors, :modality, :parent, :read_success, :segments, :stream, :write_success
+    attr_reader :errors, :modality, :parent, :read_success, :stream, :write_success
 
     # Initialize the DObject instance.
     # Parameters:
@@ -74,11 +73,11 @@ module DICOM
     def encode_segments(max_size)
       w = set_write_object
       w.encode_segments(max_size)
-      @segments = w.segments
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
       add_msg(w.msg) if w.msg.length > 0
+      return w.segments
     end
 
 
@@ -203,7 +202,7 @@ module DICOM
     end
 
 
-    # Returns data regarding the geometrical properties of the image(s): rows, columns & number of frames.
+    # Returns data regarding the geometrical properties of the pixel data: rows, columns & number of frames.
     def image_properties
       row_element = self["0028,0010"]
       column_element = self["0028,0011"]
@@ -226,7 +225,7 @@ module DICOM
         if pixel_element.is_a?(DataElement)
           pixel_data << pixel_element.bin
         else
-          pixel_items = pixel_element.child_array.first.child_array
+          pixel_items = pixel_element.children.first.children
           pixel_items.each do |item|
             pixel_data << item.bin
           end
@@ -360,8 +359,9 @@ module DICOM
 
     # Returns a DICOM object by reading the file specified.
     # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
-    # For the time being, this method is called automatically when initializing the DObject class,
-    # but in the future, when write support is added, this method may have to be called manually.
+    # Note:
+    # This method is called automatically when initializing the DObject class, and in practice will not be called by users.
+    # It should be considered making this a private method.
     def read(string, options={})
       r = DRead.new(self, string, options)
       # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.

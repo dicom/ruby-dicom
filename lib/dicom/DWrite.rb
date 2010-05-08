@@ -56,7 +56,7 @@ module DICOM
           write_meta
           @stream.add_last(body)
         else
-          elements = @obj.child_array
+          elements = @obj.children
           # If the DICOM object lacks meta information header, it will be added, unless it has been requested that it should not.
           write_meta if @add_meta and elements.first.tag.group != META_GROUP
           write_data_elements(elements)
@@ -77,7 +77,7 @@ module DICOM
       init_variables
       @max_size = max_size
       @segments = Array.new
-      elements = @obj.child_array
+      elements = @obj.children
       # When sending a DICOM file across the network, no header or meta information is needed.
       # We must therefore find the position of the first tag which is not a meta information tag.
       first_pos = first_non_meta(elements)
@@ -205,7 +205,7 @@ module DICOM
             # Sequence/Item with child elements:
             element.reset_length unless @enc_image
             write_data_element(element)
-            write_data_elements(element.child_array)
+            write_data_elements(element.children)
             if @enc_image
               write_delimiter(element) if element.tag == PIXEL_TAG # (Write a delimiter for the pixel tag, but not for it's items)
             else

@@ -141,17 +141,15 @@ module DICOM
       obj = DObject.new(file_path, :verbose => false)
       if obj.read_success
         # Get the SOP Class UID (abstract syntax) from the DICOM obj:
-        @abstract_syntax = obj["0008,0016"].value
+        @abstract_syntax = obj.value("0008,0016")
         # Get the Transfer Syntax UID from the DICOM obj,
         # and if not available, set to default: Implicit, Little endian
-        @transfer_syntax = [obj["0002,0010"].value] || ["1.2.840.10008.1.2"]
+        @transfer_syntax = [obj.value("0002,0010") || IMPLICIT_LITTLE_ENDIAN]
         # Open a DICOM link:
         establish_association
         if @association
           if @request_approved
             # Continue with our c-store operation, since our request was accepted.
-            # Prepare the DICOM object for transmission:
-            obj.encode_segments(@max_pdu_length - 14)
             # Handle the transmission:
             perform_send(obj)
           end
@@ -348,22 +346,25 @@ module DICOM
     # conveys the information from the original DICOM file.
     def perform_send(obj)
       # Set the command array to be used:
-      sop_uid = obj["0008,0018"].value # "SOP Instance UID"
+      sop_uid = obj.value("0008,0018") # SOP Instance UID
       if sop_uid
         set_command_fragment_store(sop_uid)
         pdu_type = "04"
         flags = "03"
+        # Encode our DICOM object to a binary string which is split up in pieces, sufficiently small to fit within the specified maximum pdu length:
+        data_packages = obj.encode_segments(@max_pdu_length - 14)
         @link.build_command_fragment(pdu_type, @presentation_context_id, flags, @command_elements)
         @link.transmit(@connection)
-        # Transmit all but the last segments:
+        # Transmit all but the last data strings:
+        last_data_package = data_packages.pop
         flags = "00"
-        (0..obj.segments.length-2).each do |i|
-          @link.build_storage_fragment(pdu_type, @presentation_context_id, flags, obj.segments[i])
+        data_packages.each do |data_package|
+          @link.build_storage_fragment(pdu_type, @presentation_context_id, flags, data_package)
           @link.transmit(@connection)
         end
-        # Transmit the last segment:
+        # Transmit the last data string:
         flags = "02"
-        @link.build_storage_fragment(pdu_type, @presentation_context_id, flags, obj.segments.last)
+        @link.build_storage_fragment(pdu_type, @presentation_context_id, flags, last_data_package)
         @link.transmit(@connection)
         # Receive confirmation response:
         segments = @link.receive_single_transmission(@connection)
