@@ -34,6 +34,7 @@ module DICOM
         # Read the initial header of the file:
         if @file == nil
           # File is not readable, so we return:
+          @success = false
           return
         else
           # Extract the content of the file to a binary string:
@@ -53,6 +54,7 @@ module DICOM
           @stream.skip(-132)
         elsif header == nil
           # Not a valid DICOM file, return:
+          @success = false
           return
         end
       end
