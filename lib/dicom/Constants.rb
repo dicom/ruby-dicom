@@ -4,7 +4,7 @@
 module DICOM
 
   # Ruby DICOM version string:
-  VERSION = "0.7.5b"
+  VERSION = "0.7.7b"
 
   # Ruby DICOM implementation name and uid:
   NAME = "RUBY_DICOM_" + DICOM::VERSION
@@ -29,10 +29,10 @@ module DICOM
 
   # File Meta Group:
   META_GROUP = "0002"
-  
+
   # Group length element:
   GROUP_LENGTH = "0000"
-  
+
   # A few commonly used transfer syntaxes:
   IMPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2"
   EXPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2.1"
