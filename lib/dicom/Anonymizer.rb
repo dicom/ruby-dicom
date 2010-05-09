@@ -2,14 +2,14 @@
 
 module DICOM
 
-  # Class for anonymizing DICOM files:
+  # This is a convenience class for handling the anonymization of DICOM files.
   # A good resource on this topic (report from the DICOM standards committee, work group 18):
   # ftp://medical.nema.org/medical/dicom/Supps/sup142_03.pdf
   class Anonymizer
 
     attr_accessor :blank, :enumeration, :identity_file, :remove_private, :verbose, :write_path
 
-    # Initialize the Anonymizer instance:
+    # Initialize the Anonymizer instance.
     def initialize(opts={})
       # Default verbosity is true: # NB: verbosity is not used currently
       @verbose = opts[:verbose]
@@ -45,13 +45,7 @@ module DICOM
     end
 
 
-    # Adds a folder who's files will be anonymized:
-    def add_folder(path)
-      @folders << path if path
-    end
-
-
-    # Adds an exception folder that is to be avoided when anonymizing:
+    # Adds an exception folder that is to be avoided when anonymizing.
     def add_exception(path)
       if path
         # Remove last character if the path ends with a file separator:
@@ -61,7 +55,13 @@ module DICOM
     end
 
 
-    # Adds a tag to the list of tags that will be anonymized:
+    # Adds a folder who's files will be anonymized.
+    def add_folder(path)
+      @folders << path if path
+    end
+
+
+    # Adds a tag to the list of tags that will be anonymized.
     def add_tag(tag, opts={})
       # Options and defaults:
       value =  opts[:value]  || ""
@@ -85,7 +85,7 @@ module DICOM
     end
 
 
-    # Set enumeration status for a specific tag (toggle true/false)
+    # Sets the enumeration status for a specific tag (toggle true/false).
     def change_enum(tag, enum)
       pos = @tags.index(tag)
       if pos
@@ -100,7 +100,7 @@ module DICOM
     end
 
 
-    # Changes the value used in anonymization for a specific tag:
+    # Changes the value used in anonymization for a specific tag.
     def change_value(tag, value)
       pos = @tags.index(tag)
       if pos
@@ -115,7 +115,8 @@ module DICOM
     end
 
 
-    # Executes the anonymization process:
+    # Executes the anonymization process.
+    # NB! Only anonymizes top level Data Elements for the time being!
     def execute(verbose=false)
       # Search through the folders to gather all the files to be anonymized:
       puts "*******************************************************"
@@ -153,24 +154,28 @@ module DICOM
             if obj.read_success
               # Anonymize the desired tags:
               @tags.each_index do |j|
-                positions = obj.get_pos(@tags[j])
-                positions.each do |pos|
-                  if @blank
-                    value = ""
-                  elsif @enumeration
-                    old_value = obj.get_value(pos, :silent => true)
-                    # Only launch enumeration logic if tag exists:
-                    if old_value
-                      value = get_enumeration_value(old_value, j)
-                    else
+                if obj.exists?(@tags[j])
+                  element = obj[@tags[j]]
+                  if element.is_a?(DataElement)
+                    if @blank
                       value = ""
+                    elsif @enumeration
+                      old_value = element.value
+                      # Only launch enumeration logic if tag exists:
+                      if old_value
+                        value = get_enumeration_value(old_value, j)
+                      else
+                        value = ""
+                      end
+                    else
+                      # Value is simply value in array:
+                      value = @values[j]
                     end
-                  else
-                    # Value is simply value in array:
-                    value = @values[j]
+                    element.value = value
+                  elsif element.is_a?(Item)
+                    # Possibly a binary data item:
+                    element.bin = ""
                   end
-                  # Update DICOM object with new value:
-                  obj.set_value(value, pos, :create => false, :silent => true)
                 end
               end
               # Remove private tags?
@@ -215,7 +220,7 @@ module DICOM
         puts "No files were found in specified folders. Aborting."
       end
       puts "*******************************************************"
-    end # of method execute
+    end # of execute
 
 
     # Prints a list of which tags are currently selected for anonymization along with
@@ -273,7 +278,7 @@ module DICOM
     end
 
 
-    # Removes a tag from the list of tags that will be anonymized:
+    # Removes a tag from the list of tags that will be anonymized.
     def remove_tag(tag)
       pos = @tags.index(tag)
       if pos
@@ -320,7 +325,7 @@ module DICOM
     end
 
 
-    # Handles enumeration for current DICOM tag:
+    # Handles enumeration for current DICOM tag.
     def get_enumeration_value(current, j)
       # Is enumeration requested for this tag?
       if @enum[j]
@@ -347,7 +352,7 @@ module DICOM
     end
 
 
-    # Discover all the files contained in the specified directory and all its sub-directories:
+    # Discovers all the files contained in the specified directory and all its sub-directories.
     def load_files
       # Load find library:
       require 'find'
