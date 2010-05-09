@@ -127,7 +127,11 @@ module DICOM
         # Formatting: Length
         l_s = s*(max_length-element.length.to_s.length)
         # Formatting Value:
-        value = element.value.to_s
+        if element.is_a?(DataElement)
+          value = element.value.to_s
+        else
+          value = ""
+        end
         if options[:value_max]
           value = "#{value[0..(options[:value_max]-3)]}.." if value.length > options[:value_max]
         end
@@ -165,13 +169,13 @@ module DICOM
       end
       return elements.flatten, index
     end
-    
+
     # A boolean used to check whether or not an element is a parent.
     # Returns true.
     def is_parent?
       return true
     end
-    
+
     # Sets the length of a Sequence or Item.
     def length=(new_length)
       unless self.is_a?(DObject)
@@ -257,7 +261,7 @@ module DICOM
         raise "Length can not be set for DObject."
       end
     end
-    
+
     # Returns the value of a child of this instance, specified by the tag parameter.
     # If the child element does not exist, nil is returned.
     def value(tag)
