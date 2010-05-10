@@ -172,19 +172,19 @@ module DICOM
               pixel_data[i, true, true] = pixel_frame
             end
             # Remap the image from pixel values to presentation values if the user has requested this:
-            pixels = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
+            pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
           else
             add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
-            pixels = false
+            pixel_data = false
           end
         else
           add_msg("Warning: Method get_image_narray() does not currently support returning pixel data from encapsulated images.")
-          pixels = false
+          pixel_data = false
         end
       else
-        pixels = nil
+        pixel_data = nil
       end
-      return pixels
+      return pixel_data
     end
 
 
