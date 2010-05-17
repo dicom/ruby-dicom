@@ -104,12 +104,7 @@ module DICOM
 
     # Encodes a formatted value to binary and returns it.
     def encode(formatted_value)
-      # Number or string to be encoded? If String, we must ensure that we get an even length:
-      if formatted_value.is_a?(String)
-        return stream.encode_value(formatted_value, @vr)
-      else
-        return stream.encode(formatted_value, @vr)
-      end
+      return stream.encode_value(formatted_value, @vr)
     end
 
     # Returns a Stream instance which can be used for encoding a value to binary.

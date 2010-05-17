@@ -93,7 +93,7 @@ module DICOM
     end
 
 
-    # Encodes content (string, number, array of numbers) and returns the binary string.
+    # Encodes a value (string, number, array of numbers) and returns the resulting binary string.
     def encode(value, type)
       value = [value] unless value.is_a?(Array)
       return value.pack(vr_to_str(type))
@@ -143,28 +143,18 @@ module DICOM
     end
 
 
-    # Encodes and returns a data element value. The reason for not using the encode()
-    # method for this is that we may need to know the length of the encoded value before
-    # we send it to the encode() method.
-    # String values will be checked for possible odd length, and if so padded with an extra byte,
-    # to comply with the DICOM standard.
+    # Encodes a value (string, number, array of numbers) and adds an empty byte if the resulting binary string
+    # has an odd length. Thus the binary string returned from this method will always have an even length.
     def encode_value(value, type)
+      # Make sure the value is in an array:
+      value = [value] unless value.is_a?(Array)
+      # Get the proper pack string:
       type = vr_to_str(type)
-      if type == @str
-        # String: Check length.
-        if value.length[0] == 1
-          # Odd length (add a zero byte, encode and return):
-          return [value].pack(type)+["00"].pack(@hex)
-        else
-          # Even length (encode and return):
-          return [value].pack(type)
-        end
-      elsif type == @hex
-        return [value].pack(type)
-      else
-        # Number.
-        return [value].pack(type)
-      end
+      # Encode:
+      bin = value.pack(type)
+      # Add an empty byte if the resulting binary has an odd length:
+      bin = bin + "\x00" if bin.length[0] == 1
+      return bin
     end
     
     
