@@ -46,7 +46,7 @@ module DICOM
           if options[:bin]
             @bin = options[:bin]
           else
-            @bin = encode(new_value)
+            @bin = encode(value)
           end
         else
           # When no value is present, we set the binary as an empty string, unless the binary is specified:
