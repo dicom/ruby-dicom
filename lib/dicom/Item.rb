@@ -24,9 +24,10 @@ module DICOM
       @vr = options[:vr] || ITEM_VR
       @bin = options[:bin]
       @length = options[:length]
+      @length = -1 unless options[:length] or options[:bin]
       if options[:parent]
         @parent = options[:parent]
-        @parent.add_item(self)
+        @parent.add_item(self, :index => options[:index])
       end
     end
 

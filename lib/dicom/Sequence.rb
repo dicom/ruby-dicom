@@ -15,9 +15,9 @@ module DICOM
       @tag = tag
       @value = nil
       @name = options[:name]
-      @vr = options[:vr]
+      @vr = options[:vr] || "SQ"
       @bin = options[:bin]
-      @length = options[:length]
+      @length = options[:length] || -1
       if options[:parent]
         @parent = options[:parent]
         @parent.add(self)
