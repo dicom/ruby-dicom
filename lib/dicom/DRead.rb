@@ -223,7 +223,7 @@ module DICOM
     # Reads and returns data element VR (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
     def read_vr_length(vr, tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
-      pre_skip = 0
+      reserved = 0
       bytes = 0
       # *****EXPLICIT*****:
       if @explicit == true
@@ -232,9 +232,9 @@ module DICOM
         # Step 2: Read length
         # Three possible structures for value length here, dependent on element vr:
         case vr
-          when "OB","OW","SQ","UN","UT"
-            # 6 bytes total (2 empty bytes preceeding the 4 byte value length)
-            pre_skip = 2
+          when "OB","OW","OF","SQ","UN","UT"
+            # 6 bytes total (2 reserved bytes preceeding the 4 byte value length)
+            reserved = 2
             bytes = 4
           when ITEM_VR
             # For the item elements: "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD":
@@ -248,7 +248,7 @@ module DICOM
         bytes = 4
       end
       # Handle skips and read out length value:
-      @stream.skip(pre_skip)
+      @stream.skip(reserved)
       if bytes == 2
         length = @stream.decode(bytes, "US") # (2)
       else

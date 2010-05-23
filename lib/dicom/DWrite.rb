@@ -272,12 +272,12 @@ module DICOM
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element vr:
         case vr
-          when "OB","OW","SQ","UN","UT"
+          when "OB","OW","OF","SQ","UN","UT"
             if @enc_image # (4 bytes)
               # Item under an encapsulated Pixel Data (7FE0,0010).
               add(length4)
             else # (6 bytes total)
-              # Two empty bytes first:
+              # Two reserved bytes first:
               add(@stream.encode("00"*2, "HEX"))
               # Value length (4 bytes):
               add(length4)
