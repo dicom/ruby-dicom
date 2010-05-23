@@ -7,7 +7,7 @@ module DICOM
   VERSION = "0.7.7b"
 
   # Ruby DICOM implementation name and uid:
-  NAME = "RUBY_DICOM_" + DICOM::VERSION
+  NAME = "RUBY_DCM_" + DICOM::VERSION
   UID = "1.2.826.0.1.3680043.8.641"
 
   # Item tag:
