@@ -321,7 +321,6 @@ module DICOM
       if @endian
         # System endian equals string endian:
         # Native byte order.
-        @by = "C*" # Byte (1 byte)
         @us = "S*" # Unsigned short (2 bytes)
         @ss = "s*" # Signed short (2 bytes)
         @ul = "I*" # Unsigned long (4 bytes)
@@ -331,7 +330,6 @@ module DICOM
       else
         # System endian is opposite string endian:
         # Network byte order.
-        @by = "C*"
         @us = "n*"
         @ss = "n*" # Not correct (gives US)
         @ul = "N*"
@@ -340,6 +338,7 @@ module DICOM
         @fd = "G*"
       end
       # Format strings that are not dependent on endianness:
+      @by = "C*" # Unsigned char (1 byte)
       @str = "a*"
       @hex = "H*" # (this may be dependent on endianness(?))
     end
