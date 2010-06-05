@@ -183,8 +183,8 @@ module DICOM
     end
 
 
-    # Check if the requested abstract syntax & transfer syntax are supported:
-    # Error codes are given in the official dicom document, part 08_08, page 39
+    # Checks if the requested abstract syntax & transfer syntax are supported by this instance.
+    # Error codes are given in the official dicom document, part 08_08, page 39.
     def check_syntax_requests(link, info)
       result = "00" # (no error)
       # We will accept any transfer syntax (as long as it is recognized in the library):

@@ -45,7 +45,7 @@ module DICOM
     # Example:   find_images("0010,0020" => "123456789", "0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844") # (Patient ID, Study Instance UID & Series Instance UID)
     def find_images(options={})
       # Study Root Query/Retrieve Information Model - FIND:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.1"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
       # Prepare data elements for this operation:
       set_data_fragment_find_images
       set_data_options(options)
@@ -58,7 +58,7 @@ module DICOM
     # Example:   find_patients("0010,0010" => "James*") # (Patient's Name)
     def find_patients(options={})
       # Patient Root Query/Retrieve Information Model - FIND:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.1.1"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.1.1"]
       # Prepare data elements for this operation:
       set_data_fragment_find_patients
       set_data_options(options)
@@ -71,7 +71,7 @@ module DICOM
     # Example:   find_series("0010,0020" => "123456789", "0020,000D" => "1.2.840.1145.342") # (Patient ID & Study Instance UID)
     def find_series(options={})
       # Study Root Query/Retrieve Information Model - FIND:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.1"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
       # Prepare data elements for this operation:
       set_data_fragment_find_series
       set_data_options(options)
@@ -84,7 +84,7 @@ module DICOM
     # Example:   find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789") # (Study Date & Patient ID)
     def find_studies(options={})
       # Study Root Query/Retrieve Information Model - FIND:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.1"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
       # Prepare data elements for this operation:
       set_data_fragment_find_studies
       set_data_options(options)
@@ -97,7 +97,7 @@ module DICOM
     # Example:  get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
     def get_image(path, options={})
       # Study Root Query/Retrieve Information Model - GET:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.3"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.3"]
       # Transfer the current options to the data_elements hash:
       set_command_fragment_get
       # Prepare data elements for this operation:
@@ -111,7 +111,7 @@ module DICOM
     # Example:  move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
     def move_image(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.2"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.2"]
       # Transfer the current options to the data_elements hash:
       set_command_fragment_move(destination)
       # Prepare data elements for this operation:
@@ -125,7 +125,7 @@ module DICOM
     # Example:  move_study("MYDICOM", "0010,0020" => pat_id, "0020,000D" => study_uid)
     def move_study(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
-      @abstract_syntax = "1.2.840.10008.5.1.4.1.2.2.2"
+      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.2"]
       # Transfer the current options to the data_elements hash:
       set_command_fragment_move(destination)
       # Prepare data elements for this operation:
@@ -136,30 +136,25 @@ module DICOM
 
 
     # Send a DICOM file to a service class provider (SCP/PACS).
-    def send(file_path)
-      # Load the DICOM file from the specified path:
-      obj = DObject.new(file_path, :verbose => false)
-      if obj.read_success
-        # Get the SOP Class UID (abstract syntax) from the DICOM obj:
-        @abstract_syntax = obj.value("0008,0016")
-        # Get the Transfer Syntax UID from the DICOM obj,
-        # and if not available, set to default: Implicit, Little endian
-        @transfer_syntax = [obj.value("0002,0010") || IMPLICIT_LITTLE_ENDIAN]
+    def send(parameter)
+      # Prepare the DICOM object(s):
+      objects, @abstract_syntaxes, success, message = load_files(parameter)
+      if success
         # Open a DICOM link:
         establish_association
         if @association
           if @request_approved
             # Continue with our c-store operation, since our request was accepted.
             # Handle the transmission:
-            perform_send(obj)
+            perform_send(objects)
           end
         end
+        # Close the DICOM link:
+        establish_release
       else
-        # Failed to read DICOM file. Can not transmit this file.
-        add_error("Error: The supplied file was not recognised as a valid DICOM file. File NOT transmitted. (file: #{file_path}")
+        # Failed when loading the specified parameter as DICOM file(s). Will not transmit.
+        add_error(message)
       end
-      # Close the DICOM link:
-      establish_release
     end
 
 
@@ -168,7 +163,7 @@ module DICOM
       add_notice("TESTING CONNECTION...")
       success = false
       # Verification SOP Class:
-      @abstract_syntax = "1.2.840.10008.1.1"
+      @abstract_syntaxes = ["1.2.840.10008.1.1"]
       # Open a DICOM link:
       establish_association
       if @association
@@ -213,7 +208,7 @@ module DICOM
       @association = false
       @request_approved = false
       # Initiate the association:
-      @link.build_association_request(@application_context_uid, @abstract_syntax, @transfer_syntax, @user_information)
+      @link.build_association_request(@application_context_uid, @abstract_syntaxes, @transfer_syntax, @user_information)
       @connection = TCPSocket.new(@host_ip, @port)
       @link.transmit(@connection)
       info = @link.receive_multiple_transmissions(@connection).first
@@ -223,17 +218,12 @@ module DICOM
           # Values of importance are extracted and put into instance variables:
           @association = true
           @max_pdu_length = info[:max_pdu_length]
-          @presentation_context_id = info[:presentation_context_id]
-          add_notice("Association successfully negotiated with host #{host_ae} (#{host_ip}).")
+          add_notice("Association successfully negotiated with host #{@host_ae} (#{@host_ip}).")
         else
-          add_error("Association was denied from host #{host_ae} (#{host_ip})!")
+          add_error("Association was denied from host #{@host_ae} (#{@host_ip})!")
         end
-        if info[:result] == 0
-          @request_approved = true
-          add_notice("Your request was accepted by host #{host_ae} (#{host_ip}).")
-        else
-          add_error("Your request was denied by host #{host_ae} (#{host_ip})!")
-        end
+        # Check if all our presentation contexts was accepted by the host:
+        process_presentation_context_response(info[:pc])
       end
     end
 
@@ -263,6 +253,39 @@ module DICOM
     end
 
 
+    # Reads DICOM files from an array of file/path Strings, and returns an array of unique abstract syntaxes from these files.
+    # If any of these files fails, an error will be reported.
+    # (This method may also be called in cases where the Array contains DObjects, and as such does not return an error for this case)
+    def load_files(files)
+      status = true
+      message = ""
+      objects = Array.new
+      abstracts = Array.new
+      files = [files] unless files.is_a?(Array)
+      files.each do |file|
+        if file.is_a?(String)
+          obj = DObject.new(file, :verbose => false)
+          if obj.read_success
+            # Load the DICOM object and its abstract syntax:
+            objects << obj
+            abstracts << obj.value("0008,0016")
+          else
+            status = false
+            message = "Failed to successfully parse a DObject for the following string: #{file}"
+          end
+        elsif file.is_a?(DObject)
+          # Load the DICOM object and its abstract syntax:
+          objects << obj
+          abstracts << obj.value("0008,0016")
+        else
+          status = false
+          message = "Array contains invalid object #{file}."
+        end
+      end
+      return objects, abstracts.uniq, status, message
+    end
+
+
     # Handle the communication involved in DICOM query (C-FIND).
     # Build the necessary strings and send the command and data element that makes up the query.
     # Listens for and interpretes the incoming query responses.
@@ -277,7 +300,8 @@ module DICOM
           pdu="04"
           #context = "01"
           flags = "03"
-          @link.build_command_fragment(pdu, @presentation_context_id, flags, @command_elements)
+          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
           @link.transmit(@connection)
           @link.build_data_fragment(@data_elements)
           @link.transmit(@connection)
@@ -301,7 +325,8 @@ module DICOM
           # Continue with our operation, since the request was accepted.
           pdu="04"
           flags = "03"
-          @link.build_command_fragment(pdu, @presentation_context_id, flags, @command_elements)
+          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
           @link.transmit(@connection)
           @link.build_data_fragment(@data_elements) # (uses flag = 02)
           @link.transmit(@connection)
@@ -327,7 +352,8 @@ module DICOM
           # Continue with our operation, since the request was accepted.
           pdu="04"
           flags = "03"
-          @link.build_command_fragment(pdu, @presentation_context_id, flags, @command_elements)
+          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
           @link.transmit(@connection)
           flags = "02"
           @link.build_data_fragment(@data_elements)
@@ -343,34 +369,82 @@ module DICOM
 
 
     # Builds and sends the command fragment, then builds and sends the data fragments that
-    # conveys the information from the original DICOM file.
-    def perform_send(obj)
-      # Set the command array to be used:
-      sop_uid = obj.value("0008,0018") # SOP Instance UID
-      if sop_uid
-        set_command_fragment_store(sop_uid)
-        pdu_type = "04"
-        flags = "03"
-        # Encode our DICOM object to a binary string which is split up in pieces, sufficiently small to fit within the specified maximum pdu length:
-        data_packages = obj.encode_segments(@max_pdu_length - 14)
-        @link.build_command_fragment(pdu_type, @presentation_context_id, flags, @command_elements)
-        @link.transmit(@connection)
-        # Transmit all but the last data strings:
-        last_data_package = data_packages.pop
-        flags = "00"
-        data_packages.each do |data_package|
-          @link.build_storage_fragment(pdu_type, @presentation_context_id, flags, data_package)
-          @link.transmit(@connection)
+    # conveys the information from the specified DICOM file(s) or object(s).
+    def perform_send(objects)
+      objects.each_with_index do |obj, index|
+        # Gather necessary information from the object (SOP Class & Instance UID):
+        modality = obj.value("0008,0016")
+        instance = obj.value("0008,0018") # SOP Instance UID
+        if modality and instance
+          # Only send the image if its modality has been accepted by the receiver:
+          if @approved_syntaxes[modality]
+            # Set the command array to be used:
+            message_id = index + 1
+            set_command_fragment_store(modality, instance, message_id)
+            pdu_type = "04"
+            flags = "03"
+            # Find context id and transfer syntax:
+            presentation_context_id = @approved_syntaxes[modality][0]
+            selected_transfer_syntax = @approved_syntaxes[modality][1]
+            # Encode our DICOM object to a binary string which is split up in pieces, sufficiently small to fit within the specified maximum pdu length:
+            # Set the transfer syntax of the DICOM object equal to the one accepted by the SCP:
+            obj.transfer_syntax = selected_transfer_syntax
+            max_header_length = 14
+            data_packages = obj.encode_segments(@max_pdu_length - max_header_length)
+            @link.build_command_fragment(pdu_type, presentation_context_id, flags, @command_elements)
+            @link.transmit(@connection)
+            # Transmit all but the last data strings:
+            last_data_package = data_packages.pop
+            flags = "00"
+            data_packages.each do |data_package|
+              @link.build_storage_fragment(pdu_type, presentation_context_id, flags, data_package)
+              @link.transmit(@connection)
+            end
+            # Transmit the last data string:
+            flags = "02"
+            @link.build_storage_fragment(pdu_type, presentation_context_id, flags, last_data_package)
+            @link.transmit(@connection)
+            # Receive confirmation response:
+            segments = @link.receive_single_transmission(@connection)
+            process_returned_data(segments)
+          end
+        else
+          add_error("Error: Unable to extract SOP Class UID and SOP Instance UID for this DICOM object. File will not be sent to its destination.")
         end
-        # Transmit the last data string:
-        flags = "02"
-        @link.build_storage_fragment(pdu_type, @presentation_context_id, flags, last_data_package)
-        @link.transmit(@connection)
-        # Receive confirmation response:
-        segments = @link.receive_single_transmission(@connection)
-        process_returned_data(segments)
+      end
+    end
+    
+    
+    # Processes the presentation contexts received in the association response.
+    # FIXME: Print name of abstract syntax instead of its UID?!
+    def process_presentation_context_response(presentation_context)
+      # Storing approved syntaxes in an Hash with the syntax as key and the value being an array with presentation context ID and the transfer syntax chosen by the SCP.
+      @approved_syntaxes = Hash.new
+      rejected = Hash.new
+      presentation_context.each do |pc|
+        # Determine what abstract syntax this particular presentation context's id corresponds to:
+        id = pc[:presentation_context_id]
+        raise "Error! Even presentation context ID received in the association response. This is not allowed according to the DICOM standard!" if id[0] == 0 # If even number.
+        index = (id-1)/2
+        abstract_syntax = @abstract_syntaxes[index]
+        if pc[:result] == 0
+          @approved_syntaxes[abstract_syntax] = [id, pc[:transfer_syntax]]
+        else
+          rejected[abstract_syntax] = [id, pc[:transfer_syntax]]
+        end
+      end
+      if rejected.length == 0
+        @request_approved = true
+        if @approved_syntaxes.length == 1
+          add_notice("The presentation context was accepted by host #{@host_ae} (#{@host_ip}).")
+        else
+          add_notice("All #{@approved_syntaxes.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
+        end
       else
-        add_error("Error: Unable to extract SOP Instance UID for the given DICOM file. File will not be sent to its destination.")
+        @request_approved = false
+        add_error("One or more of your presentation contexts were denied by host #{@host_ae} (#{@host_ip})!")
+        @approved_syntaxes.each_key {|a| add_error("APPROVED: #{a}")}
+        rejected.each_key {|r| add_error("REJECTED: #{r}")}
       end
     end
 
@@ -409,7 +483,7 @@ module DICOM
     # Set command elements used in a C-GET-RQ:
     def set_command_fragment_get
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntax], # Affected SOP Class UID
+        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
         ["0000,0100", "US", 16], # Command Field: 16 (C-GET-RQ)
         ["0000,0600", "AE", @ae], # Destination is ourselves
         ["0000,0700", "US", 0], # Priority: 0: medium
@@ -422,7 +496,7 @@ module DICOM
     # This seems to be the same, regardless of what we want to query.
     def set_command_fragment_find
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntax], # Affected SOP Class UID
+        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
         ["0000,0100", "US", 32], # Command Field: 32 (C-FIND-RQ)
         ["0000,0110", "US", 1], # Message ID: 1
         ["0000,0700", "US", 0], # Priority: 0: medium
@@ -434,7 +508,7 @@ module DICOM
     # Set command elements used in a C-MOVE-RQ:
     def set_command_fragment_move(destination)
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntax], # Affected SOP Class UID
+        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
         ["0000,0100", "US", 33], # Command Field: 33 (C-MOVE-RQ)
         ["0000,0110", "US", 1], # Message ID: 1
         ["0000,0600", "AE", destination], # Move destination
@@ -445,14 +519,14 @@ module DICOM
 
 
     # Command elements used in a p-data c-store-rq query command:
-    def set_command_fragment_store(sop_uid)
+    def set_command_fragment_store(modality, instance, message_id)
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntax], # Affected SOP Class UID
+        ["0000,0002", "UI", modality], # Affected SOP Class UID
         ["0000,0100", "US", 1], # Command Field: 1 (C-STORE-RQ)
-        ["0000,0110", "US", 1], # Message ID: 1
+        ["0000,0110", "US", message_id], # Message ID: 1
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", 1], # Data Set Type: 1
-        ["0000,1000", "UI", sop_uid] # Affected SOP Instance UID
+        ["0000,1000", "UI", instance] # Affected SOP Instance UID
       ]
     end
 

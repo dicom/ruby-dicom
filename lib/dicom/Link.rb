@@ -32,7 +32,7 @@ module DICOM
       @release = nil # Status of received, valid release response
       set_default_values
       set_user_information_array
-      @outgoing = Stream.new(nil, true, true)
+      @outgoing = Stream.new(string=nil, endian=true)
     end
 
 
@@ -66,17 +66,17 @@ module DICOM
       pdu = "02"
       pc_type = "21"
       # No abstract syntax in association response:
-      abstract_syntax = nil
+      abstract_syntaxes = Array.new
       # Note: The order of which these components are built is not arbitrary.
       append_application_context(ac_uid)
       # Return one presentation context for each of the proposed abstract syntaxes:
-      abstract_syntaxes = Array.new
+      processed_abstract_syntaxes = Array.new
       info[:pc].each do |pc|
-        unless abstract_syntaxes.include?(pc[:abstract_syntax])
-          abstract_syntaxes << pc[:abstract_syntax]
+        unless processed_abstract_syntaxes.include?(pc[:abstract_syntax])
+          processed_abstract_syntaxes << pc[:abstract_syntax]
           context_id = pc[:presentation_context_id]
           transfer_syntax = pc[:ts].first[:transfer_syntax]
-          append_presentation_context(abstract_syntax, pc_type, transfer_syntax, context_id, result)
+          append_presentation_contexts(abstract_syntaxes, pc_type, transfer_syntax, context_id, result)
         end
       end
       append_user_information(ui)
@@ -120,7 +120,7 @@ module DICOM
       # Note: The order of which these components are built is not arbitrary.
       # (The first three are built 'in order of appearance', the header is built last, but is put first in the message)
       append_application_context(ac_uid)
-      append_presentation_context(as, pc, ts)
+      append_presentation_contexts(as, pc, ts)
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(pdu, @host_ae)
@@ -128,8 +128,6 @@ module DICOM
 
 
     # Build the binary string that will be sent as TCP data in the query command fragment.
-    # Typical values:
-    # pdu = "04" (data), context = "01", flags = "03"
     def build_command_fragment(pdu, context, flags, command_elements)
       # Little endian encoding:
       @outgoing.set_endian(@data_endian)
@@ -164,7 +162,7 @@ module DICOM
       # Flags (1 byte)
       @outgoing.encode_first(flags, "HEX") # Command, last fragment (identifier)
       # Presentation context ID (1 byte)
-      @outgoing.encode_first(context, "HEX") # Explicit VR Little Endian, Study Root Query/Retrieve.... (what does this reference, the earlier abstract syntax? transfer syntax?)
+      @outgoing.encode_first(context, "BY") # References the presentation context in the association request/response
       # Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
@@ -208,7 +206,7 @@ module DICOM
       # Flags (1 byte)
       @outgoing.encode_first("02", "HEX") # Data, last fragment (identifier)
       # Presentation context ID (1 byte)
-      @outgoing.encode_first("01", "HEX") # Explicit VR Little Endian, Study Root Query/Retrieve.... (what does this reference, the earlier abstract syntax? transfer syntax?)
+      @outgoing.encode_first(1, "BY")
       # Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
@@ -256,7 +254,7 @@ module DICOM
       # Flags (1 byte)
       @outgoing.encode_first(flags, "HEX")
       # Context ID (1 byte)
-      @outgoing.encode_first(context, "HEX")
+      @outgoing.encode_first(context, "BY")
       # PDV Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
@@ -264,13 +262,13 @@ module DICOM
     end
 
 
-    # Extracts the abstrax syntax from the first presentation context in the info hash object:
+    # Extracts the abstrax syntax from the first presentation context in the info hash object.
     def extract_abstract_syntax(info)
       return info[:pc].first[:abstract_syntax]
     end
 
 
-    # Extracts the (first) transfer syntax from the first presentation context in the info hash object:
+    # Extracts the (first) transfer syntax from the first presentation context in the info hash object.
     def extract_transfer_syntax(info)
       return info[:pc].first[:ts].first[:transfer_syntax]
     end
@@ -419,7 +417,7 @@ module DICOM
       # If the message is at least 8 bytes we can start decoding it:
       if message.length > 8
         # Create a new Stream instance to handle this response.
-        msg = Stream.new(message, @net_endian, @explicit)
+        msg = Stream.new(message, @net_endian)
         # PDU type ( 1 byte)
         pdu = msg.decode(1, "HEX")
         # Reserved (1 byte)
@@ -472,7 +470,7 @@ module DICOM
     # Decode the binary string received when the provider wishes to abort the connection, for some reason.
     def interpret_abort(message)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Reserved (2 bytes)
       reserved_bytes = msg.skip(2)
       # Source (1 byte)
@@ -492,7 +490,7 @@ module DICOM
     # Decode the binary string received in the association response, and interpret its content.
     def interpret_association_accept(message)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Protocol version (2 bytes)
       info[:protocol_version] = msg.decode(2, "HEX")
       # Reserved (2 bytes)
@@ -513,30 +511,46 @@ module DICOM
       # Application context (variable length)
       info[:application_context] = msg.decode(info[:application_item_length], "STR")
       # PRESENTATION CONTEXT:
-      # Item type (1 byte)
-      info[:presentation_item_type] = msg.decode(1, "HEX")
-      # Reserved (1 byte)
-      msg.skip(1)
-      # Presentation item length (2 bytes)
-      info[:presentation_item_length] = msg.decode(2, "US")
-      # Presentation context ID (1 byte)
-      info[:presentation_context_id] = msg.decode(1, "HEX")
-      # Reserved (1 byte)
-      msg.skip(1)
-      # Result (& Reason) (1 byte)
-      info[:result] = msg.decode(1, "BY")
-      process_result(info[:result])
-      # Reserved (1 byte)
-      msg.skip(1)
-      # Transfer syntax sub-item:
-      # Item type (1 byte)
-      info[:transfer_syntax_item_type] = msg.decode(1, "HEX")
-      # Reserved (1 byte)
-      msg.skip(1)
-      # Transfer syntax item length (2 bytes)
-      info[:transfer_syntax_item_length] = msg.decode(2, "US")
-      # Transfer syntax name (variable length)
-      info[:transfer_syntax] = msg.decode(info[:transfer_syntax_item_length], "STR")
+      # As multiple presentation contexts may occur, we need a loop to catch them all:
+      # Each presentation context hash will be put in an array, which will be put in the info hash.
+      presentation_contexts = Array.new
+      pc_loop = true
+      while pc_loop do
+        # Item type (1 byte)
+        item_type = msg.decode(1, "HEX")
+        if item_type == "21"
+          pc = Hash.new
+          pc[:presentation_item_type] = item_type
+          # Reserved (1 byte)
+          msg.skip(1)
+          # Presentation item length (2 bytes)
+          pc[:presentation_item_length] = msg.decode(2, "US")
+          # Presentation context ID (1 byte)
+          pc[:presentation_context_id] = msg.decode(1, "BY")
+          # Reserved (1 byte)
+          msg.skip(1)
+          # Result (& Reason) (1 byte)
+          pc[:result] = msg.decode(1, "BY")
+          process_result(pc[:result])
+          # Reserved (1 byte)
+          msg.skip(1)
+          # Transfer syntax sub-item:
+          # Item type (1 byte)
+          pc[:transfer_syntax_item_type] = msg.decode(1, "HEX")
+          # Reserved (1 byte)
+          msg.skip(1)
+          # Transfer syntax item length (2 bytes)
+          pc[:transfer_syntax_item_length] = msg.decode(2, "US")
+          # Transfer syntax name (variable length)
+          pc[:transfer_syntax] = msg.decode(pc[:transfer_syntax_item_length], "STR")
+          presentation_contexts << pc
+        else
+          # Break the presentation context loop, as we have probably reached the next stage, which is user info. Rewind:
+          msg.skip(-1)
+          pc_loop = false
+        end
+      end
+      info[:pc] = presentation_contexts
       # USER INFORMATION:
       # Item type (1 byte) ("50")
       info[:user_info_item_type] = msg.decode(1, "HEX")
@@ -587,8 +601,9 @@ module DICOM
       end
       stop_receiving
       info[:valid] = true
-      # Update transfer syntax settings for this instance:
-      set_transfer_syntax(info[:transfer_syntax])
+# Update transfer syntax settings for this instance:
+# FIXME: Transfer syntax handling needs to be revised as the network code has become more flexible now.
+#set_transfer_syntax(info[:pc].first[:transfer_syntax]) # Too early?!
       return info
     end # of interpret_association_accept
 
@@ -596,7 +611,7 @@ module DICOM
     # Decode the association reject message and extract the error reasons given.
     def interpret_association_reject(message)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Reserved (1 byte)
       msg.skip(1)
       # Result (1 byte)
@@ -615,7 +630,7 @@ module DICOM
     # Decode the binary string received in the association request, and interpret its content.
     def interpret_association_request(message)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Protocol version (2 bytes)
       info[:protocol_version] = msg.decode(2, "HEX")
       # Reserved (2 bytes)
@@ -651,7 +666,7 @@ module DICOM
           # Presentation context item length (2 bytes)
           pc[:presentation_item_length] = msg.decode(2, "US")
           # Presentation context id (1 byte)
-          pc[:presentation_context_id] = msg.decode(1, "HEX")
+          pc[:presentation_context_id] = msg.decode(1, "BY")
           # Reserved (3 bytes)
           msg.skip(3)
           presentation_contexts << pc
@@ -757,13 +772,13 @@ module DICOM
     # Decoding of data fragment will depend on the explicitness of the transmission.
     def interpret_command_and_data(message, file = nil)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Length (of remaining PDV data) (4 bytes)
       info[:presentation_data_value_length] = msg.decode(4, "UL")
       # Calculate the last index position of this message element:
       last_index = info[:presentation_data_value_length] + msg.index
       # Presentation context ID (1 byte)
-      info[:presentation_context_id] = msg.decode(1, "HEX") # "01" expected
+      info[:presentation_context_id] = msg.decode(1, "BY")
       # Flags (1 byte)
       info[:presentation_context_flag] = msg.decode(1, "HEX") # "03" for command (last fragment), "02" for data
       # Little endian encoding from now on:
@@ -855,7 +870,7 @@ module DICOM
     # Decode the binary string received in the release request, and interpret its content.
     def interpret_release_request(message)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
       stop_receiving
@@ -867,7 +882,7 @@ module DICOM
     # Decode the binary string received in the release response, and interpret its content.
     def interpret_release_response(message)
       info = Hash.new
-      msg = Stream.new(message, @net_endian, @explicit)
+      msg = Stream.new(message, @net_endian)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
       stop_receiving
@@ -980,57 +995,69 @@ module DICOM
 
     # Build the binary string that makes up the presentation context part (part of the association request).
     # For a list of error codes, see the official DICOM PS3.8 document, (page 39).
-    def append_presentation_context(as, pc, ts, context_id = "01", result = "00")
-      # PRESENTATION CONTEXT:
-      # Presentation context item type (1 byte)
-      @outgoing.encode_last(pc, "HEX") # "20" (request) & "21" (response)
-      # Reserved (1 byte)
-      @outgoing.encode_last("00", "HEX")
-      # Presentation context item length (2 bytes)
-      if ts.is_a?(Array)
-        ts_length = 4*ts.length + ts.join.length
-      else # (String)
-        ts_length = 4 + ts.length
-      end
-      if as
-        items_length = 4 + (4 + as.length) + ts_length
-      else
-        items_length = 4 + ts_length
-      end
-      @outgoing.encode_last(items_length, "US")
-      # Presentation context ID (1 byte)
-      @outgoing.encode_last(context_id, "HEX")
-      # Reserved (1 byte)
-      @outgoing.encode_last("00", "HEX")
-      # (1 byte) Reserved (for association request) & Result/reason (for association accept response)
-      @outgoing.encode_last(result, "HEX")
-      # Reserved (1 byte)
-      @outgoing.encode_last("00", "HEX")
-      ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
-      if as
-        # Abstract syntax item type (1 byte)
-        @outgoing.encode_last("30", "HEX")
+    def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result="00")
+      # One presentation context for each abstract syntax:
+      abstract_syntaxes.each_with_index do |as, index|
+        # PRESENTATION CONTEXT:
+        # Presentation context item type (1 byte)
+        @outgoing.encode_last(pc, "HEX") # "20" (request) & "21" (response)
         # Reserved (1 byte)
         @outgoing.encode_last("00", "HEX")
-        # Abstract syntax item length (2 bytes)
-        @outgoing.encode_last(as.length, "US")
-        # Abstract syntax (variable length)
-        @outgoing.encode_last(as, "STR")
-      end
-      ## TRANSFER SYNTAX SUB-ITEM:
-      ts = [ts] if ts.is_a?(String)
-      ts.each do |t|
-        # Transfer syntax item type (1 byte)
-        @outgoing.encode_last("40", "HEX")
+        # Presentation context item length (2 bytes)
+        if ts.is_a?(Array)
+          ts_length = 4*ts.length + ts.join.length
+        else # (String)
+          ts_length = 4 + ts.length
+        end
+        if as
+          items_length = 4 + (4 + as.length) + ts_length
+        else
+          items_length = 4 + ts_length
+        end
+        @outgoing.encode_last(items_length, "US")
+        # Presentation context ID (1 byte)
+        # Generate a number based on the index of the abstract syntax, unless one has been supplied to this method already.
+        # (NB! This number should be odd, and in the range 1..255)
+        if context_id
+          presentation_context_id = context_id
+        else
+          presentation_context_id = index*2 + 1
+        end
+        @outgoing.encode_last(presentation_context_id, "BY")
         # Reserved (1 byte)
         @outgoing.encode_last("00", "HEX")
-        # Transfer syntax item length (2 bytes)
-        @outgoing.encode_last(t.length, "US")
-        # Transfer syntax (variable length)
-        @outgoing.encode_last(t, "STR")
+        # (1 byte) Reserved (for association request) & Result/reason (for association accept response)
+        @outgoing.encode_last(result, "HEX")
+        # Reserved (1 byte)
+        @outgoing.encode_last("00", "HEX")
+        ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
+        if as
+          # Abstract syntax item type (1 byte)
+          @outgoing.encode_last("30", "HEX")
+          # Reserved (1 byte)
+          @outgoing.encode_last("00", "HEX")
+          # Abstract syntax item length (2 bytes)
+          @outgoing.encode_last(as.length, "US")
+          # Abstract syntax (variable length)
+          @outgoing.encode_last(as, "STR")
+        end
+        ## TRANSFER SYNTAX SUB-ITEM:
+        ts = [ts] if ts.is_a?(String)
+        ts.each do |t|
+          # Transfer syntax item type (1 byte)
+          @outgoing.encode_last("40", "HEX")
+          # Reserved (1 byte)
+          @outgoing.encode_last("00", "HEX")
+          # Transfer syntax item length (2 bytes)
+          @outgoing.encode_last(t.length, "US")
+          # Transfer syntax (variable length)
+          @outgoing.encode_last(t, "STR")
+        end
+# Update transfer syntax settings for this instance:
+#set_transfer_syntax(ts.first) # FIXME: Find out if this is useful!?
+# I dont think this is needed, as command fragments always use one type of encoding, and data fragments are handled by the DWrite class.
+# FIXME: Transfer syntax handling needs to be revised as the network code has become more flexible now.
       end
-      # Update transfer syntax settings for this instance:
-      set_transfer_syntax(ts.first)
     end
 
 
@@ -1209,23 +1236,19 @@ module DICOM
       # It may turn out to be unncessary to define the following values at this early stage.
       # Explicitness
       @explicit = true
-      # Transfer syntax (Implicit, little endian):
-      set_transfer_syntax("1.2.840.10008.1.2")
+      # Transfer syntax:
+      set_transfer_syntax(IMPLICIT_LITTLE_ENDIAN)
     end
 
 
     # Set instance variables related to the transfer syntax.
     def set_transfer_syntax(value)
+      @transfer_syntax = value
       # Query the library with our particular transfer syntax string:
-      result = LIBRARY.process_transfer_syntax(value)
-      # Result is a 3-element array: [Validity of ts, explicitness, endianness]
-      unless result[0]
+      valid_syntax, @explicit, @data_endian = LIBRARY.process_transfer_syntax(value)
+      unless valid_syntax
         add_error("Warning: Invalid/unknown transfer syntax encountered! Will try to continue, but errors may occur.")
       end
-      # Update encoding variables:
-      @explicit = result[1]
-      @data_endian = result[2]
-      @transfer_syntax = value
     end
 
 
@@ -1245,7 +1268,7 @@ module DICOM
         if info[:role_negotiation]
           pos = 3
           info[:role_negotiation].each do |role|
-            msg = Stream.new(message, @net_endian, @explicit)
+            msg = Stream.new(message, @net_endian)
             uid = role[:sop_uid]
             # Length of UID (2 bytes):
             msg.encode_first(uid.length, "US")

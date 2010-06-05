@@ -122,6 +122,40 @@ module DICOM
       return total_count
     end
 
+    # Re-encodes the value of a child Data Element (but only if the Data Element encoding is influenced by a shift in endianness)
+    def encode_child(element, old_endian)
+      if element.tag == "7FE0,0010"
+        # As encoding settings of the DObject has already been changed, we need to decode the old pixel values with the old encoding:
+        stream_old_endian = Stream.new(nil, old_endian)
+        pixels = decode_pixels(element.bin, stream_old_endian)
+        encode_pixels(pixels, stream)
+      else
+        # Not all types of tags needs to be reencoded when switching endianness:
+        case element.vr
+          when "US", "SS", "UL", "SL", "FL", "FD", "OF", "OW" # Numbers
+            # Re-encode, as long as it is not a group 0002 element (which must always be little endian):
+            unless element.tag.group == "0002"
+              stream_old_endian = Stream.new(element.bin, old_endian)
+              numbers = stream_old_endian.decode(element.length, element.vr)
+              element.value = numbers
+            end
+          #when "AT" # Tag reference
+        end
+      end
+    end
+
+    # Re-encodes the binary data strings of all child Data Elements recursively.
+    def encode_children(old_endian)
+       # Cycle through all levels of children recursively:
+      children.each do |element|
+        if element.children?
+          element.encode_children(old_endian)
+        elsif element.is_a?(DataElement)
+          encode_child(element, old_endian)
+        end
+      end
+    end
+
     # Checks whether a given tag is defined for this parent. Returns true if a match is found, false if not.
     def exists?(tag)
       if @tags[tag]

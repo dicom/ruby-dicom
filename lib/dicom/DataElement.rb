@@ -113,7 +113,7 @@ module DICOM
       if top_parent.is_a?(DObject)
         return top_parent.stream
       else
-        return Stream.new(nil, file_endian=false, true)
+        return Stream.new(nil, file_endian=false)
       end
     end
 
