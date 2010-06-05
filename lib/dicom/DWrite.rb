@@ -45,7 +45,7 @@ module DICOM
         # Initiate necessary variables:
         init_variables
         # Create a Stream instance to handle the encoding of content to a binary string:
-        @stream = Stream.new(nil, @file_endian, @explicit)
+        @stream = Stream.new(nil, @file_endian)
         # Tell the Stream instance which file to write to:
         @stream.set_file(@file)
         # Write the DICOM signature:
@@ -84,7 +84,7 @@ module DICOM
       selected_elements = elements[first_pos..-1]
       # Create a Stream instance to handle the encoding of content to
       # the binary string that will eventually be saved to file:
-      @stream = Stream.new(nil, @file_endian, @explicit)
+      @stream = Stream.new(nil, @file_endian)
       write_data_elements(selected_elements)
       # Extract the remaining string in our stream instance to our array of strings:
       @segments << @stream.export
@@ -358,7 +358,6 @@ module DICOM
       # Update explicitness and endianness (pack/unpack variables):
       @explicit = @rest_explicit
       @file_endian = @rest_endian
-      @stream.explicit = @rest_explicit
       @stream.set_endian(@rest_endian)
     end
 

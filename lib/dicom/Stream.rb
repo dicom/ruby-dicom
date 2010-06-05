@@ -10,13 +10,12 @@ module DICOM
   # Class for handling binary string operations:
   class Stream
 
-    attr_accessor :endian, :explicit, :index, :string
+    attr_accessor :endian, :index, :string
     attr_reader :errors
 
     # Initialize the Stream instance.
-    def initialize(string, str_endian, explicit, options={})
+    def initialize(string, str_endian, options={})
       # Set instance variables:
-      @explicit = explicit # true or false
       @string = string || "" # input binary string
       @index = options[:index] || 0
       @errors = Array.new

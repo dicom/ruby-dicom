@@ -58,7 +58,7 @@ module DICOM
       # Control variables:
       @read_success = false
       # Initialize a Stream instance which is used for encoding/decoding:
-      @stream = Stream.new(nil, @file_endian, @explicit)
+      @stream = Stream.new(nil, @file_endian)
       # The DObject instance is the top of the hierarchy and unlike other elements it has no parent:
       @parent = nil
       # For convenience, call the read method if a string has been supplied:
@@ -378,7 +378,6 @@ module DICOM
         @explicit = r.explicit
         @file_endian = r.file_endian
         @signature = r.signature
-        @stream.explicit = @explicit
         @stream.set_endian(@file_endian)
       else
         @read_success = false

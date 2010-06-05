@@ -43,7 +43,7 @@ module DICOM
         end
       end
       # Create a Stream instance to handle the decoding of content from this binary string:
-      @stream = Stream.new(@str, @file_endian, @explicit)
+      @stream = Stream.new(@str, @file_endian)
       # Do not check for header information when supplied a (network) binary string:
       unless options[:bin]
         # Read and verify the DICOM header:
@@ -98,7 +98,6 @@ module DICOM
           # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
           # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
           @explicit = false
-          @stream.explicit = false
           return false
         else
           # Header signature is valid:
@@ -340,7 +339,6 @@ module DICOM
       @file_endian = @rest_endian
       @stream.set_endian(@rest_endian)
       @explicit = @rest_explicit
-      @stream.explicit = @rest_explicit
     end
 
 
