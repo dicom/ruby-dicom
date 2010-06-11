@@ -65,14 +65,16 @@ module DICOM
       # Set item types (pdu and presentation context):
       pdu = "02"
       pc_type = "21"
-      # No abstract syntax in association response:
-      abstract_syntaxes = Array.new
+      # No abstract syntax in association response. To make this work with the method that
+      # encodes the presentation context, we make this a one-element array containing nil).
+      abstract_syntaxes = Array.new(1, nil)
       # Note: The order of which these components are built is not arbitrary.
       append_application_context(ac_uid)
       # Return one presentation context for each of the proposed abstract syntaxes:
       processed_abstract_syntaxes = Array.new
       info[:pc].each do |pc|
         unless processed_abstract_syntaxes.include?(pc[:abstract_syntax])
+          # Make sure we dont return multiple presentation contexts for one abstract syntax:
           processed_abstract_syntaxes << pc[:abstract_syntax]
           context_id = pc[:presentation_context_id]
           transfer_syntax = pc[:ts].first[:transfer_syntax]
