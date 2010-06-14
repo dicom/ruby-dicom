@@ -19,7 +19,7 @@ module DICOM
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @max_receive_size = @max_package_size
       @timeout = options[:timeout] || 10 # seconds
-      @min_length = 12 # minimum number of bytes to expect in an incoming transmission
+      @min_length = 10 # minimum number of bytes to expect in an incoming transmission
       @verbose = options[:verbose]
       @verbose = true if @verbose == nil # Default verbosity is 'on'.
       # Other instance variables:
@@ -309,7 +309,7 @@ module DICOM
     end
 
 
-    # Handles the association accept.
+    # Handles the outgoing association accept.
     def handle_association_accept(session, info, syntax_result)
       # Update the variable for calling ae (information gathered in the association request):
       @ae = info[:calling_ae]
@@ -1198,7 +1198,7 @@ module DICOM
         # Sometimes the incoming transmission may be broken up into smaller pieces:
         # Unless a short answer is expected, we will continue to listen if the first answer was too short:
         unless min_length == 0
-          if data.length <= min_length
+          if data.length < min_length
             addition = receive_transmission_data(session)
             data = data + addition if addition
           end

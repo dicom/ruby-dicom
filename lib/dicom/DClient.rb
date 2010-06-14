@@ -219,11 +219,11 @@ module DICOM
           @association = true
           @max_pdu_length = info[:max_pdu_length]
           add_notice("Association successfully negotiated with host #{@host_ae} (#{@host_ip}).")
+          # Check if all our presentation contexts was accepted by the host:
+          process_presentation_context_response(info[:pc])
         else
           add_error("Association was denied from host #{@host_ae} (#{@host_ip})!")
         end
-        # Check if all our presentation contexts was accepted by the host:
-        process_presentation_context_response(info[:pc])
       end
     end
 
