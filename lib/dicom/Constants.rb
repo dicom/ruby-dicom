@@ -37,6 +37,15 @@ module DICOM
   IMPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2"
   EXPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2.1"
   EXPLICIT_BIG_ENDIAN = "1.2.840.10008.1.2.2"
+  
+  # SOP Class of special interest:
+  VERIFICATION_SOP = "1.2.840.10008.1.1"
+  APPLICATION_CONTEXT = "1.2.840.10008.3.1.1.1"
+  
+  # Network communication result codes:
+  ACCEPTANCE = 0
+  ABSTRACT_SYNTAX_REJECTED = 3
+  TRANSFER_SYNTAX_REJECTED = 4
 
   # System (CPU) Endianness:
   x = 0xdeadbeef

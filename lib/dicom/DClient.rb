@@ -3,12 +3,14 @@
 module DICOM
 
   # This class contains code for handling the client side of DICOM TCP/IP network communication.
+  #
   class DClient
 
     attr_accessor :ae, :host_ae, :host_ip, :max_package_size, :port, :timeout, :verbose
     attr_reader :command_results, :data_results, :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
+    #
     def initialize(host_ip, port, options={})
       require 'socket'
       # Required parameters:
@@ -40,9 +42,9 @@ module DICOM
       @link = Link.new(:ae => @ae, :host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout)
     end
 
-
     # Query a service class provider for images that match the specified criteria.
-    # Example:   find_images("0010,0020" => "123456789", "0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844") # (Patient ID, Study Instance UID & Series Instance UID)
+    # Example:   find_images("0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844") # (Study Instance UID & Series Instance UID)
+    #
     def find_images(options={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
@@ -53,9 +55,9 @@ module DICOM
       return @data_results
     end
 
-
     # Query a service class provider for patients that match the specified criteria.
     # Example:   find_patients("0010,0010" => "James*") # (Patient's Name)
+    #
     def find_patients(options={})
       # Patient Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.1.1"]
@@ -66,9 +68,9 @@ module DICOM
       return @data_results
     end
 
-
     # Query a service class provider for series that match the specified criteria.
-    # Example:   find_series("0010,0020" => "123456789", "0020,000D" => "1.2.840.1145.342") # (Patient ID & Study Instance UID)
+    # Example:   find_series("0020,000D" => "1.2.840.1145.342") # (Study Instance UID)
+    #
     def find_series(options={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
@@ -79,9 +81,9 @@ module DICOM
       return @data_results
     end
 
-
     # Query a service class provider for studies that match the specified criteria.
     # Example:   find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789") # (Study Date & Patient ID)
+    #
     def find_studies(options={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
@@ -92,9 +94,9 @@ module DICOM
       return @data_results
     end
 
-
     # Retrieve a dicom file from a service class provider (SCP/PACS).
     # Example:  get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+    #
     def get_image(path, options={})
       # Study Root Query/Retrieve Information Model - GET:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.3"]
@@ -106,9 +108,9 @@ module DICOM
       perform_get(path)
     end
 
-
     # Move an image to a dicom node other than yourself.
     # Example:  move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+    #
     def move_image(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.2"]
@@ -120,9 +122,9 @@ module DICOM
       perform_move
     end
 
-
     # Move an entire study to a dicom node other than yourself.
     # Example:  move_study("MYDICOM", "0010,0020" => pat_id, "0020,000D" => study_uid)
+    #
     def move_study(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.2"]
@@ -134,8 +136,8 @@ module DICOM
       perform_move
     end
 
-
     # Send a DICOM file to a service class provider (SCP/PACS).
+    #
     def send(parameter)
       # Prepare the DICOM object(s):
       objects, @abstract_syntaxes, success, message = load_files(parameter)
@@ -157,13 +159,13 @@ module DICOM
       end
     end
 
-
     # Tests the connection to the specified host by trying to negotiate an association, then releasing it.
+    #
     def test
       add_notice("TESTING CONNECTION...")
       success = false
       # Verification SOP Class:
-      @abstract_syntaxes = ["1.2.840.10008.1.1"]
+      @abstract_syntaxes = [VERIFICATION_SOP]
       # Open a DICOM link:
       establish_association
       if @association
@@ -188,21 +190,22 @@ module DICOM
 
     # Adds a warning or error message to the instance array holding messages,
     # and if verbose variable is true, prints the message as well.
+    #
     def add_error(error)
       puts error if @verbose
       @errors << error
     end
 
-
     # Adds a notice (information regarding progress or successful communications) to the instance array,
     # and if verbosity is set for these kinds of messages, prints it to the screen as well.
+    #
     def add_notice(notice)
       puts notice if @verbose
       @notices << notice
     end
 
-
     # Open a TCP session with a specified server, and handle the association request along with its response.
+    #
     def establish_association
       # Reset some variables:
       @association = false
@@ -227,8 +230,8 @@ module DICOM
       end
     end
 
-
     # Handle a release request and its response, as well as closing the TCP connection.
+    #
     def establish_release
       @release = false
       if @abort
@@ -252,10 +255,10 @@ module DICOM
       @abort = false
     end
 
-
     # Reads DICOM files from an array of file/path Strings, and returns an array of unique abstract syntaxes from these files.
     # If any of these files fails, an error will be reported.
     # (This method may also be called in cases where the Array contains DObjects, and as such does not return an error for this case)
+    #
     def load_files(files)
       status = true
       message = ""
@@ -285,10 +288,10 @@ module DICOM
       return objects, abstracts.uniq, status, message
     end
 
-
     # Handle the communication involved in DICOM query (C-FIND).
     # Build the necessary strings and send the command and data element that makes up the query.
     # Listens for and interpretes the incoming query responses.
+    #
     def perform_find
       # Open a DICOM link:
       establish_association
@@ -298,7 +301,6 @@ module DICOM
           # Set the query command elements array:
           set_command_fragment_find
           pdu="04"
-          #context = "01"
           flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
@@ -315,8 +317,8 @@ module DICOM
       end
     end
 
-
     # Build and send command & data fragment, then receive the incoming file data.
+    #
     def perform_get(path)
       # Open a DICOM link:
       establish_association
@@ -342,8 +344,8 @@ module DICOM
       end
     end
 
-
     # Handle the communication involved in DICOM move request.
+    #
     def perform_move
       # Open a DICOM link:
       establish_association
@@ -367,9 +369,9 @@ module DICOM
       end
     end
 
-
     # Builds and sends the command fragment, then builds and sends the data fragments that
     # conveys the information from the specified DICOM file(s) or object(s).
+    #
     def perform_send(objects)
       objects.each_with_index do |obj, index|
         # Gather necessary information from the object (SOP Class & Instance UID):
@@ -413,14 +415,16 @@ module DICOM
         end
       end
     end
-    
-    
+
     # Processes the presentation contexts received in the association response.
     # FIXME: Print name of abstract syntax instead of its UID?!
+    #
     def process_presentation_context_response(presentation_context)
       # Storing approved syntaxes in an Hash with the syntax as key and the value being an array with presentation context ID and the transfer syntax chosen by the SCP.
       @approved_syntaxes = Hash.new
       rejected = Hash.new
+      # Reset the presentation context instance variable:
+      @link.presentation_contexts = Hash.new
       presentation_context.each do |pc|
         # Determine what abstract syntax this particular presentation context's id corresponds to:
         id = pc[:presentation_context_id]
@@ -429,6 +433,7 @@ module DICOM
         abstract_syntax = @abstract_syntaxes[index]
         if pc[:result] == 0
           @approved_syntaxes[abstract_syntax] = [id, pc[:transfer_syntax]]
+          @link.presentation_contexts[id] = pc[:transfer_syntax]
         else
           rejected[abstract_syntax] = [id, pc[:transfer_syntax]]
         end
@@ -448,8 +453,8 @@ module DICOM
       end
     end
 
-
     # Process the data that was returned from the interaction with the SCP and make it available to the user.
+    #
     def process_returned_data(segments)
       # Reset command results arrays:
       @command_results = Array.new
@@ -469,18 +474,17 @@ module DICOM
       end
     end
 
-
     # Reset the values of a array.
-    # It is assumed the arrays elements are an array in itself, where element[1]
-    # will be reset to the string value "".
+    # It is assumed the array's elements are an array in itself, where element[1] will be reset to an empty string ("").
+    #
     def reset(array)
       array.each do |element|
         element[1] = ""
       end
     end
 
-
     # Set command elements used in a C-GET-RQ:
+    #
     def set_command_fragment_get
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
@@ -491,9 +495,9 @@ module DICOM
       ]
     end
 
-
     # Command elements used in a C-FIND-RQ.
     # This seems to be the same, regardless of what we want to query.
+    #
     def set_command_fragment_find
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
@@ -504,8 +508,8 @@ module DICOM
       ]
     end
 
-
     # Set command elements used in a C-MOVE-RQ:
+    #
     def set_command_fragment_move(destination)
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
@@ -517,8 +521,8 @@ module DICOM
       ]
     end
 
-
     # Command elements used in a p-data c-store-rq query command:
+    #
     def set_command_fragment_store(modality, instance, message_id)
       @command_elements = [
         ["0000,0002", "UI", modality], # Affected SOP Class UID
@@ -530,8 +534,8 @@ module DICOM
       ]
     end
 
-
     # Data elements used in a query for the images of a particular series:
+    #
     def set_data_fragment_find_images
       @data_elements = [
         ["0008,0018", ""], # SOP Instance UID
@@ -542,8 +546,8 @@ module DICOM
       ]
     end
 
-
     # Data elements used in a query for patients:
+    #
     def set_data_fragment_find_patients
       @data_elements = [
         ["0008,0052", "PATIENT"], # Query/Retrieve Level:  "PATIENT"
@@ -554,8 +558,8 @@ module DICOM
       ]
     end
 
-
     # Data elements used in a query for the series of a particular study:
+    #
     def set_data_fragment_find_series
       @data_elements = [
         ["0008,0052", "SERIES"], # Query/Retrieve Level: "SERIES"
@@ -567,8 +571,8 @@ module DICOM
       ]
     end
 
-
     # Data elements used in a query for studies:
+    #
     def set_data_fragment_find_studies
       @data_elements = [
         ["0008,0020", ""], # Study Date
@@ -587,8 +591,8 @@ module DICOM
       ]
     end
 
-
     # Set data elements used for an image C-GET-RQ:
+    #
     def set_data_fragment_get_image
       @data_elements = [
         ["0008,0018", ""], # SOP Instance UID
@@ -598,8 +602,8 @@ module DICOM
       ]
     end
 
-
     # Set data elements used for an image C-MOVE-RQ:
+    #
     def set_data_fragment_move_image
       @data_elements = [
         ["0008,0018", ""], # SOP Instance UID
@@ -609,8 +613,8 @@ module DICOM
       ]
     end
 
-
     # Set data elements used in a study C-MOVE-RQ:
+    #
     def set_data_fragment_move_study
       @data_elements = [
         ["0008,0052", "STUDY"], # Query/Retrieve Level:  "STUDY"
@@ -619,10 +623,10 @@ module DICOM
       ]
     end
 
-
     # Transfer the user query options to the data elements array.
-    # NB: Only tags which are predefined for the specific query type will be updated
+    # NB: Only tags which are predefined for the specific query type will be updated!
     # (no new tags are allowed stored among the data elements)
+    #
     def set_data_options(options)
       options.each_pair do |key, value|
         tags = @data_elements.transpose[0]
@@ -633,20 +637,17 @@ module DICOM
       end
     end
 
-
     # Set default values for accepted transfer syntaxes:
+    #
     def set_default_values
       # DICOM Application Context Name (unknown if this will vary or is always the same):
-      @application_context_uid = "1.2.840.10008.3.1.1.1"
-      # Transfer syntax (preferred syntax appearing first)
-      @transfer_syntax = ["1.2.840.10008.1.2.1", # Explicit VR Little Endian
-        "1.2.840.10008.1.2.2", # Explicit VR Big Endian
-        "1.2.840.10008.1.2" # Implicit VR Little Endian
-      ]
+      @application_context_uid = APPLICATION_CONTEXT
+      # Transfer syntax string array (preferred syntax appearing first):
+      @transfer_syntax = [IMPLICIT_LITTLE_ENDIAN, EXPLICIT_LITTLE_ENDIAN, EXPLICIT_BIG_ENDIAN]
     end
 
-
     # Set user information [item type code, VR, value]
+    #
     def set_user_information_array
       @user_information = [
         ["51", "UL", @max_package_size], # Max PDU Length

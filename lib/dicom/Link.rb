@@ -6,7 +6,7 @@ module DICOM
   # as well as network communication.
   class Link
 
-    attr_accessor :max_package_size, :verbose, :file_handler
+    attr_accessor :file_handler, :max_package_size, :presentation_contexts, :verbose
     attr_reader :errors, :notices
 
     # Initialize the instance with a host adress and a port number.
@@ -30,6 +30,7 @@ module DICOM
       @association = nil # DICOM Association status
       @request_approved = nil # Status of our DICOM request
       @release = nil # Status of received, valid release response
+      @presentation_contexts = Hash.new # Keeps track of the relationship between pc id and it's transfer syntax
       set_default_values
       set_user_information_array
       @outgoing = Stream.new(string=nil, endian=true)
@@ -57,7 +58,7 @@ module DICOM
 
 
     # Build the binary string that will be sent as TCP data in the Association accept response.
-    def build_association_accept(info, ac_uid, ui, result)
+    def build_association_accept(info, ac_uid, ui)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
@@ -66,20 +67,19 @@ module DICOM
       pdu = "02"
       pc_type = "21"
       # No abstract syntax in association response. To make this work with the method that
-      # encodes the presentation context, we make this a one-element array containing nil).
+      # encodes the presentation context, we pass on a one-element array containing nil).
       abstract_syntaxes = Array.new(1, nil)
       # Note: The order of which these components are built is not arbitrary.
       append_application_context(ac_uid)
-      # Return one presentation context for each of the proposed abstract syntaxes:
-      processed_abstract_syntaxes = Array.new
+      # Reset the presentation context instance variable:
+      @presentation_contexts = Hash.new
+      # Build the presentation context strings, one by one:
       info[:pc].each do |pc|
-        unless processed_abstract_syntaxes.include?(pc[:abstract_syntax])
-          # Make sure we dont return multiple presentation contexts for one abstract syntax:
-          processed_abstract_syntaxes << pc[:abstract_syntax]
-          context_id = pc[:presentation_context_id]
-          transfer_syntax = pc[:ts].first[:transfer_syntax]
-          append_presentation_contexts(abstract_syntaxes, pc_type, transfer_syntax, context_id, result)
-        end
+        context_id = pc[:presentation_context_id]
+        result = pc[:result]
+        transfer_syntax = pc[:selected_transfer_syntax]
+        @presentation_contexts[context_id] = transfer_syntax
+        append_presentation_contexts(abstract_syntaxes, pc_type, transfer_syntax, context_id, result)
       end
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
@@ -264,18 +264,6 @@ module DICOM
     end
 
 
-    # Extracts the abstrax syntax from the first presentation context in the info hash object.
-    def extract_abstract_syntax(info)
-      return info[:pc].first[:abstract_syntax]
-    end
-
-
-    # Extracts the (first) transfer syntax from the first presentation context in the info hash object.
-    def extract_transfer_syntax(info)
-      return info[:pc].first[:ts].first[:transfer_syntax]
-    end
-
-
     # Delegates an incoming message to its correct interpreter method, based on pdu type.
     def forward_to_interpret(message, pdu, file = nil)
       case pdu
@@ -287,7 +275,7 @@ module DICOM
           info = interpret_association_reject(message)
         when "04" # Data
           info = interpret_command_and_data(message, file)
-        when "05"
+        when "05" # Release request
           info = interpret_release_request(message)
         when "06" # Release response
           info = interpret_release_response(message)
@@ -310,52 +298,80 @@ module DICOM
 
 
     # Handles the outgoing association accept.
-    def handle_association_accept(session, info, syntax_result)
+    def handle_association_accept(session, info)
       # Update the variable for calling ae (information gathered in the association request):
       @ae = info[:calling_ae]
       application_context = info[:application_context]
+      # Build message string and send it:
       set_user_information_array(info)
-      build_association_accept(info, application_context, @user_information, syntax_result)
+      build_association_accept(info, application_context, @user_information)
       transmit(session)
     end
 
 
-    # Process the data that was received from the user.
-    # We expect this to be an initial C-STORE-RQ followed by a bunch of data fragments.
+    # Processes the data that was sent to us.
+    # This is expected to be one or more combinations of: A C-STORE-RQ (command fragment) followed by a bunch of data fragments.
     def handle_incoming_data(session, path)
       # Wait for incoming data:
-      segments = receive_multiple_transmissions(session, file = true)
+      segments = receive_multiple_transmissions(session, file=true)
       # Reset command results arrays:
       @command_results = Array.new
       @data_results = Array.new
-      # Try to extract data:
-      file_data = Array.new
+      file_transfer_syntaxes = Array.new
+      files = Array.new
+      single_file_data = Array.new
+      # Proceed to extract data from the captured segments:
       segments.each do |info|
         if info[:valid]
           # Determine if it is command or data:
-          if info[:presentation_context_flag] == "00" or info[:presentation_context_flag] == "02"
-            # Data (last fragment)
+          if info[:presentation_context_flag] == "00"
+            # Data (More fragments):
             @data_results << info[:results]
-            file_data  << info[:bin]
+            single_file_data  << info[:bin]
+          elsif info[:presentation_context_flag] == "02"
+            # Data (Last fragment):
+            @data_results << info[:results]
+            single_file_data  << info[:bin]
+            # Join the recorded data binary strings together to make a DICOM file binary string and put it in our files Array:
+            files << single_file_data.join
+            single_file_data = Array.new
           elsif info[:presentation_context_flag] == "03"
-            # Command (last fragment):
+            # Command (Last fragment):
             @command_results << info[:results]
-            @presentation_context_id = info[:presentation_context_id]
+            @presentation_context_id = info[:presentation_context_id] # Does this actually do anything useful?
+            file_transfer_syntaxes << @presentation_contexts[info[:presentation_context_id]]
           end
         end
       end
-      data = file_data.join
-      if data.length > 8
-        # Read the received data stream and load it as a DICOM object:
-        obj = DObject.new(data, :bin => true, :syntax => @transfer_syntax)
-        # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
-        # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
-        # their own customised solutions for handling the incoming DICOM files:
-        success, message = @file_handler.receive_file(obj, path, @transfer_syntax)
+      # Loop through the received files and process them:
+      success_number = 0
+      message = ""
+      files.each_index do |i|
+        if files[i].length > 8
+          # Read the received data stream and load it as a DICOM object:
+          obj = DObject.new(files[i], :bin => true, :syntax => file_transfer_syntaxes[i])
+          # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
+          # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
+          # their own customised solutions for handling the incoming DICOM files:
+          success, message = @file_handler.receive_file(obj, path, @transfer_syntax)
+          success_number += 1 if success
+        else
+          # Valid DICOM data not received:
+          success = false
+          message = "Error: Invalid data received (the data was too small to be a valid DICOM file)."
+        end
+      end
+      if files.length > 1
+        if success_number == files.length
+          message = "All #{files.length} DICOM files received successfully."
+        else
+          message = "#{success_number} of #{files.length} DICOM files received successfully."
+        end
+      end
+      if success_number == files.length
+        success = true
       else
-        # Valid DICOM data not received:
         success = false
-        message = "Error: Invalid data received (the data was too small to be a valid DICOM file)."
       end
       return success, message
     end
@@ -603,9 +619,6 @@ module DICOM
       end
       stop_receiving
       info[:valid] = true
-# Update transfer syntax settings for this instance:
-# FIXME: Transfer syntax handling needs to be revised as the network code has become more flexible now.
-#set_transfer_syntax(info[:pc].first[:transfer_syntax]) # Too early?!
       return info
     end # of interpret_association_accept
 
@@ -645,7 +658,7 @@ module DICOM
       msg.skip(32)
       # APPLICATION CONTEXT:
       # Item type (1 byte)
-      info[:application_item_type] = msg.decode(1, "HEX") # "10"
+      info[:application_item_type] = msg.decode(1, "HEX") # 10H
       # Reserved (1 byte)
       msg.skip(1)
       # Application item length (2 bytes)
@@ -783,7 +796,9 @@ module DICOM
       info[:presentation_context_id] = msg.decode(1, "BY")
       # Flags (1 byte)
       info[:presentation_context_flag] = msg.decode(1, "HEX") # "03" for command (last fragment), "02" for data
-      # Little endian encoding from now on:
+      # Apply the proper transfer syntax for this presentation context:
+      set_transfer_syntax(@presentation_contexts[info[:presentation_context_id]])
+      # "Data endian" encoding from now on:
       msg.set_endian(@data_endian)
       # We will put the results in a hash:
       results = Hash.new
@@ -996,8 +1011,8 @@ module DICOM
 
 
     # Build the binary string that makes up the presentation context part (part of the association request).
-    # For a list of error codes, see the official DICOM PS3.8 document, (page 39).
-    def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result="00")
+    # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
+    def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result=ACCEPTANCE)
       # One presentation context for each abstract syntax:
       abstract_syntaxes.each_with_index do |as, index|
         # PRESENTATION CONTEXT:
@@ -1029,7 +1044,7 @@ module DICOM
         # Reserved (1 byte)
         @outgoing.encode_last("00", "HEX")
         # (1 byte) Reserved (for association request) & Result/reason (for association accept response)
-        @outgoing.encode_last(result, "HEX")
+        @outgoing.encode_last(result, "BY")
         # Reserved (1 byte)
         @outgoing.encode_last("00", "HEX")
         ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
@@ -1043,22 +1058,20 @@ module DICOM
           # Abstract syntax (variable length)
           @outgoing.encode_last(as, "STR")
         end
-        ## TRANSFER SYNTAX SUB-ITEM:
-        ts = [ts] if ts.is_a?(String)
-        ts.each do |t|
-          # Transfer syntax item type (1 byte)
-          @outgoing.encode_last("40", "HEX")
-          # Reserved (1 byte)
-          @outgoing.encode_last("00", "HEX")
-          # Transfer syntax item length (2 bytes)
-          @outgoing.encode_last(t.length, "US")
-          # Transfer syntax (variable length)
-          @outgoing.encode_last(t, "STR")
+        ## TRANSFER SYNTAX SUB-ITEM (not included if result indicates error):
+        if result == ACCEPTANCE
+          ts = [ts] if ts.is_a?(String)
+          ts.each do |t|
+            # Transfer syntax item type (1 byte)
+            @outgoing.encode_last("40", "HEX")
+            # Reserved (1 byte)
+            @outgoing.encode_last("00", "HEX")
+            # Transfer syntax item length (2 bytes)
+            @outgoing.encode_last(t.length, "US")
+            # Transfer syntax (variable length)
+            @outgoing.encode_last(t, "STR")
+          end
         end
-# Update transfer syntax settings for this instance:
-#set_transfer_syntax(ts.first) # FIXME: Find out if this is useful!?
-# I dont think this is needed, as command fragments always use one type of encoding, and data fragments are handled by the DWrite class.
-# FIXME: Transfer syntax handling needs to be revised as the network code has become more flexible now.
       end
     end
 
