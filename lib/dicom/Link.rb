@@ -2,14 +2,15 @@
 
 module DICOM
 
-  # This class handles the construction and interpretation of network packages
-  # as well as network communication.
+  # This class handles the construction and interpretation of network packages as well as network communication.
+  #
   class Link
 
     attr_accessor :file_handler, :max_package_size, :presentation_contexts, :verbose
-    attr_reader :errors, :notices
+    attr_reader :errors, :notices, :session
 
-    # Initialize the instance with a host adress and a port number.
+    # Initializes the Link instance, which is used by both DClient and DServer to handle network communication.
+    #
     def initialize(options={})
       require 'socket'
       # Optional parameters (and default values):
@@ -26,19 +27,20 @@ module DICOM
       @errors = Array.new # errors and warnings are put in this array
       @notices = Array.new # information on successful transmissions are put in this array
       # Variables used for monitoring state of transmission:
-      @connection = nil # TCP connection status
+      @session = nil # TCP connection
       @association = nil # DICOM Association status
       @request_approved = nil # Status of our DICOM request
       @release = nil # Status of received, valid release response
+      @command_request = Hash.new
       @presentation_contexts = Hash.new # Keeps track of the relationship between pc id and it's transfer syntax
       set_default_values
       set_user_information_array
       @outgoing = Stream.new(string=nil, endian=true)
     end
 
-
     # Build the abort message which is transmitted when the server wishes to (abruptly) abort the connection.
     # For the moment: NO REASONS WILL BE PROVIDED. (and source of problems will always be set as client side)
+    #
     def build_association_abort
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -56,8 +58,8 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Build the binary string that will be sent as TCP data in the Association accept response.
+    #
     def build_association_accept(info, ac_uid, ui)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -86,10 +88,10 @@ module DICOM
       append_association_header(pdu, info[:called_ae])
     end
 
-
     # Build the binary string that will be sent as TCP data in the association rejection.
     # NB: For the moment, this method will only customize the "reason" value.
     # For a list of error codes, see the official dicom PS3.8 document, page 41.
+    #
     def build_association_reject(info)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -109,8 +111,8 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Build the binary string that will be sent as TCP data in the Association request.
+    #
     def build_association_request(ac_uid, as, ts, ui)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -128,8 +130,8 @@ module DICOM
       append_association_header(pdu, @host_ae)
     end
 
-
     # Build the binary string that will be sent as TCP data in the query command fragment.
+    #
     def build_command_fragment(pdu, context, flags, command_elements)
       # Little endian encoding:
       @outgoing.set_endian(@data_endian)
@@ -171,9 +173,9 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Build the binary string that will be sent as TCP data in the query data fragment.
     # The style of encoding will depend on whether we have an implicit or explicit transfer syntax.
+    #
     def build_data_fragment(data_elements)
       # Endianness of data fragment:
       @outgoing.set_endian(@data_endian)
@@ -215,8 +217,8 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Build the binary string that will be sent as TCP data in the association release request:
+    #
     def build_release_request
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -228,8 +230,8 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Build the binary string that will be sent as TCP data in the association release response.
+    #
     def build_release_response
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -241,10 +243,10 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Build the binary string that makes up a storage data fragment.
     # Typical value: flags = "00" (more fragments following), flags = "02" (last fragment)
     # pdu = "04", context = "01"
+    #
     def build_storage_fragment(pdu, context, flags, body)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -263,57 +265,57 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Delegates an incoming message to its correct interpreter method, based on pdu type.
-    def forward_to_interpret(message, pdu, file = nil)
+    #
+    def forward_to_interpret(message, pdu, file=nil)
       case pdu
-        when "01" # Associatin request
+        when PDU_ASSOCIATION_REQUEST
           info = interpret_association_request(message)
-        when "02" # Accepted association
+        when PDU_ASSOCIATION_ACCEPT
           info = interpret_association_accept(message)
-        when "03" # Rejected association
+        when PDU_ASSOCIATION_REJECT
           info = interpret_association_reject(message)
-        when "04" # Data
+        when PDU_DATA
           info = interpret_command_and_data(message, file)
-        when "05" # Release request
+        when PDU_RELEASE_REQUEST
           info = interpret_release_request(message)
-        when "06" # Release response
+        when PDU_RELEASE_RESPONSE
           info = interpret_release_response(message)
-        when "07" # Abort connection
+        when PDU_ABORT
           info = interpret_abort(message)
         else
           info = {:valid => false}
-          add_error("An unknown pdu type was received in the incoming transmission. Can not decode this message. (pdu: #{pdu})")
+          add_error("An unknown PDU type was received in the incoming transmission. Can not decode this message. (PDU: #{pdu})")
       end
       return info
     end
 
-
     # Handles the abortion of a session, when a non-valid message has been received.
-    def handle_abort(session)
+    #
+    def handle_abort
       add_notice("An unregonizable (non-DICOM) message was received.")
       build_association_abort
-      transmit(session)
+      transmit
     end
 
-
     # Handles the outgoing association accept.
-    def handle_association_accept(session, info)
+    #
+    def handle_association_accept(info)
       # Update the variable for calling ae (information gathered in the association request):
       @ae = info[:calling_ae]
       application_context = info[:application_context]
       # Build message string and send it:
       set_user_information_array(info)
       build_association_accept(info, application_context, @user_information)
-      transmit(session)
+      transmit
     end
-
 
     # Processes the data that was sent to us.
     # This is expected to be one or more combinations of: A C-STORE-RQ (command fragment) followed by a bunch of data fragments.
-    def handle_incoming_data(session, path)
+    #
+    def handle_incoming_data(path)
       # Wait for incoming data:
-      segments = receive_multiple_transmissions(session, file=true)
+      segments = receive_multiple_transmissions(file=true)
       # Reset command results arrays:
       @command_results = Array.new
       @data_results = Array.new
@@ -376,57 +378,56 @@ module DICOM
       return success, message
     end
 
-
     # Handles the rejection of an association, when the formalities of the association is not correct.
-    def handle_rejection(session)
+    #
+    def handle_rejection
       add_notice("An incoming association request was rejected. Error code: #{association_error}")
       # Insert the error code in the info hash:
       info[:reason] = association_error
       # Send an association rejection:
       build_association_reject(info)
-      transmit(session)
+      transmit
     end
 
-
-    # Handles the release of an association.
-    def handle_release(session)
-      segments = receive_single_transmission(session)
+    # Handles the release of an association from the provider side (expects a release request, which it responds to).
+    #
+    def handle_release
+      segments = receive_single_transmission
       info = segments.first
       if info[:pdu] == "05"
         add_notice("Received a release request. Releasing association.")
         build_release_response
-        transmit(session)
+        transmit
+      else
+        add_error("Timed out while waiting for a release request. Closing the connection.")
+        stop_session
       end
     end
 
-
-    # Handles the response (C-STORE-RSP) when a DICOM object has been (successfully) received.
-    def handle_response(session)
-      tags = @command_results.first
+    # Handles the response (C-STORE-RSP) when a DICOM object, following an initial C-STORE-RQ, has been (successfully) received.
+    #
+    def handle_response
       # Need to construct the command elements array:
       command_elements = Array.new
       # SOP Class UID:
-      command_elements << ["0000,0002", "UI", tags["0000,0002"]]
+      command_elements << ["0000,0002", "UI", @command_request["0000,0002"]]
       # Command Field:
-      command_elements << ["0000,0100", "US", 32769] # C-STORE-RSP
+      command_elements << ["0000,0100", "US", C_STORE_RSP]
       # Message ID Being Responded To:
-      command_elements << ["0000,0120", "US", tags["0000,0110"]] # (Message ID)
+      command_elements << ["0000,0120", "US", @command_request["0000,0110"]]
       # Data Set Type:
-      command_elements << ["0000,0800", "US", 257]
+      command_elements << ["0000,0800", "US", NO_DATA_SET_PRESENT]
       # Status:
-      command_elements << ["0000,0900", "US", 0] # (Success)
+      command_elements << ["0000,0900", "US", SUCCESS]
       # Affected SOP Instance UID:
-      command_elements << ["0000,1000", "UI", tags["0000,1000"]]
-      pdu = "04"
-      context = @presentation_context_id
-      flag = "03" # (Command, last fragment)
-      build_command_fragment(pdu, context, flag, command_elements)
-      transmit(session)
+      command_elements << ["0000,1000", "UI", @command_request["0000,1000"]]
+      build_command_fragment(PDU_DATA, @presentation_context_id, COMMAND_LAST_FRAGMENT, command_elements)
+      transmit
     end
 
-
     # Decode an incoming transmission., decide its type, and forward its content to the various methods that process these.
-    def interpret(message, file = nil)
+    #
+    def interpret(message, file=nil)
       if @first_part
         message = @first_part + message
         @first_part = nil
@@ -484,8 +485,8 @@ module DICOM
       return segments
     end
 
-
     # Decode the binary string received when the provider wishes to abort the connection, for some reason.
+    #
     def interpret_abort(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
@@ -504,8 +505,8 @@ module DICOM
       return info
     end
 
-
     # Decode the binary string received in the association response, and interpret its content.
+    #
     def interpret_association_accept(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
@@ -622,8 +623,8 @@ module DICOM
       return info
     end # of interpret_association_accept
 
-
     # Decode the association reject message and extract the error reasons given.
+    #
     def interpret_association_reject(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
@@ -641,8 +642,8 @@ module DICOM
       return info
     end
 
-
     # Decode the binary string received in the association request, and interpret its content.
+    #
     def interpret_association_request(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
@@ -782,10 +783,10 @@ module DICOM
       return info
     end # of interpret_association_request
 
-
     # Decode the received command/data binary string, and interpret its content.
     # Decoding of data fragment will depend on the explicitness of the transmission.
-    def interpret_command_and_data(message, file = nil)
+    #
+    def interpret_command_and_data(message, file=nil)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
       # Length (of remaining PDV data) (4 bytes)
@@ -794,6 +795,7 @@ module DICOM
       last_index = info[:presentation_data_value_length] + msg.index
       # Presentation context ID (1 byte)
       info[:presentation_context_id] = msg.decode(1, "BY")
+      @presentation_context_id = info[:presentation_context_id]
       # Flags (1 byte)
       info[:presentation_context_flag] = msg.decode(1, "HEX") # "03" for command (last fragment), "02" for data
       # Apply the proper transfer syntax for this presentation context:
@@ -802,7 +804,7 @@ module DICOM
       msg.set_endian(@data_endian)
       # We will put the results in a hash:
       results = Hash.new
-      if info[:presentation_context_flag] == "03"
+      if info[:presentation_context_flag] == COMMAND_LAST_FRAGMENT
         # COMMAND, LAST FRAGMENT:
         while msg.index < last_index do
           # Tag (4 bytes)
@@ -825,22 +827,20 @@ module DICOM
         end
         # The results hash is put in an array along with (possibly) other results:
         info[:results] = results
+        # Store the results in an instance variable (to be used later when sending a receipt for received data):
+        @command_request = results
         # Check if the command fragment indicates that this was the last of the response fragments for this query:
         status = results["0000,0900"]
         if status
           # Note: This method will also stop the packet receiver if indicated by the status mesasge.
           process_status(status)
         end
-      elsif info[:presentation_context_flag] == "00" or info[:presentation_context_flag] == "02"
+      elsif info[:presentation_context_flag] == DATA_MORE_FRAGMENTS or info[:presentation_context_flag] == DATA_LAST_FRAGMENT
         # DATA FRAGMENT:
         # If this is a file transmission, we will delay the decoding for later:
         if file
           # Just store the binary string:
           info[:bin] = msg.rest_string
-          # Abort the listening if this is last data fragment:
-          if info[:presentation_context_flag] == "02"
-            stop_receiving
-          end
         else
           # Decode data elements:
           while msg.index < last_index do
@@ -872,6 +872,8 @@ module DICOM
           # The results hash is put in an array along with (possibly) other results:
           info[:results] = results
         end
+        # If this was the last data fragment, we need to send a receipt:
+        handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT
       else
         # Unknown.
         add_error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
@@ -883,8 +885,8 @@ module DICOM
       return info
     end
 
-
     # Decode the binary string received in the release request, and interpret its content.
+    #
     def interpret_release_request(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
@@ -895,8 +897,8 @@ module DICOM
       return info
     end
 
-
     # Decode the binary string received in the release response, and interpret its content.
+    #
     def interpret_release_response(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
@@ -907,14 +909,14 @@ module DICOM
       return info
     end
 
-
-    # Handle multiple incoming transmissions and return the interpreted, received data.
-    def receive_multiple_transmissions(session, file = nil)
+    # Handles multiple incoming transmissions and return the interpreted, received data.
+    #
+    def receive_multiple_transmissions(file=nil)
       @listen = true
       segments = Array.new
       while @listen
         # Receive data and append the current data to our segments array, which will be returned.
-        data = receive_transmission(session, @min_length)
+        data = receive_transmission(@min_length)
         current_segments = interpret(data, file)
         if current_segments
           current_segments.each do |cs|
@@ -926,20 +928,35 @@ module DICOM
       return segments
     end
 
-
-    # Handle an expected single incoming transmission and return the interpreted, received data.
-    def receive_single_transmission(session)
+    # Handles an expected single incoming transmission and return the interpreted, received data.
+    #
+    def receive_single_transmission
       min_length = 8
-      data = receive_transmission(session, min_length)
+      data = receive_transmission(min_length)
       segments = interpret(data)
       segments << {:valid => false} unless segments.length > 0
       return segments
     end
 
+    # Sets the session of this Link instance (used when this session is already established externally).
+    def set_session(session)
+      @session = session
+    end
+
+    # Establishes a new session with a remote network host, using the specified adress and port.
+    def start_session(adress, port)
+      @session = TCPSocket.new(adress, port)
+    end
+
+    # Ends the current session.
+    def stop_session
+      @session.close unless @session.closed?
+    end
 
     # Send the encoded binary string (package) to its destination.
-    def transmit(session)
-      session.send(@outgoing.string, 0)
+    #
+    def transmit
+      @session.send(@outgoing.string, 0)
     end
 
 
@@ -949,21 +966,22 @@ module DICOM
 
     # Adds a warning or error message to the instance array holding messages,
     # and if verbose variable is true, prints the message as well.
+    #
     def add_error(error)
       puts error if @verbose
       @errors << error
     end
 
-
     # Adds a notice (information regarding progress or successful communications) to the instance array,
     # and if verbosity is set for these kinds of messages, prints it to the screen as well.
+    #
     def add_notice(notice)
       puts notice if @verbose
       @notices << notice
     end
 
-
     # Builds the application context that is part of the association request.
+    #
     def append_application_context(ac_uid)
       # Application context item type (1 byte)
       @outgoing.encode_last("10", "HEX")
@@ -975,8 +993,8 @@ module DICOM
       @outgoing.encode_last(ac_uid, "STR")
     end
 
-
     # Build the binary string that makes up the header part (part of the association request).
+    #
     def append_association_header(pdu, called_ae)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
@@ -997,9 +1015,9 @@ module DICOM
       append_header(pdu)
     end
 
-
     # Adds the header bytes to the outgoing, binary string (this part has the same structure for all dicom network messages)
     # PDU: "01", "02", etc..
+    #
     def append_header(pdu)
       # Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
@@ -1009,9 +1027,9 @@ module DICOM
       @outgoing.encode_first(pdu, "HEX")
     end
 
-
     # Build the binary string that makes up the presentation context part (part of the association request).
     # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
+    #
     def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result=ACCEPTANCE)
       # One presentation context for each abstract syntax:
       abstract_syntaxes.each_with_index do |as, index|
@@ -1075,8 +1093,8 @@ module DICOM
       end
     end
 
-
     # Adds the binary string that makes up the user information (part of the association request).
+    #
     def append_user_information(ui)
       # USER INFORMATION:
       # User information item type (1 byte)
@@ -1104,9 +1122,9 @@ module DICOM
       end
     end
 
-
     # Process the value of the reason byte (in an association abort).
     # This will provide information on what is the reason for the error.
+    #
     def process_reason(reason)
       case reason
         when "00"
@@ -1126,9 +1144,9 @@ module DICOM
       end
     end
 
-
     # Process the value of the result byte (in the association response).
     # Something is wrong if result is different from 0.
+    #
     def process_result(result)
       unless result == 0
         # Analyse the result and report what is wrong:
@@ -1147,9 +1165,9 @@ module DICOM
       end
     end
 
-
     # Process the value of the source byte (in an association abort).
     # This will provide information on who is the source of the error.
+    #
     def process_source(source)
       if source == "00"
         add_error("Warning: Connection has been aborted by the service provider because of an error by the service user (client side).")
@@ -1160,16 +1178,16 @@ module DICOM
       end
     end
 
-
     # Process the value of the status tag 0000,0900 received in the command fragment.
     # Note: The status tag has vr 'US', and the status as reported here is therefore a number.
     # In the official DICOM documents however, the value of the various status options is given in hex format.
     # Resources: DICOM PS3.4 Annex Q 2.1.1.4, DICOM PS3.7 Annex C 4.
+    #
     def process_status(status)
       case status
         when 0 # "0000"
           # Last fragment (Break the while loop that listens continuously for incoming packets):
-          add_notice("Receipt for successful execution of the desired request has been received. Closing communication.")
+          add_notice("Receipt for successful execution of the desired operation has been received. Closing communication.")
           stop_receiving
         when 42752 # "a700"
           # Failure: Out of resources. Related fields: 0000,0902
@@ -1200,19 +1218,19 @@ module DICOM
       end
     end
 
-
     # Handles an incoming transmission.
     # Optional: Specify a minimum length of the incoming transmission. (If a message is received
     # which is shorter than this limit, the method will keep listening for more incoming packets to append)
-    def receive_transmission(session, min_length=0)
-      data = receive_transmission_data(session)
+    #
+    def receive_transmission(min_length=0)
+      data = receive_transmission_data
       # Check the nature of the received data variable:
       if data
         # Sometimes the incoming transmission may be broken up into smaller pieces:
         # Unless a short answer is expected, we will continue to listen if the first answer was too short:
         unless min_length == 0
           if data.length < min_length
-            addition = receive_transmission_data(session)
+            addition = receive_transmission_data
             data = data + addition if addition
           end
         end
@@ -1224,13 +1242,13 @@ module DICOM
       return data
     end
 
-
     # Receives the incoming transmission data.
-    def receive_transmission_data(session)
+    #
+    def receive_transmission_data
       data = false
       t1 = Time.now.to_f
       @receive = true
-      thr = Thread.new{ data = session.recv(@max_receive_size); @receive = false }
+      thr = Thread.new{ data = @session.recv(@max_receive_size); @receive = false }
       while @receive
         if (Time.now.to_f - t1) > @timeout
           Thread.kill(thr)
@@ -1241,22 +1259,22 @@ module DICOM
       return data
     end
 
-
-    # Some default values.
+    # Sets some default values.
+    #
     def set_default_values
       # Default endianness for network transmissions is Big Endian:
       @net_endian = true
       # Default endianness of data is little endian:
       @data_endian = false
       # It may turn out to be unncessary to define the following values at this early stage.
-      # Explicitness
-      @explicit = true
+      # Explicitness:
+      @explicit = false
       # Transfer syntax:
       set_transfer_syntax(IMPLICIT_LITTLE_ENDIAN)
     end
 
-
     # Set instance variables related to the transfer syntax.
+    #
     def set_transfer_syntax(value)
       @transfer_syntax = value
       # Query the library with our particular transfer syntax string:
@@ -1266,8 +1284,8 @@ module DICOM
       end
     end
 
-
     # Set user information [item type code, vr/type, value]
+    #
     def set_user_information_array(info = nil)
       @user_information = [
         ["51", "UL", @max_package_size], # Max PDU Length
@@ -1308,15 +1326,14 @@ module DICOM
       end
     end
 
-
     # Breaks the loops that listen for incoming packets by changing a couple of instance variables.
     # This method is called by the various methods that interpret incoming data when they have verified that
     # the entire message has been received, or when a timeout is reached.
+    #
     def stop_receiving
       @listen = false
       @receive = false
     end
-
 
   end # of class
 end # of module

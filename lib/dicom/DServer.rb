@@ -137,52 +137,50 @@ module DICOM
           Thread.start(@scp.accept) do |session|
             # Initialize the network package handler for this session:
             link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose, :file_handler => @file_handler)
+            link.set_session(session)
             add_notice("Connection established (name: #{session.peeraddr[2]}, ip: #{session.peeraddr[3]})")
             # Receive an incoming message:
-            #segments = link.receive_single_transmission(session)
-            segments = link.receive_multiple_transmissions(session)
+            segments = link.receive_multiple_transmissions
             info = segments.first
             # Interpret the received message:
             if info[:valid]
               association_error = check_association_request(info)
               unless association_error
                 info, some_approved, test_only = process_syntax_requests(link, info)
-                link.handle_association_accept(session, info)
+                link.handle_association_accept(info)
                 if some_approved
                   add_notice("An incoming association request has been accepted.")
                   if test_only
                     # Verification SOP Class (used for testing connections):
-                    link.handle_release(session)
+                    link.handle_release
                   else
                     # Process the incoming data:
-                    success, message = link.handle_incoming_data(session, path)
+                    success, message = link.handle_incoming_data(path)
                     if success
                       add_notice(message)
-                      # Send a receipt for received data:
-                      link.handle_response(session)
                     else
                       # Something has gone wrong:
                       add_error(message)
                     end
                     # Release the connection:
-                    link.handle_release(session)
+                    link.handle_release
                   end
                 else
                   # No abstract syntaxes in the incoming request were accepted:
                   add_notice("An association was negotiated, but none of its presentation contexts were accepted. (#{abstract_syntax})")
                   # Since the requested abstract syntax was not accepted, the association must be released.
-                  link.handle_release(session)
+                  link.handle_release
                 end
               else
                 # The incoming association was not formally correct.
-                link.handle_rejection(session)
+                link.handle_rejection
               end
             else
               # The incoming message was not recognised as a valid DICOM message. Abort:
-              link.handle_abort(session)
+              link.handle_abort
             end
             # Terminate the connection:
-            session.close unless session.closed?
+            link.stop_session
             add_notice("Connection closed.")
             add_notice("*********************************")
           end

@@ -9,7 +9,7 @@ module DICOM
     attr_accessor :ae, :host_ae, :host_ip, :max_package_size, :port, :timeout, :verbose
     attr_reader :command_results, :data_results, :errors, :notices
 
-    # Initialize the instance with a host adress and a port number.
+    # Initializes the DClient instance with a host adress and a port number.
     #
     def initialize(host_ip, port, options={})
       require 'socket'
@@ -28,7 +28,6 @@ module DICOM
       @errors = Array.new # errors and warnings are put in this array
       @notices = Array.new # information on successful transmissions are put in this array
       # Variables used for monitoring state of transmission:
-      @connection = nil # TCP connection status
       @association = nil # DICOM Association status
       @request_approved = nil # Status of our DICOM request
       @release = nil # Status of received, valid release response
@@ -212,9 +211,9 @@ module DICOM
       @request_approved = false
       # Initiate the association:
       @link.build_association_request(@application_context_uid, @abstract_syntaxes, @transfer_syntax, @user_information)
-      @connection = TCPSocket.new(@host_ip, @port)
-      @link.transmit(@connection)
-      info = @link.receive_multiple_transmissions(@connection).first
+      @link.start_session(@host_ip, @port)
+      @link.transmit
+      info = @link.receive_multiple_transmissions.first
       # Interpret the results:
       if info[:valid]
         if info[:pdu] == "02"
@@ -231,22 +230,23 @@ module DICOM
     end
 
     # Handle a release request and its response, as well as closing the TCP connection.
+    # FIXME: Not a big deal, but: It seems in some circumstances, the release request is sent too soon, causing the scp not to react to it with a release response.
     #
     def establish_release
       @release = false
       if @abort
-        @connection.close unless @connection.closed?
+        @link.stop_session
         add_notice("Association has been closed. (#{host_ae}, #{host_ip})")
       else
-        unless @connection.closed?
+        unless @link.session.closed?
           @link.build_release_request
-          @link.transmit(@connection)
-          info = @link.receive_single_transmission(@connection).first
-          @connection.close
+          @link.transmit
+          info = @link.receive_single_transmission.first
+          @link.stop_session
           if info[:pdu] == "06"
             add_notice("Association released properly from host #{host_ae} (#{host_ip}).")
           else
-            add_error("Association was NOT released properly for some reason from host #{host_ae} (#{host_ip})!")
+            add_error("Association released from host #{host_ae} (#{host_ip}) (But release response was not received).")
           end
         else
           add_error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
@@ -304,12 +304,12 @@ module DICOM
           flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
-          @link.transmit(@connection)
+          @link.transmit
           @link.build_data_fragment(@data_elements)
-          @link.transmit(@connection)
+          @link.transmit
           # A query response will typically be sent in multiple, separate packets.
           # Listen for incoming responses and interpret them individually, until we have received the last command fragment.
-          segments = @link.receive_multiple_transmissions(@connection)
+          segments = @link.receive_multiple_transmissions
           process_returned_data(segments)
         end
         # Close the DICOM link:
@@ -329,14 +329,14 @@ module DICOM
           flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
-          @link.transmit(@connection)
+          @link.transmit
           @link.build_data_fragment(@data_elements) # (uses flag = 02)
-          @link.transmit(@connection)
+          @link.transmit
           # Listen for incoming file data:
-          success = @link.handle_incoming_data(@connection, path)
+          success = @link.handle_incoming_data(path)
           if success
             # Send confirmation response:
-            @link.handle_response(@connection)
+            @link.handle_response
           end
         end
         # Close the DICOM link:
@@ -356,12 +356,12 @@ module DICOM
           flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
-          @link.transmit(@connection)
+          @link.transmit
           flags = "02"
           @link.build_data_fragment(@data_elements)
-          @link.transmit(@connection)
+          @link.transmit
           # Receive confirmation response:
-          segments = @link.receive_single_transmission(@connection)
+          segments = @link.receive_single_transmission
           process_returned_data(segments)
         end
         # Close the DICOM link:
@@ -376,7 +376,7 @@ module DICOM
       objects.each_with_index do |obj, index|
         # Gather necessary information from the object (SOP Class & Instance UID):
         modality = obj.value("0008,0016")
-        instance = obj.value("0008,0018") # SOP Instance UID
+        instance = obj.value("0008,0018")
         if modality and instance
           # Only send the image if its modality has been accepted by the receiver:
           if @approved_syntaxes[modality]
@@ -394,24 +394,24 @@ module DICOM
             max_header_length = 14
             data_packages = obj.encode_segments(@max_pdu_length - max_header_length)
             @link.build_command_fragment(pdu_type, presentation_context_id, flags, @command_elements)
-            @link.transmit(@connection)
+            @link.transmit
             # Transmit all but the last data strings:
             last_data_package = data_packages.pop
             flags = "00"
             data_packages.each do |data_package|
               @link.build_storage_fragment(pdu_type, presentation_context_id, flags, data_package)
-              @link.transmit(@connection)
+              @link.transmit
             end
             # Transmit the last data string:
             flags = "02"
             @link.build_storage_fragment(pdu_type, presentation_context_id, flags, last_data_package)
-            @link.transmit(@connection)
+            @link.transmit
             # Receive confirmation response:
-            segments = @link.receive_single_transmission(@connection)
+            segments = @link.receive_single_transmission
             process_returned_data(segments)
           end
         else
-          add_error("Error: Unable to extract SOP Class UID and SOP Instance UID for this DICOM object. File will not be sent to its destination.")
+          add_error("Error: Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
         end
       end
     end
@@ -488,7 +488,7 @@ module DICOM
     def set_command_fragment_get
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
-        ["0000,0100", "US", 16], # Command Field: 16 (C-GET-RQ)
+        ["0000,0100", "US", C_GET_RQ],
         ["0000,0600", "AE", @ae], # Destination is ourselves
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", 1] # Data Set Type: 1
@@ -501,8 +501,8 @@ module DICOM
     def set_command_fragment_find
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
-        ["0000,0100", "US", 32], # Command Field: 32 (C-FIND-RQ)
-        ["0000,0110", "US", 1], # Message ID: 1
+        ["0000,0100", "US", C_FIND_RQ],
+        ["0000,0110", "US", DEFAULT_MESSAGE_ID],
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", 1] # Data Set Type: 1
       ]
@@ -513,9 +513,9 @@ module DICOM
     def set_command_fragment_move(destination)
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
-        ["0000,0100", "US", 33], # Command Field: 33 (C-MOVE-RQ)
-        ["0000,0110", "US", 1], # Message ID: 1
-        ["0000,0600", "AE", destination], # Move destination
+        ["0000,0100", "US", C_MOVE_RQ],
+        ["0000,0110", "US", DEFAULT_MESSAGE_ID],
+        ["0000,0600", "AE", destination],
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", 1] # Data Set Type: 1
       ]
@@ -526,8 +526,8 @@ module DICOM
     def set_command_fragment_store(modality, instance, message_id)
       @command_elements = [
         ["0000,0002", "UI", modality], # Affected SOP Class UID
-        ["0000,0100", "US", 1], # Command Field: 1 (C-STORE-RQ)
-        ["0000,0110", "US", message_id], # Message ID: 1
+        ["0000,0100", "US", C_STORE_RQ],
+        ["0000,0110", "US", message_id],
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", 1], # Data Set Type: 1
         ["0000,1000", "UI", instance] # Affected SOP Instance UID

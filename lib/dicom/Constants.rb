@@ -46,6 +46,33 @@ module DICOM
   ACCEPTANCE = 0
   ABSTRACT_SYNTAX_REJECTED = 3
   TRANSFER_SYNTAX_REJECTED = 4
+  
+  # Network transmission result codes:
+  SUCCESS = 0
+  
+  # Network Command Element codes:
+  C_STORE_RQ = 1 # (encodes to 0001H as US)
+  C_GET_RQ = 16
+  C_FIND_RQ = 32
+  C_MOVE_RQ = 33
+  C_STORE_RSP = 32769 # (encodes to 8001H as US)
+  NO_DATA_SET_PRESENT = 257 # (encodes to 0101H as US)
+  DEFAULT_MESSAGE_ID = 1
+  
+  # Flags:
+  DATA_MORE_FRAGMENTS = "00"
+  COMMAND_MORE_FRAGMENTS = "01"
+  DATA_LAST_FRAGMENT = "02"
+  COMMAND_LAST_FRAGMENT = "03"
+  
+  # PDUs:
+  PDU_ASSOCIATION_REQUEST = "01"
+  PDU_ASSOCIATION_ACCEPT = "02"
+  PDU_ASSOCIATION_REJECT = "03"
+  PDU_DATA = "04"
+  PDU_RELEASE_REQUEST = "05"
+  PDU_RELEASE_RESPONSE = "06"
+  PDU_ABORT = "07"
 
   # System (CPU) Endianness:
   x = 0xdeadbeef
