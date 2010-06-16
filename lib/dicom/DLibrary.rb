@@ -17,7 +17,6 @@ module DICOM
       @uid = Dictionary.load_uid
     end
 
-
     # Checks whether a given string is a valid transfer syntax or not.
     def check_ts_validity(uid)
       result = false
@@ -31,6 +30,20 @@ module DICOM
       return result
     end
 
+    # Extracts all transfer syntaxes and SOP Classes from the Dictionary and returns them in two separate Hashes.
+    # Both Hashes have UIDs as keys and their descriptions as values.
+    def extract_transfer_syntaxes_and_sop_classes
+      transfer_syntaxes = Hash.new
+      sop_classes = Hash.new
+      @uid.each_pair do |key, value|
+        if value[1] == "Transfer Syntax"
+          transfer_syntaxes[key] = value[0]
+        elsif value[1] == "SOP Class"
+          sop_classes[key] = value[0]
+        end
+      end
+      return transfer_syntaxes, sop_classes
+    end
 
     # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
     def get_compression(uid)
@@ -46,7 +59,6 @@ module DICOM
       end
       return result
     end
-
 
     # Returns data element name and value representation from the dictionary unless the data element
     # is private. If a non-private tag is not recognized, "Unknown Name" and "UN" is returned.
@@ -106,7 +118,6 @@ module DICOM
       return name, vr
     end
 
-
     # Returns the tag that matches the supplied data element name, or if a tag is supplied, return that tag.
     # (This method may be considered for removal: Does the usefulnes of being able to create a tag by Name,
     # outweigh the performance impact of having this method?)
@@ -126,6 +137,12 @@ module DICOM
       return tag
     end
 
+    # Returns the description/name of a specified UID (i.e. a transfer syntax or SOP class).
+    def get_syntax_description(uid)
+      value = @uid[uid]
+      value = value[0] if value
+      return value
+    end
 
     # Returns the name/description corresponding to a given UID.
     def get_uid(uid)
@@ -138,7 +155,6 @@ module DICOM
       end
       return name
     end
-
 
     # Checks the Transfer Syntax UID and return the encoding settings associated with this value.
     def process_transfer_syntax(value)
