@@ -2,7 +2,7 @@
 
 # The purpose of this file is to make it very easy for users to customise the way
 # DICOM files are handled when they are received through the network.
-# The default behaviour is to save the file to disk using a folder structure determined by the file's DICOM tags.
+# The default behaviour is to save the files to disk using a folder structure determined by the file's DICOM tags.
 # Some suggested alternatives:
 # - Analyzing tags and/or image data to determine further actions.
 # - Modify the DICOM object before it is saved to disk.
@@ -14,36 +14,82 @@
 module DICOM
 
   # This class handles DICOM files that have been received through network communication.
+  #
   class FileHandler
 
-    # Handles the reception of a DICOM file.
-    # Default action: Save to disk.
-    # Modify this method if you want a different behaviour!
-    def self.receive_file(obj, path_prefix, transfer_syntax)
-      # Did we receive a valid DICOM file?
-      if obj.read_success
-        # File name is set using the SOP Instance UID
-        file_name = obj.value("0008,0018") || "no_SOP_UID.dcm"
-        # File will be saved with the following path:
-        # path_prefix/<PatientID>/<StudyDate>/<Modality>/
-        folders = Array.new(3)
-        folders[0] = obj.value("0010,0020") || "PatientID"
-        folders[1] = obj.value("0008,0020") || "StudyDate"
-        folders[2] = obj.value("0008,0060") || "Modality"
-        local_path = folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
-        full_path = path_prefix + local_path
-        # Save the DICOM object to disk:
-        obj.write(full_path, :transfer_syntax => transfer_syntax)
-        # As the file has been received successfully, set the success boolean and a corresponding 'success string':
-        success = true
-        message = "DICOM file saved to: #{full_path}"
-      else
-        # Received data was not successfully read as a DICOM file.
-        success = false
-        message = "Error: The received file was not successfully parsed as a DICOM object."
+    # Saves a single DICOM object to file.
+    # Modify this method if you want to change the way your server saves incoming files.
+    #
+    def self.save_file(path_prefix, obj, transfer_syntax)
+      # File name is set using the SOP Instance UID
+      file_name = obj.value("0008,0018") || "missing_SOP_UID.dcm"
+      # File will be saved with the following path:
+      # path_prefix/<PatientID>/<StudyDate>/<Modality>/
+      folders = Array.new(3)
+      folders[0] = obj.value("0010,0020") || "PatientID"
+      folders[1] = obj.value("0008,0020") || "StudyDate"
+      folders[2] = obj.value("0008,0060") || "Modality"
+      local_path = folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
+      full_path = path_prefix + local_path
+      # Save the DICOM object to disk:
+      obj.write(full_path, :transfer_syntax => transfer_syntax)
+      message = "DICOM file saved to: #{full_path}"
+      return message
+    end
+
+    # Handles the reception of a series of DICOM objects received in a single association.
+    # Default action: Pass each file to the file saving method.
+    # Modify this method if you want to change the way your server handles incoming file series.
+    #
+    def self.receive_files(path, objects, transfer_syntaxes)
+      all_success = true
+      successful = 0
+      too_short = 0
+      parse_fail = 0
+      handle_fail = 0
+      total = objects.length
+      message = ""
+      messages = Array.new
+      # Process each DICOM object:
+      objects.each_index do |i|
+        if objects[i].length > 8
+          # Parse the received data stream and load it as a DICOM object:
+          obj = DObject.new(objects[i], :bin => true, :syntax => transfer_syntaxes[i])
+          if obj.read_success
+            begin
+              message = self.save_file(path, obj, transfer_syntaxes[i])
+              successful += 1
+            rescue
+              handle_fail += 1
+              all_success = false
+              messages << "Error: Saving file failed!"
+            end
+          else
+            parse_fail += 1
+            all_success = false
+            messages << "Error: Invalid DICOM data encountered: The DICOM data string could not be parsed successfully."
+          end
+        else
+          too_short += 1
+          all_success = false
+          messages << "Error: Invalid data encountered: The data was too small to be a valid DICOM file."
+        end
       end
-      # A boolean indicating success/failure, and a message string must be returned:
-      return success, message
+      # Create a summary status message, when multiple files have been received:
+      if total > 1
+        if successful == total
+          messages << "All #{total} DICOM files received successfully."
+        else
+          if successful == 0
+            messages << "All #{total} received DICOM files failed!"
+          else
+            messages << "Only #{successful} of #{total} DICOM files received successfully!"
+          end
+        end
+      else
+        messages = [message] if all_success
+      end
+      return all_success, messages
     end
 
   end # of class

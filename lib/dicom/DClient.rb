@@ -246,7 +246,7 @@ module DICOM
           if info[:pdu] == "06"
             add_notice("Association released properly from host #{host_ae} (#{host_ip}).")
           else
-            add_error("Association released from host #{host_ae} (#{host_ip}) (But release response was not received).")
+            add_error("Association released from host #{host_ae} (#{host_ip}), but release response was not received.")
           end
         else
           add_error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
