@@ -138,7 +138,7 @@ module DICOM
             # Initialize the network package handler for this session:
             link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose, :file_handler => @file_handler)
             link.set_session(session)
-            add_notice("Connection established (name: #{session.peeraddr[2]}, ip: #{session.peeraddr[3]})")
+            add_notice("Connection established with:  #{session.peeraddr[2]}  (IP:  #{session.peeraddr[3]})")
             # Receive an incoming message:
             segments = link.receive_multiple_transmissions
             info = segments.first
@@ -146,15 +146,23 @@ module DICOM
             if info[:valid]
               association_error = check_association_request(info)
               unless association_error
-                info, some_approved, test_only = process_syntax_requests(link, info)
+                info, approved, rejected, test_only = process_syntax_requests(link, info)
                 link.handle_association_accept(info)
-                if some_approved
-                  add_notice("An incoming association request has been accepted.")
+                if approved > 0
+                  if approved == 1
+                    add_notice("Accepted the association request with context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                  else
+                    if rejected == 0
+                      add_notice("Accepted all #{approved} proposed contexts in the association request.")
+                    else
+                      add_notice("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
+                    end
+                  end
                   if test_only
                     # Verification SOP Class (used for testing connections):
-                    link.handle_release
+                    link.await_release
                   else
-                    # Process the incoming data:
+                    # Process the incoming data. This method will also take care of releasing the association:
                     success, message = link.handle_incoming_data(path)
                     if success
                       add_notice(message)
@@ -162,14 +170,16 @@ module DICOM
                       # Something has gone wrong:
                       add_error(message)
                     end
-                    # Release the connection:
-                    link.handle_release
                   end
                 else
                   # No abstract syntaxes in the incoming request were accepted:
-                  add_notice("An association was negotiated, but none of its presentation contexts were accepted. (#{abstract_syntax})")
+                  if rejected == 1
+                    add_notice("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                  else
+                    add_notice("Rejected all #{rejected} proposed contexts in the association request.")
+                  end
                   # Since the requested abstract syntax was not accepted, the association must be released.
-                  link.handle_release
+                  link.await_release
                 end
               else
                 # The incoming association was not formally correct.
@@ -181,7 +191,6 @@ module DICOM
             end
             # Terminate the connection:
             link.stop_session
-            add_notice("Connection closed.")
             add_notice("*********************************")
           end
         end
@@ -240,7 +249,8 @@ module DICOM
     #
     def process_syntax_requests(link, info)
       # A couple of variables used to analyse the properties of the association:
-      some_approved = false
+      approved = 0
+      rejected = 0
       test_only = true
       # Loop through the presentation contexts:
       info[:pc].each do |pc|
@@ -260,18 +270,19 @@ module DICOM
             pc[:result] = ACCEPTANCE
             pc[:selected_transfer_syntax] = accepted_transfer_syntax
             # Update our status variables:
-            some_approved = true
+            approved += 1
             test_only = false unless pc[:abstract_syntax] == VERIFICATION_SOP
           else
             # No transfer syntax was accepted for this particular presentation context:
             pc[:result] = TRANSFER_SYNTAX_REJECTED
+            rejected += 1
           end
         else
           # Abstract syntax rejected:
           pc[:result] = ABSTRACT_SYNTAX_REJECTED
         end
       end
-      return info, some_approved, test_only
+      return info, approved, rejected, test_only
     end
 
     # Set the default valid abstract syntaxes and transfer syntaxes for our SCP.

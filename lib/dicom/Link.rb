@@ -38,15 +38,31 @@ module DICOM
       @outgoing = Stream.new(string=nil, endian=true)
     end
 
-    # Build the abort message which is transmitted when the server wishes to (abruptly) abort the connection.
-    # For the moment: NO REASONS WILL BE PROVIDED. (and source of problems will always be set as client side)
+    # Waits for SCU to issue a release request, which is then answered by a release response.
+    #
+    def await_release
+      segments = receive_single_transmission
+      info = segments.first
+      if info[:pdu] != PDU_RELEASE_REQUEST
+        # For some reason we didnt get our expected release request. Determine why:
+        if info[:valid]
+          add_error("Unexpected message type received (PDU: #{info[:pdu]}). Expected a release request. Closing the connection.")
+          handle_abort(false)
+        else
+          add_error("Timed out while waiting for a release request. Closing the connection.")
+        end
+        stop_session
+      end
+    end
+
+    # Builds the abort message which is transmitted when the server wishes to (abruptly) abort the connection.
+    # For the moment: NO REASONS WILL BE PROVIDED (and source of problems will always be set as client side).
     #
     def build_association_abort
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      pdu = "07"
       # Reserved (2 bytes)
       @outgoing.encode_last("00"*2, "HEX")
       # Source (1 byte)
@@ -55,18 +71,17 @@ module DICOM
       # Reason/Diag. (1 byte)
       reason = "00" # (Reason not specified)
       @outgoing.encode_last(reason, "HEX")
-      append_header(pdu)
+      append_header(PDU_ABORT)
     end
 
-    # Build the binary string that will be sent as TCP data in the Association accept response.
+    # Builds the binary string that will be sent as TCP data in the Association accept response.
     #
     def build_association_accept(info, ac_uid, ui)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      # Set item types (pdu and presentation context):
-      pdu = "02"
+      # Set item type (presentation context):
       pc_type = "21"
       # No abstract syntax in association response. To make this work with the method that
       # encodes the presentation context, we pass on a one-element array containing nil).
@@ -85,10 +100,10 @@ module DICOM
       end
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
-      append_association_header(pdu, info[:called_ae])
+      append_association_header(PDU_ASSOCIATION_ACCEPT, info[:called_ae])
     end
 
-    # Build the binary string that will be sent as TCP data in the association rejection.
+    # Builds the binary string that will be sent as TCP data in the association rejection.
     # NB: For the moment, this method will only customize the "reason" value.
     # For a list of error codes, see the official dicom PS3.8 document, page 41.
     #
@@ -97,7 +112,6 @@ module DICOM
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      pdu = "03"
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # Result (1 byte)
@@ -108,18 +122,17 @@ module DICOM
       # Reason (1 byte)
       reason = info[:reason]
       @outgoing.encode_last(reason, "HEX")
-      append_header(pdu)
+      append_header(PDU_ASSOCIATION_REJECT)
     end
 
-    # Build the binary string that will be sent as TCP data in the Association request.
+    # Builds the binary string that will be sent as TCP data in the Association request.
     #
     def build_association_request(ac_uid, as, ts, ui)
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      # Set item types (pdu and presentation context):
-      pdu = "01"
+      # Set item type (presentation context):
       pc = "20"
       # Note: The order of which these components are built is not arbitrary.
       # (The first three are built 'in order of appearance', the header is built last, but is put first in the message)
@@ -127,10 +140,10 @@ module DICOM
       append_presentation_contexts(as, pc, ts)
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
-      append_association_header(pdu, @host_ae)
+      append_association_header(PDU_ASSOCIATION_REQUEST, @host_ae)
     end
 
-    # Build the binary string that will be sent as TCP data in the query command fragment.
+    # Builds the binary string that will be sent as TCP data in the query command fragment.
     #
     def build_command_fragment(pdu, context, flags, command_elements)
       # Little endian encoding:
@@ -173,7 +186,7 @@ module DICOM
       append_header(pdu)
     end
 
-    # Build the binary string that will be sent as TCP data in the query data fragment.
+    # Builds the binary string that will be sent as TCP data in the query data fragment.
     # The style of encoding will depend on whether we have an implicit or explicit transfer syntax.
     #
     def build_data_fragment(data_elements)
@@ -181,7 +194,6 @@ module DICOM
       @outgoing.set_endian(@data_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      pdu = "04"
       # Build the last part first, the Data items:
       data_elements.each do |element|
         # Encode all tags (even tags which are empty):
@@ -214,38 +226,34 @@ module DICOM
       # Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
-      append_header(pdu)
+      append_header(PDU_DATA)
     end
 
-    # Build the binary string that will be sent as TCP data in the association release request:
+    # Builds the binary string that will be sent as TCP data in the association release request:
     #
     def build_release_request
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      pdu = "05"
       # Reserved (4 bytes)
       @outgoing.encode_last("00"*4, "HEX")
-      append_header(pdu)
+      append_header(PDU_RELEASE_REQUEST)
     end
 
-    # Build the binary string that will be sent as TCP data in the association release response.
+    # Builds the binary string that will be sent as TCP data in the association release response.
     #
     def build_release_response
       # Big endian encoding:
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      pdu = "06"
       # Reserved (4 bytes)
       @outgoing.encode_last("00000000", "HEX")
-      append_header(pdu)
+      append_header(PDU_RELEASE_REQUEST)
     end
 
-    # Build the binary string that makes up a storage data fragment.
-    # Typical value: flags = "00" (more fragments following), flags = "02" (last fragment)
-    # pdu = "04", context = "01"
+    # Builds the binary string that makes up the storage data fragment.
     #
     def build_storage_fragment(pdu, context, flags, body)
       # Big endian encoding:
@@ -290,10 +298,10 @@ module DICOM
       return info
     end
 
-    # Handles the abortion of a session, when a non-valid message has been received.
+    # Handles the abortion of a session, when a non-valid or unexpected message has been received.
     #
-    def handle_abort
-      add_notice("An unregonizable (non-DICOM) message was received.")
+    def handle_abort(default_message=true)
+      add_notice("An unregonizable (non-DICOM) message was received.") if default_message
       build_association_abort
       transmit
     end
@@ -326,56 +334,25 @@ module DICOM
       segments.each do |info|
         if info[:valid]
           # Determine if it is command or data:
-          if info[:presentation_context_flag] == "00"
-            # Data (More fragments):
+          if info[:presentation_context_flag] == DATA_MORE_FRAGMENTS
             @data_results << info[:results]
             single_file_data  << info[:bin]
-          elsif info[:presentation_context_flag] == "02"
-            # Data (Last fragment):
+          elsif info[:presentation_context_flag] == DATA_LAST_FRAGMENT
             @data_results << info[:results]
             single_file_data  << info[:bin]
             # Join the recorded data binary strings together to make a DICOM file binary string and put it in our files Array:
             files << single_file_data.join
             single_file_data = Array.new
-          elsif info[:presentation_context_flag] == "03"
-            # Command (Last fragment):
+          elsif info[:presentation_context_flag] == COMMAND_LAST_FRAGMENT
             @command_results << info[:results]
             @presentation_context_id = info[:presentation_context_id] # Does this actually do anything useful?
             file_transfer_syntaxes << @presentation_contexts[info[:presentation_context_id]]
           end
         end
       end
-      # Loop through the received files and process them:
-      success_number = 0
-      message = ""
-      files.each_index do |i|
-        if files[i].length > 8
-          # Read the received data stream and load it as a DICOM object:
-          obj = DObject.new(files[i], :bin => true, :syntax => file_transfer_syntaxes[i])
-          # The actual handling of the DICOM object and (processing, saving, database storage, retransmission, etc)
-          # is handled by the external FileHandler class, in order to make it as easy as possible for users to write
-          # their own customised solutions for handling the incoming DICOM files:
-          success, message = @file_handler.receive_file(obj, path, @transfer_syntax)
-          success_number += 1 if success
-        else
-          # Valid DICOM data not received:
-          success = false
-          message = "Error: Invalid data received (the data was too small to be a valid DICOM file)."
-        end
-      end
-      if files.length > 1
-        if success_number == files.length
-          message = "All #{files.length} DICOM files received successfully."
-        else
-          message = "#{success_number} of #{files.length} DICOM files received successfully."
-        end
-      end
-      if success_number == files.length
-        success = true
-      else
-        success = false
-      end
-      return success, message
+      # Process the received files using the customizable FileHandler class:
+      success, messages = @file_handler.receive_files(path, files, file_transfer_syntaxes)
+      return success, messages
     end
 
     # Handles the rejection of an association, when the formalities of the association is not correct.
@@ -392,16 +369,11 @@ module DICOM
     # Handles the release of an association from the provider side (expects a release request, which it responds to).
     #
     def handle_release
-      segments = receive_single_transmission
-      info = segments.first
-      if info[:pdu] == "05"
-        add_notice("Received a release request. Releasing association.")
-        build_release_response
-        transmit
-      else
-        add_error("Timed out while waiting for a release request. Closing the connection.")
-        stop_session
-      end
+      stop_receiving
+      add_notice("Received a release request. Releasing association.")
+      build_release_response
+      transmit
+      stop_session
     end
 
     # Handles the response (C-STORE-RSP) when a DICOM object, following an initial C-STORE-RQ, has been (successfully) received.
@@ -885,14 +857,14 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the release request, and interpret its content.
+    # Decodes the binary string received in the release request, and completes the release by returning a release response.
     #
     def interpret_release_request(message)
       info = Hash.new
       msg = Stream.new(message, @net_endian)
       # Reserved (4 bytes)
       reserved_bytes = msg.decode(4, "HEX")
-      stop_receiving
+      handle_release
       info[:valid] = true
       return info
     end
@@ -939,16 +911,19 @@ module DICOM
     end
 
     # Sets the session of this Link instance (used when this session is already established externally).
+    #
     def set_session(session)
       @session = session
     end
 
     # Establishes a new session with a remote network host, using the specified adress and port.
+    #
     def start_session(adress, port)
       @session = TCPSocket.new(adress, port)
     end
 
     # Ends the current session.
+    #
     def stop_session
       @session.close unless @session.closed?
     end
@@ -1187,7 +1162,7 @@ module DICOM
       case status
         when 0 # "0000"
           # Last fragment (Break the while loop that listens continuously for incoming packets):
-          add_notice("Receipt for successful execution of the desired operation has been received. Closing communication.")
+          add_notice("Receipt for successful execution of the desired operation has been received.")
           stop_receiving
         when 42752 # "a700"
           # Failure: Out of resources. Related fields: 0000,0902
