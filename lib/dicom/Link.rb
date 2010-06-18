@@ -81,8 +81,6 @@ module DICOM
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      # Set item type (presentation context):
-      pc_type = "21"
       # No abstract syntax in association response. To make this work with the method that
       # encodes the presentation context, we pass on a one-element array containing nil).
       abstract_syntaxes = Array.new(1, nil)
@@ -96,7 +94,7 @@ module DICOM
         result = pc[:result]
         transfer_syntax = pc[:selected_transfer_syntax]
         @presentation_contexts[context_id] = transfer_syntax
-        append_presentation_contexts(abstract_syntaxes, pc_type, transfer_syntax, context_id, result)
+        append_presentation_contexts(abstract_syntaxes, ITEM_PRESENTATION_CONTEXT_RESPONSE, transfer_syntax, context_id, result)
       end
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
@@ -132,12 +130,10 @@ module DICOM
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      # Set item type (presentation context):
-      pc = "20"
       # Note: The order of which these components are built is not arbitrary.
       # (The first three are built 'in order of appearance', the header is built last, but is put first in the message)
       append_application_context(ac_uid)
-      append_presentation_contexts(as, pc, ts)
+      append_presentation_contexts(as, ITEM_PRESENTATION_CONTEXT_REQUEST, ts)
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(PDU_ASSOCIATION_REQUEST, @host_ae)
@@ -509,7 +505,7 @@ module DICOM
       while pc_loop do
         # Item type (1 byte)
         item_type = msg.decode(1, "HEX")
-        if item_type == "21"
+        if item_type == ITEM_PRESENTATION_CONTEXT_RESPONSE
           pc = Hash.new
           pc[:presentation_item_type] = item_type
           # Reserved (1 byte)
@@ -543,7 +539,7 @@ module DICOM
       end
       info[:pc] = presentation_contexts
       # USER INFORMATION:
-      # Item type (1 byte) ("50")
+      # Item type (1 byte)
       info[:user_info_item_type] = msg.decode(1, "HEX")
       # Reserved (1 byte)
       msg.skip(1)
@@ -557,16 +553,16 @@ module DICOM
         # Item length (2 bytes)
         item_length = msg.decode(2, "US")
         case item_type
-          when "51"
+          when ITEM_MAX_LENGTH
             info[:max_pdu_length] = msg.decode(item_length, "UL")
             @max_receive_size = info[:max_pdu_length]
-          when "52"
+          when ITEM_IMPLEMENTATION_UID
             info[:implementation_class_uid] = msg.decode(item_length, "STR")
-          when "53"
+          when ITEM_MAX_OPERATIONS_INVOKED
             # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
             info[:maxnum_operations_invoked] = msg.decode(2, "US")
             info[:maxnum_operations_performed] = msg.decode(2, "US")
-          when "54"
+          when ITEM_ROLE_NEGOTIATION
             # SCP/SCU Role Selection Negotiation (PS 3.7 D.3.3.4)
             # Note: An association response may contain several instances of this item type (each with a different abstract syntax).
             uid_length = msg.decode(2, "US")
@@ -582,7 +578,7 @@ module DICOM
             else
               info[:role_negotiation] = [role]
             end
-          when "55"
+          when ITEM_IMPLEMENTATION_VERSION
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
             # Value (variable length)
@@ -646,7 +642,7 @@ module DICOM
       while pc_loop do
         # Item type (1 byte)
         item_type = msg.decode(1, "HEX")
-        if item_type == "20"
+        if item_type == ITEM_PRESENTATION_CONTEXT_REQUEST
           pc = Hash.new
           pc[:presentation_item_type] = item_type
           # Reserved (1 byte)
@@ -661,7 +657,7 @@ module DICOM
           # A presentation context contains an abstract syntax and one or more transfer syntaxes.
           # ABSTRACT SYNTAX SUB-ITEM:
           # Abstract syntax item type (1 byte)
-          pc[:abstract_syntax_item_type] = msg.decode(1, "HEX") # "30"
+          pc[:abstract_syntax_item_type] = msg.decode(1, "HEX")
           # Reserved (1 byte)
           msg.skip(1)
           # Abstract syntax item length (2 bytes)
@@ -676,7 +672,7 @@ module DICOM
           while ts_loop do
             # Item type (1 byte)
             item_type = msg.decode(1, "HEX")
-            if item_type == "40"
+            if item_type == ITEM_TRANSFER_SYNTAX
               ts = Hash.new
               ts[:transfer_syntax_item_type] = item_type
               # Reserved (1 byte)
@@ -717,15 +713,15 @@ module DICOM
         # Item length (2 bytes)
         item_length = msg.decode(2, "US")
         case item_type
-          when "51"
+          when ITEM_MAX_LENGTH
             info[:max_pdu_length] = msg.decode(item_length, "UL")
-          when "52"
+          when ITEM_IMPLEMENTATION_UID
             info[:implementation_class_uid] = msg.decode(item_length, "STR")
-          when "53"
+          when ITEM_MAX_OPERATIONS_INVOKED
             # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
             info[:maxnum_operations_invoked] = msg.decode(2, "US")
             info[:maxnum_operations_performed] = msg.decode(2, "US")
-          when "54"
+          when ITEM_ROLE_NEGOTIATION
             # SCP/SCU Role Selection Negotiation (PS 3.7 D.3.3.4)
             # Note: An association request may contain several instances of this item type (each with a different abstract syntax).
             uid_length = msg.decode(2, "US")
@@ -741,7 +737,7 @@ module DICOM
             else
               info[:role_negotiation] = [role]
             end
-          when "55"
+          when ITEM_IMPLEMENTATION_VERSION
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
             # Unknown item type:
@@ -959,7 +955,7 @@ module DICOM
     #
     def append_application_context(ac_uid)
       # Application context item type (1 byte)
-      @outgoing.encode_last("10", "HEX")
+      @outgoing.encode_last(ITEM_APPLICATION_CONTEXT, "HEX")
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # Application context item length (2 bytes)
@@ -1002,7 +998,7 @@ module DICOM
       @outgoing.encode_first(pdu, "HEX")
     end
 
-    # Build the binary string that makes up the presentation context part (part of the association request).
+    # Build the binary string that makes up the presentation context part (part of the association request/accept).
     # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
     #
     def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result=ACCEPTANCE)
@@ -1010,7 +1006,7 @@ module DICOM
       abstract_syntaxes.each_with_index do |as, index|
         # PRESENTATION CONTEXT:
         # Presentation context item type (1 byte)
-        @outgoing.encode_last(pc, "HEX") # "20" (request) & "21" (response)
+        @outgoing.encode_last(pc, "HEX")
         # Reserved (1 byte)
         @outgoing.encode_last("00", "HEX")
         # Presentation context item length (2 bytes)
@@ -1043,7 +1039,7 @@ module DICOM
         ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
         if as
           # Abstract syntax item type (1 byte)
-          @outgoing.encode_last("30", "HEX")
+          @outgoing.encode_last(ITEM_ABSTRACT_SYNTAX, "HEX")
           # Reserved (1 byte)
           @outgoing.encode_last("00", "HEX")
           # Abstract syntax item length (2 bytes)
@@ -1056,7 +1052,7 @@ module DICOM
           ts = [ts] if ts.is_a?(String)
           ts.each do |t|
             # Transfer syntax item type (1 byte)
-            @outgoing.encode_last("40", "HEX")
+            @outgoing.encode_last(ITEM_TRANSFER_SYNTAX, "HEX")
             # Reserved (1 byte)
             @outgoing.encode_last("00", "HEX")
             # Transfer syntax item length (2 bytes)
@@ -1073,7 +1069,7 @@ module DICOM
     def append_user_information(ui)
       # USER INFORMATION:
       # User information item type (1 byte)
-      @outgoing.encode_last("50", "HEX")
+      @outgoing.encode_last(ITEM_USER_INFORMATION, "HEX")
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # Encode the user information item values so we can determine the remaining length of this section:
@@ -1263,15 +1259,15 @@ module DICOM
     #
     def set_user_information_array(info = nil)
       @user_information = [
-        ["51", "UL", @max_package_size], # Max PDU Length
-        ["52", "STR", UID],
-        ["55", "STR", NAME]
+        [ITEM_MAX_LENGTH, "UL", @max_package_size],
+        [ITEM_IMPLEMENTATION_UID, "STR", UID],
+        [ITEM_IMPLEMENTATION_VERSION, "STR", NAME]
       ]
       # A bit of a hack to include "asynchronous operations window negotiation" and/or "role negotiation",
       # in cases where this has been included in the association request:
       if info
         if info[:maxnum_operations_invoked]
-          @user_information.insert(2, ["53", "HEX", "00010001"])
+          @user_information.insert(2, [ITEM_MAX_OPERATIONS_INVOKED, "HEX", "00010001"])
         end
         if info[:role_negotiation]
           pos = 3
@@ -1294,7 +1290,7 @@ module DICOM
             else
               msg.encode_last(1, "BY")
             end
-            @user_information.insert(pos, ["54", "STR", msg.string])
+            @user_information.insert(pos, [ITEM_ROLE_NEGOTIATION, "STR", msg.string])
             pos += 1
           end
         end

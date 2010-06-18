@@ -650,9 +650,9 @@ module DICOM
     #
     def set_user_information_array
       @user_information = [
-        ["51", "UL", @max_package_size], # Max PDU Length
-        ["52", "STR", UID], # Implementation UID
-        ["55", "STR", NAME] # Implementation Version (Name & version)
+        [ITEM_MAX_LENGTH, "UL", @max_package_size],
+        [ITEM_IMPLEMENTATION_UID, "STR", UID],
+        [ITEM_IMPLEMENTATION_VERSION, "STR", NAME]
       ]
     end
 

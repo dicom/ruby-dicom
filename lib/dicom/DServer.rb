@@ -138,6 +138,8 @@ module DICOM
             # Initialize the network package handler for this session:
             link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose, :file_handler => @file_handler)
             link.set_session(session)
+            # Note the time of reception as well as who has contacted us:
+            add_notice(Time.now.strftime("%Y-%m-%d  %H:%M:%S"))
             add_notice("Connection established with:  #{session.peeraddr[2]}  (IP:  #{session.peeraddr[3]})")
             # Receive an incoming message:
             segments = link.receive_multiple_transmissions
