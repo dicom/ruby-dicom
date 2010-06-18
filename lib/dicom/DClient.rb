@@ -216,7 +216,7 @@ module DICOM
       info = @link.receive_multiple_transmissions.first
       # Interpret the results:
       if info[:valid]
-        if info[:pdu] == "02"
+        if info[:pdu] == PDU_ASSOCIATION_ACCEPT
           # Values of importance are extracted and put into instance variables:
           @association = true
           @max_pdu_length = info[:max_pdu_length]
@@ -243,7 +243,7 @@ module DICOM
           @link.transmit
           info = @link.receive_single_transmission.first
           @link.stop_session
-          if info[:pdu] == "06"
+          if info[:pdu] == PDU_RELEASE_RESPONSE
             add_notice("Association released properly from host #{host_ae} (#{host_ip}).")
           else
             add_error("Association released from host #{host_ae} (#{host_ip}), but release response was not received.")
@@ -300,10 +300,8 @@ module DICOM
           # Continue with our query, since the request was accepted.
           # Set the query command elements array:
           set_command_fragment_find
-          pdu="04"
-          flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
-          @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
+          @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements)
           @link.transmit
@@ -325,10 +323,8 @@ module DICOM
       if @association
         if @request_approved
           # Continue with our operation, since the request was accepted.
-          pdu="04"
-          flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
-          @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
+          @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements) # (uses flag = 02)
           @link.transmit
@@ -352,12 +348,9 @@ module DICOM
       if @association
         if @request_approved
           # Continue with our operation, since the request was accepted.
-          pdu="04"
-          flags = "03"
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
-          @link.build_command_fragment(pdu, presentation_context_id, flags, @command_elements)
+          @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
-          flags = "02"
           @link.build_data_fragment(@data_elements)
           @link.transmit
           # Receive confirmation response:
@@ -383,8 +376,6 @@ module DICOM
             # Set the command array to be used:
             message_id = index + 1
             set_command_fragment_store(modality, instance, message_id)
-            pdu_type = "04"
-            flags = "03"
             # Find context id and transfer syntax:
             presentation_context_id = @approved_syntaxes[modality][0]
             selected_transfer_syntax = @approved_syntaxes[modality][1]
@@ -393,18 +384,16 @@ module DICOM
             obj.transfer_syntax = selected_transfer_syntax
             max_header_length = 14
             data_packages = obj.encode_segments(@max_pdu_length - max_header_length)
-            @link.build_command_fragment(pdu_type, presentation_context_id, flags, @command_elements)
+            @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
             @link.transmit
             # Transmit all but the last data strings:
             last_data_package = data_packages.pop
-            flags = "00"
             data_packages.each do |data_package|
-              @link.build_storage_fragment(pdu_type, presentation_context_id, flags, data_package)
+              @link.build_storage_fragment(PDU_DATA, presentation_context_id, DATA_MORE_FRAGMENTS, data_package)
               @link.transmit
             end
             # Transmit the last data string:
-            flags = "02"
-            @link.build_storage_fragment(pdu_type, presentation_context_id, flags, last_data_package)
+            @link.build_storage_fragment(PDU_DATA, presentation_context_id, DATA_LAST_FRAGMENT, last_data_package)
             @link.transmit
             # Receive confirmation response:
             segments = @link.receive_single_transmission
@@ -417,7 +406,6 @@ module DICOM
     end
 
     # Processes the presentation contexts received in the association response.
-    # FIXME: Print name of abstract syntax instead of its UID?!
     #
     def process_presentation_context_response(presentation_context)
       # Storing approved syntaxes in an Hash with the syntax as key and the value being an array with presentation context ID and the transfer syntax chosen by the SCP.
@@ -448,8 +436,8 @@ module DICOM
       else
         @request_approved = false
         add_error("One or more of your presentation contexts were denied by host #{@host_ae} (#{@host_ip})!")
-        @approved_syntaxes.each_key {|a| add_error("APPROVED: #{a}")}
-        rejected.each_key {|r| add_error("REJECTED: #{r}")}
+        @approved_syntaxes.each_key {|a| add_error("APPROVED: #{LIBRARY.get_syntax_description(a)}")}
+        rejected.each_key {|r| add_error("REJECTED: #{LIBRARY.get_syntax_description(r)}")}
       end
     end
 
@@ -463,11 +451,9 @@ module DICOM
       segments.each do |info|
         if info[:valid]
           # Determine if it is command or data:
-          if info[:presentation_context_flag] == "03"
-            # Command (last fragment):
+          if info[:presentation_context_flag] == COMMAND_LAST_FRAGMENT
             @command_results << info[:results]
-          elsif info[:presentation_context_flag] == "02"
-            # Data (last fragment)
+          elsif info[:presentation_context_flag] == DATA_LAST_FRAGMENT
             @data_results << info[:results]
           end
         end
