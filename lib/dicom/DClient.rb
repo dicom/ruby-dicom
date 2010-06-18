@@ -9,7 +9,7 @@ module DICOM
     attr_accessor :ae, :host_ae, :host_ip, :max_package_size, :port, :timeout, :verbose
     attr_reader :command_results, :data_results, :errors, :notices
 
-    # Initializes the DClient instance with a host adress and a port number.
+    # Initializes a DClient instance with a host adress and a port number.
     #
     def initialize(host_ip, port, options={})
       require 'socket'
@@ -41,7 +41,7 @@ module DICOM
       @link = Link.new(:ae => @ae, :host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout)
     end
 
-    # Query a service class provider for images that match the specified criteria.
+    # Queries a service class provider for images that match the specified criteria.
     # Example:   find_images("0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844") # (Study Instance UID & Series Instance UID)
     #
     def find_images(options={})
@@ -54,7 +54,7 @@ module DICOM
       return @data_results
     end
 
-    # Query a service class provider for patients that match the specified criteria.
+    # Queries a service class provider for patients that match the specified criteria.
     # Example:   find_patients("0010,0010" => "James*") # (Patient's Name)
     #
     def find_patients(options={})
@@ -67,7 +67,7 @@ module DICOM
       return @data_results
     end
 
-    # Query a service class provider for series that match the specified criteria.
+    # Queries a service class provider for series that match the specified criteria.
     # Example:   find_series("0020,000D" => "1.2.840.1145.342") # (Study Instance UID)
     #
     def find_series(options={})
@@ -80,7 +80,7 @@ module DICOM
       return @data_results
     end
 
-    # Query a service class provider for studies that match the specified criteria.
+    # Queries a service class provider for studies that match the specified criteria.
     # Example:   find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789") # (Study Date & Patient ID)
     #
     def find_studies(options={})
@@ -93,7 +93,7 @@ module DICOM
       return @data_results
     end
 
-    # Retrieve a dicom file from a service class provider (SCP/PACS).
+    # Retrieves a DICOM file from a service class provider (SCP/PACS).
     # Example:  get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
     #
     def get_image(path, options={})
@@ -107,7 +107,8 @@ module DICOM
       perform_get(path)
     end
 
-    # Move an image to a dicom node other than yourself.
+    # Moves a single image to a DICOM node specified by AE title.
+    # Note: This DICOM node must be a third party (not yourself).
     # Example:  move_image("MYDICOM", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
     #
     def move_image(destination, options={})
@@ -121,7 +122,8 @@ module DICOM
       perform_move
     end
 
-    # Move an entire study to a dicom node other than yourself.
+    # Move an entire study to a DICOM node specified by AE title.
+    # Note: This DICOM node must be a third party (not yourself).
     # Example:  move_study("MYDICOM", "0010,0020" => pat_id, "0020,000D" => study_uid)
     #
     def move_study(destination, options={})
@@ -135,7 +137,7 @@ module DICOM
       perform_move
     end
 
-    # Send a DICOM file to a service class provider (SCP/PACS).
+    # Sends a DICOM file to a service class provider (SCP/PACS).
     #
     def send(parameter)
       # Prepare the DICOM object(s):
@@ -158,7 +160,7 @@ module DICOM
       end
     end
 
-    # Tests the connection to the specified host by trying to negotiate an association, then releasing it.
+    # Tests the connection to the specified host by trying to negotiate an association.
     #
     def test
       add_notice("TESTING CONNECTION...")
@@ -203,7 +205,7 @@ module DICOM
       @notices << notice
     end
 
-    # Open a TCP session with a specified server, and handle the association request along with its response.
+    # Opens a TCP session with a specified server, and handles the association request along with its response.
     #
     def establish_association
       # Reset some variables:
@@ -229,7 +231,7 @@ module DICOM
       end
     end
 
-    # Handle a release request and its response, as well as closing the TCP connection.
+    # Handles a release request and its response, as well as closing the TCP connection.
     # FIXME: Not a big deal, but: It seems in some circumstances, the release request is sent too soon, causing the scp not to react to it with a release response.
     #
     def establish_release
@@ -288,7 +290,7 @@ module DICOM
       return objects, abstracts.uniq, status, message
     end
 
-    # Handle the communication involved in DICOM query (C-FIND).
+    # Handles the communication involved in a DICOM query (C-FIND).
     # Build the necessary strings and send the command and data element that makes up the query.
     # Listens for and interpretes the incoming query responses.
     #
@@ -303,7 +305,7 @@ module DICOM
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
-          @link.build_data_fragment(@data_elements)
+          @link.build_data_fragment(@data_elements, presentation_context_id)
           @link.transmit
           # A query response will typically be sent in multiple, separate packets.
           # Listen for incoming responses and interpret them individually, until we have received the last command fragment.
@@ -315,7 +317,7 @@ module DICOM
       end
     end
 
-    # Build and send command & data fragment, then receive the incoming file data.
+    # Builds and sends command & data fragment, then receives the incoming file data.
     #
     def perform_get(path)
       # Open a DICOM link:
@@ -326,7 +328,7 @@ module DICOM
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
-          @link.build_data_fragment(@data_elements) # (uses flag = 02)
+          @link.build_data_fragment(@data_elements, presentation_context_id)
           @link.transmit
           # Listen for incoming file data:
           success = @link.handle_incoming_data(path)
@@ -340,7 +342,7 @@ module DICOM
       end
     end
 
-    # Handle the communication involved in DICOM move request.
+    # Handles the communication involved in DICOM move request.
     #
     def perform_move
       # Open a DICOM link:
@@ -351,7 +353,7 @@ module DICOM
           presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
-          @link.build_data_fragment(@data_elements)
+          @link.build_data_fragment(@data_elements, presentation_context_id)
           @link.transmit
           # Receive confirmation response:
           segments = @link.receive_single_transmission
@@ -441,7 +443,7 @@ module DICOM
       end
     end
 
-    # Process the data that was returned from the interaction with the SCP and make it available to the user.
+    # Processes the data that was returned from the interaction with the SCP and makes it available to the user.
     #
     def process_returned_data(segments)
       # Reset command results arrays:
@@ -460,7 +462,7 @@ module DICOM
       end
     end
 
-    # Reset the values of a array.
+    # Resets the values of an array.
     # It is assumed the array's elements are an array in itself, where element[1] will be reset to an empty string ("").
     #
     def reset(array)
@@ -469,7 +471,7 @@ module DICOM
       end
     end
 
-    # Set command elements used in a C-GET-RQ:
+    # Sets the command elements used in a C-GET-RQ.
     #
     def set_command_fragment_get
       @command_elements = [
@@ -481,8 +483,8 @@ module DICOM
       ]
     end
 
-    # Command elements used in a C-FIND-RQ.
-    # This seems to be the same, regardless of what we want to query.
+    # Sets the command elements used in a C-FIND-RQ.
+    # This setup is used for all types of queries.
     #
     def set_command_fragment_find
       @command_elements = [
@@ -494,7 +496,7 @@ module DICOM
       ]
     end
 
-    # Set command elements used in a C-MOVE-RQ:
+    # Sets the command elements used in a C-MOVE-RQ.
     #
     def set_command_fragment_move(destination)
       @command_elements = [
@@ -507,7 +509,7 @@ module DICOM
       ]
     end
 
-    # Command elements used in a p-data c-store-rq query command:
+    # Sets the command elements used in a C-STORE-RQ.
     #
     def set_command_fragment_store(modality, instance, message_id)
       @command_elements = [
@@ -520,7 +522,7 @@ module DICOM
       ]
     end
 
-    # Data elements used in a query for the images of a particular series:
+    # Sets the data elements used in a query for the images of a particular series.
     #
     def set_data_fragment_find_images
       @data_elements = [
@@ -532,7 +534,7 @@ module DICOM
       ]
     end
 
-    # Data elements used in a query for patients:
+    # Sets the data elements used in a query for patients.
     #
     def set_data_fragment_find_patients
       @data_elements = [
@@ -544,7 +546,7 @@ module DICOM
       ]
     end
 
-    # Data elements used in a query for the series of a particular study:
+    # Sets the data elements used in a query for the series of a particular study.
     #
     def set_data_fragment_find_series
       @data_elements = [
@@ -557,7 +559,7 @@ module DICOM
       ]
     end
 
-    # Data elements used in a query for studies:
+    # Sets the data elements used in a query for studies.
     #
     def set_data_fragment_find_studies
       @data_elements = [
@@ -577,7 +579,7 @@ module DICOM
       ]
     end
 
-    # Set data elements used for an image C-GET-RQ:
+    # Sets the data elements used for an image C-GET-RQ.
     #
     def set_data_fragment_get_image
       @data_elements = [
@@ -588,7 +590,7 @@ module DICOM
       ]
     end
 
-    # Set data elements used for an image C-MOVE-RQ:
+    # Sets the data elements used for an image C-MOVE-RQ.
     #
     def set_data_fragment_move_image
       @data_elements = [
@@ -599,7 +601,7 @@ module DICOM
       ]
     end
 
-    # Set data elements used in a study C-MOVE-RQ:
+    # Sets the data elements used in a study C-MOVE-RQ.
     #
     def set_data_fragment_move_study
       @data_elements = [
@@ -609,9 +611,9 @@ module DICOM
       ]
     end
 
-    # Transfer the user query options to the data elements array.
+    # Transfers the user query options to the data elements array.
     # NB: Only tags which are predefined for the specific query type will be updated!
-    # (no new tags are allowed stored among the data elements)
+    # (no new tags are allowed stored among the data elements currently in this implementation)
     #
     def set_data_options(options)
       options.each_pair do |key, value|
@@ -623,7 +625,7 @@ module DICOM
       end
     end
 
-    # Set default values for accepted transfer syntaxes:
+    # Sets the default values for proposed transfer syntaxes.
     #
     def set_default_values
       # DICOM Application Context Name (unknown if this will vary or is always the same):
@@ -632,7 +634,7 @@ module DICOM
       @transfer_syntax = [IMPLICIT_LITTLE_ENDIAN, EXPLICIT_LITTLE_ENDIAN, EXPLICIT_BIG_ENDIAN]
     end
 
-    # Set user information [item type code, VR, value]
+    # Sets user information [item type code, VR, value].
     #
     def set_user_information_array
       @user_information = [

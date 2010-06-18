@@ -29,12 +29,13 @@
 
 module DICOM
 
-  # Class for interacting with the DICOM object.
+  # The DObject class holds the DICOM object itself and a variety of methods for manipulating this object.
+  #
   class DObject < SuperItem
 
     attr_reader :errors, :modality, :parent, :read_success, :stream, :write_success
 
-    # Initialize the DObject instance.
+    # Initializes a DObject instance.
     # Parameters:
     # string
     # options
@@ -44,6 +45,7 @@ module DICOM
     # :segment_size
     # :syntax
     # :verbose
+    #
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
       # Default verbosity is true if verbosity hasn't been specified (nil):
@@ -69,6 +71,7 @@ module DICOM
     end
 
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
+    #
     def encode_segments(max_size)
       w = set_write_object
       w.encode_segments(max_size)
@@ -81,6 +84,7 @@ module DICOM
 
     # Gathers key information about the DICOM object in a string array.
     # This array can be printed to screen (default), printed to a file specified by the user or simply returned to the caller.
+    #
     def information
       sys_info = Array.new
       info = Array.new
@@ -197,6 +201,7 @@ module DICOM
     # Note:
     # This method is called automatically when initializing the DObject class, and in practice will not be called by users.
     # It should be considered making this a private method.
+    #
     def read(string, options={})
       r = DRead.new(self, string, options)
       # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
@@ -223,6 +228,7 @@ module DICOM
 
     # Returns the transfer syntax of this DICOM object.
     # If a transfer syntax has not been defined, the default transfer syntax is assumed, and returned.
+    #
     def transfer_syntax
       return value("0002,0010") || IMPLICIT_LITTLE_ENDIAN
     end
@@ -231,6 +237,7 @@ module DICOM
     # number values if a switch of Endianness is implied.
     # NB: This method does not change the nature of the Pixel Data Tag, changing between uncompressed
     # and compressed transfer syntax won't change the pixel data accordingly (this must be taken care of manually).
+    #
     def transfer_syntax=(new_syntax)
       valid, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
       if valid
@@ -258,6 +265,7 @@ module DICOM
 
     # Passes the DObject to the DWrite class, which recursively traverses the Data Element
     # structure and encodes a proper binary string, which is then written to the specified file.
+    #
     def write(file_name, options={})
       w = set_write_object(file_name, options)
       w.write
@@ -273,6 +281,7 @@ module DICOM
 
 
     # Adds a warning or error message to the instance array holding messages, and if verbose variable is true, prints the message as well.
+    #
     def add_msg(msg)
       puts msg if @verbose
       @errors << msg
@@ -280,6 +289,7 @@ module DICOM
     end
 
     # Handles the creation of a DWrite object, and returns this object to the calling method.
+    #
     def set_write_object(file_name=nil, options={})
       unless options[:transfer_syntax]
         if self["0002,0010"]

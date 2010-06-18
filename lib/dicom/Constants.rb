@@ -1,10 +1,11 @@
 #    Copyright 2010 Christoffer Lervag
 
-# This file contains module constants used by the Ruby DIOCOM library:
+# This file contains module constants used by the Ruby DICOM library.
+
 module DICOM
 
   # Ruby DICOM version string:
-  VERSION = "0.7.7b"
+  VERSION = "0.7.8b"
 
   # Ruby DICOM implementation name and uid:
   NAME = "RUBY_DCM_" + DICOM::VERSION
@@ -86,7 +87,7 @@ module DICOM
   ITEM_MAX_OPERATIONS_INVOKED = "53"
   ITEM_ROLE_NEGOTIATION = "54"
   ITEM_IMPLEMENTATION_VERSION = "55"
-  
+
 
   # System (CPU) Endianness:
   x = 0xdeadbeef

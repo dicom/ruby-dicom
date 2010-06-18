@@ -2,12 +2,13 @@
 
 module DICOM
 
-  # Class for handling information related to an Item Element.
+  # The Item class handles information related to an Item Element.
+  #
   class Item < SuperItem
 
     # Include the Elements mixin module:
     include Elements
-    
+
     attr_accessor :index
 
     # Initializes an Item instance. Takes a Sequence as a parameter.
@@ -32,6 +33,7 @@ module DICOM
     end
 
     # Sets the binary string of a (Data) Item.
+    #
     def bin=(new_bin)
       if new_bin.is_a?(String)
         # Add an empty byte at the end if the length of the binary is odd:

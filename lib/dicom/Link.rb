@@ -9,7 +9,7 @@ module DICOM
     attr_accessor :file_handler, :max_package_size, :presentation_contexts, :verbose
     attr_reader :errors, :notices, :session
 
-    # Initializes the Link instance, which is used by both DClient and DServer to handle network communication.
+    # Initializes a Link instance, which is used by both DClient and DServer to handle network communication.
     #
     def initialize(options={})
       require 'socket'
@@ -185,7 +185,9 @@ module DICOM
     # Builds the binary string that will be sent as TCP data in the query data fragment.
     # The style of encoding will depend on whether we have an implicit or explicit transfer syntax.
     #
-    def build_data_fragment(data_elements)
+    def build_data_fragment(data_elements, presentation_context_id)
+      # Set the transfer syntax to be used for encoding the data fragment:
+      set_transfer_syntax(@presentation_contexts[presentation_context_id])
       # Endianness of data fragment:
       @outgoing.set_endian(@data_endian)
       # Clear the outgoing binary string:
@@ -218,7 +220,7 @@ module DICOM
       # Flags (1 byte)
       @outgoing.encode_first("02", "HEX") # Data, last fragment (identifier)
       # Presentation context ID (1 byte)
-      @outgoing.encode_first(1, "BY")
+      @outgoing.encode_first(presentation_context_id, "BY")
       # Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
@@ -393,7 +395,7 @@ module DICOM
       transmit
     end
 
-    # Decode an incoming transmission., decide its type, and forward its content to the various methods that process these.
+    # Decodes an incoming transmission., decides its type, and forwards its content to the various methods that process these.
     #
     def interpret(message, file=nil)
       if @first_part
@@ -453,7 +455,7 @@ module DICOM
       return segments
     end
 
-    # Decode the binary string received when the provider wishes to abort the connection, for some reason.
+    # Decodes the binary string received when the provider wishes to abort the connection.
     #
     def interpret_abort(message)
       info = Hash.new
@@ -473,7 +475,7 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the association response, and interpret its content.
+    # Decodes the binary string received in the association response, and interprets its content.
     #
     def interpret_association_accept(message)
       info = Hash.new
@@ -589,9 +591,9 @@ module DICOM
       stop_receiving
       info[:valid] = true
       return info
-    end # of interpret_association_accept
+    end
 
-    # Decode the association reject message and extract the error reasons given.
+    # Decodes the association reject message and extracts the error reasons given.
     #
     def interpret_association_reject(message)
       info = Hash.new
@@ -610,7 +612,7 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the association request, and interpret its content.
+    # Decodes the binary string received in the association request, and interprets its content.
     #
     def interpret_association_request(message)
       info = Hash.new
@@ -749,9 +751,9 @@ module DICOM
       stop_receiving
       info[:valid] = true
       return info
-    end # of interpret_association_request
+    end
 
-    # Decode the received command/data binary string, and interpret its content.
+    # Decodes the received command/data binary string, and interprets its content.
     # Decoding of data fragment will depend on the explicitness of the transmission.
     #
     def interpret_command_and_data(message, file=nil)
@@ -809,6 +811,9 @@ module DICOM
         if file
           # Just store the binary string:
           info[:bin] = msg.rest_string
+          # If this was the last data fragment of a C-STORE, we need to send a receipt:
+          # (However, for, say a C-FIND-RSP, which indicates the end of the query results, this method shall not be called) (Command Field (0000,0100) holds information on this)
+          handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT
         else
           # Decode data elements:
           while msg.index < last_index do
@@ -840,8 +845,6 @@ module DICOM
           # The results hash is put in an array along with (possibly) other results:
           info[:results] = results
         end
-        # If this was the last data fragment, we need to send a receipt:
-        handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT
       else
         # Unknown.
         add_error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
@@ -865,7 +868,7 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the release response, and interpret its content.
+    # Decodes the binary string received in the release response, and interprets its content.
     #
     def interpret_release_response(message)
       info = Hash.new
@@ -877,7 +880,7 @@ module DICOM
       return info
     end
 
-    # Handles multiple incoming transmissions and return the interpreted, received data.
+    # Handles multiple incoming transmissions and returns the interpreted, received data.
     #
     def receive_multiple_transmissions(file=nil)
       @listen = true
@@ -896,7 +899,7 @@ module DICOM
       return segments
     end
 
-    # Handles an expected single incoming transmission and return the interpreted, received data.
+    # Handles an expected single incoming transmission and returns the interpreted, received data.
     #
     def receive_single_transmission
       min_length = 8
@@ -924,7 +927,7 @@ module DICOM
       @session.close unless @session.closed?
     end
 
-    # Send the encoded binary string (package) to its destination.
+    # Sends the encoded binary string (package) to its destination.
     #
     def transmit
       @session.send(@outgoing.string, 0)
@@ -964,7 +967,7 @@ module DICOM
       @outgoing.encode_last(ac_uid, "STR")
     end
 
-    # Build the binary string that makes up the header part (part of the association request).
+    # Builds the binary string that makes up the header part (part of the association request).
     #
     def append_association_header(pdu, called_ae)
       # Big endian encoding:
@@ -987,7 +990,6 @@ module DICOM
     end
 
     # Adds the header bytes to the outgoing, binary string (this part has the same structure for all dicom network messages)
-    # PDU: "01", "02", etc..
     #
     def append_header(pdu)
       # Length (of remaining data) (4 bytes)
@@ -998,7 +1000,7 @@ module DICOM
       @outgoing.encode_first(pdu, "HEX")
     end
 
-    # Build the binary string that makes up the presentation context part (part of the association request/accept).
+    # Builds the binary string that makes up the presentation context part (part of the association request/accept).
     # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
     #
     def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result=ACCEPTANCE)
@@ -1093,8 +1095,8 @@ module DICOM
       end
     end
 
-    # Process the value of the reason byte (in an association abort).
-    # This will provide information on what is the reason for the error.
+    # Processes the value of the reason byte (in an association abort).
+    # This will provide a description of what is the reason for the error.
     #
     def process_reason(reason)
       case reason
@@ -1115,7 +1117,7 @@ module DICOM
       end
     end
 
-    # Process the value of the result byte (in the association response).
+    # Processes the value of the result byte (in the association response).
     # Something is wrong if result is different from 0.
     #
     def process_result(result)
@@ -1136,8 +1138,8 @@ module DICOM
       end
     end
 
-    # Process the value of the source byte (in an association abort).
-    # This will provide information on who is the source of the error.
+    # Processes the value of the source byte (in an association abort).
+    # This will provide a description of who is the source of the error.
     #
     def process_source(source)
       if source == "00"
@@ -1149,7 +1151,7 @@ module DICOM
       end
     end
 
-    # Process the value of the status tag 0000,0900 received in the command fragment.
+    # Processes the value of the status tag (0000,0900) received in the command fragment.
     # Note: The status tag has vr 'US', and the status as reported here is therefore a number.
     # In the official DICOM documents however, the value of the various status options is given in hex format.
     # Resources: DICOM PS3.4 Annex Q 2.1.1.4, DICOM PS3.7 Annex C 4.
@@ -1255,7 +1257,7 @@ module DICOM
       end
     end
 
-    # Set user information [item type code, vr/type, value]
+    # Sets user information [item type code, vr/type, value].
     #
     def set_user_information_array(info = nil)
       @user_information = [

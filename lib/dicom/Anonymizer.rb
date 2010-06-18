@@ -5,11 +5,13 @@ module DICOM
   # This is a convenience class for handling the anonymization of DICOM files.
   # A good resource on this topic (report from the DICOM standards committee, work group 18):
   # ftp://medical.nema.org/medical/dicom/Supps/sup142_03.pdf
+  #
   class Anonymizer
 
     attr_accessor :blank, :enumeration, :identity_file, :remove_private, :verbose, :write_path
 
-    # Initialize the Anonymizer instance.
+    # Initializes an Anonymizer instance.
+    #
     def initialize(opts={})
       # Default verbosity is true: # NB: verbosity is not used currently
       @verbose = opts[:verbose]
@@ -44,8 +46,8 @@ module DICOM
       set_defaults
     end
 
-
     # Adds an exception folder that is to be avoided when anonymizing.
+    #
     def add_exception(path)
       if path
         # Remove last character if the path ends with a file separator:
@@ -54,14 +56,14 @@ module DICOM
       end
     end
 
-
     # Adds a folder who's files will be anonymized.
+    #
     def add_folder(path)
       @folders << path if path
     end
 
-
     # Adds a tag to the list of tags that will be anonymized.
+    #
     def add_tag(tag, opts={})
       # Options and defaults:
       value =  opts[:value]  || ""
@@ -84,8 +86,8 @@ module DICOM
       end
     end
 
-
     # Sets the enumeration status for a specific tag (toggle true/false).
+    #
     def change_enum(tag, enum)
       pos = @tags.index(tag)
       if pos
@@ -99,8 +101,8 @@ module DICOM
       end
     end
 
-
     # Changes the value used in anonymization for a specific tag.
+    #
     def change_value(tag, value)
       pos = @tags.index(tag)
       if pos
@@ -114,9 +116,9 @@ module DICOM
       end
     end
 
-
     # Executes the anonymization process.
     # NB! Only anonymizes top level Data Elements for the time being!
+    #
     def execute(verbose=false)
       # Search through the folders to gather all the files to be anonymized:
       puts "*******************************************************"
@@ -220,11 +222,11 @@ module DICOM
         puts "No files were found in specified folders. Aborting."
       end
       puts "*******************************************************"
-    end # of execute
-
+    end
 
     # Prints a list of which tags are currently selected for anonymization along with
     # replacement values that will be used and enumeration status.
+    #
     def print
       # Extract the string lengths which are needed to make the formatting nice:
       names = Array.new
@@ -277,8 +279,8 @@ module DICOM
       end
     end
 
-
     # Removes a tag from the list of tags that will be anonymized.
+    #
     def remove_tag(tag)
       pos = @tags.index(tag)
       if pos
@@ -297,6 +299,7 @@ module DICOM
 
     # Finds the common path in an array of files, by performing a recursive search.
     # Returns the index of the last folder in str_arr that is common in all file paths.
+    #
     def common_path(str_arr, index)
       common_folders = Array.new
       # Find out how much of the path is similar for all files in @files array:
@@ -315,8 +318,8 @@ module DICOM
       return result
     end
 
-
     # Creates a hash that is used for storing information used when enumeration is desired.
+    #
     def create_enum_hash
       @enum.each_index do |i|
         @enum_old_hash[@tags[i]] = Array.new
@@ -324,8 +327,8 @@ module DICOM
       end
     end
 
-
     # Handles enumeration for current DICOM tag.
+    #
     def get_enumeration_value(current, j)
       # Is enumeration requested for this tag?
       if @enum[j]
@@ -351,8 +354,8 @@ module DICOM
       return value
     end
 
-
     # Discovers all the files contained in the specified directory and all its sub-directories.
+    #
     def load_files
       # Load find library:
       require 'find'
@@ -376,9 +379,9 @@ module DICOM
       end
     end
 
-
     # Analyses the write_path and the 'read' file path to determine if the have some common root.
     # If there are parts of file that exist also in write path, it will not add those parts to write_path.
+    #
     def process_write_paths
       # First make sure @write_path ends with a file separator character:
       last_character = @write_path[-1..-1]
@@ -411,8 +414,8 @@ module DICOM
       end
     end
 
-
     # Default tags that will be anonymized, along with default replacement value and enumeration setting.
+    #
     def set_defaults
       data = [
       ["0008,0012", "20000101", false], # Instance Creation Date
@@ -436,9 +439,9 @@ module DICOM
       @enum = data[2]
     end
 
-
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
     # using the enumeration feature. Values will be saved in a text file, using semi colon delineation.
+    #
     def write_identity_file
       # Open file and prepare to write text:
       File.open( @identity_file, 'w' ) do |output|
@@ -459,7 +462,6 @@ module DICOM
         end
       end
     end
-
 
   end # of class
 end # of module

@@ -7,9 +7,11 @@ module DICOM
   # This class contains all the dictionary data.
   # RET appearing behind an entry means that the use of this particular element
   # has been retired according to the current version of the official DICOM standard.
+  #
   class Dictionary
 
-    # Data element dictionary:
+    # Returns the data element dictionary Hash.
+    #
     def self.load_data_elements
       return {
         # E.1 Registry of DICOM command elements
@@ -2900,40 +2902,12 @@ module DICOM
         "FFFE,E00D" => [[ITEM_VR], "Item Delimitation Item"], # VR does not exist for this element
         "FFFE,E0DD" => [[ITEM_VR], "Sequence Delimitation Item"] # VR does not exist for this element
       }
-    end # of load_data_elements
-
-
-    # Table A-2 Well-known Frames of Reference (DICOM Part 6, Annex A: Registry of DICOM unique identifiers)
-    # NOT IN USE AT THIS TIME!
-    def self.load_frame_of_ref
-      return {
-        "1.2.840.10008.1.4.1.1" => ["Talairach Brain Atlas Frame of Reference", "Talairach J. and Tournoux P. Co-Planar stereotactic atlas of the human brain. Stutgart: Georg Thieme Verlag, 1988."],
-        "1.2.840.10008.1.4.1.2" => ["SPM2 T1 Frame of Reference", "SPM2 /templates/T1.mnc"],
-        "1.2.840.10008.1.4.1.3" => ["SPM2 T2 Frame of Reference", "SPM2 /templates/T2.mnc"],
-        "1.2.840.10008.1.4.1.4" => ["SPM2 PD Frame of Reference", "SPM2 /templates/PD.mnc"],
-        "1.2.840.10008.1.4.1.5" => ["SPM2 EPI Frame of Reference", "SPM2 /templates/EPI.mnc"],
-        "1.2.840.10008.1.4.1.6" => ["SPM2 FIL T1 Frame of Reference", "SPM2 /templates/filT1.mnc"],
-        "1.2.840.10008.1.4.1.7" => ["SPM2 PET Frame of Reference", "SPM2 /templates/PET.mnc"],
-        "1.2.840.10008.1.4.1.8" => ["SPM2 TRANSM Frame of Reference", "SPM2 /templates/Transm.mnc"],
-        "1.2.840.10008.1.4.1.9" => ["SPM2 SPECT Frame of Reference", "SPM2 /templates/SPECT.mnc"],
-        "1.2.840.10008.1.4.1.10" => ["SPM2 GRAY Frame of Reference", "SPM2 /apriori/gray.mnc"],
-        "1.2.840.10008.1.4.1.11" => ["SPM2 WHITE Frame of Reference", "SPM2 /apriori/white.mnc"],
-        "1.2.840.10008.1.4.1.12" => ["SPM2 CSF Frame of Reference", "SPM2 /apriori/csf.mnc"],
-        "1.2.840.10008.1.4.1.13" => ["SPM2 BRAINMASK Frame of Reference", "SPM2 /apriori/brainmask.mnc"],
-        "1.2.840.10008.1.4.1.14" => ["SPM2 AVG305T1 Frame of Reference", "SPM2 /canonical/avg305T1.mnc"],
-        "1.2.840.10008.1.4.1.15" => ["SPM2 AVG152T1 Frame of Reference", "SPM2 /canonical/avg152T1.mnc"],
-        "1.2.840.10008.1.4.1.16" => ["SPM2 AVG152T2 Frame of Reference", "SPM2 /canonical/avg152T2.mnc"],
-        "1.2.840.10008.1.4.1.17" => ["SPM2 AVG152PD Frame of Reference", "SPM2 /canonical/avg152PD.mnc"],
-        "1.2.840.10008.1.4.1.18" => ["SPM2 SINGLESUBJT1 Frame of Reference", "SPM2 /canonical/single_subj_T1.mnc"],
-        "1.2.840.10008.1.4.2.1" => ["ICBM 452 T1 Frame of Reference", "ICBM452 T1 Atlas"],
-        "1.2.840.10008.1.4.2.2" => ["ICBM Single Subject MRI Frame of Reference", "ICBM Single Subject MRI Anatomical Template"]
-      }
     end
 
-
-    # Loads the image type library (Photometric Interpretation).
-    # (Data element tag: 0028,0004)
-    # NOT IN USE AT THIS TIME!
+    # Returns the image type library Hash.
+    # This string (Photometric Interpretation) is stored in the Data element tag: 0028,0004
+    # NB! NOT IN USE AT THIS TIME!
+    #
     def self.load_image_types
       return {
         "MONOCHROME1" => "grey level image description (high values=dark, low values=bright)",
@@ -2945,8 +2919,9 @@ module DICOM
       }
     end
 
-
-    # Table A.1 UID Values (DICOM Part 6, Annex A: Registry of DICOM unique identifiers)
+    # Returns the DICOM unique identifiers Hash.
+    # Table A.1 UID Values (DICOM Part 6, Annex A: Registry of DICOM unique identifiers).
+    #
     def self.load_uid
       return {
         "1.2.840.10008.1.1" => ["Verification SOP Class", "SOP Class"],
@@ -3252,12 +3227,12 @@ module DICOM
         "1.2.840.10008.15.0.4.7" => ["dicomUniqueAETitle", "LDAP OID"],
         "1.2.840.10008.15.0.4.8" => ["dicomTransferCapability", "LDAP OID"]
       }
-    end # of load_uid
+    end
 
-
-    # Loads the value representation library.
+    # Retruns the value representation library Hash.
     # Consists of VR name, meaning and data format.
-    # NOT IN USE AT THIS TIME!
+    # NB! NOT IN USE AT THIS TIME!
+    #
     def self.load_vr
       return {
         "AE" => ["Application entity", "String"],

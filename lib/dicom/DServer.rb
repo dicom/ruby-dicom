@@ -7,7 +7,7 @@ module DICOM
   #
   class DServer
 
-    # Run the server and take a block for initializing.
+    # Runs the server and takes a block for initializing.
     #
     def self.run(port=104, path='./received/', &block)
       server = DServer.new(port)
@@ -19,7 +19,7 @@ module DICOM
     attr_accessor :host_ae, :max_package_size, :port, :timeout, :verbose, :file_handler
     attr_reader :accepted_abstract_syntaxes, :accepted_transfer_syntaxes, :errors, :notices
 
-    # Initialize the instance with a host adress and a port number.
+    # Initializes a DServer instance with a port number.
     #
     def initialize(port=104, options={})
       require 'socket'
@@ -66,7 +66,7 @@ module DICOM
       end
     end
 
-    # Print the list of valid abstract syntaxes to the screen.
+    # Prints the list of valid abstract syntaxes to the screen.
     #
     def print_abstract_syntaxes
       # Determine length of longest key to ensure pretty print:
@@ -77,7 +77,7 @@ module DICOM
       end
     end
 
-    # Print the list of valid transfer syntaxes to the screen.
+    # Prints the list of valid transfer syntaxes to the screen.
     #
     def print_transfer_syntaxes
       # Determine length of longest key to ensure pretty print:
@@ -88,7 +88,7 @@ module DICOM
       end
     end
 
-    # Remove a specific abstract syntax from the list of abstract syntaxes that the server instance will accept.
+    # Removes a specific abstract syntax from the list of abstract syntaxes that the server instance will accept.
     #
     def remove_abstract_syntax(uid)
       if uid.is_a?(String)
@@ -98,7 +98,7 @@ module DICOM
       end
     end
 
-    # Remove a specific transfer syntax from the list of transfer syntaxes that the server instance will accept.
+    # Removes a specific transfer syntax from the list of transfer syntaxes that the server instance will accept.
     #
     def remove_transfer_syntax(uid)
       if uid.is_a?(String)
@@ -108,14 +108,14 @@ module DICOM
       end
     end
 
-    # Completely clear the list of abstract syntaxes that the server instance will accept.
+    # Completely clears the list of abstract syntaxes that the server instance will accept.
     # Following such a removal, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server instance.
     #
     def remove_all_abstract_syntaxes
       @accepted_abstract_syntaxes = Hash.new
     end
 
-    # Completely clear the list of transfer syntaxes that the server instance will accept.
+    # Completely clears the list of transfer syntaxes that the server instance will accept.
     # Following such a removal, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server instance.
     #
     def remove_all_transfer_syntaxes
@@ -226,9 +226,9 @@ module DICOM
       @notices << notice
     end
 
-    # Check if the association request is formally correct.
-    # Things that can be checked here, are:
-    # Application context name, calling AE title, called AE title
+    # Checks if the association request is formally correct.
+    # Other things that can potentionally be checked here, are:
+    # - Application context name, calling AE title, called AE title
     # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.4 (Table 9-21).
     #
     def check_association_request(info)
@@ -287,7 +287,7 @@ module DICOM
       return info, approved, rejected, test_only
     end
 
-    # Set the default valid abstract syntaxes and transfer syntaxes for our SCP.
+    # Sets the default valid abstract syntaxes and transfer syntaxes for our SCP.
     #
     def set_default_accepted_syntaxes
       @accepted_transfer_syntaxes, @accepted_abstract_syntaxes = LIBRARY.extract_transfer_syntaxes_and_sop_classes

@@ -2,12 +2,15 @@
 
 module DICOM
 
-  # Class for handling information related to a Sequence Element.
+  # The Sequence class handles information related to a Sequence Element.
+  #
   class Sequence < SuperParent
 
     # Include the Elements mixin module:
     include Elements
 
+    # Initializes a Sequence instance.
+    #
     def initialize(tag, options={})
       # Set common parent variables:
       initialize_parent

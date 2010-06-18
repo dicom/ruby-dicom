@@ -11,13 +11,15 @@
 
 module DICOM
 
-  # This class handles the encoding of a DObject to a valid DICOM string and then writing this string to a file.
+  # The DWrite class handles the encoding of a DObject to a valid DICOM string and writing this string to a file.
+  #
   class DWrite
 
     attr_writer :rest_endian, :rest_explicit
     attr_reader :msg, :success, :segments
 
-    # Initializes the DWrite instance.
+    # Initializes a DWrite instance.
+    #
     def initialize(obj, file_name=nil, options={})
       @obj = obj
       # Process option values, setting defaults for the ones that are not specified:
@@ -35,8 +37,8 @@ module DICOM
       @rest_endian = false
     end
 
-
     # Writes the DICOM information to file.
+    #
     def write(body=nil)
       # Check if we are able to create given file:
       open_file(@file_name)
@@ -68,10 +70,10 @@ module DICOM
       end
     end
 
-
-    # Write DICOM content to a series of size-limited binary strings
+    # Writes DICOM content to a series of size-limited binary strings
     # (typically used when transmitting DICOM objects through network connections)
     # The method returns an array of binary strings.
+    #
     def encode_segments(max_size)
       # Initiate necessary variables:
       init_variables
@@ -97,7 +99,8 @@ module DICOM
     private
 
 
-    # Add a binary string to (the end of) either file or string.
+    # Adds a binary string to (the end of) either file or string.
+    #
     def add(string)
       if @file
         @stream.write(string)
@@ -134,8 +137,8 @@ module DICOM
       end
     end
 
-
     # Writes the official DICOM signature header.
+    #
     def write_signature
       # Write the string "DICM" which along with the empty bytes that
       # will be put before it, identifies this as a valid DICOM file:
@@ -146,8 +149,8 @@ module DICOM
       @stream.write(identifier)
     end
 
-
-    # Inserts group 0002 data elements.
+    # Inserts Meta Group (0002,xxxx) data elements.
+    #
     def write_meta
       # File Meta Information Version:
       tag = @stream.encode_tag("0002,0001")
@@ -195,8 +198,8 @@ module DICOM
       @stream.write(@stream.string)
     end
 
-
-    # Cycles through the data elements in order to write.
+    # Loops through the data elements in order to write.
+    #
     def write_data_elements(elements)
       elements.each do |element|
         # If this particular element has children, write these (recursively) before proceeding with elements at the current level:
@@ -224,8 +227,8 @@ module DICOM
       end
     end
 
-
     # Writes a single data element.
+    #
     def write_data_element(element)
       # Step 1: Write tag:
       write_tag(element.tag)
@@ -236,16 +239,16 @@ module DICOM
       check_encapsulated_image(element)
     end
 
-
     # Writes an item/sequence delimiter for a given item/sequence.
+    #
     def write_delimiter(element)
       delimiter_tag = (element.tag == ITEM_TAG ? ITEM_DELIMITER : SEQUENCE_DELIMITER)
       write_tag(delimiter_tag)
       write_vr_length(delimiter_tag, ITEM_VR, 0)
     end
 
-
     # Writes the tag (first part of the data element).
+    #
     def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
@@ -255,8 +258,8 @@ module DICOM
       add(bin_tag)
     end
 
-
     # Writes the VR (if it is to be written) and length value. These two are the middle part of the data element.
+    #
     def write_vr_length(tag, vr, length)
       # Encode the length value (cover both scenarios of 2 and 4 bytes):
       length4 = @stream.encode(length, "SL")
@@ -297,8 +300,8 @@ module DICOM
       end
     end
 
-
     # Writes the value (last part of the data element).
+    #
     def write_value(bin)
       # This is pretty straightforward, just dump the binary data to the file/string:
       add(bin)
@@ -306,6 +309,7 @@ module DICOM
 
 
     # Tests if the file/path is writable, creates any folders if necessary, and opens the file for writing.
+    #
     def open_file(file)
       # Check if file already exists:
       if File.exist?(file)
@@ -336,8 +340,8 @@ module DICOM
       end
     end
 
-
-    # Toggle the status for enclosed pixel data.
+    # Toggles the status for enclosed pixel data.
+    #
     def check_encapsulated_image(element)
       # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
       if element.tag == PIXEL_TAG and element.parent.is_a?(DObject)
@@ -345,8 +349,8 @@ module DICOM
       end
     end
 
-
-    # Changes encoding variables as the string encoding proceeds past the initial 0002 group of the DICOM object.
+    # Changes encoding variables as the string encoding proceeds past the initial 0002 Meta Group of the DICOM object.
+    #
     def switch_syntax
       # The information from the Transfer syntax element (if present), needs to be processed:
       valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
@@ -361,8 +365,8 @@ module DICOM
       @stream.set_endian(@rest_endian)
     end
 
-
-    # Identifies and returns the index of the first element that does not have a group ("0002") tag.
+    # Identifies and returns the index of the first element that does not have a Meta Group ("0002,xxxx") tag.
+    #
     def first_non_meta(elements)
       non_meta_index = 0
       elements.each_index do |i|
@@ -374,8 +378,8 @@ module DICOM
       return non_meta_index
     end
 
-
     # Initializes the variables used when executing this program.
+    #
     def init_variables
       # Variables that are accesible from outside:
       # Until a DICOM write has completed successfully the status is 'unsuccessful':
