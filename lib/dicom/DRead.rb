@@ -9,14 +9,16 @@
 
 module DICOM
 
-  # This class parses the DICOM data from a binary string.
+  # The DRead class parses the DICOM data from a binary string.
   # The source of this binary string is typically either a DICOM file or a DICOM network transmission.
+  #
   class DRead
 
     attr_reader :success, :obj, :explicit, :file_endian, :msg, :signature
 
-    # Initialize the DRead instance.
+    # Initializes a DRead instance.
     # Options: :bin.....etc
+    #
     def initialize(obj, string=nil, options={})
       # Set the DICOM object as an instance variable:
       @obj = obj
@@ -80,6 +82,7 @@ module DICOM
 
 
     # Checks for the official DICOM header signature.
+    #
     def check_header
       # According to the official DICOM standard, a DICOM file shall contain 128 consequtive (zero) bytes,
       # followed by 4 bytes that spell the string 'DICM'. Apparently, some providers seems to skip this in their DICOM files.
@@ -107,9 +110,9 @@ module DICOM
       end
     end
 
-
     # Governs the process of reading data elements from the DICOM file.
     # FIXME: This method has grown a bit messy and isn't very easy to follow. It would be nice if it could be cleaned up slightly.
+    #
     def process_data_element
       #STEP 1:
       # Attempt to read data element tag:
@@ -200,8 +203,8 @@ module DICOM
       return true
     end
 
-
     # Reads and returns the data element's TAG (4 first bytes of element).
+    #
     def read_tag
       tag = @stream.decode_tag
       if tag
@@ -218,8 +221,8 @@ module DICOM
       return tag
     end
 
-
     # Reads and returns data element VR (2 bytes) and data element LENGTH (Varying length; 2-6 bytes).
+    #
     def read_vr_length(vr, tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
       reserved = 0
@@ -261,15 +264,15 @@ module DICOM
       return vr, length
     end
 
-
-    # Reads and return the binary value string of a Data Element (varying length).
+    # Reads and returns the binary value string of a Data Element (varying length).
+    #
     def read_bin(length)
       return @stream.extract(length)
     end
 
-
     # Reads and returns the decoded Data Element VALUE (varying length).
     # NB! For some cases (pixel data, compressed data, unknown data), a value is not processed (nil is returned).
+    #
     def read_value(vr, length)
       unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
         # Since the binary string has already been extracted for this Data Element, we must first "rewind":
@@ -285,8 +288,8 @@ module DICOM
       return value
     end
 
-
     # Tests if the file is readable and opens it.
+    #
     def open_file(file)
       if File.exist?(file)
         if File.readable?(file)
@@ -307,16 +310,16 @@ module DICOM
       end
     end
 
-
+    # Registers an unexpected error by toggling a success boolean and recording an error message.
     # The DICOM data stream has ended abruptly in such a way that a Data Element's value was shorter than expected.
-    # Registers this error.
+    #
     def set_abrupt_error
       @msg << "Error! The parsed data of the last Data Element #{@current_element.tag} does not match it's specified length value. This is probably the result of invalid or corrupt DICOM data."
       @success = false
     end
 
-
-    # Changes encoding variables as the file reading proceeds past the initial 0002 group of the DICOM file.
+    # Changes encoding variables as the file reading proceeds past the initial Meta Group (0002,xxxx) of the DICOM file.
+    #
     def switch_syntax
       # Get the transfer syntax string, unless it has already been provided by keyword:
       unless @transfer_syntax
@@ -343,6 +346,7 @@ module DICOM
 
 
     # Initiates the variables that are used during file reading.
+    #
     def init_variables
       # Some variables that will be made available to the DObject class:
       # Array that will holde any messages generated while reading the DICOM file:

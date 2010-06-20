@@ -3,10 +3,12 @@
 module DICOM
 
   # Super class which contains common code for all parent elements (Item, Sequence and DObject).
+  #
   class SuperParent
 
     # Initialize common variables among the parent elements.
     # Only for internal use (should be private).
+    #
     def initialize_parent
       # All child data elements and sequences are stored in a hash where tag string is used as key:
       @tags = Hash.new
@@ -15,12 +17,14 @@ module DICOM
     # Returns the child element, specified by a tag string in a Hash-like syntax.
     # If the requested tag doesn't exist, nil is returned.
     # NB! Only immediate children are searched. Grandchildren etc. are not included.
+    #
     def [](tag)
       return @tags[tag]
     end
 
     # Adds a Data or Sequence Element to self (which can be either DObject or an Item).
     # Items are not allowed to be added with this method.
+    #
     def add(element)
       unless element.is_a?(Item)
         unless self.is_a?(Sequence)
@@ -39,6 +43,7 @@ module DICOM
     # Adds a child item to a Sequence (or Item in some cases where pixel data is encapsulated).
     # If no existing Item is specified, an empty item will be added.
     # NB! Items are specified by index (starting at 1) instead of a tag string.
+    #
     def add_item(item=nil, options={})
       unless self.is_a?(DObject)
         if item
@@ -93,12 +98,14 @@ module DICOM
 
     # Returns all (immediate) child elements in an array (sorted by element tag).
     # If this particular parent doesn't have any children, an empty array is returned
+    #
     def children
       return @tags.sort.transpose[1] || Array.new
     end
 
     # A boolean used to check whether whether or not an element actually has any child elements.
     # Returns true if this parent have any child elements, false if not.
+    #
     def children?
       if @tags.length > 0
         return true
@@ -108,11 +115,13 @@ module DICOM
     end
 
     # Returns the number of Elements contained directly in this parent (does not include number of elements of possible children).
+    #
     def count
       return @tags.length
     end
 
     # Returns the total number of Elements contained in this parent (includes elements contained in possible child elements).
+    #
     def count_all
       # Search recursively through all child elements that are parents themselves.
       total_count = count
@@ -123,6 +132,7 @@ module DICOM
     end
 
     # Re-encodes the value of a child Data Element (but only if the Data Element encoding is influenced by a shift in endianness)
+    #
     def encode_child(element, old_endian)
       if element.tag == "7FE0,0010"
         # As encoding settings of the DObject has already been changed, we need to decode the old pixel values with the old encoding:
@@ -145,6 +155,7 @@ module DICOM
     end
 
     # Re-encodes the binary data strings of all child Data Elements recursively.
+    #
     def encode_children(old_endian)
        # Cycle through all levels of children recursively:
       children.each do |element|
@@ -157,6 +168,7 @@ module DICOM
     end
 
     # Checks whether a given tag is defined for this parent. Returns true if a match is found, false if not.
+    #
     def exists?(tag)
       if @tags[tag]
         return true
@@ -167,6 +179,7 @@ module DICOM
 
     # Handles the print job.
     # Only for internal use (should be private).
+    #
     def handle_print(index, max_digits, max_name, max_length, max_generations, visualization, options={})
       elements = Array.new
       s = " "
@@ -235,12 +248,14 @@ module DICOM
     end
 
     # A boolean used to check whether or not an element is a parent.
-    # Returns true.
+    # Returns true for all parent elements.
+    #
     def is_parent?
       return true
     end
 
     # Sets the length of a Sequence or Item.
+    #
     def length=(new_length)
       unless self.is_a?(DObject)
         @length = new_length
@@ -255,6 +270,7 @@ module DICOM
     # Options:
     # :value_max
     # :file
+    #
     def print(options={})
       if count > 0
         max_name, max_length, max_generations = max_lengths
@@ -275,6 +291,7 @@ module DICOM
     # as well as the maximum number of generations of elements.
     # This is used by the print method to achieve pretty printing.
     # Only for internal use (should be private).
+    #
     def max_lengths
       max_name = 0
       max_length = 0
@@ -298,6 +315,7 @@ module DICOM
 
     # Removes an element from this parent.
     # The parameter is normally a tag String, except in the case of an Item, where an index number is used.
+    #
     def remove(tag)
       # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
       element = @tags[tag]
@@ -308,6 +326,7 @@ module DICOM
     end
 
     # Removes all private data elements from the child elements of this parent.
+    #
     def remove_private
       # Cycle through all levels of children recursively and remove private data elements:
       children.each do |element|
@@ -317,6 +336,7 @@ module DICOM
     end
 
     # Resets the length of a Sequence or Item to -1 (the 'undefined' length).
+    #
     def reset_length
       unless self.is_a?(DObject)
         @length = -1
@@ -328,6 +348,7 @@ module DICOM
 
     # Returns the value of a child of this instance, specified by the tag parameter.
     # If the child element does not exist, nil is returned.
+    #
     def value(tag)
       if exists?(tag)
         return @tags[tag].value
@@ -336,10 +357,13 @@ module DICOM
       end
     end
 
+
     # Following methods are private:
     private
 
+
     # Prints an array of Data Element ascii text lines gathered by the print() method to a file (specified by the user).
+    #
     def print_file(elements, file)
       File.open(file, 'w') do |output|
         elements.each do |line|
@@ -349,6 +373,7 @@ module DICOM
     end
 
     # Prints an array of Data Element ascii text lines gathered by the print() method to the screen (terminal).
+    #
     def print_screen(elements)
       elements.each do |line|
         puts line

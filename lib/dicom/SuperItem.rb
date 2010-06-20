@@ -4,10 +4,12 @@ module DICOM
 
   # Super class which contains code that is common for both the DObject and Item classes.
   # This class contains image methods, since images may be stored in either the DObject, in encapsulated Items or in Icon Image Sequence Items.
+  #
   class SuperItem < SuperParent
 
     # Unpacks and returns pixel values in an Array from the specified binary string. The decode is based on attributes defined in the DObject.
     # Returns false if decode is unsuccesful.
+    #
     def decode_pixels(bin, stream=@stream)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
@@ -42,6 +44,7 @@ module DICOM
     
     # Encodes a pixel array based on attributes defined in the DObject and returns the resulting binary string.
     # Returns false if encode is unsuccesful.
+    #
     def encode_pixels(pixels, stream=@stream)
       bin = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
@@ -78,6 +81,7 @@ module DICOM
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     # :narray => true  - Performs the rescale process with NArray instead of Ruby Array, which is faster.
+    #
     def get_image(options={})
       pixel_data_element = self[PIXEL_TAG]
       if pixel_data_element
@@ -110,6 +114,7 @@ module DICOM
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
     # :narray => true  - Use NArray when rescaling pixel values (faster than using RMagick/Ruby array).
+    #
     def get_image_magick(options={})
       color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
       pixel_data_element = self[PIXEL_TAG]
@@ -141,6 +146,7 @@ module DICOM
     # To call this method the user needs to loaded the NArray library in advance (require 'narray').
     # Options:
     # :rescale => true  - Return processed, rescaled presentation values instead of the original, full pixel range.
+    #
     def get_image_narray(options={})
       color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
       pixel_data_element = self[PIXEL_TAG]
@@ -177,6 +183,7 @@ module DICOM
     end
 
     # Reads a binary string from the specified file and writes it to the Pixel Data Element.
+    #
     def image_from_file(file)
       # Read and extract:
       f = File.new(file, "rb")
@@ -190,6 +197,7 @@ module DICOM
     end
 
     # Returns data regarding the geometrical properties of the pixel data: rows, columns & number of frames.
+    #
     def image_properties
       row_element = self["0028,0010"]
       column_element = self["0028,0011"]
@@ -203,6 +211,7 @@ module DICOM
     end
 
     # Dumps the binary content of the Pixel Data element to file.
+    #
     def image_to_file(file)
       pixel_element = self[PIXEL_TAG]
       pixel_data = Array.new
@@ -229,6 +238,7 @@ module DICOM
     end
 
     # Removes all sequences from the DObject/Item.
+    #
     def remove_sequences
       @tags.each_value do |element|
         remove(element.tag) if element.is_a?(Sequence)
@@ -236,6 +246,7 @@ module DICOM
     end
 
     # Handles pixel data from a Ruby Array, encodes it and writes it to the Pixel Data Element.
+    #
     def set_image(pixels)
       if pixels.is_a?(Array)
         # Encode the pixel data:
@@ -255,6 +266,7 @@ module DICOM
     # Options:
     # :max => value  - Pixel values will be rescaled using this as the new maximum value.
     # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
+    #
     def set_image_magick(magick_image, options={})
       # Export the RMagick object to a standard Ruby Array:
       pixels = magick_image.export_pixels(x=0, y=0, columns=magick_image.columns, rows=magick_image.rows, map="I")
@@ -278,6 +290,7 @@ module DICOM
     # Options:
     # :max => value  - Pixel values will be rescaled using this as the new maximum value.
     # :min => value  - Pixel values will be rescaled, using this as the new minimum value.
+    #
     def set_image_narray(narray, options={})
       # Rescale pixel values?
       if options[:min] and options[:max]
@@ -302,6 +315,7 @@ module DICOM
 
 
     # Converts original pixel data values to presentation values.
+    #
     def process_presentation_values(pixel_data, min_allowed, max_allowed)
       # Process pixel data for presentation according to the image information in the DICOM object:
       center, width, intercept, slope = window_level_values
@@ -341,6 +355,7 @@ module DICOM
     end
 
     # Converts original pixel data values to a RMagick image object containing presentation values.
+    #
     def process_presentation_values_magick(pixel_data, max_allowed, columns, rows)
       # Process pixel data for presentation according to the image information in the DICOM object:
       center, width, intercept, slope = window_level_values
@@ -377,6 +392,7 @@ module DICOM
     # Converts original pixel data values to presentation values, using the faster numerical array.
     # If a Ruby array is supplied, this returns a one-dimensional NArray object (i.e. no columns & rows).
     # If a NArray is supplied, the NArray is returned with its original dimensions.
+    #
     def process_presentation_values_narray(pixel_data, min_allowed, max_allowed)
       # Process pixel data for presentation according to the image information in the DICOM object:
       center, width, intercept, slope = window_level_values
@@ -421,6 +437,7 @@ module DICOM
     # performing decompression of data if necessary.
     # Reading compressed data has been removed for now as it never seemed to work on any of the samples.
     # Tested with RMagick and something like: image = Magick::Image.from_blob(element.bin)
+    #
     def read_image_magick(pixel_data, columns, rows, frames, options={})
       # Remap the image from pixel values to presentation values if the user has requested this:
       if options[:rescale] == true
@@ -441,6 +458,7 @@ module DICOM
     end
 
     # Transfers a pre-encoded binary string to the Pixel Data Element, either by updating an existing one, or creating a new one.
+    #
     def set_pixels(bin)
       if self.exists?(PIXEL_TAG)
         # Update existing Data Element:
@@ -454,6 +472,7 @@ module DICOM
     # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
     # If some of these values are missing in the DICOM object, default values are used instead
     # for intercept and slope, while center and width are set to nil. No errors are raised.
+    #
     def window_level_values
       center = (self["0028,1050"].is_a?(DataElement) == true ? self["0028,1050"].value.to_i : nil)
       width = (self["0028,1051"].is_a?(DataElement) == true ? self["0028,1051"].value.to_i : nil)

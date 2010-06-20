@@ -3,11 +3,13 @@
 module DICOM
 
   # This class contains methods that interact with the DICOM dictionary.
+  #
   class DLibrary
 
     attr_reader :tags, :uid
 
-    # Initializes the library instance.
+    # Initializes a DLibrary instance.
+    #
     def initialize
       # Load the data elements hash, where the keys are tag strings, and values
       # are two-element arrays [vr, name] (where vr itself is an array of 1-3 elements).
@@ -18,6 +20,7 @@ module DICOM
     end
 
     # Checks whether a given string is a valid transfer syntax or not.
+    #
     def check_ts_validity(uid)
       result = false
       value = @uid[uid.rstrip]
@@ -32,6 +35,7 @@ module DICOM
 
     # Extracts all transfer syntaxes and SOP Classes from the Dictionary and returns them in two separate Hashes.
     # Both Hashes have UIDs as keys and their descriptions as values.
+    #
     def extract_transfer_syntaxes_and_sop_classes
       transfer_syntaxes = Hash.new
       sop_classes = Hash.new
@@ -46,6 +50,7 @@ module DICOM
     end
 
     # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
+    #
     def get_compression(uid)
       result = false
       if uid
@@ -62,6 +67,7 @@ module DICOM
 
     # Returns data element name and value representation from the dictionary unless the data element
     # is private. If a non-private tag is not recognized, "Unknown Name" and "UN" is returned.
+    #
     def get_name_vr(tag)
       if tag.private? and tag.element != GROUP_LENGTH
         name = "Private"
@@ -118,9 +124,8 @@ module DICOM
       return name, vr
     end
 
-    # Returns the tag that matches the supplied data element name, or if a tag is supplied, return that tag.
-    # (This method may be considered for removal: Does the usefulnes of being able to create a tag by Name,
-    # outweigh the performance impact of having this method?)
+    # Returns the tag that matches the supplied data element name, or if a tag is supplied, simply returns the tag.
+    #
     def get_tag(tag_or_name)
       tag = false
       # The supplied value should be a string:
@@ -138,6 +143,7 @@ module DICOM
     end
 
     # Returns the description/name of a specified UID (i.e. a transfer syntax or SOP class).
+    #
     def get_syntax_description(uid)
       value = @uid[uid]
       value = value[0] if value
@@ -145,6 +151,8 @@ module DICOM
     end
 
     # Returns the name/description corresponding to a given UID.
+    # FIXME: This and the previous methods duplicate each other. One of them should go.
+    #
     def get_uid(uid)
       value = @uid[uid.rstrip]
       # Fetch the name of this UID:
@@ -157,6 +165,7 @@ module DICOM
     end
 
     # Checks the Transfer Syntax UID and return the encoding settings associated with this value.
+    #
     def process_transfer_syntax(value)
       valid = check_ts_validity(value)
       case value

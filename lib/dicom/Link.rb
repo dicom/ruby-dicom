@@ -9,7 +9,7 @@ module DICOM
     attr_accessor :file_handler, :max_package_size, :presentation_contexts, :verbose
     attr_reader :errors, :notices, :session
 
-    # Initializes the Link instance, which is used by both DClient and DServer to handle network communication.
+    # Initializes a Link instance, which is used by both DClient and DServer to handle network communication.
     #
     def initialize(options={})
       require 'socket'
@@ -81,8 +81,6 @@ module DICOM
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      # Set item type (presentation context):
-      pc_type = "21"
       # No abstract syntax in association response. To make this work with the method that
       # encodes the presentation context, we pass on a one-element array containing nil).
       abstract_syntaxes = Array.new(1, nil)
@@ -96,7 +94,7 @@ module DICOM
         result = pc[:result]
         transfer_syntax = pc[:selected_transfer_syntax]
         @presentation_contexts[context_id] = transfer_syntax
-        append_presentation_contexts(abstract_syntaxes, pc_type, transfer_syntax, context_id, result)
+        append_presentation_contexts(abstract_syntaxes, ITEM_PRESENTATION_CONTEXT_RESPONSE, transfer_syntax, context_id, result)
       end
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
@@ -132,12 +130,10 @@ module DICOM
       @outgoing.set_endian(@net_endian)
       # Clear the outgoing binary string:
       @outgoing.reset
-      # Set item type (presentation context):
-      pc = "20"
       # Note: The order of which these components are built is not arbitrary.
       # (The first three are built 'in order of appearance', the header is built last, but is put first in the message)
       append_application_context(ac_uid)
-      append_presentation_contexts(as, pc, ts)
+      append_presentation_contexts(as, ITEM_PRESENTATION_CONTEXT_REQUEST, ts)
       append_user_information(ui)
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(PDU_ASSOCIATION_REQUEST, @host_ae)
@@ -189,7 +185,9 @@ module DICOM
     # Builds the binary string that will be sent as TCP data in the query data fragment.
     # The style of encoding will depend on whether we have an implicit or explicit transfer syntax.
     #
-    def build_data_fragment(data_elements)
+    def build_data_fragment(data_elements, presentation_context_id)
+      # Set the transfer syntax to be used for encoding the data fragment:
+      set_transfer_syntax(@presentation_contexts[presentation_context_id])
       # Endianness of data fragment:
       @outgoing.set_endian(@data_endian)
       # Clear the outgoing binary string:
@@ -222,7 +220,7 @@ module DICOM
       # Flags (1 byte)
       @outgoing.encode_first("02", "HEX") # Data, last fragment (identifier)
       # Presentation context ID (1 byte)
-      @outgoing.encode_first(1, "BY")
+      @outgoing.encode_first(presentation_context_id, "BY")
       # Length (of remaining data) (4 bytes)
       @outgoing.encode_first(@outgoing.string.length, "UL")
       # PRESENTATION DATA VALUE (the above)
@@ -397,7 +395,7 @@ module DICOM
       transmit
     end
 
-    # Decode an incoming transmission., decide its type, and forward its content to the various methods that process these.
+    # Decodes an incoming transmission., decides its type, and forwards its content to the various methods that process these.
     #
     def interpret(message, file=nil)
       if @first_part
@@ -457,7 +455,7 @@ module DICOM
       return segments
     end
 
-    # Decode the binary string received when the provider wishes to abort the connection, for some reason.
+    # Decodes the binary string received when the provider wishes to abort the connection.
     #
     def interpret_abort(message)
       info = Hash.new
@@ -477,7 +475,7 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the association response, and interpret its content.
+    # Decodes the binary string received in the association response, and interprets its content.
     #
     def interpret_association_accept(message)
       info = Hash.new
@@ -509,7 +507,7 @@ module DICOM
       while pc_loop do
         # Item type (1 byte)
         item_type = msg.decode(1, "HEX")
-        if item_type == "21"
+        if item_type == ITEM_PRESENTATION_CONTEXT_RESPONSE
           pc = Hash.new
           pc[:presentation_item_type] = item_type
           # Reserved (1 byte)
@@ -543,7 +541,7 @@ module DICOM
       end
       info[:pc] = presentation_contexts
       # USER INFORMATION:
-      # Item type (1 byte) ("50")
+      # Item type (1 byte)
       info[:user_info_item_type] = msg.decode(1, "HEX")
       # Reserved (1 byte)
       msg.skip(1)
@@ -557,16 +555,16 @@ module DICOM
         # Item length (2 bytes)
         item_length = msg.decode(2, "US")
         case item_type
-          when "51"
+          when ITEM_MAX_LENGTH
             info[:max_pdu_length] = msg.decode(item_length, "UL")
             @max_receive_size = info[:max_pdu_length]
-          when "52"
+          when ITEM_IMPLEMENTATION_UID
             info[:implementation_class_uid] = msg.decode(item_length, "STR")
-          when "53"
+          when ITEM_MAX_OPERATIONS_INVOKED
             # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
             info[:maxnum_operations_invoked] = msg.decode(2, "US")
             info[:maxnum_operations_performed] = msg.decode(2, "US")
-          when "54"
+          when ITEM_ROLE_NEGOTIATION
             # SCP/SCU Role Selection Negotiation (PS 3.7 D.3.3.4)
             # Note: An association response may contain several instances of this item type (each with a different abstract syntax).
             uid_length = msg.decode(2, "US")
@@ -582,7 +580,7 @@ module DICOM
             else
               info[:role_negotiation] = [role]
             end
-          when "55"
+          when ITEM_IMPLEMENTATION_VERSION
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
             # Value (variable length)
@@ -593,9 +591,9 @@ module DICOM
       stop_receiving
       info[:valid] = true
       return info
-    end # of interpret_association_accept
+    end
 
-    # Decode the association reject message and extract the error reasons given.
+    # Decodes the association reject message and extracts the error reasons given.
     #
     def interpret_association_reject(message)
       info = Hash.new
@@ -614,7 +612,7 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the association request, and interpret its content.
+    # Decodes the binary string received in the association request, and interprets its content.
     #
     def interpret_association_request(message)
       info = Hash.new
@@ -646,7 +644,7 @@ module DICOM
       while pc_loop do
         # Item type (1 byte)
         item_type = msg.decode(1, "HEX")
-        if item_type == "20"
+        if item_type == ITEM_PRESENTATION_CONTEXT_REQUEST
           pc = Hash.new
           pc[:presentation_item_type] = item_type
           # Reserved (1 byte)
@@ -661,7 +659,7 @@ module DICOM
           # A presentation context contains an abstract syntax and one or more transfer syntaxes.
           # ABSTRACT SYNTAX SUB-ITEM:
           # Abstract syntax item type (1 byte)
-          pc[:abstract_syntax_item_type] = msg.decode(1, "HEX") # "30"
+          pc[:abstract_syntax_item_type] = msg.decode(1, "HEX")
           # Reserved (1 byte)
           msg.skip(1)
           # Abstract syntax item length (2 bytes)
@@ -676,7 +674,7 @@ module DICOM
           while ts_loop do
             # Item type (1 byte)
             item_type = msg.decode(1, "HEX")
-            if item_type == "40"
+            if item_type == ITEM_TRANSFER_SYNTAX
               ts = Hash.new
               ts[:transfer_syntax_item_type] = item_type
               # Reserved (1 byte)
@@ -717,15 +715,15 @@ module DICOM
         # Item length (2 bytes)
         item_length = msg.decode(2, "US")
         case item_type
-          when "51"
+          when ITEM_MAX_LENGTH
             info[:max_pdu_length] = msg.decode(item_length, "UL")
-          when "52"
+          when ITEM_IMPLEMENTATION_UID
             info[:implementation_class_uid] = msg.decode(item_length, "STR")
-          when "53"
+          when ITEM_MAX_OPERATIONS_INVOKED
             # Asynchronous operations window negotiation (PS 3.7: D.3.3.3) (2*2 bytes)
             info[:maxnum_operations_invoked] = msg.decode(2, "US")
             info[:maxnum_operations_performed] = msg.decode(2, "US")
-          when "54"
+          when ITEM_ROLE_NEGOTIATION
             # SCP/SCU Role Selection Negotiation (PS 3.7 D.3.3.4)
             # Note: An association request may contain several instances of this item type (each with a different abstract syntax).
             uid_length = msg.decode(2, "US")
@@ -741,7 +739,7 @@ module DICOM
             else
               info[:role_negotiation] = [role]
             end
-          when "55"
+          when ITEM_IMPLEMENTATION_VERSION
             info[:implementation_version] = msg.decode(item_length, "STR")
           else
             # Unknown item type:
@@ -753,9 +751,9 @@ module DICOM
       stop_receiving
       info[:valid] = true
       return info
-    end # of interpret_association_request
+    end
 
-    # Decode the received command/data binary string, and interpret its content.
+    # Decodes the received command/data binary string, and interprets its content.
     # Decoding of data fragment will depend on the explicitness of the transmission.
     #
     def interpret_command_and_data(message, file=nil)
@@ -813,6 +811,9 @@ module DICOM
         if file
           # Just store the binary string:
           info[:bin] = msg.rest_string
+          # If this was the last data fragment of a C-STORE, we need to send a receipt:
+          # (However, for, say a C-FIND-RSP, which indicates the end of the query results, this method shall not be called) (Command Field (0000,0100) holds information on this)
+          handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT
         else
           # Decode data elements:
           while msg.index < last_index do
@@ -844,8 +845,6 @@ module DICOM
           # The results hash is put in an array along with (possibly) other results:
           info[:results] = results
         end
-        # If this was the last data fragment, we need to send a receipt:
-        handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT
       else
         # Unknown.
         add_error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
@@ -869,7 +868,7 @@ module DICOM
       return info
     end
 
-    # Decode the binary string received in the release response, and interpret its content.
+    # Decodes the binary string received in the release response, and interprets its content.
     #
     def interpret_release_response(message)
       info = Hash.new
@@ -881,7 +880,7 @@ module DICOM
       return info
     end
 
-    # Handles multiple incoming transmissions and return the interpreted, received data.
+    # Handles multiple incoming transmissions and returns the interpreted, received data.
     #
     def receive_multiple_transmissions(file=nil)
       @listen = true
@@ -900,7 +899,7 @@ module DICOM
       return segments
     end
 
-    # Handles an expected single incoming transmission and return the interpreted, received data.
+    # Handles an expected single incoming transmission and returns the interpreted, received data.
     #
     def receive_single_transmission
       min_length = 8
@@ -928,7 +927,7 @@ module DICOM
       @session.close unless @session.closed?
     end
 
-    # Send the encoded binary string (package) to its destination.
+    # Sends the encoded binary string (package) to its destination.
     #
     def transmit
       @session.send(@outgoing.string, 0)
@@ -959,7 +958,7 @@ module DICOM
     #
     def append_application_context(ac_uid)
       # Application context item type (1 byte)
-      @outgoing.encode_last("10", "HEX")
+      @outgoing.encode_last(ITEM_APPLICATION_CONTEXT, "HEX")
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # Application context item length (2 bytes)
@@ -968,7 +967,7 @@ module DICOM
       @outgoing.encode_last(ac_uid, "STR")
     end
 
-    # Build the binary string that makes up the header part (part of the association request).
+    # Builds the binary string that makes up the header part (part of the association request).
     #
     def append_association_header(pdu, called_ae)
       # Big endian encoding:
@@ -991,7 +990,6 @@ module DICOM
     end
 
     # Adds the header bytes to the outgoing, binary string (this part has the same structure for all dicom network messages)
-    # PDU: "01", "02", etc..
     #
     def append_header(pdu)
       # Length (of remaining data) (4 bytes)
@@ -1002,7 +1000,7 @@ module DICOM
       @outgoing.encode_first(pdu, "HEX")
     end
 
-    # Build the binary string that makes up the presentation context part (part of the association request).
+    # Builds the binary string that makes up the presentation context part (part of the association request/accept).
     # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
     #
     def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result=ACCEPTANCE)
@@ -1010,7 +1008,7 @@ module DICOM
       abstract_syntaxes.each_with_index do |as, index|
         # PRESENTATION CONTEXT:
         # Presentation context item type (1 byte)
-        @outgoing.encode_last(pc, "HEX") # "20" (request) & "21" (response)
+        @outgoing.encode_last(pc, "HEX")
         # Reserved (1 byte)
         @outgoing.encode_last("00", "HEX")
         # Presentation context item length (2 bytes)
@@ -1043,7 +1041,7 @@ module DICOM
         ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
         if as
           # Abstract syntax item type (1 byte)
-          @outgoing.encode_last("30", "HEX")
+          @outgoing.encode_last(ITEM_ABSTRACT_SYNTAX, "HEX")
           # Reserved (1 byte)
           @outgoing.encode_last("00", "HEX")
           # Abstract syntax item length (2 bytes)
@@ -1056,7 +1054,7 @@ module DICOM
           ts = [ts] if ts.is_a?(String)
           ts.each do |t|
             # Transfer syntax item type (1 byte)
-            @outgoing.encode_last("40", "HEX")
+            @outgoing.encode_last(ITEM_TRANSFER_SYNTAX, "HEX")
             # Reserved (1 byte)
             @outgoing.encode_last("00", "HEX")
             # Transfer syntax item length (2 bytes)
@@ -1073,7 +1071,7 @@ module DICOM
     def append_user_information(ui)
       # USER INFORMATION:
       # User information item type (1 byte)
-      @outgoing.encode_last("50", "HEX")
+      @outgoing.encode_last(ITEM_USER_INFORMATION, "HEX")
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # Encode the user information item values so we can determine the remaining length of this section:
@@ -1097,8 +1095,8 @@ module DICOM
       end
     end
 
-    # Process the value of the reason byte (in an association abort).
-    # This will provide information on what is the reason for the error.
+    # Processes the value of the reason byte (in an association abort).
+    # This will provide a description of what is the reason for the error.
     #
     def process_reason(reason)
       case reason
@@ -1119,7 +1117,7 @@ module DICOM
       end
     end
 
-    # Process the value of the result byte (in the association response).
+    # Processes the value of the result byte (in the association response).
     # Something is wrong if result is different from 0.
     #
     def process_result(result)
@@ -1140,8 +1138,8 @@ module DICOM
       end
     end
 
-    # Process the value of the source byte (in an association abort).
-    # This will provide information on who is the source of the error.
+    # Processes the value of the source byte (in an association abort).
+    # This will provide a description of who is the source of the error.
     #
     def process_source(source)
       if source == "00"
@@ -1153,7 +1151,7 @@ module DICOM
       end
     end
 
-    # Process the value of the status tag 0000,0900 received in the command fragment.
+    # Processes the value of the status tag (0000,0900) received in the command fragment.
     # Note: The status tag has vr 'US', and the status as reported here is therefore a number.
     # In the official DICOM documents however, the value of the various status options is given in hex format.
     # Resources: DICOM PS3.4 Annex Q 2.1.1.4, DICOM PS3.7 Annex C 4.
@@ -1259,19 +1257,19 @@ module DICOM
       end
     end
 
-    # Set user information [item type code, vr/type, value]
+    # Sets user information [item type code, vr/type, value].
     #
     def set_user_information_array(info = nil)
       @user_information = [
-        ["51", "UL", @max_package_size], # Max PDU Length
-        ["52", "STR", UID],
-        ["55", "STR", NAME]
+        [ITEM_MAX_LENGTH, "UL", @max_package_size],
+        [ITEM_IMPLEMENTATION_UID, "STR", UID],
+        [ITEM_IMPLEMENTATION_VERSION, "STR", NAME]
       ]
       # A bit of a hack to include "asynchronous operations window negotiation" and/or "role negotiation",
       # in cases where this has been included in the association request:
       if info
         if info[:maxnum_operations_invoked]
-          @user_information.insert(2, ["53", "HEX", "00010001"])
+          @user_information.insert(2, [ITEM_MAX_OPERATIONS_INVOKED, "HEX", "00010001"])
         end
         if info[:role_negotiation]
           pos = 3
@@ -1294,7 +1292,7 @@ module DICOM
             else
               msg.encode_last(1, "BY")
             end
-            @user_information.insert(pos, ["54", "STR", msg.string])
+            @user_information.insert(pos, [ITEM_ROLE_NEGOTIATION, "STR", msg.string])
             pos += 1
           end
         end

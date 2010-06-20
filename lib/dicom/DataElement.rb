@@ -2,15 +2,16 @@
 
 module DICOM
 
-  # Class for handling information related to a Data Element.
+  # The DataElement class handles information related to a Data Element.
+  #
   class DataElement
 
     # Include the Elements mixin module:
     include Elements
-    
+
     attr_reader :value
 
-    # Initialize a DataElement instance. Takes a tag string, a value and a hash of options as parameters.
+    # Initializes a DataElement instance. Takes a tag string, a value and a hash of options as parameters.
     #
     # === Parameters
     #
@@ -25,6 +26,7 @@ module DICOM
     # * <tt>:name</tt> - String. The name of the Data Element may be specified upon creation. If not, a query will be done against the library.
     # * <tt>:parent</tt> - Item or DObject instance which the newly created DataElement instance belongs to.
     # * <tt>:vr</tt> -- String. If a private Data Element is created with a custom value, this needs to be specified to enable the encoding of the value.
+    #
     def initialize(tag, value, options={})
       # Set instance variables:
       @tag = tag
@@ -64,7 +66,8 @@ module DICOM
       end
     end
 
-    # Set the binary string of a DataElement.
+    # Sets the binary string of a DataElement.
+    #
     def bin=(new_bin)
       if new_bin.is_a?(String)
         # Add an empty byte at the end if the length of the binary is odd:
@@ -82,32 +85,39 @@ module DICOM
 
     # A boolean used to check whether whether or not an element actually has any child elements.
     # Returns false.
+    #
     def children?
       return false
     end
 
     # A boolean used to check whether or not an element is a parent.
     # Returns false.
+    #
     def is_parent?
       return false
     end
 
-    # Set the value of a DataElement. The specified, formatted value will be encoded and the DataElement's binary string will be updated.
+    # Sets the value of a DataElement. The specified, formatted value will be encoded and the DataElement's binary string will be updated.
+    #
     def value=(new_value)
       @bin = encode(new_value)
       @value = new_value
       @length = @bin.length
     end
 
+
     # Following methods are private.
     private
 
+
     # Encodes a formatted value to binary and returns it.
+    #
     def encode(formatted_value)
       return stream.encode_value(formatted_value, @vr)
     end
 
     # Returns a Stream instance which can be used for encoding a value to binary.
+    #
     def stream
       # Use the stream instance of DObject or create a new one (with assumed Little Endian encoding)?
       if top_parent.is_a?(DObject)
