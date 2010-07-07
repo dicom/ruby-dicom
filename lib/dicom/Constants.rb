@@ -53,11 +53,18 @@ module DICOM
 
   # Network Command Element codes:
   C_STORE_RQ = 1 # (encodes to 0001H as US)
-  C_GET_RQ = 16
-  C_FIND_RQ = 32
-  C_MOVE_RQ = 33
+  C_GET_RQ = 16 # (encodes to 0010H as US)
+  C_FIND_RQ = 32 # (encodes to 0020H as US)
+  C_MOVE_RQ = 33 # (encodes to 0021H as US)
+  C_ECHO_RQ = 48 # (encodes to 0030 as US)
+  C_CANCEL_RQ = 4095 # (encodes to 0FFFH as US)
   C_STORE_RSP = 32769 # (encodes to 8001H as US)
+  C_GET_RSP = 32784 # (encodes to 8010H as US)
+  C_FIND_RSP = 32800 # (encodes to 8020H as US)
+  C_MOVE_RSP = 32801 # (encodes to 8021H as US)
+  C_ECHO_RSP = 32816 # (encodes to 8030H as US)
   NO_DATA_SET_PRESENT = 257 # (encodes to 0101H as US)
+  DATA_SET_PRESENT = 1
   DEFAULT_MESSAGE_ID = 1
 
   # Flags:

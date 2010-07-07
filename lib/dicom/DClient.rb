@@ -41,6 +41,15 @@ module DICOM
       @link = Link.new(:ae => @ae, :host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout)
     end
 
+    # Tests the connection to the specified host by performing a C-ECHO.
+    #
+    def echo
+      success = false
+      # Verification SOP Class:
+      @abstract_syntaxes = [VERIFICATION_SOP]
+      perform_echo
+    end
+
     # Queries a service class provider for images that match the specified criteria.
     # Example:   find_images("0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844") # (Study Instance UID & Series Instance UID)
     #
@@ -246,9 +255,9 @@ module DICOM
           info = @link.receive_single_transmission.first
           @link.stop_session
           if info[:pdu] == PDU_RELEASE_RESPONSE
-            add_notice("Association released properly from host #{host_ae} (#{host_ip}).")
+            add_notice("Association released properly from host #{host_ae}.")
           else
-            add_error("Association released from host #{host_ae} (#{host_ip}), but release response was not received.")
+            add_error("Association released from host #{host_ae}, but a release response was not registered.")
           end
         else
           add_error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
@@ -288,6 +297,31 @@ module DICOM
         end
       end
       return objects, abstracts.uniq, status, message
+    end
+
+    # Handles the communication involved in a DICOM C-ECHO.
+    # Build the necessary strings and send the command and data element that makes up the echo request.
+    # Listens for and interpretes the incoming echo response.
+    #
+    def perform_echo
+      # Open a DICOM link:
+      establish_association
+      if @association
+        if @request_approved
+          # Continue with our echo, since the request was accepted.
+          # Set the query command elements array:
+          set_command_fragment_echo
+          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
+          @link.transmit
+          # Listen for incoming responses and interpret them individually, until we have received the last command fragment.
+          segments = @link.receive_multiple_transmissions
+          process_returned_data(segments)
+          # Print stuff to screen?
+        end
+        # Close the DICOM link:
+        establish_release
+      end
     end
 
     # Handles the communication involved in a DICOM query (C-FIND).
@@ -431,13 +465,13 @@ module DICOM
       if rejected.length == 0
         @request_approved = true
         if @approved_syntaxes.length == 1
-          add_notice("The presentation context was accepted by host #{@host_ae} (#{@host_ip}).")
+          add_notice("The presentation context was accepted by host #{@host_ae}.")
         else
           add_notice("All #{@approved_syntaxes.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
         end
       else
         @request_approved = false
-        add_error("One or more of your presentation contexts were denied by host #{@host_ae} (#{@host_ip})!")
+        add_error("One or more of your presentation contexts were denied by host #{@host_ae}!")
         @approved_syntaxes.each_key {|a| add_error("APPROVED: #{LIBRARY.get_syntax_description(a)}")}
         rejected.each_key {|r| add_error("REJECTED: #{LIBRARY.get_syntax_description(r)}")}
       end
@@ -471,15 +505,14 @@ module DICOM
       end
     end
 
-    # Sets the command elements used in a C-GET-RQ.
+    # Sets the command elements used in a C-ECHO-RQ.
     #
-    def set_command_fragment_get
+    def set_command_fragment_echo
       @command_elements = [
         ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
-        ["0000,0100", "US", C_GET_RQ],
-        ["0000,0600", "AE", @ae], # Destination is ourselves
-        ["0000,0700", "US", 0], # Priority: 0: medium
-        ["0000,0800", "US", 1] # Data Set Type: 1
+        ["0000,0100", "US", C_ECHO_RQ],
+        ["0000,0110", "US", DEFAULT_MESSAGE_ID],
+        ["0000,0800", "US", NO_DATA_SET_PRESENT]
       ]
     end
 
@@ -492,7 +525,19 @@ module DICOM
         ["0000,0100", "US", C_FIND_RQ],
         ["0000,0110", "US", DEFAULT_MESSAGE_ID],
         ["0000,0700", "US", 0], # Priority: 0: medium
-        ["0000,0800", "US", 1] # Data Set Type: 1
+        ["0000,0800", "US", DATA_SET_PRESENT]
+      ]
+    end
+
+    # Sets the command elements used in a C-GET-RQ.
+    #
+    def set_command_fragment_get
+      @command_elements = [
+        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
+        ["0000,0100", "US", C_GET_RQ],
+        ["0000,0600", "AE", @ae], # Destination is ourselves
+        ["0000,0700", "US", 0], # Priority: 0: medium
+        ["0000,0800", "US", DATA_SET_PRESENT]
       ]
     end
 
@@ -505,7 +550,7 @@ module DICOM
         ["0000,0110", "US", DEFAULT_MESSAGE_ID],
         ["0000,0600", "AE", destination],
         ["0000,0700", "US", 0], # Priority: 0: medium
-        ["0000,0800", "US", 1] # Data Set Type: 1
+        ["0000,0800", "US", DATA_SET_PRESENT]
       ]
     end
 
@@ -517,7 +562,7 @@ module DICOM
         ["0000,0100", "US", C_STORE_RQ],
         ["0000,0110", "US", message_id],
         ["0000,0700", "US", 0], # Priority: 0: medium
-        ["0000,0800", "US", 1], # Data Set Type: 1
+        ["0000,0800", "US", DATA_SET_PRESENT],
         ["0000,1000", "UI", instance] # Affected SOP Instance UID
       ]
     end
