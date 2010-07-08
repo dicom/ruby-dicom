@@ -311,7 +311,7 @@ module DICOM
           # Continue with our echo, since the request was accepted.
           # Set the query command elements array:
           set_command_fragment_echo
-          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           # Listen for incoming responses and interpret them individually, until we have received the last command fragment.
@@ -336,7 +336,7 @@ module DICOM
           # Continue with our query, since the request was accepted.
           # Set the query command elements array:
           set_command_fragment_find
-          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements, presentation_context_id)
@@ -359,7 +359,7 @@ module DICOM
       if @association
         if @request_approved
           # Continue with our operation, since the request was accepted.
-          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements, presentation_context_id)
@@ -384,7 +384,7 @@ module DICOM
       if @association
         if @request_approved
           # Continue with our operation, since the request was accepted.
-          presentation_context_id = @approved_syntaxes.first[1][0] # ID of first (and only) syntax in this Hash.
+          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements, presentation_context_id)

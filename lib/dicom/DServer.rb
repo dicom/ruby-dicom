@@ -128,7 +128,7 @@ module DICOM
     #
     def start_scp(path='./received/')
       if @accepted_abstract_syntaxes.size > 0 and @accepted_transfer_syntaxes.size > 0
-        add_notice("Starting SCP server...")
+        add_notice("Starting DICOM SCP server...")
         add_notice("*********************************")
         # Initiate server:
         @scp = TCPServer.new(@port)
@@ -140,7 +140,7 @@ module DICOM
             link.set_session(session)
             # Note the time of reception as well as who has contacted us:
             add_notice(Time.now.strftime("%Y-%m-%d  %H:%M:%S"))
-            add_notice("Connection established with:  #{session.peeraddr[2]}  (IP:  #{session.peeraddr[3]})")
+            add_notice("Connection established with:  #{session.peeraddr[2]}  (IP: #{session.peeraddr[3]})")
             # Receive an incoming message:
             segments = link.receive_multiple_transmissions
             info = segments.first
@@ -160,18 +160,13 @@ module DICOM
                       add_notice("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
                     end
                   end
-                  if test_only
-                    # Verification SOP Class (used for testing connections):
-                    link.await_release
+                  # Process the incoming data. This method will also take care of releasing the association:
+                  success, messages = link.handle_incoming_data(path)
+                  if success
+                    add_notice(messages) if messages.first
                   else
-                    # Process the incoming data. This method will also take care of releasing the association:
-                    success, message = link.handle_incoming_data(path)
-                    if success
-                      add_notice(message)
-                    else
-                      # Something has gone wrong:
-                      add_error(message)
-                    end
+                    # Something has gone wrong:
+                    add_error(messages) if messages.first
                   end
                 else
                   # No abstract syntaxes in the incoming request were accepted:

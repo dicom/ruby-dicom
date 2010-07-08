@@ -52,6 +52,9 @@ module DICOM
           add_error("Timed out while waiting for a release request. Closing the connection.")
         end
         stop_session
+      else
+        # Properly release the association:
+        handle_release
       end
     end
 
@@ -248,7 +251,7 @@ module DICOM
       @outgoing.reset
       # Reserved (4 bytes)
       @outgoing.encode_last("00000000", "HEX")
-      append_header(PDU_RELEASE_REQUEST)
+      append_header(PDU_RELEASE_RESPONSE)
     end
 
     # Builds the binary string that makes up the storage data fragment.
@@ -318,6 +321,9 @@ module DICOM
 
     # Processes the data that was sent to us.
     # This is expected to be one or more combinations of: A C-STORE-RQ (command fragment) followed by a bunch of data fragments.
+    # It may also be a C-ECHO-RQ command fragment, which is used to test connections.
+    # FIXME: The code which handles incoming data isnt quite satisfactory. It would probably be wise to rewrite it at some stage
+    # to clean up the code somewhat. Probably a better handling of command requests (and their corresponding data fragments) would be a good idea.
     #
     def handle_incoming_data(path)
       # Wait for incoming data:
@@ -382,7 +388,7 @@ module DICOM
       # SOP Class UID:
       command_elements << ["0000,0002", "UI", @command_request["0000,0002"]]
       # Command Field:
-      command_elements << ["0000,0100", "US", C_STORE_RSP]
+      command_elements << ["0000,0100", "US", command_field_response(@command_request["0000,0100"])]
       # Message ID Being Responded To:
       command_elements << ["0000,0120", "US", @command_request["0000,0110"]]
       # Data Set Type:
@@ -390,7 +396,7 @@ module DICOM
       # Status:
       command_elements << ["0000,0900", "US", SUCCESS]
       # Affected SOP Instance UID:
-      command_elements << ["0000,1000", "UI", @command_request["0000,1000"]]
+      command_elements << ["0000,1000", "UI", @command_request["0000,1000"]] if @command_request["0000,1000"]
       build_command_fragment(PDU_DATA, @presentation_context_id, COMMAND_LAST_FRAGMENT, command_elements)
       transmit
     end
@@ -805,6 +811,11 @@ module DICOM
           # Note: This method will also stop the packet receiver if indicated by the status mesasge.
           process_status(status)
         end
+        # Special case: Handle a possible C-ECHO-RQ:
+        if info[:results]["0000,0100"] == C_ECHO_RQ
+          add_notice("Received an Echo request. Returning an Echo response.")
+          handle_response
+        end
       elsif info[:presentation_context_flag] == DATA_MORE_FRAGMENTS or info[:presentation_context_flag] == DATA_LAST_FRAGMENT
         # DATA FRAGMENT:
         # If this is a file transmission, we will delay the decoding for later:
@@ -1092,6 +1103,20 @@ module DICOM
         @outgoing.encode_last(values[i].length, "US")
         # UI value (4 bytes)
         @outgoing.add_last(values[i])
+      end
+    end
+
+    # Returns a proper response value for the Command Field (0000,0100) based on a specified request value.
+    #
+    def command_field_response(request)
+      case request
+        when C_STORE_RQ
+          return C_STORE_RSP
+        when C_ECHO_RQ
+          return C_ECHO_RSP
+        else
+          add_error("Unknown or unsupported request (#{request}) encountered.")
+          return C_CANCEL_RQ
       end
     end
 

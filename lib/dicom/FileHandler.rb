@@ -43,12 +43,9 @@ module DICOM
     #
     def self.receive_files(path, objects, transfer_syntaxes)
       all_success = true
-      successful = 0
-      too_short = 0
-      parse_fail = 0
-      handle_fail = 0
+      successful, too_short, parse_fail, handle_fail = 0, 0, 0, 0
       total = objects.length
-      message = ""
+      message = nil
       messages = Array.new
       # Process each DICOM object:
       objects.each_index do |i|
