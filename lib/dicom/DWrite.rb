@@ -27,7 +27,6 @@ module DICOM
       @transfer_syntax = options[:transfer_syntax] || IMPLICIT_LITTLE_ENDIAN
       # As default, signature will be written and meta header added:
       @signature = (options[:signature] == false ? false : true)
-      @add_meta = (options[:add_meta] == false ? false : true)
       # Array for storing error/warning messages:
       @msg = Array.new
       # Default values which the user may overwrite afterwards:
@@ -54,13 +53,9 @@ module DICOM
         write_signature if @signature
         # Write either body or data elements:
         if body
-          # Add meta information header:
-          write_meta
           @stream.add_last(body)
         else
           elements = @obj.children
-          # If the DICOM object lacks meta information header, it will be added, unless it has been requested that it should not.
-          write_meta if @add_meta and elements.first.tag.group != META_GROUP
           write_data_elements(elements)
         end
         # As file has been written successfully, it can be closed.
@@ -147,55 +142,6 @@ module DICOM
       filler = @stream.encode("00"*128, "HEX")
       @stream.write(filler)
       @stream.write(identifier)
-    end
-
-    # Inserts Meta Group (0002,xxxx) data elements.
-    #
-    def write_meta
-      # File Meta Information Version:
-      tag = @stream.encode_tag("0002,0001")
-      @stream.add_last(tag)
-      @stream.encode_last("OB", "STR")
-      @stream.encode_last("0000", "HEX") # (2 reserved bytes)
-      @stream.encode_last(2, "UL")
-      @stream.encode_last("0001", "HEX") # (Value)
-      # Transfer Syntax UID:
-      tag = @stream.encode_tag("0002,0010")
-      @stream.add_last(tag)
-      @stream.encode_last("UI", "STR")
-      value = @stream.encode_value(@transfer_syntax, "STR")
-      @stream.encode_last(value.length, "US")
-      @stream.add_last(value)
-      # Implementation Class UID:
-      tag = @stream.encode_tag("0002,0012")
-      @stream.add_last(tag)
-      @stream.encode_last("UI", "STR")
-      value = @stream.encode_value(UID, "STR")
-      @stream.encode_last(value.length, "US")
-      @stream.add_last(value)
-      # Implementation Version Name:
-      tag = @stream.encode_tag("0002,0013")
-      @stream.add_last(tag)
-      @stream.encode_last("SH", "STR")
-      value = @stream.encode_value(NAME, "STR")
-      @stream.encode_last(value.length, "US")
-      @stream.add_last(value)
-      # Group length:
-      # This data element will be put first in the binary string, and built 'backwards'.
-      # Value:
-      value = @stream.encode(@stream.length, "UL")
-      @stream.add_first(value)
-      # Length:
-      length = @stream.encode(4, "US")
-      @stream.add_first(length)
-      # VR:
-      vr = @stream.encode("UL", "STR")
-      @stream.add_first(vr)
-      # Tag:
-      tag = @stream.encode_tag("0002,0000")
-      @stream.add_first(tag)
-      # Write the meta information to file:
-      @stream.write(@stream.string)
     end
 
     # Loops through the data elements in order to write.

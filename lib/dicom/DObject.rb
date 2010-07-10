@@ -266,7 +266,17 @@ module DICOM
     # Passes the DObject to the DWrite class, which recursively traverses the Data Element
     # structure and encodes a proper binary string, which is then written to the specified file.
     #
+    # === Parameters
+    #
+    # * <tt>file_name</tt> -- A string which identifies the path & name of the DICOM file which is to be written to disk.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:add_meta</tt> -- Boolean. If set to false, no manipulation of the DICOM object's Meta Group will be performed before the object is written to file.
+    #
     def write(file_name, options={})
+      insert_missing_meta unless options[:add_meta] == false
       w = set_write_object(file_name, options)
       w.write
       # Write process succesful?
@@ -288,16 +298,34 @@ module DICOM
       @errors.flatten
     end
 
+    # Adds any missing Meta Group (0002,xxxx) data elements to the DICOM object,
+    # to ensure that a valid DICOM object will be written to file.
+    #
+    def insert_missing_meta
+      # File Meta Information Version:
+      DataElement.new("0002,0001", "0001", :encoded => true, :parent => self) unless exists?("0002,0001")
+      # Media Storage SOP Class UID:
+      DataElement.new("0002,0002", self.value("0008,0016"), :parent => self) unless exists?("0002,0002")
+      # Media Storage SOP Instance UID:
+      DataElement.new("0002,0003", self.value("0008,0018"), :parent => self) unless exists?("0002,0003")
+      # Transfer Syntax UID:
+      DataElement.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
+      # Implementation Class UID:
+      DataElement.new("0002,0012", UID, :parent => self) unless exists?("0002,0012")
+      # Implementation Version Name:
+      DataElement.new("0002,0013", NAME, :parent => self) unless exists?("0002,0013")
+      # Source Application Entity Title:
+      DataElement.new("0002,0016", SOURCE_APP_TITLE, :parent => self) unless exists?("0002,0016")
+      # Group length:
+      # Although group lengths in general have been retired in DICOM 2008, the meta group seems to have kept its group length.
+      # (FIXME: Add group length)
+    end
+
     # Handles the creation of a DWrite object, and returns this object to the calling method.
     #
     def set_write_object(file_name=nil, options={})
-      unless options[:transfer_syntax]
-        if self["0002,0010"]
-          options[:transfer_syntax] = self["0002,0010"].value
-        else
-          options[:transfer_syntax] = IMPLICIT_LITTLE_ENDIAN
-        end
-      end
+      # Set transfer syntax if not already specified externally:
+      options[:transfer_syntax] = transfer_syntax unless options[:transfer_syntax]
       w_obj = DWrite.new(self, file_name, options)
       w_obj.rest_endian = @file_endian
       w_obj.rest_explicit = @explicit
