@@ -16,35 +16,62 @@
 #--------------------------------------------------------------------------------------------------
 
 # TODO:
-# -The retrieve file network functionality (get_image in DClient class) has not been tested.
-# -Make the networking code more intelligent in its handling of unexpected network communication.
-# -Full support for compressed image data.
-# -Read/Write 12 bit image data.
-# -Support for color image data.
-# -Complete support for Big endian (Everything but signed short and signed long has been implemented).
-# -Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
-# -Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
-# -More robust and flexible options for reorienting extracted pixel arrays?
-# -A curious observation: Instantiating the DLibrary class is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
+#
+# * The retrieve file network functionality (get_image in DClient class) has not been tested.
+# * Make the networking code more intelligent in its handling of unexpected network communication.
+# * Full support for compressed image data.
+# * Read/Write 12 bit image data.
+# * Support for color image data.
+# * Complete support for Big endian (Everything but signed short and signed long has been implemented).
+# * Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
+# * Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
+# * More robust and flexible options for reorienting extracted pixel arrays?
+# * A curious observation: Creating a DLibrary instance is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
 
 module DICOM
 
-  # The DObject class holds the DICOM object itself and a variety of methods for manipulating this object.
+  # The DObject class is the main class for interacting with the DICOM object. Reading from and writing to files is executed from instances of this class.
   #
   class DObject < SuperItem
 
-    attr_reader :errors, :modality, :parent, :read_success, :stream, :write_success
+    # An array which contain any notices/warnings/errors that have been recorded for the DObject instance.
+    attr_reader :errors
+    # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
+    attr_reader :parent
+    # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary String).
+    attr_reader :read_success
+    # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
+    attr_reader :stream
+    # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
+    attr_reader :write_success
 
-    # Initializes a DObject instance.
-    # Parameters:
-    # string
-    # options
+    # Creates a DObject instance (DObject is an abbreviation for "DICOM object").
     #
-    # Options:
-    # :bin
-    # :segment_size
-    # :syntax
-    # :verbose
+    # The DObject instance holds references to the different types of objects (DataElement, Item, Sequence)
+    # that makes up a DICOM object. A DObject is typically buildt by reading and parsing a file or a
+    # binary string, but can also be buildt from an empty state by the user.
+    #
+    # === Parameters
+    #
+    # * <tt>string</tt> -- A String, either specifying the path of a DICOM file to be loaded, or a binary DICOM String
+    # to be parsed. The parameter defaults to nil, in which case an empty DObject instance will be created.
+    # * <tt>options</tt> -- A Hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM String, and not a path String, which is the default behaviour.
+    # * <tt>:syntax</tt> -- String. If a syntax String is specified, the DRead class will be forced to use this Transfer Syntax when decoding the file/binary string.
+    # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
+    #
+    # === Examples
+    #
+    #   # Load a DICOM file:
+    #   require 'dicom'
+    #   obj = DICOM::DObject.new("test.dcm")
+    #   # Read a DICOM file that has already been loaded into memory in a binary string (with a known transfer syntax):
+    #   obj = DICOM::DObject.new(binary_string, :bin => true, :syntax => string_transfer_syntax)
+    #   # Create an empty DICOM object & choose non-verbose behaviour:
+    #   obj = DICOM::DObject.new(nil, :verbose => false)
     #
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
@@ -72,6 +99,16 @@ module DICOM
 
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
     #
+    # Returns the encoded binary strings in an Array.
+    #
+    # === Parameters
+    #
+    # * <tt>max_size</tt> -- An integer (Fixnum) which specifies the maximum allowed size of the binary data strings which will be encoded.
+    #
+    # === Examples
+    #
+    #  encoded_strings = obj.encode_segments(16384)
+    #
     def encode_segments(max_size)
       w = set_write_object
       w.encode_segments(max_size)
@@ -82,8 +119,13 @@ module DICOM
       return w.segments
     end
 
-    # Gathers key information about the DICOM object in a string array.
-    # This array can be printed to screen (default), printed to a file specified by the user or simply returned to the caller.
+    # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
+    #
+    # This information includes properties like encoding, byte order, modality and various image properties.
+    #
+    #--
+    # FIXME: Perhaps this method should be split up in one or two separate methods which just builds the information arrays,
+    # and a third method for printing this to the screen.
     #
     def information
       sys_info = Array.new
@@ -194,13 +236,18 @@ module DICOM
       puts info
       puts separator
       return info
-    end # of information
+    end
 
-    # Returns a DICOM object by reading the file specified.
-    # This is accomplished by initliazing the DRead class, which loads DICOM information to arrays.
-    # Note:
-    # This method is called automatically when initializing the DObject class, and in practice will not be called by users.
-    # It should be considered making this a private method.
+    # Returns a DICOM object by reading and parsing the specified file.
+    # This is accomplished by initializing the DRead class, which loads DICOM information to arrays.
+    #
+    # === Notes
+    #
+    # This method is called automatically when initializing the DObject class with a file parameter,
+    # and in practice will not be called by users.
+    #
+    #--
+    # FIXME: It should be considered whether this should be a private method.
     #
     def read(string, options={})
       r = DRead.new(self, string, options)
@@ -226,17 +273,25 @@ module DICOM
       add_msg(r.msg) if r.msg.length > 0
     end
 
-    # Returns the transfer syntax of this DICOM object.
-    # If a transfer syntax has not been defined, the default transfer syntax is assumed, and returned.
+    # Returns the Transfer Syntax String of the DObject.
+    #
+    # If a Transfer Syntax has not been defined in the DObject, a default Transfer Syntax is assumed and returned.
     #
     def transfer_syntax
       return value("0002,0010") || IMPLICIT_LITTLE_ENDIAN
     end
 
-    # Changes the transfer syntax Data Element of the DICOM object, and performs re-encoding of all
-    # number values if a switch of Endianness is implied.
-    # NB: This method does not change the nature of the Pixel Data Tag, changing between uncompressed
-    # and compressed transfer syntax won't change the pixel data accordingly (this must be taken care of manually).
+    # Changes the Transfer Syntax Data Element of the DICOM object, and performs re-encoding of all
+    # numerical values if a switch of Endianness is implied.
+    #
+    # === Restrictions
+    #
+    # This method does not change the compressed state of the Pixel Data Element. Changing the transfer syntax between
+    # an uncompressed and compressed state will NOT change the Pixel Data accordingly (this must be taken care of manually).
+    #
+    # === Parameters
+    #
+    # * <tt>new_syntax</tt> -- The new Transfer Syntax String which will be applied to the DObject.
     #
     def transfer_syntax=(new_syntax)
       valid, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
@@ -263,17 +318,21 @@ module DICOM
       end
     end
 
-    # Passes the DObject to the DWrite class, which recursively traverses the Data Element
-    # structure and encodes a proper binary string, which is then written to the specified file.
+    # Passes the DObject to the DWrite class, which traverses the Data Element
+    # structure and encodes a proper DICOM binary string, which is finally written to the specified file.
     #
     # === Parameters
     #
-    # * <tt>file_name</tt> -- A string which identifies the path & name of the DICOM file which is to be written to disk.
-    # * <tt>options</tt> -- A hash of parameters.
+    # * <tt>file_name</tt> -- A String which identifies the path & name of the DICOM file which is to be written to disk.
+    # * <tt>options</tt> -- A Hash of parameters.
     #
     # === Options
     #
-    # * <tt>:add_meta</tt> -- Boolean. If set to false, no manipulation of the DICOM object's Meta Group will be performed before the object is written to file.
+    # * <tt>:add_meta</tt> -- Boolean. If set to false, no manipulation of the DICOM object's Meta Group will be performed before the DObject is written to file.
+    #
+    # === Examples
+    #
+    #   obj.write(path + "test.dcm")
     #
     def write(file_name, options={})
       insert_missing_meta unless options[:add_meta] == false
@@ -290,7 +349,12 @@ module DICOM
     private
 
 
-    # Adds a warning or error message to the instance array holding messages, and if verbose variable is true, prints the message as well.
+    # Adds one or more status messages to the instance array holding messages, and if the @verbose instance variable
+    # is true, the status message(s) are printed to the screen as well.
+    #
+    # === Parameters
+    #
+    # * <tt>msg</tt> -- Status message String, or an Array containing one or more status message strings.
     #
     def add_msg(msg)
       puts msg if @verbose
@@ -305,9 +369,9 @@ module DICOM
       # File Meta Information Version:
       DataElement.new("0002,0001", "0001", :encoded => true, :parent => self) unless exists?("0002,0001")
       # Media Storage SOP Class UID:
-      DataElement.new("0002,0002", self.value("0008,0016"), :parent => self) unless exists?("0002,0002")
+      DataElement.new("0002,0002", value("0008,0016"), :parent => self) unless exists?("0002,0002")
       # Media Storage SOP Instance UID:
-      DataElement.new("0002,0003", self.value("0008,0018"), :parent => self) unless exists?("0002,0003")
+      DataElement.new("0002,0003", value("0008,0018"), :parent => self) unless exists?("0002,0003")
       # Transfer Syntax UID:
       DataElement.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
       # Implementation Class UID:
@@ -321,7 +385,13 @@ module DICOM
       # (FIXME: Add group length)
     end
 
-    # Handles the creation of a DWrite object, and returns this object to the calling method.
+    # Handles the creation of a DWrite instance, and returns this instance to the calling method,
+    # which is either the write() or the encode_segments() method.
+    #
+    # === Parameters
+    #
+    # * <tt>file_name</tt> -- Defaults to nil (when no file is going to be written). Else, if specified, the encoded DICOM String is to be written to the specified file.
+    # * <tt>options</tt> -- A Hash of parameters. See the encode_segments() and write() methods for details.
     #
     def set_write_object(file_name=nil, options={})
       # Set transfer syntax if not already specified externally:
@@ -332,5 +402,5 @@ module DICOM
       return w_obj
     end
 
-  end # of class
-end # of module
+  end
+end
