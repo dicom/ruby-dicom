@@ -13,11 +13,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#--------------------------------------------------------------------------------------------------
 
 # TODO:
 #
-# * The retrieve file network functionality (get_image in DClient class) has not been tested.
+# * The retrieve file network functionality (get_image() in DClient class) has not been tested.
 # * Make the networking code more intelligent in its handling of unexpected network communication.
 # * Full support for compressed image data.
 # * Read/Write 12 bit image data.
@@ -30,7 +29,13 @@
 
 module DICOM
 
-  # The DObject class is the main class for interacting with the DICOM object. Reading from and writing to files is executed from instances of this class.
+  # The DObject class is the main class for interacting with the DICOM object.
+  # Reading from and writing to files is executed from instances of this class.
+  #
+  # === Inheritance
+  #
+  # As the DObject class inherits from the SuperItem class, which itself inherits from the SuperParent class,
+  # all SuperItem and SuperParent methods are also available to instances of DObject.
   #
   class DObject < SuperItem
 
@@ -273,25 +278,25 @@ module DICOM
       add_msg(r.msg) if r.msg.length > 0
     end
 
-    # Returns the Transfer Syntax String of the DObject.
+    # Returns the transfer syntax String of the DObject.
     #
-    # If a Transfer Syntax has not been defined in the DObject, a default Transfer Syntax is assumed and returned.
+    # If a transfer syntax has not been defined in the DObject, a default tansfer syntax is assumed and returned.
     #
     def transfer_syntax
       return value("0002,0010") || IMPLICIT_LITTLE_ENDIAN
     end
 
-    # Changes the Transfer Syntax Data Element of the DICOM object, and performs re-encoding of all
+    # Changes the transfer syntax Data Element of the DObject instance, and performs re-encoding of all
     # numerical values if a switch of Endianness is implied.
     #
     # === Restrictions
     #
-    # This method does not change the compressed state of the Pixel Data Element. Changing the transfer syntax between
-    # an uncompressed and compressed state will NOT change the Pixel Data accordingly (this must be taken care of manually).
+    # This method does not change the compressed state of the pixel data element. Changing the transfer syntax between
+    # an uncompressed and compressed state will NOT change the pixel data accordingly (this must be taken care of manually).
     #
     # === Parameters
     #
-    # * <tt>new_syntax</tt> -- The new Transfer Syntax String which will be applied to the DObject.
+    # * <tt>new_syntax</tt> -- The new transfer syntax String which will be applied to the DObject.
     #
     def transfer_syntax=(new_syntax)
       valid, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
@@ -318,7 +323,7 @@ module DICOM
       end
     end
 
-    # Passes the DObject to the DWrite class, which traverses the Data Element
+    # Passes the DObject to the DWrite class, which traverses the data element
     # structure and encodes a proper DICOM binary string, which is finally written to the specified file.
     #
     # === Parameters
@@ -328,7 +333,7 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:add_meta</tt> -- Boolean. If set to false, no manipulation of the DICOM object's Meta Group will be performed before the DObject is written to file.
+    # * <tt>:add_meta</tt> -- Boolean. If set to false, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file.
     #
     # === Examples
     #
@@ -362,7 +367,7 @@ module DICOM
       @errors.flatten
     end
 
-    # Adds any missing Meta Group (0002,xxxx) data elements to the DICOM object,
+    # Adds any missing meta group (0002,xxxx) data elements to the DICOM object,
     # to ensure that a valid DICOM object will be written to file.
     #
     def insert_missing_meta
