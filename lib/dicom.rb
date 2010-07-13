@@ -1,5 +1,7 @@
+# Loads the files that are used by Ruby DICOM.
+
 # Core library:
-# Super classes/modules (which needs to be loaded in a proper sequence):
+# Super classes/modules:
 require 'dicom/SuperParent'
 require 'dicom/SuperItem'
 require 'dicom/Elements'
@@ -24,4 +26,3 @@ require 'dicom/Constants'
 
 # Extensions (non-core functionality):
 require 'dicom/Anonymizer'
-

@@ -2,8 +2,8 @@
 
 module DICOM
 
-  # Super class which contains code that is common for both the DObject and Item classes.
-  # This class contains the image related methods, since images may be stored either directly in the DObject,
+  # Super class which contains common code for both the DObject and Item classes.
+  # This class includes the image related methods, since images may be stored either directly in the DObject,
   # or in items (encapsulated items in the "Pixel Data" element or in "Icon Image Sequence" items).
   #
   # === Inheritance
@@ -97,6 +97,10 @@ module DICOM
     #
     # * The returned array does not carry the dimensions of the pixel data: It is put in a one dimensional Array (vector).
     #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A Hash of parameters.
+    #
     # === Options
     #
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
@@ -135,6 +139,10 @@ module DICOM
     #
     # * To call this method the user needs to have loaded the ImageMagick bindings in advance (require 'RMagick').
     #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A Hash of parameters.
+    #
     # === Options
     #
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
@@ -172,6 +180,10 @@ module DICOM
     # === Notes
     #
     # * To call this method the user needs to loaded the NArray library in advance (require 'narray').
+    #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A Hash of parameters.
     #
     # === Options
     #
@@ -316,7 +328,7 @@ module DICOM
     #
     # === Restrictions
     #
-    # * If pixel value rescaling is wanted, BOTH :min and :max must be set!
+    # * If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
     # * Because of rescaling when importing pixel values to a RMagick object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
     # result in pixel data that differs from what is expected. This method must be used with great care!
@@ -348,7 +360,7 @@ module DICOM
     #
     # === Restrictions
     #
-    # * If pixel value rescaling is wanted, <b>both</b> :min and :max must be set!
+    # * If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
     #
     # === Options
     #
