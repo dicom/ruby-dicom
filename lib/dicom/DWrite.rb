@@ -308,7 +308,7 @@ module DICOM
       # Update explicitness and endianness (pack/unpack variables):
       @explicit = @rest_explicit
       @file_endian = @rest_endian
-      @stream.set_endian(@rest_endian)
+      @stream.set_endianness(@rest_endian)
     end
 
     # Identifies and returns the index of the first element that does not have a Meta Group ("0002,xxxx") tag.

@@ -2,30 +2,44 @@
 
 module DICOM
 
-  # The DataElement class handles information related to a Data Element.
+  # The DataElement class handles information related to a DataElement.
   #
   class DataElement
 
-    # Include the Elements mixin module:
+    # Include the Elements mix-in module:
     include Elements
 
+    # The (decoded) value of the data element.
     attr_reader :value
 
-    # Initializes a DataElement instance. Takes a tag string, a value and a hash of options as parameters.
+    # Creates a DataElement instance. Takes a tag String, a value and a Hash of options as parameters.
+    #
+    # === Notes
+    #
+    # * In the case where the DataElement is given a binary instead of value, the DataElement will not have a formatted value (value = nil).
+    # * Private data elements will have their names listed as "Private".
+    # * Non-private data elements that are not found in the dictionary will be listed as "Unknown".
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A string which identifies the tag of  the Data Element.
-    # * <tt>value</tt> -- A custom value to be encoded as the Data Element binary string, or in some cases, a pre-encoded binary string.
-    # * <tt>options</tt> -- A hash of parameters.
+    # * <tt>tag</tt> -- A String which identifies the tag of the data element.
+    # * <tt>value</tt> -- A custom value to be encoded as the data element binary String, or in some cases (specified by options), a pre-encoded binary String.
+    # * <tt>options</tt> -- A Hash of parameters.
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- String. If both value and binary string has already been decoded/encoded, the binary string can be supplied with this option to avoid it being processed again.
-    # * <tt>:encoded</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean needs to be set. In this case the DataElement will not have a formatted value.
-    # * <tt>:name</tt> - String. The name of the Data Element may be specified upon creation. If not, a query will be done against the library.
-    # * <tt>:parent</tt> - Item or DObject instance which the newly created DataElement instance belongs to.
-    # * <tt>:vr</tt> -- String. If a private Data Element is created with a custom value, this needs to be specified to enable the encoding of the value.
+    # * <tt>:bin</tt> -- String. If you already have the value pre-encoded to a binary String, the String can be supplied with this option to avoid it being encoded a second time.
+    # * <tt>:encoded</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean must to be set as true.
+    # * <tt>:name</tt> - String. The name of the DataElement may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
+    # * <tt>:parent</tt> - Item or DObject instance which the DataElement instance shall belong to.
+    # * <tt>:vr</tt> -- String. If a private DataElement is created with a custom value, this must be specified to enable the encoding of the value. If it is not specified, the vr will be retrieved from the dictionary.
+    #
+    # === Examples
+    #
+    #   # Create a new Data Element and connect it to a DObject instance:
+    #   patient_name = DataElement.new("0010,0010", "John Doe", :parent => obj)
+    #   # Create a Pixel Data element and insert image data that you have already encoded elsewhere:
+    #   pixel_data = DataElement.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => obj)
     #
     def initialize(tag, value, options={})
       # Set instance variables:
@@ -66,7 +80,11 @@ module DICOM
       end
     end
 
-    # Sets the binary string of a DataElement.
+    # Sets the binary String of a DataElement.
+    #
+    # === Parameters
+    #
+    # * <tt>new_bin</tt> -- A binary String of encoded data.
     #
     def bin=(new_bin)
       if new_bin.is_a?(String)
@@ -83,21 +101,31 @@ module DICOM
       end
     end
 
-    # A boolean used to check whether whether or not an element actually has any child elements.
-    # Returns false.
+    # Checks if an element actually has any child elements.
+    # Returns false, as DataElement instances can not have children.
     #
     def children?
       return false
     end
 
-    # A boolean used to check whether or not an element is a parent.
-    # Returns false.
+    # Checks if an element is a parent.
+    # Returns false, as DataElement instance can not be parents.
     #
     def is_parent?
       return false
     end
 
-    # Sets the value of a DataElement. The specified, formatted value will be encoded and the DataElement's binary string will be updated.
+    # Sets the value of the DataElement instance.
+    #
+    # === Notes
+    #
+    # * In addition to updating the value attribute, the specified value is encoded and used to
+    # update both the DataElement's binary and length attributes too.
+    # * The specified value must be of a type that is compatible with the DataElement's value representation (vr).
+    #
+    # === Parameters
+    #
+    # * <tt>new_value</tt> -- A custom value (String, Fixnum, etc..) that is assigned to the DataElement.
     #
     def value=(new_value)
       @bin = encode(new_value)
@@ -110,7 +138,11 @@ module DICOM
     private
 
 
-    # Encodes a formatted value to binary and returns it.
+    # Encodes a formatted value to a binary String and returns it.
+    #
+    # === Parameters
+    #
+    # * <tt>formatted_value</tt> -- A custom value (String, Fixnum, etc..). 
     #
     def encode(formatted_value)
       return stream.encode_value(formatted_value, @vr)
@@ -118,8 +150,12 @@ module DICOM
 
     # Returns a Stream instance which can be used for encoding a value to binary.
     #
+    # === Notes
+    #
+    # * Retrieves the Stream instance of the top parent DObject instance.
+    # If this fails, a new Stream instance is created (with Little Endian encoding assumed).
+    #
     def stream
-      # Use the stream instance of DObject or create a new one (with assumed Little Endian encoding)?
       if top_parent.is_a?(DObject)
         return top_parent.stream
       else
@@ -127,5 +163,5 @@ module DICOM
       end
     end
 
-  end # of class
-end # of module
+  end
+end

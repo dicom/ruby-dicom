@@ -164,9 +164,9 @@ module DICOM
         elsif tag == ITEM_TAG
           # Create an Item:
           if @enc_image
-            @current_element = Item.new(tag, :bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+            @current_element = Item.new(:bin => bin, :length => length, :name => name, :parent => @current_parent, :vr => vr)
           else
-            @current_element = Item.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+            @current_element = Item.new(:length => length, :name => name, :parent => @current_parent, :vr => vr)
           end
         end
         # Common operations on the two types of parent elements:
@@ -340,7 +340,7 @@ module DICOM
       # Update endian, explicitness and unpack variables:
       @switched_endian = true if @rest_endian != @file_endian
       @file_endian = @rest_endian
-      @stream.set_endian(@rest_endian)
+      @stream.set_endianness(@rest_endian)
       @explicit = @rest_explicit
     end
 

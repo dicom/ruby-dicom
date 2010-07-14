@@ -132,7 +132,7 @@ module DICOM
         else
           # Create an empty Item with self as parent.
           index = @tags.length + 1
-          item = Item.new(ITEM_TAG, 0, :parent => self)
+          item = Item.new(:parent => self)
         end
       else
         raise "An Item #{item} was attempted added to a DObject instance #{self}, which is not allowed."
@@ -235,6 +235,7 @@ module DICOM
     # * <tt>max_length</tt> -- Fixnum. The maximum number of digits in the length of an element.
     # * <tt>max_generations</tt> -- Fixnum. The maximum number of generations of children for this parent.
     # * <tt>visualization</tt> -- An Array of String symbols which visualizes the tree structure that the children of this particular parent belongs to. For no visualization, an empty Array is passed.
+    # * <tt>options</tt> -- A Hash of parameters.
     #
     # === Options
     #
@@ -310,7 +311,7 @@ module DICOM
       return elements.flatten, index
     end
 
-    # Checks whether or not an element is a parent.
+    # Checks if an element is a parent.
     # Returns true for all parent elements.
     #
     def is_parent?

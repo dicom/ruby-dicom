@@ -149,7 +149,7 @@ module DICOM
       # Modality:
       sop_class_uid = self["0008,0016"]
       if sop_class_uid
-        modality = LIBRARY.get_uid(sop_class_uid.value)
+        modality = LIBRARY.get_syntax_description(sop_class_uid.value) || "Unknown UID!"
       else
         modality = "SOP Class not specified!"
       end
@@ -217,7 +217,7 @@ module DICOM
         if transfer_syntax
           compression = LIBRARY.get_compression(transfer_syntax.value)
           if compression
-            compression = LIBRARY.get_uid(transfer_syntax.value)
+            compression = LIBRARY.get_syntax_description(transfer_syntax.value) || "Unknown UID!"
           else
             compression = "No"
           end
@@ -270,7 +270,7 @@ module DICOM
         @explicit = r.explicit
         @file_endian = r.file_endian
         @signature = r.signature
-        @stream.set_endian(@file_endian)
+        @stream.set_endianness(@file_endian)
       else
         @read_success = false
       end
@@ -310,7 +310,7 @@ module DICOM
           add(DataElement.new("0002,0010", new_syntax))
         end
         # Update our Stream instance with the new encoding:
-        @stream.set_endian(new_endian)
+        @stream.set_endianness(new_endian)
         # Determine if re-encoding is needed:
         if old_endian != new_endian
           # Re-encode all Data Elements with number values:
