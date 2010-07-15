@@ -14,7 +14,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# TODO:
+# === TODO:
 #
 # * The retrieve file network functionality (get_image() in DClient class) has not been tested.
 # * Make the networking code more intelligent in its handling of unexpected network communication.
@@ -270,7 +270,7 @@ module DICOM
         @explicit = r.explicit
         @file_endian = r.file_endian
         @signature = r.signature
-        @stream.set_endianness(@file_endian)
+        @stream.endian = @file_endian
       else
         @read_success = false
       end
@@ -310,7 +310,7 @@ module DICOM
           add(DataElement.new("0002,0010", new_syntax))
         end
         # Update our Stream instance with the new encoding:
-        @stream.set_endianness(new_endian)
+        @stream.endian = new_endian
         # Determine if re-encoding is needed:
         if old_endian != new_endian
           # Re-encode all Data Elements with number values:

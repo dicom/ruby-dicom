@@ -12,7 +12,7 @@ module DICOM
     # The (decoded) value of the data element.
     attr_reader :value
 
-    # Creates a DataElement instance. Takes a tag String, a value and a Hash of options as parameters.
+    # Creates a DataElement instance.
     #
     # === Notes
     #
@@ -142,7 +142,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>formatted_value</tt> -- A custom value (String, Fixnum, etc..). 
+    # * <tt>formatted_value</tt> -- A custom value (String, Fixnum, etc..).
     #
     def encode(formatted_value)
       return stream.encode_value(formatted_value, @vr)

@@ -63,7 +63,7 @@ module DICOM
     #
     def build_association_abort
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Reserved (2 bytes)
@@ -81,7 +81,7 @@ module DICOM
     #
     def build_association_accept(info, ac_uid, ui)
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # No abstract syntax in association response. To make this work with the method that
@@ -110,7 +110,7 @@ module DICOM
     #
     def build_association_reject(info)
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Reserved (1 byte)
@@ -130,7 +130,7 @@ module DICOM
     #
     def build_association_request(ac_uid, as, ts, ui)
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Note: The order of which these components are built is not arbitrary.
@@ -146,7 +146,7 @@ module DICOM
     #
     def build_command_fragment(pdu, context, flags, command_elements)
       # Little endian encoding:
-      @outgoing.set_endianness(@data_endian)
+      @outgoing.endian = @data_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Build the last part first, the Command items:
@@ -174,7 +174,7 @@ module DICOM
       # Tag (4 bytes)
       @outgoing.add_first(@outgoing.encode_tag("0000,0000"))
       # Big endian encoding from now on:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Flags (1 byte)
       @outgoing.encode_first(flags, "HEX") # Command, last fragment (identifier)
       # Presentation context ID (1 byte)
@@ -192,7 +192,7 @@ module DICOM
       # Set the transfer syntax to be used for encoding the data fragment:
       set_transfer_syntax(@presentation_contexts[presentation_context_id])
       # Endianness of data fragment:
-      @outgoing.set_endianness(@data_endian)
+      @outgoing.endian = @data_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Build the last part first, the Data items:
@@ -219,7 +219,7 @@ module DICOM
       # The rest of the data fragment will be built in reverse, all the time
       # putting the elements first in the outgoing binary string.
       # Big endian encoding from now on:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Flags (1 byte)
       @outgoing.encode_first("02", "HEX") # Data, last fragment (identifier)
       # Presentation context ID (1 byte)
@@ -234,7 +234,7 @@ module DICOM
     #
     def build_release_request
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Reserved (4 bytes)
@@ -246,7 +246,7 @@ module DICOM
     #
     def build_release_response
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Reserved (4 bytes)
@@ -258,7 +258,7 @@ module DICOM
     #
     def build_storage_fragment(pdu, context, flags, body)
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Build in reverse, putting elements in front of the binary string:
@@ -777,7 +777,7 @@ module DICOM
       # Apply the proper transfer syntax for this presentation context:
       set_transfer_syntax(@presentation_contexts[info[:presentation_context_id]])
       # "Data endian" encoding from now on:
-      msg.set_endianness(@data_endian)
+      msg.endian = @data_endian
       # We will put the results in a hash:
       results = Hash.new
       if info[:presentation_context_flag] == COMMAND_LAST_FRAGMENT
@@ -982,7 +982,7 @@ module DICOM
     #
     def append_association_header(pdu, called_ae)
       # Big endian encoding:
-      @outgoing.set_endianness(@net_endian)
+      @outgoing.endian = @net_endian
       # Header will be encoded in opposite order, where the elements are being put first in the outgoing binary string.
       # Build last part of header first. This is necessary to be able to assess the length value.
       # Reserved (32 bytes)

@@ -1,15 +1,17 @@
 #    Copyright 2010 Christoffer Lervag
-
-# The purpose of this file is to make it very easy for users to customise the way
+#
+# The purpose of this file is to make it as easy as possible for users to customize the way
 # DICOM files are handled when they are received through the network.
-# The default behaviour is to save the files to disk using a folder structure determined by the file's DICOM tags.
-# Some suggested alternatives:
-# - Analyzing tags and/or image data to determine further actions.
-# - Modify the DICOM object before it is saved to disk.
-# - Modify the folder structure in which DICOM files are saved to disk.
-# - Store DICOM contents in a database (highly relevant if you are building a Ruby on Rails application).
-# - Retransmit the DICOM object to another network destination using the DClient class.
-# - Write information to a log file.
+#
+# The default behaviour is to save the files to disk using a folder structure determined by a  few select tags of the DICOM file.
+#
+# Some suggested alternatives for user customization:
+# * Analyzing tags and/or image data to determine further actions.
+# * Modify the DICOM object before it is saved to disk.
+# * Modify the folder structure in which DICOM files are saved to disk.
+# * Store DICOM contents in a database (highly relevant if you are building a Ruby on Rails DICOM application).
+# * Retransmit the DICOM object to another network destination using the DClient class.
+# * Write information to a log file.
 
 module DICOM
 
@@ -18,13 +20,24 @@ module DICOM
   class FileHandler
 
     # Saves a single DICOM object to file.
+    # Returns a status message stating where the file has been saved.
+    #
     # Modify this method if you want to change the way your server saves incoming files.
     #
+    # === Notes
+    #
+    # As default, files will be saved with the following path:
+    # <tt> path_prefix/<PatientID>/<StudyDate>/<Modality>/ </tt>
+    #
+    # === Parameters
+    #
+    # * <tt>path_prefix</tt> -- String. Specifies the root path of the DICOM storage.
+    # * <tt>obj</tt> -- A DObject instance which will be written to file.
+    # * <tt>transfer_syntax</tt> -- String. Specifies the transfer syntax that will be used to write the DICOM file.
+    #
     def self.save_file(path_prefix, obj, transfer_syntax)
-      # File name is set using the SOP Instance UID
+      # File name is set using the SOP Instance UID:
       file_name = obj.value("0008,0018") || "missing_SOP_UID.dcm"
-      # File will be saved with the following path:
-      # path_prefix/<PatientID>/<StudyDate>/<Modality>/
       folders = Array.new(3)
       folders[0] = obj.value("0010,0020") || "PatientID"
       folders[1] = obj.value("0008,0020") || "StudyDate"
@@ -37,9 +50,19 @@ module DICOM
       return message
     end
 
-    # Handles the reception of a series of DICOM objects received in a single association.
-    # Default action: Pass each file to the file saving method.
+    # Handles the reception of a series of DICOM objects which are received in a single association.
+    #
     # Modify this method if you want to change the way your server handles incoming file series.
+    #
+    # === Notes
+    #
+    # Default action: Pass each file to the class method which saves files to disk.
+    #
+    # === Parameters
+    #
+    # * <tt>path</tt> -- String. Specifies the root path of the DICOM storage.
+    # * <tt>objects</tt> -- An Array of the DObject instances which were received.
+    # * <tt>transfer_syntaxes</tt> -- An Array of transfer syntaxes which belongs to the objects received.
     #
     def self.receive_files(path, objects, transfer_syntaxes)
       all_success = true
@@ -89,5 +112,5 @@ module DICOM
       return all_success, messages
     end
 
-  end # of class
-end # of module
+  end
+end

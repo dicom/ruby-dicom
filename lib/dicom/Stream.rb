@@ -8,8 +8,8 @@ module DICOM
   #
   class Stream
 
-    # The endianness of the binary String of this instance.
-    attr_accessor :endian
+    # A boolean which reports the relationship between the instance String endian and the system endian.
+    attr_reader :equal_endian
     # Our current position in the String of this instance (used only for decoding).
     attr_accessor :index
     # The instance String.
@@ -22,18 +22,18 @@ module DICOM
     # === Parameters
     #
     # * <tt>binary</tt> -- A binary String.
-    # * <tt>endian</tt> -- Boolean. The endianness of the String (true for big endian, false for small endian).
+    # * <tt>string_endian</tt> -- Boolean. The endianness of the instance String (true for big endian, false for small endian).
     # * <tt>options</tt> -- A Hash of parameters.
     #
     # === Options
     #
     # * <tt>:index</tt> -- Fixnum. A position (offset) in the instance String where reading will start.
     #
-    def initialize(binary, endian, options={})
+    def initialize(binary, string_endian, options={})
       @string = binary || ""
       @index = options[:index] || 0
       @errors = Array.new
-      set_endianness(endian)
+      self.endian = string_endian
     end
 
     # Prepends a pre-encoded String to the instance String (inserts at the beginning).
@@ -110,6 +110,7 @@ module DICOM
 
     # Decodes 4 bytes of the instance String as a tag.
     # Returns the tag String as a Ruby DICOM type tag ("GGGG,EEEE").
+    # Returns nil if no tag could be decoded (end of String).
     #
     def decode_tag
       length = 4
@@ -121,7 +122,7 @@ module DICOM
       else
         # Decode and process:
         string = @string.slice(@index, length).unpack(@hex)[0].upcase
-        if @endian
+        if @equal_endian
           tag = string[2..3] + string[0..1] + "," + string[6..7] + string[4..5]
         else
           tag = string[0..3] + "," + string[4..7]
@@ -196,7 +197,7 @@ module DICOM
     # * <tt>string</tt> -- A String to be processed.
     #
     def encode_tag(tag)
-      if @endian
+      if @equal_endian
         clean_tag = tag[2..3] + tag[0..1] + tag[7..8] + tag[5..6]
       else
         clean_tag = tag[0..3] + tag[5..8]
@@ -222,6 +223,20 @@ module DICOM
       # Add an empty byte if the resulting binary has an odd length:
       bin = bin + "\x00" if bin.length[0] == 1
       return bin
+    end
+
+    # Sets the endianness of the instance String. The relationship between the String endianness and
+    # the system endianness, determines which encoding/decoding flags to use.
+    #
+    # === Parameters
+    #
+    # * <tt>string_endian</tt> -- Boolean. The endianness of the instance String (true for big endian, false for small endian).
+    #
+    def endian=(string_endian)
+      @str_endian = string_endian
+      configure_endian
+      set_string_formats
+      set_format_hash
     end
 
     # Extracts and returns the entire instance String, or optionally,
@@ -288,21 +303,6 @@ module DICOM
       @index = 0
     end
 
-    # Sets the instance String endianness, and checks the system endianness to
-    # determine which encoding/decoding flags to use.
-    #
-    # === Parameters
-    #
-    # * <tt>str_endian</tt> -- Boolean. The endianness of the instance String (true for big endian, false for small endian).
-    #
-    def set_endianness(str_endian)
-      # Update endianness variables:
-      @str_endian = str_endian
-      configure_endian
-      set_string_formats
-      set_format_hash
-    end
-
     # Sets an instance file variable.
     #
     # === Notes
@@ -359,9 +359,9 @@ module DICOM
     #
     def configure_endian
       if CPU_ENDIAN == @str_endian
-        @endian = true
+        @equal_endian = true
       else
-        @endian = false
+        @equal_endian = false
       end
     end
 
@@ -425,9 +425,8 @@ module DICOM
     # FIXME: Apparently the Ruby pack/unpack methods lacks a format for signed short
     # and signed long in the network byte order. A solution needs to be found for this.
     def set_string_formats
-      if @endian
-        # System endian equals string endian:
-        # Native byte order.
+      if @equal_endian
+        # Native byte order:
         @us = "S*" # Unsigned short (2 bytes)
         @ss = "s*" # Signed short (2 bytes)
         @ul = "I*" # Unsigned long (4 bytes)
@@ -435,8 +434,7 @@ module DICOM
         @fs = "e*" # Floating point single (4 bytes)
         @fd = "E*" # Floating point double ( 8 bytes)
       else
-        # System endian is opposite string endian:
-        # Network byte order.
+        # Network byte order:
         @us = "n*"
         @ss = "n*" # Not correct (gives US)
         @ul = "N*"

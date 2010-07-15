@@ -12,7 +12,7 @@ module DICOM
     # The index of this Item in the group of items belonging to its parent. If the Item is without parent, index is nil.
     attr_accessor :index
 
-    # Creates an Item instance. Takes a Hash of options as a parameter.
+    # Creates an Item instance.
     #
     # === Notes
     #
