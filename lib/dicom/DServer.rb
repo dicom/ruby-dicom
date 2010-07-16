@@ -3,11 +3,27 @@
 module DICOM
 
   # This class contains code for setting up a Service Class Provider (SCP),
-  # which will act as a simple storage node (a server that receives images).
+  # which will act as a simple storage node (a DICOM server that receives images).
   #
   class DServer
 
     # Runs the server and takes a block for initializing.
+    #
+    # === Parameters
+    #
+    # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
+    # * <tt>path</tt> -- String. The path where incoming DICOM files will be stored. Defaults to "./received/".
+    # * <tt>&block</tt> -- A block of code that will be run on the DServer instance, between creation and the launch of the SCP itself.
+    #
+    # === Examples
+    #
+    #   require 'dicom'
+    #   require 'my_file_handler'
+    #   include DICOM
+    #   DServer.run(104, 'c:/temp/') do
+    #     timeout = 100
+    #     file_handler = MyFileHandler
+    #   end
     #
     def self.run(port=104, path='./received/', &block)
       server = DServer.new(port)
@@ -15,11 +31,50 @@ module DICOM
       server.start_scp(path)
     end
 
-    # Accessible attributes:
-    attr_accessor :host_ae, :max_package_size, :port, :timeout, :verbose, :file_handler
-    attr_reader :accepted_abstract_syntaxes, :accepted_transfer_syntaxes, :errors, :notices
+    # A customized FileHandler class to use instead of the default FileHandler included with Ruby DICOM.
+    attr_accessor :file_handler
+    # The name of the server (application entity).
+    attr_accessor :host_ae
+    # The maximum allowed size of network packages (in bytes). 
+    attr_accessor :max_package_size
+    # The network port to be used.
+    attr_accessor :port
+    # The maximum period the server will wait on an answer from a client before aborting the communication.
+    attr_accessor :timeout
+    # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
+    attr_accessor :verbose
+    
+    # A hash containing the abstract syntaxes that will be accepted.
+    attr_reader :accepted_abstract_syntaxes
+    # A hash containing the transfer syntaxes that will be accepted.
+    attr_reader :accepted_transfer_syntaxes
+    # An array containing any error messages recorded.
+    attr_reader :errors
+    # An array containing any status messages recorded.
+    attr_reader :notices
 
-    # Initializes a DServer instance with a port number.
+    # Creates a DServer instance.
+    #
+    # === Parameters
+    #
+    # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:file_handler</tt> -- A customized FileHandler class to use instead of the default FileHandler.
+    # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
+    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes). 
+    # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
+    # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
+    #
+    # === Examples
+    #
+    #   # Create a server using default settings:
+    #   s = DICOM::DServer.new
+    #   # Create a server and specify a host name as well as a custom buildt file handler:
+    #   require 'MyFileHandler'
+    #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
     #
     def initialize(port=104, options={})
       require 'socket'
@@ -44,7 +99,11 @@ module DICOM
       set_default_accepted_syntaxes
     end
 
-    # Adds a specified abstract syntax to the list of abstract syntaxes that the server instance will accept.
+    # Adds an abstract syntax to the list of abstract syntaxes that the server will accept.
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- An abstract syntax UID string.
     #
     def add_abstract_syntax(uid)
       if uid.is_a?(String)
@@ -55,7 +114,12 @@ module DICOM
       end
     end
 
-    # Adds a specified abstract syntax to the list of transfer syntaxes that the server instance will accept.
+    # Adds a transfer syntax to the list of transfer syntaxes that the server will accept.
+    #
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- A transfer syntax UID string.
     #
     def add_transfer_syntax(uid)
       if uid.is_a?(String)
@@ -66,7 +130,7 @@ module DICOM
       end
     end
 
-    # Prints the list of valid abstract syntaxes to the screen.
+    # Prints the list of accepted abstract syntaxes to the screen.
     #
     def print_abstract_syntaxes
       # Determine length of longest key to ensure pretty print:
@@ -77,7 +141,7 @@ module DICOM
       end
     end
 
-    # Prints the list of valid transfer syntaxes to the screen.
+    # Prints the list of accepted transfer syntaxes to the screen.
     #
     def print_transfer_syntaxes
       # Determine length of longest key to ensure pretty print:
@@ -88,7 +152,12 @@ module DICOM
       end
     end
 
-    # Removes a specific abstract syntax from the list of abstract syntaxes that the server instance will accept.
+    # Removes a specific abstract syntax from the list of abstract syntaxes that the server will accept.
+    #
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- An abstract syntax UID string.
     #
     def remove_abstract_syntax(uid)
       if uid.is_a?(String)
@@ -98,7 +167,11 @@ module DICOM
       end
     end
 
-    # Removes a specific transfer syntax from the list of transfer syntaxes that the server instance will accept.
+    # Removes a specific transfer syntax from the list of transfer syntaxes that the server will accept.
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- A transfer syntax UID string.
     #
     def remove_transfer_syntax(uid)
       if uid.is_a?(String)
@@ -108,23 +181,36 @@ module DICOM
       end
     end
 
-    # Completely clears the list of abstract syntaxes that the server instance will accept.
-    # Following such a removal, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server instance.
+    # Completely clears the list of abstract syntaxes that the server will accept.
+    #
+    # === Notes
+    #
+    # * Following such a removal, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server.
     #
     def remove_all_abstract_syntaxes
       @accepted_abstract_syntaxes = Hash.new
     end
 
-    # Completely clears the list of transfer syntaxes that the server instance will accept.
-    # Following such a removal, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server instance.
+    # Completely clears the list of transfer syntaxes that the server will accept.
+    #
+    # === Notes
+    #
+    # * Following such a removal, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server.
     #
     def remove_all_transfer_syntaxes
       @accepted_transfer_syntaxes = Hash.new
     end
 
-    # Starts a Service Class Provider (SCP).
-    # This service acts as a simple storage node, which receives DICOM files and stores them in a specified folder.
-    # Customized storage actions can be set my modifying or replacing the FileHandler.
+    # Starts the Service Class Provider (SCP).
+    #
+    # === Notes
+    #
+    # * This service acts as a simple storage node, which receives DICOM files and stores them in a specified folder.
+    # * Customized storage actions can be set my modifying or replacing the FileHandler class.
+    #
+    # === Parameters
+    #
+    # * <tt>path</tt> -- The path where incoming files are to be saved.
     #
     def start_scp(path='./received/')
       if @accepted_abstract_syntaxes.size > 0 and @accepted_transfer_syntaxes.size > 0
@@ -148,7 +234,7 @@ module DICOM
             if info[:valid]
               association_error = check_association_request(info)
               unless association_error
-                info, approved, rejected, test_only = process_syntax_requests(link, info)
+                info, approved, rejected = process_syntax_requests(info)
                 link.handle_association_accept(info)
                 if approved > 0
                   if approved == 1
@@ -202,7 +288,12 @@ module DICOM
     private
 
 
-    # Adds a warning or error message to the instance array holding messages, and if verbose variable is true, prints the message as well.
+    # Adds a warning or error message to the instance array holding messages,
+    # and prints the information to the screen if verbose is set.
+    #
+    # === Parameters
+    #
+    # * <tt>error</tt> -- A single error message or an array of error messages.
     #
     def add_error(error)
       if @verbose
@@ -212,7 +303,11 @@ module DICOM
     end
 
     # Adds a notice (information regarding progress or successful communications) to the instance array,
-    # and if verbosity is set for these kinds of messages, prints it to the screen as well.
+    # and prints the information to the screen if verbose is set.
+    #
+    # === Parameters
+    #
+    # * <tt>notice</tt> -- A single status message or an array of status messages.
     #
     def add_notice(notice)
       if @verbose
@@ -221,16 +316,22 @@ module DICOM
       @notices << notice
     end
 
-    # Checks if the association request is formally correct.
-    # Other things that can potentionally be checked here, are:
-    # - Application context name, calling AE title, called AE title
-    # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.4 (Table 9-21).
+    # Checks if the association request is formally correct, by matching against an exact application context UID.
+    # Returns nil if valid, and an error code if it is not approved.
+    #
+    # === Notes
+    #
+    # Other things can potentionally be checked here too, if we want to make the server more strict with regards to what information is received:
+    # * Application context name, calling AE title, called AE title
+    # * Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.4 (Table 9-21).
+    #
+    # === Parameters
+    #
+    # * <tt>info</tt> -- An information hash from the received association request.
     #
     def check_association_request(info)
-      # For the moment there is no control on AE titles, but this could easily be implemented if desired.
-      # We check that the application context UID is as expected:
       unless info[:application_context] == APPLICATION_CONTEXT
-        error = 2 # application context name not supported
+        error = 2 # (application context name not supported)
         add_error("Error: The application context in the incoming association request was not recognized: (#{info[:application_context]})")
       else
         error = nil
@@ -238,17 +339,22 @@ module DICOM
       return error
     end
 
-    # Checks if the requested abstract syntax & it's transfer syntax(es) are supported by this instance,
-    # and insert a proper result code for each presentation context.
-    # Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
-    # The method also checks to see if all presentation contexts were rejected, and whether or not the
-    # presentation context indicates that only a connection test is beging performed.
+    # Checks if the requested abstract syntax & its transfer syntax(es) are supported by this server instance,
+    # and inserts a corresponding result code for each presentation context.
+    # Returns the modified association information hash, as well as the number of abstract syntaxes that were accepted and rejected.
     #
-    def process_syntax_requests(link, info)
+    # === Notes
+    #
+    # * Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.3.2 (Table 9-18).
+    #
+    # === Parameters
+    #
+    # * <tt>info</tt> -- An information hash from the received association request.
+    #
+    def process_syntax_requests(info)
       # A couple of variables used to analyse the properties of the association:
       approved = 0
       rejected = 0
-      test_only = true
       # Loop through the presentation contexts:
       info[:pc].each do |pc|
         if @accepted_abstract_syntaxes[pc[:abstract_syntax]]
@@ -268,7 +374,6 @@ module DICOM
             pc[:selected_transfer_syntax] = accepted_transfer_syntax
             # Update our status variables:
             approved += 1
-            test_only = false unless pc[:abstract_syntax] == VERIFICATION_SOP
           else
             # No transfer syntax was accepted for this particular presentation context:
             pc[:result] = TRANSFER_SYNTAX_REJECTED
@@ -279,14 +384,14 @@ module DICOM
           pc[:result] = ABSTRACT_SYNTAX_REJECTED
         end
       end
-      return info, approved, rejected, test_only
+      return info, approved, rejected
     end
 
-    # Sets the default valid abstract syntaxes and transfer syntaxes for our SCP.
+    # Sets the default accepted abstract syntaxes and transfer syntaxes for this SCP.
     #
     def set_default_accepted_syntaxes
       @accepted_transfer_syntaxes, @accepted_abstract_syntaxes = LIBRARY.extract_transfer_syntaxes_and_sop_classes
     end
 
-  end # of class
-end # of module
+  end
+end
