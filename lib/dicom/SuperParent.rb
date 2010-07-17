@@ -149,6 +149,14 @@ module DICOM
     # Checks if an element actually has any child elements.
     # Returns true if it has and false if it doesn't.
     #
+    # === Notes
+    #
+    # * Notice the subtle difference between the children? and is_parent? methods. While they
+    # will give the same result in most real use cases, they differ when used on parent elements
+    # that do not have any children added yet.
+    # * For example, when called on an empty Sequence, the children? method will return false,
+    # while the is_parent? method still returns true.
+    #
     def children?
       if @tags.length > 0
         return true
@@ -457,20 +465,31 @@ module DICOM
       end
     end
 
-    # Returns the value of a specific child element of this instance.
+    # Returns the value of a specific DataElement child of this parent.
     # Returns nil if the child element does not exist.
+    #
+    # === Notes
+    #
+    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves.
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag String which identifies the data element (Exception: In the case of an Item, an index (Fixnum) is used instead).
+    # * <tt>tag</tt> -- A tag string which identifies the child DataElement.
     #
     # === Examples
     #
-    #   patient_name = obj.value("0010,0010")
+    #   # Get the patient's name value:
+    #   name = obj.value("0010,0010")
+    #   # Get the Frame of Reference UID from the first item in the Referenced Frame of Reference Sequence:
+    #   uid = obj["3006,0010"][1].value("0020,0052")
     #
     def value(tag)
       if exists?(tag)
-        return @tags[tag].value
+        if @tags[tag].is_parent?
+          raise "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only DataElement tags are valid."
+        else
+          return @tags[tag].value
+        end
       else
         return nil
       end
