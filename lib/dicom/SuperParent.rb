@@ -470,7 +470,8 @@ module DICOM
     #
     # === Notes
     #
-    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves.
+    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves. 
+    #   If the specified <tt>tag</tt> is that of a parent element, <tt>value()</tt> will raise an exception.
     #
     # === Parameters
     #

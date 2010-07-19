@@ -212,6 +212,7 @@ PUBLIC INSTANCE METHODS
 
   value(tag)
     Returns the value of a child element of this instance, specified by a tag string.
+    Note: if the specified tag is a Sequence or Item (or other parent element), an exception will be raised.
     Example:
       patient_name = obj.value("0010,0010")
 
