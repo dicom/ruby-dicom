@@ -2,7 +2,7 @@
 
 module DICOM
 
-  # The Sequence class handles information related to a Sequence element.
+  # The Sequence class handles information related to Sequence elements.
   #
   class Sequence < SuperParent
 
@@ -18,12 +18,12 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A String which identifies the tag of the sequence.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>tag</tt> -- A string which identifies the tag of the sequence.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:length</tt> -- Fixnum. The Sequence length, which refers to the length of the encoded String of children of this Sequence.
+    # * <tt>:length</tt> -- Fixnum. The Sequence length, which refers to the length of the encoded string of children of this Sequence.
     # * <tt>:name</tt> - String. The name of the Sequence may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
     # * <tt>:parent</tt> - Item or DObject instance which the Sequence instance shall belong to.
     # * <tt>:vr</tt> -- String. The value representation of the Sequence may be specified upon creation. If it is not, a default vr is chosen.

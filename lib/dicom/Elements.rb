@@ -23,9 +23,9 @@ module DICOM
       attr_reader :vr
 
       # Retrieves the entire chain of parents connected to this element.
-      # The parents are returned in an Array, where the first element is the
+      # The parents are returned in an array, where the first element is the
       # immediate parent and the last element is the top parent.
-      # Returns an empty Array if no parent is defined.
+      # Returns an empty array if no parent is defined.
       #
       def parents
         all_parents = Array.new

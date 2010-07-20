@@ -12,7 +12,7 @@ module DICOM
   #
   class SuperItem < SuperParent
 
-    # Unpacks a binary pixel String and returns decoded pixel values in an Array. Returns false if the decoding is unsuccesful.
+    # Unpacks a binary pixel string and returns decoded pixel values in an array. Returns false if the decoding is unsuccesful.
     # The decode is performed using values defined in the image related data elements of the DObject instance.
     #
     # === Parameters
@@ -52,12 +52,12 @@ module DICOM
       return pixels
     end
 
-    # Packs a pixel value Array and returns an encoded binary String. Returns false if the encoding is unsuccesful.
+    # Packs a pixel value array and returns an encoded binary string. Returns false if the encoding is unsuccesful.
     # The encoding is performed using values defined in the image related data elements of the DObject instance.
     #
     # === Parameters
     #
-    # * <tt>pixels</tt> -- An Array containing the pixel values that will be encoded.
+    # * <tt>pixels</tt> -- An array containing the pixel values that will be encoded.
     # * <tt>stream</tt> -- A Stream instance to be used for encoding the pixels (optional).
     #
     def encode_pixels(pixels, stream=@stream)
@@ -90,7 +90,7 @@ module DICOM
       return bin
     end
 
-    # Returns the image pixel values in a standard Ruby array.
+    # Returns the image pixel values in a standard Ruby Array.
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     #
     # === Notes
@@ -99,7 +99,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -141,7 +141,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -183,7 +183,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -228,7 +228,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file</tt> -- A String which specifies the path of the file containing pixel data.
+    # * <tt>file</tt> -- A string which specifies the path of the file containing pixel data.
     #
     # === Examples
     #
@@ -268,7 +268,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file</tt> -- A String which specifies the file path to use when dumping the pixel data.
+    # * <tt>file</tt> -- A string which specifies the file path to use when dumping the pixel data.
     #
     # === Examples
     #
@@ -311,7 +311,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>pixels</tt> -- An Array of pixel values (integers).
+    # * <tt>pixels</tt> -- An array of pixel values (integers).
     #
     def set_image(pixels)
       if pixels.is_a?(Array)
@@ -394,7 +394,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>pixel_data</tt> -- An Array of pixel values (integers).
+    # * <tt>pixel_data</tt> -- An array of pixel values (integers).
     # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed for the returned pixels.
     # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed for the returned pixels.
     #
@@ -441,7 +441,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>pixel_data</tt> -- An Array of pixel values (integers).
+    # * <tt>pixel_data</tt> -- An array of pixel values (integers).
     # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed for the returned pixels.
     # * <tt>columns</tt> -- Fixnum. Number of columns in the image to be created.
     # * <tt>rows</tt> -- Fixnum. Number of rows in the image to be created.
@@ -532,7 +532,7 @@ module DICOM
       return n_arr
     end
 
-    # Creates a RMagick image object from the specified pixel value Array, and returns this image.
+    # Creates a RMagick image object from the specified pixel value array, and returns this image.
     #
     # === Restrictions
     #

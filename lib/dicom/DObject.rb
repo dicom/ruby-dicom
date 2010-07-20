@@ -43,7 +43,7 @@ module DICOM
     attr_reader :errors
     # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
     attr_reader :parent
-    # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary String).
+    # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
     attr_reader :read_success
     # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
     attr_reader :stream
@@ -58,14 +58,14 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>string</tt> -- A String, either specifying the path of a DICOM file to be loaded, or a binary DICOM String
+    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string
     # to be parsed. The parameter defaults to nil, in which case an empty DObject instance will be created.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM String, and not a path String, which is the default behaviour.
-    # * <tt>:syntax</tt> -- String. If a syntax String is specified, the DRead class will be forced to use this Transfer Syntax when decoding the file/binary string.
+    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM string, and not a path string, which is the default behaviour.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
     # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
@@ -104,7 +104,7 @@ module DICOM
 
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
     #
-    # Returns the encoded binary strings in an Array.
+    # Returns the encoded binary strings in an array.
     #
     # === Parameters
     #
@@ -278,7 +278,7 @@ module DICOM
       add_msg(r.msg) if r.msg.length > 0
     end
 
-    # Returns the transfer syntax String of the DObject.
+    # Returns the transfer syntax string of the DObject.
     #
     # If a transfer syntax has not been defined in the DObject, a default tansfer syntax is assumed and returned.
     #
@@ -286,8 +286,8 @@ module DICOM
       return value("0002,0010") || IMPLICIT_LITTLE_ENDIAN
     end
 
-    # Changes the transfer syntax Data Element of the DObject instance, and performs re-encoding of all
-    # numerical values if a switch of Endianness is implied.
+    # Changes the transfer syntax DataElement of the DObject instance, and performs re-encoding of all
+    # numerical values if a switch of endianness is implied.
     #
     # === Restrictions
     #
@@ -296,7 +296,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>new_syntax</tt> -- The new transfer syntax String which will be applied to the DObject.
+    # * <tt>new_syntax</tt> -- The new transfer syntax string which will be applied to the DObject.
     #
     def transfer_syntax=(new_syntax)
       valid, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
@@ -328,8 +328,8 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file_name</tt> -- A String which identifies the path & name of the DICOM file which is to be written to disk.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>file_name</tt> -- A string which identifies the path & name of the DICOM file which is to be written to disk.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -354,12 +354,12 @@ module DICOM
     private
 
 
-    # Adds one or more status messages to the instance array holding messages, and if the @verbose instance variable
+    # Adds one or more status messages to the instance array holding messages, and if the verbose instance variable
     # is true, the status message(s) are printed to the screen as well.
     #
     # === Parameters
     #
-    # * <tt>msg</tt> -- Status message String, or an Array containing one or more status message strings.
+    # * <tt>msg</tt> -- Status message string, or an array containing one or more status message strings.
     #
     def add_msg(msg)
       puts msg if @verbose
@@ -395,8 +395,8 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file_name</tt> -- Defaults to nil (when no file is going to be written). Else, if specified, the encoded DICOM String is to be written to the specified file.
-    # * <tt>options</tt> -- A Hash of parameters. See the encode_segments() and write() methods for details.
+    # * <tt>file_name</tt> -- Defaults to nil (when no file is going to be written). Else, if specified, the encoded DICOM string is to be written to the specified file.
+    # * <tt>options</tt> -- A hash of parameters. See the encode_segments() and write() methods for details.
     #
     def set_write_object(file_name=nil, options={})
       # Set transfer syntax if not already specified externally:

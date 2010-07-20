@@ -15,37 +15,37 @@
 
 module DICOM
 
-  # The DWrite class handles the encoding of a DObject instance to a valid DICOM String.
+  # The DWrite class handles the encoding of a DObject instance to a valid DICOM string.
   # The String is either written to file or returned in segments to be used for network transmission.
   #
   class DWrite
 
-    # An Array which records any status messages that are generated while encoding/writing the DICOM String.
+    # An array which records any status messages that are generated while encoding/writing the DICOM string.
     attr_reader :msg
-    # An Array of partial DICOM strings.
+    # An array of partial DICOM strings.
     attr_reader :segments
-    # A boolean which reports whether the DICOM String was encoded/written successfully (true) or not (false).
+    # A boolean which reports whether the DICOM string was encoded/written successfully (true) or not (false).
     attr_reader :success
-    # A boolean which reports the endianness of the post-meta group part of the DICOM String (true for big endian, false for little endian).
+    # A boolean which reports the endianness of the post-meta group part of the DICOM string (true for big endian, false for little endian).
     attr_writer :rest_endian
-    # A boolean which reports the explicitness of the DICOM String, true if explicit and false if implicit.
+    # A boolean which reports the explicitness of the DICOM string, true if explicit and false if implicit.
     attr_writer :rest_explicit
 
     # Creates a DWrite instance.
     #
     # === Parameters
     #
-    # * <tt>obj</tt> -- A DObject instance which will be used to encode a DICOM String.
-    # * <tt>file_name</tt> -- A String, either specifying the path of a DICOM file to be loaded, or a binary DICOM String to be parsed.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>obj</tt> -- A DObject instance which will be used to encode a DICOM string.
+    # * <tt>file_name</tt> -- A string, either specifying the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:transfer_syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM String.
+    # * <tt>:transfer_syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
     # * <tt>:signature</tt> -- Boolean. If set as false, the DICOM header signature will not be written to the DICOM file.
     # 
     #--
-    # FIXME: The use of the transfer syntax option needs to be sorted out. It doesn't quite seem to right.
+    # FIXME: The use of the transfer syntax option needs to be sorted out. It doesn't quite seem right.
     #
     def initialize(obj, file_name=nil, options={})
       @obj = obj
@@ -63,14 +63,15 @@ module DICOM
       @rest_endian = false
     end
 
-    # Handles the encoding of DICOM information to String as well as writing it to file.
+    # Handles the encoding of DICOM information to string as well as writing it to file.
     #
     # === Parameters
     #
-    # * <tt>body</tt> -- A DICOM binary String which is duped to file, instead of the normal procedure of encoding element by element.
+    # * <tt>body</tt> -- A DICOM binary string which is duped to file, instead of the normal procedure of encoding element by element.
     #
     #--
     # FIXME: It may seem that the body argument is not used anymore, and should be considered for removal.
+    #
     def write(body=nil)
       # Check if we are able to create given file:
       open_file(@file_name)
@@ -98,12 +99,12 @@ module DICOM
       end
     end
 
-    # Writes DICOM content to a series of size-limited binary strings, which is returned in an Array.
+    # Writes DICOM content to a series of size-limited binary strings, which is returned in an array.
     # This is typically used in preparation of transmitting DICOM objects through network connections.
     #
     # === Parameters
     #
-    # * <tt>max_size</tt> -- Fixnum. The maximum segment String length.
+    # * <tt>max_size</tt> -- Fixnum. The maximum segment string length.
     #
     def encode_segments(max_size)
       # Initiate necessary variables:
@@ -130,7 +131,7 @@ module DICOM
     private
 
 
-    # Adds a binary String to (the end of) either the instance File or String.
+    # Adds a binary string to (the end of) either the instance file or string.
     #
     def add(string)
       if @file
@@ -189,7 +190,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>elements</tt> -- An Array of data elements (sorted by their tags).
+    # * <tt>elements</tt> -- An array of data elements (sorted by their tags).
     #
     def write_data_elements(elements)
       elements.each do |element|
@@ -250,7 +251,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A data element tag (String).
+    # * <tt>tag</tt> -- String. A data element tag.
     #
     def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
@@ -314,7 +315,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>bin</tt> -- The binary String value of this data element.
+    # * <tt>bin</tt> -- The binary string value of this data element.
     #
     def write_value(bin)
       # This is pretty straightforward, just dump the binary data to the file/string:
@@ -326,7 +327,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file</tt> -- A path/file String.
+    # * <tt>file</tt> -- A path/file string.
     #
     def open_file(file)
       # Check if file already exists:
@@ -391,7 +392,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>elements</tt> -- An Array of data elements.
+    # * <tt>elements</tt> -- An array of data elements.
     #
     def first_non_meta(elements)
       non_meta_index = 0
@@ -404,7 +405,7 @@ module DICOM
       return non_meta_index
     end
 
-    # Creates various variables used when encoding the DICOM String.
+    # Creates various variables used when encoding the DICOM string.
     #
     def init_variables
       # Until a DICOM write has completed successfully the status is 'unsuccessful':

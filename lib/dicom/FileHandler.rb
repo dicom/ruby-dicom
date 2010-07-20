@@ -61,8 +61,8 @@ module DICOM
     # === Parameters
     #
     # * <tt>path</tt> -- String. Specifies the root path of the DICOM storage.
-    # * <tt>objects</tt> -- An Array of the DObject instances which were received.
-    # * <tt>transfer_syntaxes</tt> -- An Array of transfer syntaxes which belongs to the objects received.
+    # * <tt>objects</tt> -- An array containing the DObject instances which were received.
+    # * <tt>transfer_syntaxes</tt> -- An array containing the transfer syntaxes belonging to the received objects.
     #
     def self.receive_files(path, objects, transfer_syntaxes)
       all_success = true

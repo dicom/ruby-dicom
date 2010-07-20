@@ -66,7 +66,7 @@ module DICOM
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes). 
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
+    # * <tt>:verbose</tt> -- Boolean. If set to false, the DServer instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
     #

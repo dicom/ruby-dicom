@@ -2,7 +2,7 @@
 
 module DICOM
 
-  # The Item class handles information related to an Item element.
+  # The Item class handles information related to items - the elements contained in sequences.
   #
   class Item < SuperItem
 
@@ -17,17 +17,17 @@ module DICOM
     # === Notes
     #
     # * Normally, an Item contains data elements and/or sequences. However, in some cases, an Item will instead/also
-    # carry binary String data, like the pixel data of an encapsulated image fragment.
+    # carry binary string data, like the pixel data of an encapsulated image fragment.
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- A binary String to be carried by the Item.
+    # * <tt>:bin</tt> -- A binary string to be carried by the Item.
     # * <tt>:index</tt> -- Fixnum. If the Item is to be inserted at a specific index (Item number), this option parameter needs to set.
-    # * <tt>:length</tt> -- Fixnum. The Item length (which either refers to the length of the encoded String of children of this Item, or the length of its binary data).
+    # * <tt>:length</tt> -- Fixnum. The Item length (which either refers to the length of the encoded string of children of this Item, or the length of its binary data).
     # * <tt>:name</tt> - String. The name of the Item may be specified upon creation. If it is not, a default name is chosen.
     # * <tt>:parent</tt> - Sequence or DObject instance which the Item instance shall belong to.
     # * <tt>:vr</tt> -- String. The value representation of the Item may be specified upon creation. If it is not, a default vr is chosen.
@@ -61,7 +61,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>new_bin</tt> -- A binary String of encoded data.
+    # * <tt>new_bin</tt> -- A binary string of encoded data.
     #
     def bin=(new_bin)
       if new_bin.is_a?(String)

@@ -46,7 +46,7 @@ module DICOM
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes). 
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
+    # * <tt>:verbose</tt> -- Boolean. If set to false, the DClient instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
     #
@@ -870,7 +870,7 @@ module DICOM
       @transfer_syntax = [IMPLICIT_LITTLE_ENDIAN, EXPLICIT_LITTLE_ENDIAN, EXPLICIT_BIG_ENDIAN]
     end
 
-    # Sets the @user_information instance array.
+    # Sets the @user_information items instance array.
     #
     # === Notes
     #

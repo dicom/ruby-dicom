@@ -2,32 +2,32 @@
 
 module DICOM
 
-  # The Stream class handles String operations (encoding to and decoding from binary strings).
+  # The Stream class handles string operations (encoding to and decoding from binary strings).
   # It is used by the various classes of Ruby DICOM for tasks such as reading and writing from/to files or network packets.
   # These methods have been gathered in this single class in an attempt to minimize code duplication.
   #
   class Stream
 
-    # A boolean which reports the relationship between the instance String endian and the system endian.
+    # A boolean which reports the relationship between the endianness of the system and the instance string.
     attr_reader :equal_endian
-    # Our current position in the String of this instance (used only for decoding).
+    # Our current position in the instance string (used only for decoding).
     attr_accessor :index
-    # The instance String.
+    # The instance string.
     attr_accessor :string
-    # An Array of warning/error messages that (may) have been accumulated.
+    # An array of warning/error messages that (may) have been accumulated.
     attr_reader :errors
 
     # Creates a Stream instance.
     #
     # === Parameters
     #
-    # * <tt>binary</tt> -- A binary String.
-    # * <tt>string_endian</tt> -- Boolean. The endianness of the instance String (true for big endian, false for small endian).
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>binary</tt> -- A binary string.
+    # * <tt>string_endian</tt> -- Boolean. The endianness of the instance string (true for big endian, false for small endian).
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:index</tt> -- Fixnum. A position (offset) in the instance String where reading will start.
+    # * <tt>:index</tt> -- Fixnum. A position (offset) in the instance string where reading will start.
     #
     def initialize(binary, string_endian, options={})
       @string = binary || ""
@@ -36,21 +36,21 @@ module DICOM
       self.endian = string_endian
     end
 
-    # Prepends a pre-encoded String to the instance String (inserts at the beginning).
+    # Prepends a pre-encoded string to the instance string (inserts at the beginning).
     #
     # === Parameters
     #
-    # * <tt>binary</tt> -- A binary String.
+    # * <tt>binary</tt> -- A binary string.
     #
     def add_first(binary)
       @string = binary + @string if binary
     end
 
-    # Appends a pre-encoded String to the instance String (inserts at the end).
+    # Appends a pre-encoded string to the instance string (inserts at the end).
     #
     # === Parameters
     #
-    # * <tt>binary</tt> -- A binary String.
+    # * <tt>binary</tt> -- A binary string.
     #
     def add_last(binary)
       @string = @string + binary if binary
@@ -61,11 +61,11 @@ module DICOM
     #
     # === Notes
     #
-    # * If multiple numbers are decoded, these are returned in an Array.
+    # * If multiple numbers are decoded, these are returned in an array.
     #
     # === Parameters
     #
-    # * <tt>length</tt> -- Fixnum. The String length which will be decoded.
+    # * <tt>length</tt> -- Fixnum. The string length which will be decoded.
     # * <tt>type</tt> -- String. The type (vr) of data to decode.
     #
     def decode(length, type)
@@ -95,7 +95,7 @@ module DICOM
     #
     # === Notes
     #
-    # * If multiple numbers are decoded, these are returned in an Array.
+    # * If multiple numbers are decoded, these are returned in an array.
     #
     # === Parameters
     #
@@ -108,9 +108,9 @@ module DICOM
       return value
     end
 
-    # Decodes 4 bytes of the instance String as a tag.
-    # Returns the tag String as a Ruby DICOM type tag ("GGGG,EEEE").
-    # Returns nil if no tag could be decoded (end of String).
+    # Decodes 4 bytes of the instance string as a tag.
+    # Returns the tag string as a Ruby DICOM type tag ("GGGG,EEEE").
+    # Returns nil if no tag could be decoded (end of string).
     #
     def decode_tag
       length = 4
@@ -133,11 +133,11 @@ module DICOM
       return tag
     end
 
-    # Encodes a value and returns the resulting binary String.
+    # Encodes a value and returns the resulting binary string.
     #
     # === Parameters
     #
-    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an Array of numbers.
+    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an array of numbers.
     # * <tt>type</tt> -- String. The type (vr) of data to encode.
     #
     def encode(value, type)
@@ -145,11 +145,11 @@ module DICOM
       return value.pack(vr_to_str(type))
     end
 
-    # Encodes a value to a binary String and prepends it to the instance String.
+    # Encodes a value to a binary string and prepends it to the instance string.
     #
     # === Parameters
     #
-    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an Array of numbers.
+    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an array of numbers.
     # * <tt>type</tt> -- String. The type (vr) of data to encode.
     #
     def encode_first(value, type)
@@ -158,11 +158,11 @@ module DICOM
       @string = bin + @string
     end
 
-    # Encodes a value to a binary String and appends it to the instance String.
+    # Encodes a value to a binary string and appends it to the instance string.
     #
     # === Parameters
     #
-    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an Array of numbers.
+    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an array of numbers.
     # * <tt>type</tt> -- String. The type (vr) of data to encode.
     #
     def encode_last(value, type)
@@ -171,13 +171,13 @@ module DICOM
       @string = @string + bin
     end
 
-    # Appends a String with trailling spaces to achieve a target length, and encodes it to a binary String.
-    # Returns the binary String.
+    # Appends a string with trailling spaces to achieve a target length, and encodes it to a binary string.
+    # Returns the binary string.
     #
     # === Parameters
     #
-    # * <tt>string</tt> -- A String to be processed.
-    # * <tt>target_length</tt> -- Fixnum. The target length of the String that is created.
+    # * <tt>string</tt> -- A string to be processed.
+    # * <tt>target_length</tt> -- Fixnum. The target length of the string that is created.
     #
     def encode_string_with_trailing_spaces(string, target_length)
       length = string.length
@@ -190,11 +190,11 @@ module DICOM
       end
     end
 
-    # Encodes a tag from the Ruby DICOM format ("GGGG,EEEE"), to a proper binary String, and returns it.
+    # Encodes a tag from the Ruby DICOM format ("GGGG,EEEE"), to a proper binary string, and returns it.
     #
     # === Parameters
     #
-    # * <tt>string</tt> -- A String to be processed.
+    # * <tt>string</tt> -- A string to be processed.
     #
     def encode_tag(tag)
       if @equal_endian
@@ -205,12 +205,12 @@ module DICOM
       return [clean_tag].pack(@hex)
     end
 
-    # Encodes a value, and if the the resulting binary String has an odd length, appends an empty byte.
-    # Returns the processed binary String (which will always be of even length).
+    # Encodes a value, and if the the resulting binary string has an odd length, appends an empty byte.
+    # Returns the processed binary string (which will always be of even length).
     #
     # === Parameters
     #
-    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an Array of numbers.
+    # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an array of numbers.
     # * <tt>type</tt> -- String. The type (vr) of data to encode.
     #
     def encode_value(value, type)
@@ -225,12 +225,12 @@ module DICOM
       return bin
     end
 
-    # Sets the endianness of the instance String. The relationship between the String endianness and
+    # Sets the endianness of the instance string. The relationship between the string endianness and
     # the system endianness, determines which encoding/decoding flags to use.
     #
     # === Parameters
     #
-    # * <tt>string_endian</tt> -- Boolean. The endianness of the instance String (true for big endian, false for small endian).
+    # * <tt>string_endian</tt> -- Boolean. The endianness of the instance string (true for big endian, false for small endian).
     #
     def endian=(string_endian)
       @str_endian = string_endian
@@ -239,13 +239,13 @@ module DICOM
       set_format_hash
     end
 
-    # Extracts and returns the entire instance String, or optionally,
+    # Extracts and returns the entire instance string, or optionally,
     # just the first part of it if a length is specified.
-    # The extracted String is removed from the instance String, and returned.
+    # The extracted string is removed from the instance string, and returned.
     #
     # === Parameters
     #
-    # * <tt>length</tt> -- Fixnum. The length of the String which will be cut out. If nil, the entire String is exported.
+    # * <tt>length</tt> -- Fixnum. The length of the string which will be cut out. If nil, the entire string is exported.
     #
     def export(length=nil)
       if length
@@ -257,12 +257,12 @@ module DICOM
       return string
     end
 
-    # Extracts and returns a binary String of the given length, starting at the index position.
+    # Extracts and returns a binary string of the given length, starting at the index position.
     # The instance index is offset in accordance with the length read.
     #
     # === Parameters
     #
-    # * <tt>length</tt> -- Fixnum. The length of the String which will extracted.
+    # * <tt>length</tt> -- Fixnum. The length of the string which will extracted.
     #
     def extract(length)
       str = @string.slice(@index, length)
@@ -270,27 +270,27 @@ module DICOM
       return str
     end
 
-    # Returns the length of the binary instance String.
+    # Returns the length of the binary instance string.
     #
     def length
       return @string.length
     end
 
-    # Calculates and returns the remaining length of the instance String (from the index position).
+    # Calculates and returns the remaining length of the instance string (from the index position).
     #
     def rest_length
       length = @string.length - @index
       return length
     end
 
-    # Extracts and returns the remaining part of the instance String (from the index position to the end of the String).
+    # Extracts and returns the remaining part of the instance string (from the index position to the end of the string).
     #
     def rest_string
       str = @string[@index..(@string.length-1)]
       return str
     end
 
-    # Resets the instance String and index.
+    # Resets the instance string and index.
     #
     def reset
       @string = ""
@@ -308,7 +308,7 @@ module DICOM
     # === Notes
     #
     # * For performance reasons, we enable the Stream instance to write directly to file,
-    # to avoid expensive String operations which will otherwise slow down the write performance.
+    # to avoid expensive string operations which will otherwise slow down the write performance.
     #
     # === Parameters
     #
@@ -318,11 +318,11 @@ module DICOM
       @file = file
     end
 
-    # Sets a new instance String, and resets the index variable.
+    # Sets a new instance string, and resets the index variable.
     #
     # === Parameters
     #
-    # * <tt>binary</tt> -- A binary String.
+    # * <tt>binary</tt> -- A binary string.
     #
     def set_string(binary)
       binary = binary[0] if binary.is_a?(Array)
@@ -340,11 +340,11 @@ module DICOM
       @index += offset
     end
 
-    # Writes a binary String to the File instance.
+    # Writes a binary string to the File instance.
     #
     # === Parameters
     #
-    # * <tt>binary</tt> -- A binary String.
+    # * <tt>binary</tt> -- A binary string.
     #
     def write(binary)
       @file.write(binary)
@@ -355,7 +355,7 @@ module DICOM
     private
 
 
-    # Determines the relationship between system and String endianness, and sets the instance endian variable.
+    # Determines the relationship between system and string endianness, and sets the instance endian variable.
     #
     def configure_endian
       if CPU_ENDIAN == @str_endian
@@ -365,7 +365,7 @@ module DICOM
       end
     end
 
-    # Converts a data type/vr to an encode/decode String used by the pack/unpack methods, which is returned.
+    # Converts a data type/vr to an encode/decode string used by the pack/unpack methods, which is returned.
     #
     # === Parameters
     #
@@ -424,6 +424,7 @@ module DICOM
     #--
     # FIXME: Apparently the Ruby pack/unpack methods lacks a format for signed short
     # and signed long in the network byte order. A solution needs to be found for this.
+    #
     def set_string_formats
       if @equal_endian
         # Native byte order:

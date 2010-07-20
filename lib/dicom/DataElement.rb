@@ -2,7 +2,7 @@
 
 module DICOM
 
-  # The DataElement class handles information related to a DataElement.
+  # The DataElement class handles information related to ordinary (non-parent) data elements.
   #
   class DataElement
 
@@ -22,13 +22,13 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A String which identifies the tag of the data element.
-    # * <tt>value</tt> -- A custom value to be encoded as the data element binary String, or in some cases (specified by options), a pre-encoded binary String.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>tag</tt> -- A string which identifies the tag of the data element.
+    # * <tt>value</tt> -- A custom value to be encoded as the data element binary string, or in some cases (specified by options), a pre-encoded binary string.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- String. If you already have the value pre-encoded to a binary String, the String can be supplied with this option to avoid it being encoded a second time.
+    # * <tt>:bin</tt> -- String. If you already have the value pre-encoded to a binary string, the string can be supplied with this option to avoid it being encoded a second time.
     # * <tt>:encoded</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean must to be set as true.
     # * <tt>:name</tt> - String. The name of the DataElement may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
     # * <tt>:parent</tt> - Item or DObject instance which the DataElement instance shall belong to.
@@ -80,11 +80,11 @@ module DICOM
       end
     end
 
-    # Sets the binary String of a DataElement.
+    # Sets the binary string of a DataElement.
     #
     # === Parameters
     #
-    # * <tt>new_bin</tt> -- A binary String of encoded data.
+    # * <tt>new_bin</tt> -- A binary string of encoded data.
     #
     def bin=(new_bin)
       if new_bin.is_a?(String)
@@ -138,7 +138,7 @@ module DICOM
     private
 
 
-    # Encodes a formatted value to a binary String and returns it.
+    # Encodes a formatted value to a binary string and returns it.
     #
     # === Parameters
     #

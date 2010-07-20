@@ -6,9 +6,9 @@ module DICOM
   #
   class DLibrary
 
-    # A Hash containing tags as key and an Array as value, where the Array contains data element vr and name.
+    # A hash containing tags as key and an array as value, where the array contains data element vr and name.
     attr_reader :tags
-    # A Hash containing UIDs as key and an Array as value, where the Array contains Name and type.
+    # A hash containing UIDs as key and an array as value, where the array contains name and type.
     attr_reader :uid
 
     # Creates a DLibrary instance.
@@ -22,7 +22,7 @@ module DICOM
       @uid = Dictionary.load_uid
     end
 
-    # Checks whether a given String is a valid transfer syntax or not.
+    # Checks whether a given string is a valid transfer syntax or not.
     # Returns true if valid, false if not.
     #
     # === Parameters
@@ -39,9 +39,9 @@ module DICOM
     end
 
     # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,
-    # in the form of a transfer syntax Hash and a sop class Hash.
+    # in the form of a transfer syntax hash and a sop class hash.
     #
-    # Both Hash instances have UIDs as keys and their descriptions as values.
+    # Both hashes have UIDs as keys and their descriptions as values.
     #
     def extract_transfer_syntaxes_and_sop_classes
       transfer_syntaxes = Hash.new

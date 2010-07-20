@@ -7,8 +7,8 @@ module DICOM
   # === Notes
   #
   # * For 'advanced' anonymization, a good resource might be:
-  # ftp://medical.nema.org/medical/dicom/Supps/sup142_03.pdf
-  # (a report from the DICOM standards committee, work group 18)
+  # ftp://medical.nema.org/medical/dicom/supps/sup142_pc.pdf
+  # (Clinical Trials De-identification Profiles, DICOM Standards Committee, Working Group 18)
   #
   class Anonymizer
 
@@ -90,7 +90,7 @@ module DICOM
     # === Parameters
     #
     # * <tt>tag</tt> -- String. A data element tag.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -179,6 +179,9 @@ module DICOM
     #
     # * <tt>verbose</tt> -- Boolean. If set as true, verbose behaviour will be set for the DObject
     # instances that are anonymized. Defaults to false.
+    #
+    #--
+    # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.
     #
     def execute(verbose=false)
       # Search through the folders to gather all the files to be anonymized:
@@ -366,7 +369,7 @@ module DICOM
     private
 
 
-    # Finds the common path (if any) in the instance file path Array, by performing a recursive search
+    # Finds the common path (if any) in the instance file path array, by performing a recursive search
     # on the folders that make up the path of one such file.
     # Returns the index of the last folder in the path of the selected file that is common for all file paths.
     #
@@ -393,7 +396,7 @@ module DICOM
       return result
     end
 
-    # Creates a Hash that is used for storing information that is used when enumeration is selected.
+    # Creates a hash that is used for storing information that is used when enumeration is selected.
     #
     def create_enum_hash
       @enum.each_index do |i|
@@ -438,7 +441,7 @@ module DICOM
     end
 
     # Discovers all the files contained in the specified directory (all its sub-directories),
-    # and adds these files to the instance file Array.
+    # and adds these files to the instance file array.
     #
     def load_files
       # Load find library:
@@ -465,7 +468,7 @@ module DICOM
 
     # Analyzes the write_path and the 'read' file path to determine if they have some common root.
     # If there are parts of the file path that exists also in the write path, the common parts will not be added to the write_path.
-    # The processed paths are put in a write_path instance Array.
+    # The processed paths are put in a write_path instance array.
     #
     def process_write_paths
       # First make sure @write_path ends with a file separator character:

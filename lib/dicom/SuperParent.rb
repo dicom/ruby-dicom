@@ -22,7 +22,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag String which identifies the data element to be returned (Exception: In the case where an Item is wanted, an index (Fixnum) is used instead).
+    # * <tt>tag</tt> -- A tag string which identifies the data element to be returned (Exception: In the case where an Item is wanted, an index (Fixnum) is used instead).
     #
     # === Examples
     #
@@ -69,12 +69,12 @@ module DICOM
     # If no existing Item is specified, an empty item will be added.
     #
     # === Notes
-    # * Items are specified by index (starting at 1) instead of a tag String!
+    # * Items are specified by index (starting at 1) instead of a tag string!
     #
     # === Parameters
     #
     # * <tt>item</tt> -- The Item instance that is to be added (defaults to nil, in which case an empty Item will be added).
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -184,7 +184,7 @@ module DICOM
       return total_count
     end
 
-    # Re-encodes the binary data strings of all child Data Elements.
+    # Re-encodes the binary data strings of all child DataElement instances.
     # This also includes all the elements contained in any possible child elements.
     #
     # === Notes
@@ -212,7 +212,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag String which identifies the data element that is queried (Exception: In the case of an Item query, an index (Fixnum) is used instead).
+    # * <tt>tag</tt> -- A tag string which identifies the data element that is queried (Exception: In the case of an Item query, an index (Fixnum) is used instead).
     #
     # === Examples
     #
@@ -227,7 +227,7 @@ module DICOM
     end
 
     # Gathers the desired information from the selected data elements and processes this information to make
-    # a text output which is nicely formatted. Returns a text Array and an index (Fixnum) of the last data element.
+    # a text output which is nicely formatted. Returns a text array and an index of the last data element.
     #
     # === Notes
     #
@@ -242,8 +242,8 @@ module DICOM
     # * <tt>max_name</tt> -- Fixnum. The maximum number of characters in the name of any element to be printed.
     # * <tt>max_length</tt> -- Fixnum. The maximum number of digits in the length of an element.
     # * <tt>max_generations</tt> -- Fixnum. The maximum number of generations of children for this parent.
-    # * <tt>visualization</tt> -- An Array of String symbols which visualizes the tree structure that the children of this particular parent belongs to. For no visualization, an empty Array is passed.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>visualization</tt> -- An array of string symbols which visualizes the tree structure that the children of this particular parent belongs to. For no visualization, an empty array is passed.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -346,7 +346,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -419,7 +419,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag String which specifies the element to be removed (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
+    # * <tt>tag</tt> -- A tag string which specifies the element to be removed (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
     #
     # === Examples
     #
@@ -501,13 +501,16 @@ module DICOM
     private
 
 
-    # Re-encodes the value of a child Data Element (but only if the Data Element encoding is
+    # Re-encodes the value of a child DataElement (but only if the DataElement encoding is
     # influenced by a shift in endianness).
     #
     # === Parameters
     #
     # * <tt>element</tt> -- The DataElement who's value will be re-encoded.
     # * <tt>old_endian</tt> -- The previous endianness of the element binary (used for decoding the value).
+    #
+    #--
+    # FIXME: Tag with VR AT has no re-encoding yet..
     #
     def encode_child(element, old_endian)
       if element.tag == "7FE0,0010"
@@ -541,8 +544,8 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>elements</tt> -- An Array of formatted data element lines.
-    # * <tt>file</tt> -- A path & file String.
+    # * <tt>elements</tt> -- An array of formatted data element lines.
+    # * <tt>file</tt> -- A path & file string.
     #
     def print_file(elements, file)
       File.open(file, 'w') do |output|
@@ -556,7 +559,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>elements</tt> -- An Array of formatted data element lines.
+    # * <tt>elements</tt> -- An array of formatted data element lines.
     #
     def print_screen(elements)
       elements.each do |line|

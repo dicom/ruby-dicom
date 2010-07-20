@@ -6,20 +6,20 @@
 #
 class String
 
-  # Returns the element part of the tag String: The last 4 characters.
+  # Returns the element part of the tag string: The last 4 characters.
   #
   def element
     return self[5..8]
   end
 
-  # Returns the group part of the tag String: The first 4 characters.
+  # Returns the group part of the tag string: The first 4 characters.
   #
   def group
     return self[0..3]
   end
 
-  # Returns the "Group Length" ("GGGG,0000") tag which corresponds to the original String.
-  # This String may either be a 4 character group String, or a 9 character custom tag.
+  # Returns the "Group Length" ("GGGG,0000") tag which corresponds to the original tag/group string.
+  # This string may either be a 4 character group string, or a 9 character custom tag.
   #
   def group_length
     if self.length == 4
@@ -29,14 +29,14 @@ class String
     end
   end
 
-  # Checks if the String is a "Group Length" tag (its element part is "0000").
+  # Checks if the string is a "Group Length" tag (its element part is "0000").
   # Returns true if it is and false if not.
   #
   def group_length?
     return (self.element == "0000" ? true : false)
   end
 
-  # Checks if the String is a private tag (has an odd group number).
+  # Checks if the string is a private tag (has an odd group number).
   # Returns true if it is, false if not.
   #
   def private?
@@ -44,7 +44,7 @@ class String
     return ((self.upcase =~ /\A[a-fA-F\d]{3}[1,3,5,7,9,B,D,F],[a-fA-F\d]{4}\z/) == nil ? false : true)
   end
 
-  # Checks if the String is a valid tag (as defined by Ruby DICOM: "GGGG,EEEE").
+  # Checks if the string is a valid tag (as defined by Ruby DICOM: "GGGG,EEEE").
   # Returns true if it is a valid tag, false if not.
   #
   def tag?

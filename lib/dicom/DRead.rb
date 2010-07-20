@@ -7,38 +7,38 @@
 
 module DICOM
 
-  # The DRead class parses the DICOM data from a binary String.
+  # The DRead class parses the DICOM data from a binary string.
   #
-  # The source of this binary String is typically either a DICOM file or a DICOM network transmission.
+  # The source of this binary string is typically either a DICOM file or a DICOM network transmission.
   #
   class DRead
 
-    # A boolean which reports the explicitness of the DICOM String, true if explicit and false if implicit.
+    # A boolean which reports the explicitness of the DICOM string, true if explicit and false if implicit.
     attr_reader :explicit
-    # A boolean which reports the endianness of the post-meta group part of the DICOM String (true for big endian, false for little endian).
+    # A boolean which reports the endianness of the post-meta group part of the DICOM string (true for big endian, false for little endian).
     attr_reader :file_endian
-    # An Array which records any status messages that are generated while parsing the DICOM String.
+    # An array which records any status messages that are generated while parsing the DICOM string.
     attr_reader :msg    
     # A DObject instance which the parsed data elements will be connected to.
     attr_reader :obj
-    # A boolean which records whether the DICOM String contained the proper DICOM header signature of 128 bytes + 'DICM'.
+    # A boolean which records whether the DICOM string contained the proper DICOM header signature of 128 bytes + 'DICM'.
     attr_reader :signature
-    # A boolean which reports whether the DICOM String was parsed successfully (true) or not (false).
+    # A boolean which reports whether the DICOM string was parsed successfully (true) or not (false).
     attr_reader :success
 
     # Creates a DRead instance.
-    # Parses the DICOM String, builds data element objects and connects these with the DObject instance.
+    # Parses the DICOM string, builds data element objects and connects these with the DObject instance.
     #
     # === Parameters
     #
     # * <tt>obj</tt> -- A DObject instance which the parsed data elements will be connected to.
-    # * <tt>string</tt> -- A String, either specifying the path of a DICOM file to be loaded, or a binary DICOM String to be parsed.
-    # * <tt>options</tt> -- A Hash of parameters.
+    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
+    # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM String will be forced to use this transfer syntax.
-    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM String, and not a path String, which is the default behaviour.
+    # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
+    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM string, and not a path string, which is the default behaviour.
     # 
     def initialize(obj, string=nil, options={})
       # Set the DICOM object as an instance variable:
@@ -104,7 +104,7 @@ module DICOM
 
     # Checks for the official DICOM header signature.
     # Returns true if the proper signature is present, false if it is not present,
-    # and nil if the String was shorter then the length of the DICOM signature.
+    # and nil if thestring was shorter then the length of the DICOM signature.
     #
     def check_header
       # According to the official DICOM standard, a DICOM file shall contain 128 consequtive (zero) bytes,
@@ -133,9 +133,8 @@ module DICOM
       end
     end
 
-    # Handles the process of reading a data element from the DICOM String, and creating an Element object from the parsed data.
-    # Returns nil if end of file has been reached (in an expected way), false if the
-    # element parse failed, and true if an element was parsed successfully.
+    # Handles the process of reading a data element from the DICOM string, and creating an element object from the parsed data.
+    # Returns nil if end of file has been reached (in an expected way), false if the element parse failed, and true if an element was parsed successfully.
     #
     #--
     # FIXME: This method has grown a bit messy and isn't very easy to follow. It would be nice if it could be cleaned up somewhat.
@@ -231,7 +230,7 @@ module DICOM
     end
 
     # Reads and returns the data element's tag (the 4 first bytes of a data element).
-    # Returns nil if no tag could be read (end of String).
+    # Returns nil if no tag could be read (end of string).
     #
     def read_tag
       tag = @stream.decode_tag
@@ -299,11 +298,11 @@ module DICOM
       return vr, length
     end
 
-    # Reads and returns the data element's binary value String (varying length).
+    # Reads and returns the data element's binary value string (varying length).
     #
     # === Parameters
     #
-    # * <tt>length</tt> -- Fixnum. The length of the binary String that will be extracted.
+    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
     #
     def read_bin(length)
       return @stream.extract(length)
@@ -313,7 +312,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Data elements which have multiple numbers as value, will have these numbers joined to a String, separated by the \ character.
+    # * Data elements which have multiple numbers as value, will have these numbers joined to a string, separated by the \ character.
     # * For some value representations (OW, OB, OF, UN), a value is not processed, and nil is returned.
     # This means that for data like pixel data, compressed data, unknown data, a value is not available in the data element,
     # and must be processed from the data element's binary variable.
@@ -321,7 +320,7 @@ module DICOM
     # === Parameters
     #
     # * <tt>vr</tt> -- String. The value representation of the data element which the value to be decoded belongs to.
-    # * <tt>length</tt> -- Fixnum. The length of the binary String that will be extracted.
+    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
     #
     def read_value(vr, length)
       unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
@@ -342,7 +341,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file</tt> -- A path/file String.
+    # * <tt>file</tt> -- A path/file string.
     #
     def open_file(file)
       if File.exist?(file)
@@ -365,7 +364,7 @@ module DICOM
     end
 
     # Registers an unexpected error by toggling a success boolean and recording an error message.
-    # The DICOM String ended abruptly because the data element's value was shorter than expected.
+    # The DICOM string ended abruptly because the data element's value was shorter than expected.
     #
     def set_abrupt_error
       @msg << "Error! The parsed data of the last data element #{@current_element.tag} does not match its specified length value. This is probably the result of invalid or corrupt DICOM data."
@@ -399,7 +398,7 @@ module DICOM
     end
 
 
-    # Creates various instance variables that are used when parsing the DICOM String.
+    # Creates various instance variables that are used when parsing the DICOM string.
     #
     def init_variables
       # Array that will holde any messages generated while reading the DICOM file:

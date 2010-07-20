@@ -4,55 +4,65 @@
 
 module DICOM
 
-  # Ruby DICOM version string:
+  # Ruby DICOM version string.
   VERSION = "0.7.8b"
 
-  # Ruby DICOM implementation name and uid:
+  # Ruby DICOM's implementation UID.
   UID = "1.2.826.0.1.3680043.8.641"
+  # Ruby DICOM name & version (max 16 characters).
   NAME = "RUBY_DCM_" + DICOM::VERSION
+  # Application title.
   SOURCE_APP_TITLE = "RUBY_DICOM"
 
-  # Item tag:
+  # Item tag.
   ITEM_TAG = "FFFE,E000"
-  # Item related tags (includes both types of delimitation items):
+  # All Item related tags (includes both types of delimitation items).
   ITEM_TAGS = ["FFFE,E000", "FFFE,E00D", "FFFE,E0DD"]
-  # Delimiter tags (includes both types of delimitation items):
+  # Item delimiter tag.
   ITEM_DELIMITER = "FFFE,E00D"
+  # Sequence delimiter tag.
   SEQUENCE_DELIMITER = "FFFE,E0DD"
+  # All delimiter tags.
   DELIMITER_TAGS = ["FFFE,E00D", "FFFE,E0DD"]
 
-  # VR used for the item elements:
+  # The VR used for the item elements.
   ITEM_VR = "  "
 
-  # Pixel tag:
+  # Pixel tag.
   PIXEL_TAG = "7FE0,0010"
+  # Name of the pixel tag when holding encapsulated data.
   ENCAPSULATED_PIXEL_NAME = "Encapsulated Pixel Data"
+  # Name of encapsulated items.
   PIXEL_ITEM_NAME = "Pixel Data Item"
 
-  # File Meta Group:
+  # File meta group.
   META_GROUP = "0002"
 
-  # Group length element:
+  # Group length element.
   GROUP_LENGTH = "0000"
 
-  # A few commonly used transfer syntaxes:
+  # Implicit, little endian (the default transfer syntax).
   IMPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2"
+  # Explicit, little endian transfer syntax.
   EXPLICIT_LITTLE_ENDIAN = "1.2.840.10008.1.2.1"
+  # Explicit, big endian transfer syntax.
   EXPLICIT_BIG_ENDIAN = "1.2.840.10008.1.2.2"
 
-  # SOP Class of special interest:
+  # Verification SOP class UID.
   VERIFICATION_SOP = "1.2.840.10008.1.1"
+  # Application context SOP class UID.
   APPLICATION_CONTEXT = "1.2.840.10008.3.1.1.1"
 
-  # Network communication result codes:
+  # Network transmission successful.
+  SUCCESS = 0
+  # Network proposition accepted.
   ACCEPTANCE = 0
+  # Presentation context rejected by abstract syntax.
   ABSTRACT_SYNTAX_REJECTED = 3
+  # Presentation context rejected by transfer syntax.
   TRANSFER_SYNTAX_REJECTED = 4
 
-  # Network transmission result codes:
-  SUCCESS = 0
-
-  # Network Command Element codes:
+  # Some network command element codes:
   C_STORE_RQ = 1 # (encodes to 0001H as US)
   C_GET_RQ = 16 # (encodes to 0010H as US)
   C_FIND_RQ = 32 # (encodes to 0020H as US)
@@ -68,13 +78,13 @@ module DICOM
   DATA_SET_PRESENT = 1
   DEFAULT_MESSAGE_ID = 1
 
-  # Flags:
+  # The network communication flags:
   DATA_MORE_FRAGMENTS = "00"
   COMMAND_MORE_FRAGMENTS = "01"
   DATA_LAST_FRAGMENT = "02"
   COMMAND_LAST_FRAGMENT = "03"
 
-  # PDU types:
+  # Network communication PDU types:
   PDU_ASSOCIATION_REQUEST = "01"
   PDU_ASSOCIATION_ACCEPT = "02"
   PDU_ASSOCIATION_REJECT = "03"
@@ -83,7 +93,7 @@ module DICOM
   PDU_RELEASE_RESPONSE = "06"
   PDU_ABORT = "07"
 
-  # Item types:
+  # Network communication item types:
   ITEM_APPLICATION_CONTEXT = "10"
   ITEM_PRESENTATION_CONTEXT_REQUEST = "20"
   ITEM_PRESENTATION_CONTEXT_RESPONSE = "21"
@@ -96,16 +106,16 @@ module DICOM
   ITEM_ROLE_NEGOTIATION = "54"
   ITEM_IMPLEMENTATION_VERSION = "55"
 
-
-  # System (CPU) Endianness:
+  # Varaibles used to determine endianness.
   x = 0xdeadbeef
   endian_type = {
     Array(x).pack("V*") => false, # Little
     Array(x).pack("N*") => true   # Big
   }
+  # System (CPU) Endianness.
   CPU_ENDIAN = endian_type[Array(x).pack("L*")]
 
-  # Load the DICOM Library class (dictionary):
+  # Ruby DICOM's library (data dictionary).
   LIBRARY =  DICOM::DLibrary.new
 
 end
