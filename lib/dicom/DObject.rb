@@ -386,8 +386,26 @@ module DICOM
       # Source Application Entity Title:
       DataElement.new("0002,0016", SOURCE_APP_TITLE, :parent => self) unless exists?("0002,0016")
       # Group length:
-      # Although group lengths in general have been retired in DICOM 2008, the meta group seems to have kept its group length.
-      # (FIXME: Add group length)
+      DataElement.new("0002,0000", meta_group_length, :parent => self)
+    end
+
+    # Determines and returns the length of the meta group in the DObject instance.
+    #
+    def meta_group_length
+      group_length = 0
+      meta_elements = group(META_GROUP)
+      tag = 4
+      vr = 2
+      meta_elements.each do |element|
+        case element.vr
+          when "OB","OW","OF","SQ","UN","UT"
+            length = 6
+          else
+            length = 2
+        end
+        group_length += tag + vr + length + element.bin.length
+      end
+      return group_length
     end
 
     # Handles the creation of a DWrite instance, and returns this instance to the calling method,

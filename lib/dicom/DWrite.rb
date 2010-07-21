@@ -214,7 +214,12 @@ module DICOM
           end
         else
           # Ordinary Data Element:
-          write_data_element(element) unless element.tag.group_length? # (For simplicity, we avoid writing group length elements)
+          if element.tag.group_length?
+            # Among group length elements, only write the meta group element (the others have been retired in the DICOM standard):
+            write_data_element(element) if element.tag == "0002,0000"
+          else
+            write_data_element(element) 
+          end
         end
       end
     end
