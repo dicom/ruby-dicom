@@ -82,15 +82,20 @@ module DICOM
 
     # Sets the binary string of a DataElement.
     #
+    # === Notes
+    #
+    # If the specified binary has an odd length, a proper pad byte will automatically be appended
+    # to give it an even length (which is needed to conform with the DICOM standard).
+    #
     # === Parameters
     #
     # * <tt>new_bin</tt> -- A binary string of encoded data.
     #
     def bin=(new_bin)
       if new_bin.is_a?(String)
-        # Add an empty byte at the end if the length of the binary is odd:
+        # Add a zero byte at the end if the length of the binary is odd:
         if new_bin.length[0] == 1
-          @bin = new_bin + "\x00"
+          @bin = new_bin + stream.pad_byte[@vr]
         else
           @bin = new_bin
         end

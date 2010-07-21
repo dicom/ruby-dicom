@@ -372,7 +372,7 @@ module DICOM
     #
     def insert_missing_meta
       # File Meta Information Version:
-      DataElement.new("0002,0001", "0001", :encoded => true, :parent => self) unless exists?("0002,0001")
+      DataElement.new("0002,0001", [0,1], :parent => self) unless exists?("0002,0001")
       # Media Storage SOP Class UID:
       DataElement.new("0002,0002", value("0008,0016"), :parent => self) unless exists?("0002,0002")
       # Media Storage SOP Instance UID:

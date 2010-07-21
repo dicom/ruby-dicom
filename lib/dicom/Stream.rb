@@ -16,6 +16,8 @@ module DICOM
     attr_accessor :string
     # An array of warning/error messages that (may) have been accumulated.
     attr_reader :errors
+    # A hash with vr as key and its corresponding pad byte as value.
+    attr_reader :pad_byte
 
     # Creates a Stream instance.
     #
@@ -205,23 +207,23 @@ module DICOM
       return [clean_tag].pack(@hex)
     end
 
-    # Encodes a value, and if the the resulting binary string has an odd length, appends an empty byte.
+    # Encodes a value, and if the the resulting binary string has an odd length, appends a proper padding byte.
     # Returns the processed binary string (which will always be of even length).
     #
     # === Parameters
     #
     # * <tt>value</tt> -- A custom value (String, Fixnum, etc..) or an array of numbers.
-    # * <tt>type</tt> -- String. The type (vr) of data to encode.
+    # * <tt>vr</tt> -- String. The type of data to encode.
     #
-    def encode_value(value, type)
+    def encode_value(value, vr)
       # Make sure the value is in an array:
       value = [value] unless value.is_a?(Array)
       # Get the proper pack string:
-      type = vr_to_str(type)
+      type = vr_to_str(vr)
       # Encode:
       bin = value.pack(type)
       # Add an empty byte if the resulting binary has an odd length:
-      bin = bin + "\x00" if bin.length[0] == 1
+      bin = bin + @pad_byte[vr] if bin.length[0] == 1
       return bin
     end
 
@@ -235,6 +237,7 @@ module DICOM
     def endian=(string_endian)
       @str_endian = string_endian
       configure_endian
+      set_pad_byte
       set_string_formats
       set_format_hash
     end
@@ -415,6 +418,43 @@ module DICOM
         "UI" => @str,
         "UT" => @str,
         "STR" => @str
+      }
+    end
+
+    # Sets the hash which is used to keep track of which bytes to use for padding
+    # data elements of various vr which have an odd value length.
+    #
+    def set_pad_byte
+      @pad_byte = {
+        # Space character:
+        "AE" => "\x20",
+        "AS" => "\x20",
+        "CS" => "\x20",
+        "DA" => "\x20",
+        "DS" => "\x20",
+        "DT" => "\x20",
+        "LO" => "\x20",
+        "LT" => "\x20",
+        "PN" => "\x20",
+        "SH" => "\x20",
+        "ST" => "\x20",
+        "TM" => "\x20",
+        "UT" => "\x20",
+        # Zero byte:
+        "AT" => "\x00",
+        "FL" => "\x00",
+        "FD" => "\x00",
+        "IS" => "\x00",
+        "OB" => "\x00",
+        "OF" => "\x00",
+        "OW" => "\x00",
+        "SL" => "\x00",
+        "SQ" => "\x00",
+        "SS" => "\x00",
+        "UI" => "\x00",
+        "UL" => "\x00",
+        "UN" => "\x00",
+        "US" => "\x00"
       }
     end
 
