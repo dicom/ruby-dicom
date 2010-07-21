@@ -226,6 +226,21 @@ module DICOM
       end
     end
 
+    # Returns an array of all child elements that belongs to the specified group.
+    # If no matches are found, returns an empty array.
+    #
+    # === Parameters
+    #
+    # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
+    #
+    def group(group_string)
+      found = Array.new
+      children.each do |child|
+        found << child if child.tag.group == group_string
+      end
+      return found
+    end
+
     # Gathers the desired information from the selected data elements and processes this information to make
     # a text output which is nicely formatted. Returns a text array and an index of the last data element.
     #
@@ -434,6 +449,19 @@ module DICOM
       if element
         element.parent = nil
         @tags.delete(tag)
+      end
+    end
+
+    # Removes all data elements of the specified group from this parent.
+    #
+    # === Parameters
+    #
+    # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
+    #
+    def remove_group(group_string)
+      group_elements = group(group_string)
+      group_elements.each do |element|
+        remove(element.tag)
       end
     end
 
