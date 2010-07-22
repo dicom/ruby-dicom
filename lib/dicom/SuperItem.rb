@@ -12,6 +12,31 @@ module DICOM
   #
   class SuperItem < SuperParent
 
+    # Checks if colored pixel data is present.
+    # Returns true if it is, false if not.
+    #
+    def color?
+      # "Photometric Interpretation" is contained in the data element "0028,0004":
+      photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
+      if photometric.include?("COLOR") or photometric.include?("RGB") or photometric.include?("YBR")
+        return true
+      else
+        return false
+      end
+    end
+
+    # Checks if compressed pixel data is present.
+    # Returns true if it is, false if not.
+    #
+    def compression?
+      # If compression is used, the pixel data element is a Sequence (with encapsulated elements), instead of a DataElement:
+      if self[PIXEL_TAG].is_a?(Sequence)
+        return true
+      else
+        return false
+      end
+    end
+
     # Unpacks a binary pixel string and returns decoded pixel values in an array. Returns false if the decoding is unsuccesful.
     # The decode is performed using values defined in the image related data elements of the DObject instance.
     #
@@ -110,7 +135,7 @@ module DICOM
       pixel_data_element = self[PIXEL_TAG]
       if pixel_data_element
         # For now we only support returning pixel data if the image is located in a single pixel data element:
-        if pixel_data_element.is_a?(DataElement)
+        unless compression?
           pixels = decode_pixels(pixel_data_element.bin)
           # Remap the image from pixel values to presentation values if the user has requested this:
           if options[:rescale]
@@ -149,19 +174,18 @@ module DICOM
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
     #
     def get_image_magick(options={})
-      color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
       pixel_data_element = self[PIXEL_TAG]
       if pixel_data_element
         # For now we only support returning pixel data if the image is located in a single pixel data element:
-        if pixel_data_element.is_a?(DataElement)
-          if color.upcase.include?("MONOCHROME")
+        unless compression?
+          unless color?
             # Creating a NArray object using int to make sure we have the necessary range for our numbers:
             rows, columns, frames = image_properties
             pixels = decode_pixels(pixel_data_element.bin)
             image = read_image_magick(pixels, columns, rows, frames, options)
             add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
           else
-            add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
+            add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
             image = false
           end
         else
@@ -190,20 +214,19 @@ module DICOM
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     #
     def get_image_narray(options={})
-      color = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value : "")
       pixel_data_element = self[PIXEL_TAG]
       if pixel_data_element
         # For now we only support returning pixel data if the image is located in a single pixel data element:
-        if pixel_data_element.is_a?(DataElement)
-          if color.upcase.include?("MONOCHROME")
-            # Decode the pixel values, then import to NArray give it the proper shape:
+        unless compression?
+          unless color?
+            # Decode the pixel values, then import to NArray  and give it the proper shape:
             rows, columns, frames = image_properties
             pixels = decode_pixels(pixel_data_element.bin)
             pixel_data = NArray.to_na(pixels).reshape!(frames, columns, rows)
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
           else
-            add_msg("Warning: Either Photomtetric Interpretation is missing, or the DICOM object contains pixel data with colors, which is unsupported as of yet.")
+            add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
             pixel_data = false
           end
         else
@@ -267,28 +290,36 @@ module DICOM
     #   obj.image_to_file("exported_image.bin")
     #
     def image_to_file(file)
-      pixel_element = self[PIXEL_TAG]
-      pixel_data = Array.new
-      if pixel_element
-        # Pixel data may be a single binary string, or located in several item elements:
-        if pixel_element.is_a?(DataElement)
-          pixel_data << pixel_element.bin
+      # Get the binary image strings and dump them to file:
+      images = image_strings
+      images.each_index do |i|
+        if images.length == 1
+          f = File.new(file, "wb")
         else
-          pixel_items = pixel_element.children.first.children
-          pixel_items.each do |item|
-            pixel_data << item.bin
-          end
+          f = File.new("#{file}_#{i}", "wb")
         end
-        pixel_data.each_index do |i|
-          if pixel_data.length == 1
-            f = File.new(file, "wb")
-          else
-            f = File.new("#{file}_#{i}", "wb")
-          end
-          f.write(pixel_data[i])
-          f.close
+        f.write(images[i])
+        f.close
+      end
+    end
+
+    # Returns the pixel data binary string(s) of this parent in an array.
+    # If no pixel data is present, returns an empty array.
+    #
+    def image_strings
+      # Pixel data may be a single binary string in the pixel data element,
+      # or located in several encapsulated item elements:
+      pixel_element = self[PIXEL_TAG]
+      strings = Array.new
+      if pixel_element.is_a?(DataElement)
+        strings << pixel_element.bin
+      elsif pixel_element.is_a?(Sequence)
+        pixel_items = pixel_element.children.first.children
+        pixel_items.each do |item|
+          strings << item.bin
         end
       end
+      return strings
     end
 
     # Removes all Sequence elements from the DObject or Item instance.
