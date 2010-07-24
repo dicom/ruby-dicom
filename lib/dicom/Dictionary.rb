@@ -2881,10 +2881,10 @@ module DICOM
         "60xx,1101" => [["US"], "Overlay Descriptor - Red"],  # RET
         "60xx,1102" => [["US"], "Overlay Descriptor - Green"],  # RET
         "60xx,1103" => [["US"], "Overlay Descriptor - Blue"],  # RET
-        "60xx,1200" => [["US"], "Overlays- Gray"],  # RET
+        "60xx,1200" => [["US"], "Overlays - Gray"],  # RET
         "60xx,1201" => [["US"], "Overlays - Red"],  # RET
         "60xx,1202" => [["US"], "Overlays - Green"],  # RET
-        "60xx,1203" => [["US"], "Overlays- Blue"],  # RET
+        "60xx,1203" => [["US"], "Overlays - Blue"],  # RET
         "60xx,1301" => [["IS"], "ROI Area"],
         "60xx,1302" => [["DS"], "ROI Mean"],
         "60xx,1303" => [["DS"], "ROI Standard Deviation"],
