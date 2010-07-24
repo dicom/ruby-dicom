@@ -2,28 +2,39 @@
 
 module DICOM
 
-  # This is a convenience class for handling the anonymization of DICOM files.
-  # A good resource on this topic (report from the DICOM standards committee, work group 18):
-  # ftp://medical.nema.org/medical/dicom/Supps/sup142_03.pdf
+  # This is a convenience class for handling anonymization of DICOM files.
+  #
+  # === Notes
+  #
+  # * For 'advanced' anonymization, a good resource might be:
+  # ftp://medical.nema.org/medical/dicom/supps/sup142_pc.pdf
+  # (Clinical Trials De-identification Profiles, DICOM Standards Committee, Working Group 18)
   #
   class Anonymizer
 
-    attr_accessor :blank, :enumeration, :identity_file, :remove_private, :verbose, :write_path
+    # A boolean that if set as true will cause all anonymized tags to be blank instead of get some generic value.
+    attr_accessor :blank
+    # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
+    attr_accessor :enumeration
+    # A boolean, which if enumeration has been selected, can be set as true to make the anonymization produce an identity file that will provide a relationship between original and anonymized values.
+    attr_accessor :identity_file
+    # A boolean that if set as true, will make the anonymization remove all private tags.
+    attr_accessor :remove_private
+    # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
+    attr_accessor :write_path
 
-    # Initializes an Anonymizer instance.
+    # Creates an Anonymizer instance.
     #
-    def initialize(opts={})
-      # Default verbosity is true: # NB: verbosity is not used currently
-      @verbose = opts[:verbose]
-      @verbose = true if @verbose == nil
+    # === Examples
+    #
+    # a = Anonymizer.new
+    #
+    def initialize
       # Default value of accessors:
-      # Replace all values with a blank string?
       @blank = false
-      # Enumerate selected replacement values?
       @enumeration = false
-      # All private tags may be removed if desired:
+      @identity_file = nil
       @remove_private = false
-      # A separate path may be selected for writing the anonymized files:
       @write_path = nil
       # Array of folders to be processed for anonymization:
       @folders = Array.new
@@ -35,9 +46,9 @@ module DICOM
       @values = Array.new
       # Which data elements will have enumeration applied, if requested by the user:
       @enum = Array.new
-      # We use a hash to store information from DICOM files if enumeration is desired:
-      @enum_old_hash = {}
-      @enum_new_hash = {}
+      # We use a Hash to store information from DICOM files if enumeration is desired:
+      @enum_old_hash = Hash.new
+      @enum_new_hash = Hash.new
       # All the files to be anonymized will be put in this array:
       @files = Array.new
       # Write paths will be determined later and put in this array:
@@ -46,7 +57,11 @@ module DICOM
       set_defaults
     end
 
-    # Adds an exception folder that is to be avoided when anonymizing.
+    # Adds an exception folder which will be avoided when anonymizing.
+    #
+    # === Parameters
+    #
+    # * <tt>path</tt> -- String. A path that will be avoided.
     #
     def add_exception(path)
       if path
@@ -58,16 +73,38 @@ module DICOM
 
     # Adds a folder who's files will be anonymized.
     #
+    # === Parameters
+    #
+    # * <tt>path</tt> -- String. A path that will be included in the anonymization.
+    #
+    # === Examples
+    #
+    #   a.add_folder("/home/dicom")
+    #
     def add_folder(path)
       @folders << path if path
     end
 
     # Adds a tag to the list of tags that will be anonymized.
     #
-    def add_tag(tag, opts={})
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:value</tt> -- A replacement value to use for when anonymizing this data element.
+    # * <tt>:enum</tt> -- Boolean. Specifies if enumeration is to be used for this tag (true) or not (false).
+    #
+    # === Examples
+    #
+    #   a.add_tag("0010,0010, :value => "MrAnonymous", :enum => true)
+    #
+    def add_tag(tag, options={})
       # Options and defaults:
-      value =  opts[:value]  || ""
-      enum =  opts[:enum]  || false
+      value =  options[:value]  || ""
+      enum =  options[:enum]  || false
       if tag
         if tag.is_a?(String)
           if tag.length == 9
@@ -86,7 +123,12 @@ module DICOM
       end
     end
 
-    # Sets the enumeration status for a specific tag (toggle true/false).
+    # Sets the enumeration status for a specific tag.
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    # * <tt>enum</tt> -- Boolean. True to enable enumeration, false to disable it.
     #
     def change_enum(tag, enum)
       pos = @tags.index(tag)
@@ -101,7 +143,16 @@ module DICOM
       end
     end
 
-    # Changes the value used in anonymization for a specific tag.
+    # Changes the value to be used in the anonymization of a specific tag.
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    # * <tt>value</tt> -- The new anonymization replacement value for this data element.
+    #
+    # === Examples
+    #
+    #   a.change_value("0008,0090", "Dr.No")
     #
     def change_value(tag, value)
       pos = @tags.index(tag)
@@ -117,7 +168,20 @@ module DICOM
     end
 
     # Executes the anonymization process.
-    # NB! Only anonymizes top level Data Elements for the time being!
+    #
+    # This method is run when all settings have been finalized for the Anonymization instance.
+    #
+    # === Restrictions
+    #
+    # * Only top level data elements are anonyzed!
+    #
+    # === Parameters
+    #
+    # * <tt>verbose</tt> -- Boolean. If set as true, verbose behaviour will be set for the DObject
+    # instances that are anonymized. Defaults to false.
+    #
+    #--
+    # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.
     #
     def execute(verbose=false)
       # Search through the folders to gather all the files to be anonymized:
@@ -224,8 +288,8 @@ module DICOM
       puts "*******************************************************"
     end
 
-    # Prints a list of which tags are currently selected for anonymization along with
-    # replacement values that will be used and enumeration status.
+    # Prints to screen a list of which tags are currently selected for anonymization along with
+    # the replacement values that will be used and enumeration status.
     #
     def print
       # Extract the string lengths which are needed to make the formatting nice:
@@ -236,9 +300,9 @@ module DICOM
       type_lengths = Array.new
       value_lengths = Array.new
       @tags.each_index do |i|
-        arr = LIBRARY.get_name_vr(@tags[i])
-        names << arr[0]
-        types << arr[1]
+        name, vr = LIBRARY.get_name_vr(@tags[i])
+        names << name
+        types << vr
         tag_lengths[i] = @tags[i].length
         name_lengths[i] = names[i].length
         type_lengths[i] = types[i].length
@@ -281,6 +345,14 @@ module DICOM
 
     # Removes a tag from the list of tags that will be anonymized.
     #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    #
+    # === Examples
+    #
+    #   a.remove_tag("0010,0010")
+    #
     def remove_tag(tag)
       pos = @tags.index(tag)
       if pos
@@ -297,10 +369,16 @@ module DICOM
     private
 
 
-    # Finds the common path in an array of files, by performing a recursive search.
-    # Returns the index of the last folder in str_arr that is common in all file paths.
+    # Finds the common path (if any) in the instance file path array, by performing a recursive search
+    # on the folders that make up the path of one such file.
+    # Returns the index of the last folder in the path of the selected file that is common for all file paths.
     #
-    def common_path(str_arr, index)
+    # === Parameters
+    #
+    # * <tt>str_arr</tt> -- An array of folder strings from the path of a select file.
+    # * <tt>index</tt> -- Fixnum. The index of the folder in str_arr to check against all file paths.
+    #
+    def common_path(str_arr, index=0)
       common_folders = Array.new
       # Find out how much of the path is similar for all files in @files array:
       folder = str_arr[index]
@@ -318,7 +396,7 @@ module DICOM
       return result
     end
 
-    # Creates a hash that is used for storing information used when enumeration is desired.
+    # Creates a hash that is used for storing information that is used when enumeration is selected.
     #
     def create_enum_hash
       @enum.each_index do |i|
@@ -327,7 +405,15 @@ module DICOM
       end
     end
 
-    # Handles enumeration for current DICOM tag.
+    # Handles the enumeration for the current data element tag.
+    # If its value has been encountered before, its corresponding enumerated value is retrieved,
+    # and if a new value is encountered, a new enumerated value is found by increasing an index by 1.
+    # Returns the value which will be used for the anonymization of this tag.
+    #
+    # === Parameters
+    #
+    # * <tt>current</tt> -- The original value of the tag that are about to be anonymized.
+    # * <tt>j</tt> -- Fixnum. The index of this tag in the tag-related instance arrays.
     #
     def get_enumeration_value(current, j)
       # Is enumeration requested for this tag?
@@ -354,7 +440,8 @@ module DICOM
       return value
     end
 
-    # Discovers all the files contained in the specified directory and all its sub-directories.
+    # Discovers all the files contained in the specified directory (all its sub-directories),
+    # and adds these files to the instance file array.
     #
     def load_files
       # Load find library:
@@ -379,8 +466,9 @@ module DICOM
       end
     end
 
-    # Analyses the write_path and the 'read' file path to determine if the have some common root.
-    # If there are parts of file that exist also in write path, it will not add those parts to write_path.
+    # Analyzes the write_path and the 'read' file path to determine if they have some common root.
+    # If there are parts of the file path that exists also in the write path, the common parts will not be added to the write_path.
+    # The processed paths are put in a write_path instance array.
     #
     def process_write_paths
       # First make sure @write_path ends with a file separator character:
@@ -388,7 +476,6 @@ module DICOM
       @write_path = @write_path + File::SEPARATOR unless last_character == File::SEPARATOR
       # Differing behaviour if we have one, or several files in our array:
       if @files.length == 1
-        # One file.
         # Write path is requested write path + old file name:
         str_arr = @files[0].split(File::SEPARATOR)
         @write_paths << @write_path + str_arr.last
@@ -397,7 +484,7 @@ module DICOM
         # Find out how much of the path they have in common, remove that and
         # add the remaining to the @write_path:
         str_arr = @files[0].split(File::SEPARATOR)
-        last_match_index = common_path(str_arr, 0)
+        last_match_index = common_path(str_arr)
         if last_match_index >= 0
           # Remove the matching folders from the path that will be added to @write_path:
           @files.each do |file|
@@ -414,7 +501,8 @@ module DICOM
       end
     end
 
-    # Default tags that will be anonymized, along with default replacement value and enumeration setting.
+    # Sets up the default tags that will be anonymized, along with default replacement values and enumeration settings.
+    # The data is stored in 3 separate instance arrays for tags, values and enumeration.
     #
     def set_defaults
       data = [
@@ -440,7 +528,7 @@ module DICOM
     end
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
-    # using the enumeration feature. Values will be saved in a text file, using semi colon delineation.
+    # using the enumeration feature. Values are saved in a text file, using semi colon delineation.
     #
     def write_identity_file
       # Open file and prepare to write text:
@@ -463,5 +551,5 @@ module DICOM
       end
     end
 
-  end # of class
-end # of module
+  end
+end

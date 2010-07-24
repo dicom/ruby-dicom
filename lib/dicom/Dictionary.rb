@@ -1,16 +1,21 @@
 # coding: ISO-8859-1
-
+#
 #    Copyright 2008-2010 Christoffer Lervag
 
 module DICOM
 
-  # This class contains all the dictionary data.
+  # This class contains information from the DICOM Data Dictionary.
+  #
+  #--
+  # === Notes
+  #
   # RET appearing behind an entry means that the use of this particular element
   # has been retired according to the current version of the official DICOM standard.
   #
   class Dictionary
 
-    # Returns the data element dictionary Hash.
+    # Returns the information from the DICOM standard's data element dictionary table, in a hash.
+    # The hash has tag as key, and an array as value, where the array contains vr and name.
     #
     def self.load_data_elements
       return {
@@ -2904,9 +2909,13 @@ module DICOM
       }
     end
 
-    # Returns the image type library Hash.
-    # This string (Photometric Interpretation) is stored in the Data element tag: 0028,0004
-    # NB! NOT IN USE AT THIS TIME!
+    # Returns the information from the DICOM standard's Photometric Interpretation table, in a hash.
+    # The hash has the tag value as key, and a description as value.
+    #
+    # The data element for Photometric Interpretation has the following tag: 0028,0004
+    #
+    #--
+    # NOTE: This method is not in use yet.
     #
     def self.load_image_types
       return {
@@ -2919,7 +2928,9 @@ module DICOM
       }
     end
 
-    # Returns the DICOM unique identifiers Hash.
+    # Returns the information from the DICOM standard's Unique Identifiers table, in a hash.
+    # The hash has UID as key, and an array as value, where the array contains description and type.
+    #
     # Table A.1 UID Values (DICOM Part 6, Annex A: Registry of DICOM unique identifiers).
     #
     def self.load_uid
@@ -3229,9 +3240,11 @@ module DICOM
       }
     end
 
-    # Retruns the value representation library Hash.
-    # Consists of VR name, meaning and data format.
-    # NB! NOT IN USE AT THIS TIME!
+    # Returns the information from the DICOM standard's Value Representation table, in a hash.
+    # The hash has vr as key, and an array as value, where the array contains description and data type.
+    #
+    #--
+    # NOTE: This method is not in use yet.
     #
     def self.load_vr
       return {
@@ -3265,5 +3278,5 @@ module DICOM
       }
     end
 
-  end # of class
-end # of module
+  end
+end

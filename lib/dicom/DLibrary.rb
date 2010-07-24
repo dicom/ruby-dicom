@@ -2,39 +2,46 @@
 
 module DICOM
 
-  # This class contains methods that interact with the DICOM dictionary.
+  # This class contains methods that interact with Ruby DICOM's dictionary.
   #
   class DLibrary
 
-    attr_reader :tags, :uid
+    # A hash containing tags as key and an array as value, where the array contains data element vr and name.
+    attr_reader :tags
+    # A hash containing UIDs as key and an array as value, where the array contains name and type.
+    attr_reader :uid
 
-    # Initializes a DLibrary instance.
+    # Creates a DLibrary instance.
     #
     def initialize
       # Load the data elements hash, where the keys are tag strings, and values
-      # are two-element arrays [vr, name] (where vr itself is an array of 1-3 elements).
+      # are two-element arrays [vr, name] (where vr itself is an array of 1-3 elements):
       @tags = Dictionary.load_data_elements
       # Load UID hash (DICOM unique identifiers), where the keys are UID strings,
-      # and values are two-element arrays [description, type].
+      # and values are two-element arrays [description, type]:
       @uid = Dictionary.load_uid
     end
 
     # Checks whether a given string is a valid transfer syntax or not.
+    # Returns true if valid, false if not.
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- String. A DICOM UID value which will be matched against known transfer syntaxes.
     #
     def check_ts_validity(uid)
       result = false
-      value = @uid[uid.rstrip]
+      value = @uid[uid]
       if value
-        if value[1] == "Transfer Syntax"
-          # Proved valid:
-          result = true
-        end
+        result = true if value[1] == "Transfer Syntax"
       end
       return result
     end
 
-    # Extracts all transfer syntaxes and SOP Classes from the Dictionary and returns them in two separate Hashes.
-    # Both Hashes have UIDs as keys and their descriptions as values.
+    # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,
+    # in the form of a transfer syntax hash and a sop class hash.
+    #
+    # Both hashes have UIDs as keys and their descriptions as values.
     #
     def extract_transfer_syntaxes_and_sop_classes
       transfer_syntaxes = Hash.new
@@ -49,24 +56,35 @@ module DICOM
       return transfer_syntaxes, sop_classes
     end
 
-    # Checks if the supplied transfer syntax indicates the presence of pixel compression or not.
+    # Checks if the specified transfer syntax implies the presence of pixel compression.
+    # Returns true if pixel compression is implied, false if not.
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- String. A DICOM UID value.
     #
     def get_compression(uid)
       result = false
       if uid
-        value = @uid[uid.rstrip]
+        value = @uid[uid]
         if value
-          if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
-            # It seems we have compression:
-            result = true
-          end
+          result = true if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
         end
       end
       return result
     end
 
-    # Returns data element name and value representation from the dictionary unless the data element
-    # is private. If a non-private tag is not recognized, "Unknown Name" and "UN" is returned.
+    # Determines, and returns, the name and vr of the data element which the specified tag belongs to.
+    # Values are retrieved from the Ruby DICOM dictionary if a match is found.
+    #
+    # === Notes
+    #
+    # * Private tags will have their names listed as "Private".
+    # * Non-private tags that are not found in the dictionary will be listed as "Unknown".
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
     #
     def get_name_vr(tag)
       if tag.private? and tag.element != GROUP_LENGTH
@@ -116,7 +134,7 @@ module DICOM
           end
           # If none of the above checks yielded a result, the tag is unknown:
           unless name
-            name = "Unknown Name"
+            name = "Unknown"
             vr = "UN"
           end
         end
@@ -124,51 +142,46 @@ module DICOM
       return name, vr
     end
 
-    # Returns the tag that matches the supplied data element name, or if a tag is supplied, simply returns the tag.
+    # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
+    # Returns nil if no match is found.
     #
-    def get_tag(tag_or_name)
-      tag = false
-      # The supplied value should be a string:
-      if tag_or_name.is_a?(String)
-        if tag_or_name.tag?
-          tag = tag_or_name
-        else
-          # We have presumably been dealt a name. Search the dictionary to see if we can identify this name and return its corresponding tag:
-          @tags.each_pair do |key, value|
-            tag = key if value[1] == tag_or_name
-          end
-        end
+    # === Parameters
+    #
+    # * <tt>name</tt> -- String. A data element name.
+    #
+    def get_tag(name)
+      tag = nil
+      @tags.each_pair do |key, value|
+        tag = key if value[1] == name
       end
       return tag
     end
 
     # Returns the description/name of a specified UID (i.e. a transfer syntax or SOP class).
+    # Returns nil if no match is found
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- String. A DICOM UID value.
     #
     def get_syntax_description(uid)
+      name = nil
       value = @uid[uid]
-      value = value[0] if value
-      return value
-    end
-
-    # Returns the name/description corresponding to a given UID.
-    # FIXME: This and the previous methods duplicate each other. One of them should go.
-    #
-    def get_uid(uid)
-      value = @uid[uid.rstrip]
-      # Fetch the name of this UID:
-      if value
-        name = value[0]
-      else
-        name = "Unknown UID!"
-      end
+      name = value[0] if value
       return name
     end
 
-    # Checks the Transfer Syntax UID and return the encoding settings associated with this value.
+    # Checks the validity of the specified transfer syntax UID and determines the
+    # encoding settings (explicitness & endianness) associated with this value.
+    # The results are returned as 3 booleans: validity, explicitness & endianness.
     #
-    def process_transfer_syntax(value)
-      valid = check_ts_validity(value)
-      case value
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- String. A DICOM UID value.
+    #
+    def process_transfer_syntax(uid)
+      valid = check_ts_validity(uid)
+      case uid
         # Some variations with uncompressed pixel data:
         when IMPLICIT_LITTLE_ENDIAN
           explicit = false
@@ -191,9 +204,5 @@ module DICOM
       return valid, explicit, endian
     end
 
-
-    # Following methods are private.
-    #private
-
-  end # of class
-end # of module
+  end
+end
