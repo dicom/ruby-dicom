@@ -58,8 +58,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string
-    # to be parsed. The parameter defaults to nil, in which case an empty DObject instance will be created.
+    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed. The parameter defaults to nil, in which case an empty DObject instance is created.
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
@@ -249,7 +248,7 @@ module DICOM
     # === Notes
     #
     # This method is called automatically when initializing the DObject class with a file parameter,
-    # and in practice will not be called by users.
+    # and in practice should not be called by users.
     #
     #--
     # FIXME: It should be considered whether this should be a private method.

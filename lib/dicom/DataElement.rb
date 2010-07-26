@@ -36,10 +36,12 @@ module DICOM
     #
     # === Examples
     #
-    #   # Create a new Data Element and connect it to a DObject instance:
+    #   # Create a new data element and connect it to a DObject instance:
     #   patient_name = DataElement.new("0010,0010", "John Doe", :parent => obj)
-    #   # Create a Pixel Data element and insert image data that you have already encoded elsewhere:
+    #   # Create a "Pixel Data" element and insert image data that you have already encoded elsewhere:
     #   pixel_data = DataElement.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => obj)
+    #   # Create a private data element:
+    #   private_data = DataElement.new("0011,2102", some_data, :parent => obj, :vr => "LO")
     #
     def initialize(tag, value, options={})
       # Set instance variables:
@@ -124,9 +126,10 @@ module DICOM
     #
     # === Notes
     #
-    # * In addition to updating the value attribute, the specified value is encoded and used to
+    # In addition to updating the value attribute, the specified value is encoded and used to
     # update both the DataElement's binary and length attributes too.
-    # * The specified value must be of a type that is compatible with the DataElement's value representation (vr).
+    #
+    # The specified value must be of a type that is compatible with the DataElement's value representation (vr).
     #
     # === Parameters
     #

@@ -131,12 +131,24 @@ module DICOM
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of Ruby Array in the rescale process, for faster execution.
     #
+    # === Examples
+    #
+    #   # Simply retrieve the pixel data:
+    #   pixels = obj.get_image
+    #   # Retrieve the pixel data rescaled to presentation values according to window center/width settings:
+    #   pixels = obj.get_image(:rescale => true)
+    #   # Retrieve the rescaled pixel data while using a numerical array in the rescaling process (~2 times faster):
+    #   pixels = obj.get_image(:rescale => true, :narray => true)
+    #
     def get_image(options={})
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        unless compression?
-          pixels = decode_pixels(pixel_data_element.bin)
+      if exists?(PIXEL_TAG)
+        # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+        if compression?
+          pixels = decompress(image_strings.first)
+        else
+          pixels = decode_pixels(image_strings.first)
+        end
+        if pixels
           # Remap the image from pixel values to presentation values if the user has requested this:
           if options[:rescale]
             if options[:narray]
@@ -148,7 +160,7 @@ module DICOM
             end
           end
         else
-          add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images.")
+          add_msg("Warning: Decompressing pixel values has failed. Array can not be filled.")
           pixels = false
         end
       else
@@ -173,23 +185,35 @@ module DICOM
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
     #
+    # === Examples
+    #
+    #   # Retrieve pixel data as RMagick object and display it:
+    #   image = obj.get_image_magick
+    #   image.display
+    #   # Retrieve image object rescaled to presentation values according to window center/width settings:
+    #   image = obj.get_image_magick(:rescale => true)
+    #   # Retrieve rescaled image object while using a numerical array in the rescaling process (~2 times faster):
+    #   images = obj.get_image_magick(:rescale => true, :narray => true)
+    #
     def get_image_magick(options={})
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        unless compression?
-          unless color?
-            # Creating a NArray object using int to make sure we have the necessary range for our numbers:
+      if exists?(PIXEL_TAG)
+        unless color?
+          # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+          if compression?
+            pixels = decompress(image_strings.first)
+          else
+            pixels = decode_pixels(image_strings.first)
+          end
+          if pixels
             rows, columns, frames = image_properties
-            pixels = decode_pixels(pixel_data_element.bin)
             image = read_image_magick(pixels, columns, rows, frames, options)
             add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
           else
-            add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
+            add_msg("Warning: Decompressing pixel values has failed. RMagick image can not be filled.")
             image = false
           end
         else
-          add_msg("Warning: Method get_image_magick() does not currently support returning pixel data from encapsulated images.")
+          add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
           image = false
         end
       else
@@ -213,24 +237,34 @@ module DICOM
     #
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     #
+    # === Examples
+    #
+    #   # Retrieve numerical pixel array:
+    #   data = obj.get_image_narray
+    #   # Retrieve numerical pixel array rescaled from the original pixel values to presentation values:
+    #   data = obj.get_image_narray(:rescale => true)
+    #
     def get_image_narray(options={})
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        unless compression?
-          unless color?
+      if exists?(PIXEL_TAG)
+        unless color?
+          # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+          if compression?
+            pixels = decompress(image_strings.first)
+          else
+            pixels = decode_pixels(image_strings.first)
+          end
+          if pixels
             # Decode the pixel values, then import to NArray  and give it the proper shape:
             rows, columns, frames = image_properties
-            pixels = decode_pixels(pixel_data_element.bin)
             pixel_data = NArray.to_na(pixels).reshape!(frames, columns, rows)
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
           else
-            add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
+            add_msg("Warning: Decompressing pixel values has failed. Numerical array can not be filled.")
             pixel_data = false
           end
         else
-          add_msg("Warning: Method get_image_narray() does not currently support returning pixel data from encapsulated images.")
+          add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
           pixel_data = false
         end
       else
@@ -351,15 +385,21 @@ module DICOM
     #
     # === Restrictions
     #
-    # * If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
-    # * Because of rescaling when importing pixel values to a RMagick object, and the possible
+    # If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
+    #
+    # Because of rescaling when importing pixel values to a RMagick object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
-    # result in pixel data that differs from what is expected. This method must be used with great care!
+    # result in pixel data that differs from what is expected. This method must be used with care!
     #
     # === Options
     #
     # * <tt>:max</tt> -- Fixnum. Pixel values will be rescaled using this as the new maximum value.
     # * <tt>:min</tt> -- Fixnum. Pixel values will be rescaled using this as the new minimum value.
+    #
+    # === Examples
+    #
+    #   # Encode an image object while requesting that only a specific pixel value range is used:
+    #   obj.set_image_magick(my_image, :min => -2000, :max => 3000)
     #
     def set_image_magick(magick_image, options={})
       # Export the RMagick object to a standard Ruby Array:
@@ -390,6 +430,11 @@ module DICOM
     # * <tt>:max</tt> -- Fixnum. Pixel values will be rescaled using this as the new maximum value.
     # * <tt>:min</tt> -- Fixnum. Pixel values will be rescaled using this as the new minimum value.
     #
+    # === Examples
+    #
+    #   # Encode a numerical pixel array while requesting that only a specific pixel value range is used:
+    #   obj.set_image_narray(pixels, :min => -2000, :max => 3000)
+    #
     def set_image_narray(narray, options={})
       # Rescale pixel values?
       if options[:min] and options[:max]
@@ -411,6 +456,42 @@ module DICOM
 
     # Following methods are private:
     private
+
+
+    # Attempts to decompress compressed pixel data.
+    # If successful, returns the pixel data in a Ruby Array. If not, returns false.
+    #
+    # === Notes
+    #
+    # The method tries to use RMagick of unpacking, but it seems that ImageMagick is not able to handle most of the
+    # compressed image variants used in the DICOM standard. To get a more robust implementation which is able to handle
+    # most types of compressed DICOM files, something else is needed.
+    #
+    # Probably a good candidate to use is the PVRG-JPEG library, which seems to be able to handle everything that is jpeg.
+    # It exists in the Ubuntu repositories, where it can be installed and run through terminal. For source code, and some
+    # additional information, check this link:  http://www.panix.com/~eli/jpeg/
+    #
+    # Another idea would be to study how other open source libraries, like GDCM handle these files.
+    #
+    # === Parameters
+    #
+    # * <tt>string</tt> -- A binary string which has been extracted from the pixel data element of the DICOM object.
+    #
+    def decompress(string)
+      pixels = false
+      # We attempt to decompress the pixels using RMagick (ImageMagick):
+      begin
+        image = Magick::Image.from_blob(string)
+        if color?
+          pixels = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
+        else
+          pixels = image.export_pixels(0, 0, image.columns, image.rows, "I")
+        end
+      rescue
+        add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!")
+      end
+      return image
+    end
 
 
     # Converts original pixel data values to presentation values, which are returned.

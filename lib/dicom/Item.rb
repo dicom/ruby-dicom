@@ -16,7 +16,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Normally, an Item contains data elements and/or sequences. However, in some cases, an Item will instead/also
+    # Normally, an Item contains data elements and/or sequences. However, in some cases, an Item will instead/also
     # carry binary string data, like the pixel data of an encapsulated image fragment.
     #
     # === Parameters
@@ -62,6 +62,11 @@ module DICOM
     # === Parameters
     #
     # * <tt>new_bin</tt> -- A binary string of encoded data.
+    #
+    # === Examples
+    #
+    #   # Insert a custom jpeg in the (encapsulated) pixel data element, in it's first pixel data item:
+    #   obj["7FE0,0010"][1].children.first.bin = jpeg_binary_string
     #
     def bin=(new_bin)
       if new_bin.is_a?(String)

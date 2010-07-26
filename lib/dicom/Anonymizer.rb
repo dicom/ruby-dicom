@@ -6,7 +6,7 @@ module DICOM
   #
   # === Notes
   #
-  # * For 'advanced' anonymization, a good resource might be:
+  # For 'advanced' anonymization, a good resource might be:
   # ftp://medical.nema.org/medical/dicom/supps/sup142_pc.pdf
   # (Clinical Trials De-identification Profiles, DICOM Standards Committee, Working Group 18)
   #
@@ -27,7 +27,7 @@ module DICOM
     #
     # === Examples
     #
-    # a = Anonymizer.new
+    #   a = Anonymizer.new
     #
     def initialize
       # Default value of accessors:
@@ -62,6 +62,10 @@ module DICOM
     # === Parameters
     #
     # * <tt>path</tt> -- String. A path that will be avoided.
+    #
+    # === Examples
+    #
+    #   a.add_exception("/home/dicom/tutorials/")
     #
     def add_exception(path)
       if path
@@ -173,12 +177,11 @@ module DICOM
     #
     # === Restrictions
     #
-    # * Only top level data elements are anonyzed!
+    # * Only top level data elements are anonymized!
     #
     # === Parameters
     #
-    # * <tt>verbose</tt> -- Boolean. If set as true, verbose behaviour will be set for the DObject
-    # instances that are anonymized. Defaults to false.
+    # * <tt>verbose</tt> -- Boolean. If set as true, verbose behaviour will be set for the DObject instances that are anonymized. Defaults to false.
     #
     #--
     # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.

@@ -310,7 +310,7 @@ module DICOM
     #
     # === Notes
     #
-    # * For performance reasons, we enable the Stream instance to write directly to file,
+    # For performance reasons, we enable the Stream instance to write directly to file,
     # to avoid expensive string operations which will otherwise slow down the write performance.
     #
     # === Parameters

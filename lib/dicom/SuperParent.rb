@@ -142,6 +142,11 @@ module DICOM
     # Returns all (immediate) child elements in an array (sorted by element tag).
     # If this particular parent doesn't have any children, an empty array is returned
     #
+    # === Examples
+    #
+    #   # Retrieve all top level data elements in a DICOM object:
+    #   top_level_elements = obj.children
+    #
     def children
       return @tags.sort.transpose[1] || Array.new
     end
@@ -151,10 +156,11 @@ module DICOM
     #
     # === Notes
     #
-    # * Notice the subtle difference between the children? and is_parent? methods. While they
+    # Notice the subtle difference between the children? and is_parent? methods. While they
     # will give the same result in most real use cases, they differ when used on parent elements
     # that do not have any children added yet.
-    # * For example, when called on an empty Sequence, the children? method will return false,
+    #
+    # For example, when called on an empty Sequence, the children? method will return false,
     # while the is_parent? method still returns true.
     #
     def children?
@@ -189,7 +195,7 @@ module DICOM
     #
     # === Notes
     #
-    # * This method is not intended for external use, but for technical reasons (the fact that is called between
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
     # instances of different classes), cannot be made private.
     #
     # === Parameters
@@ -246,9 +252,10 @@ module DICOM
     #
     # === Notes
     #
-    # * This method is not intended for external use, but for technical reasons (the fact that is called between
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
     # instances of different classes), cannot be made private.
-    # * The method is used by the print() method to construct the text output.
+    #
+    # The method is used by the print() method to construct the text output.
     #
     # === Parameters
     #
@@ -405,9 +412,10 @@ module DICOM
     #
     # === Notes
     #
-    # * This method is not intended for external use, but for technical reasons (the fact that is called between
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
     # instances of different classes), cannot be made private.
-    # * The method is used by the print() method to achieve a proper format in its output.
+    #
+    # The method is used by the print() method to achieve a proper format in its output.
     #
     def max_lengths
       max_name = 0
@@ -458,6 +466,11 @@ module DICOM
     #
     # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
     #
+    # === Examples
+    #
+    #   # Remove the File Meta Group of a DICOM object:
+    #   obj.remove_group("0002")
+    #
     def remove_group(group_string)
       group_elements = group(group_string)
       group_elements.each do |element|
@@ -498,7 +511,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves. 
+    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves.
     #   If the specified <tt>tag</tt> is that of a parent element, <tt>value()</tt> will raise an exception.
     #
     # === Parameters

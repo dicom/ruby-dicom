@@ -86,7 +86,6 @@ module DICOM
     # Tests the connection to the server by performing a C-ECHO.
     #
     def echo
-      success = false
       # Verification SOP Class:
       @abstract_syntaxes = [VERIFICATION_SOP]
       perform_echo
@@ -230,6 +229,7 @@ module DICOM
     # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
     # * <tt>"0020,000D"</tt> -- Study Instance UID
     # * <tt>"0020,000E"</tt> -- Series Instance UID
+    #
     # === Examples
     #
     #   node.get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)

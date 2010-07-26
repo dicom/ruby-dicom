@@ -10,7 +10,7 @@ require 'rake/gempackagetask'
 spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name = "dicom"
-  s.version = "0.7.8b"
+  s.version = "0.7.9b"
   s.date = Time.now
   s.summary = "Library for handling DICOM files and DICOM network communication."
   s.require_paths = ["lib"]
