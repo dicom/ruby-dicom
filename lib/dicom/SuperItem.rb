@@ -141,11 +141,14 @@ module DICOM
     #   pixels = obj.get_image(:rescale => true, :narray => true)
     #
     def get_image(options={})
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        unless compression?
-          pixels = decode_pixels(pixel_data_element.bin)
+      if exists?(PIXEL_TAG)
+        # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+        if compression?
+          pixels = decompress(image_strings.first)
+        else
+          pixels = decode_pixels(image_strings.first)
+        end
+        if pixels
           # Remap the image from pixel values to presentation values if the user has requested this:
           if options[:rescale]
             if options[:narray]
@@ -157,7 +160,7 @@ module DICOM
             end
           end
         else
-          add_msg("Warning: Method get_image() does not currently support returning pixel data from encapsulated images.")
+          add_msg("Warning: Decompressing pixel values has failed. Array can not be filled.")
           pixels = false
         end
       else
@@ -193,22 +196,24 @@ module DICOM
     #   images = obj.get_image_magick(:rescale => true, :narray => true)
     #
     def get_image_magick(options={})
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        unless compression?
-          unless color?
-            # Creating a NArray object using int to make sure we have the necessary range for our numbers:
+      if exists?(PIXEL_TAG)
+        unless color?
+          # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+          if compression?
+            pixels = decompress(image_strings.first)
+          else
+            pixels = decode_pixels(image_strings.first)
+          end
+          if pixels
             rows, columns, frames = image_properties
-            pixels = decode_pixels(pixel_data_element.bin)
             image = read_image_magick(pixels, columns, rows, frames, options)
             add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
           else
-            add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
+            add_msg("Warning: Decompressing pixel values has failed. RMagick image can not be filled.")
             image = false
           end
         else
-          add_msg("Warning: Method get_image_magick() does not currently support returning pixel data from encapsulated images.")
+          add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
           image = false
         end
       else
@@ -240,23 +245,26 @@ module DICOM
     #   data = obj.get_image_narray(:rescale => true)
     #
     def get_image_narray(options={})
-      pixel_data_element = self[PIXEL_TAG]
-      if pixel_data_element
-        # For now we only support returning pixel data if the image is located in a single pixel data element:
-        unless compression?
-          unless color?
+      if exists?(PIXEL_TAG)
+        unless color?
+          # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+          if compression?
+            pixels = decompress(image_strings.first)
+          else
+            pixels = decode_pixels(image_strings.first)
+          end
+          if pixels
             # Decode the pixel values, then import to NArray  and give it the proper shape:
             rows, columns, frames = image_properties
-            pixels = decode_pixels(pixel_data_element.bin)
             pixel_data = NArray.to_na(pixels).reshape!(frames, columns, rows)
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
           else
-            add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
+            add_msg("Warning: Decompressing pixel values has failed. Numerical array can not be filled.")
             pixel_data = false
           end
         else
-          add_msg("Warning: Method get_image_narray() does not currently support returning pixel data from encapsulated images.")
+          add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
           pixel_data = false
         end
       else
@@ -447,6 +455,42 @@ module DICOM
 
     # Following methods are private:
     private
+
+
+    # Attempts to decompress compressed pixel data.
+    # If successful, returns the pixel data in a Ruby Array. If not, returns false.
+    #
+    # === Notes
+    #
+    # The method tries to use RMagick of unpacking, but it seems that ImageMagick is not able to handle most of the
+    # compressed image variants used in the DICOM standard. To get a more robust implementation which is able to handle
+    # most types of compressed DICOM files, something else is needed.
+    #
+    # Probably a good candidate to use is the PVRG-JPEG library, which seems to be able to handle everything that is jpeg.
+    # It exists in the Ubuntu repositories, where it can be installed and run through terminal. For source code, and some
+    # additional information, check this link:  http://www.panix.com/~eli/jpeg/
+    #
+    # Another idea would be to study how other open source libraries, like GDCM handle these files.
+    #
+    # === Parameters
+    #
+    # * <tt>string</tt> -- A binary string which has been extracted from the pixel data element of the DICOM object.
+    #
+    def decompress(string)
+      pixels = false
+      # We attempt to decompress the pixels using RMagick (ImageMagick):
+      begin
+        image = Magick::Image.from_blob(string)
+        if color?
+          pixels = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
+        else
+          pixels = image.export_pixels(0, 0, image.columns, image.rows, "I")
+        end
+      rescue
+        add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!")
+      end
+      return image
+    end
 
 
     # Converts original pixel data values to presentation values, which are returned.
