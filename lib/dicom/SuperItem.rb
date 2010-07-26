@@ -385,10 +385,11 @@ module DICOM
     #
     # === Restrictions
     #
-    # * If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
-    # * Because of rescaling when importing pixel values to a RMagick object, and the possible
+    # If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
+    #
+    # Because of rescaling when importing pixel values to a RMagick object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
-    # result in pixel data that differs from what is expected. This method must be used with great care!
+    # result in pixel data that differs from what is expected. This method must be used with care!
     #
     # === Options
     #

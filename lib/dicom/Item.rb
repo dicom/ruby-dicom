@@ -16,7 +16,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Normally, an Item contains data elements and/or sequences. However, in some cases, an Item will instead/also
+    # Normally, an Item contains data elements and/or sequences. However, in some cases, an Item will instead/also
     # carry binary string data, like the pixel data of an encapsulated image fragment.
     #
     # === Parameters

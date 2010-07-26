@@ -156,10 +156,11 @@ module DICOM
     #
     # === Notes
     #
-    # * Notice the subtle difference between the children? and is_parent? methods. While they
+    # Notice the subtle difference between the children? and is_parent? methods. While they
     # will give the same result in most real use cases, they differ when used on parent elements
     # that do not have any children added yet.
-    # * For example, when called on an empty Sequence, the children? method will return false,
+    #
+    # For example, when called on an empty Sequence, the children? method will return false,
     # while the is_parent? method still returns true.
     #
     def children?
@@ -194,7 +195,7 @@ module DICOM
     #
     # === Notes
     #
-    # * This method is not intended for external use, but for technical reasons (the fact that is called between
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
     # instances of different classes), cannot be made private.
     #
     # === Parameters
@@ -251,9 +252,10 @@ module DICOM
     #
     # === Notes
     #
-    # * This method is not intended for external use, but for technical reasons (the fact that is called between
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
     # instances of different classes), cannot be made private.
-    # * The method is used by the print() method to construct the text output.
+    #
+    # The method is used by the print() method to construct the text output.
     #
     # === Parameters
     #
@@ -410,9 +412,10 @@ module DICOM
     #
     # === Notes
     #
-    # * This method is not intended for external use, but for technical reasons (the fact that is called between
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
     # instances of different classes), cannot be made private.
-    # * The method is used by the print() method to achieve a proper format in its output.
+    #
+    # The method is used by the print() method to achieve a proper format in its output.
     #
     def max_lengths
       max_name = 0
@@ -508,7 +511,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves. 
+    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves.
     #   If the specified <tt>tag</tt> is that of a parent element, <tt>value()</tt> will raise an exception.
     #
     # === Parameters

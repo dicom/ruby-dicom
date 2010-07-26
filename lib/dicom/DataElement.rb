@@ -126,9 +126,10 @@ module DICOM
     #
     # === Notes
     #
-    # * In addition to updating the value attribute, the specified value is encoded and used to
+    # In addition to updating the value attribute, the specified value is encoded and used to
     # update both the DataElement's binary and length attributes too.
-    # * The specified value must be of a type that is compatible with the DataElement's value representation (vr).
+    #
+    # The specified value must be of a type that is compatible with the DataElement's value representation (vr).
     #
     # === Parameters
     #

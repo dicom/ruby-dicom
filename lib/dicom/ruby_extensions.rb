@@ -1,7 +1,7 @@
-# This file contains extensions to the Ruby library which are used by Ruby DICOM.
+# This file contains extensions to the Ruby library which are used by Ruby-DICOM.
 
 # Extension to the String class. These extensions are focused on processing/analysing Data Element tags.
-# A tag string (as used by the Ruby DICOM library) is 9 characters long and of the form "GGGG,EEEE"
+# A tag string (as used by the Ruby-DICOM library) is 9 characters long and of the form "GGGG,EEEE"
 # (where G represents a group hexadecimal, and E represents an element hexadecimal).
 #
 class String
@@ -44,7 +44,7 @@ class String
     return ((self.upcase =~ /\A[a-fA-F\d]{3}[1,3,5,7,9,B,D,F],[a-fA-F\d]{4}\z/) == nil ? false : true)
   end
 
-  # Checks if the string is a valid tag (as defined by Ruby DICOM: "GGGG,EEEE").
+  # Checks if the string is a valid tag (as defined by Ruby-DICOM: "GGGG,EEEE").
   # Returns true if it is a valid tag, false if not.
   #
   def tag?
