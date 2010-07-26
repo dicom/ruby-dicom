@@ -131,6 +131,15 @@ module DICOM
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of Ruby Array in the rescale process, for faster execution.
     #
+    # === Examples
+    #
+    #   # Simply retrieve the pixel data:
+    #   pixels = obj.get_image
+    #   # Retrieve the pixel data rescaled to presentation values according to window center/width settings:
+    #   pixels = obj.get_image(:rescale => true)
+    #   # Retrieve the rescaled pixel data while using a numerical array in the rescaling process (~2 times faster):
+    #   pixels = obj.get_image(:rescale => true, :narray => true)
+    #
     def get_image(options={})
       pixel_data_element = self[PIXEL_TAG]
       if pixel_data_element
@@ -173,6 +182,16 @@ module DICOM
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
     #
+    # === Examples
+    #
+    #   # Retrieve pixel data as RMagick object and display it:
+    #   image = obj.get_image_magick
+    #   image.display
+    #   # Retrieve image object rescaled to presentation values according to window center/width settings:
+    #   image = obj.get_image_magick(:rescale => true)
+    #   # Retrieve rescaled image object while using a numerical array in the rescaling process (~2 times faster):
+    #   images = obj.get_image_magick(:rescale => true, :narray => true)
+    #
     def get_image_magick(options={})
       pixel_data_element = self[PIXEL_TAG]
       if pixel_data_element
@@ -212,6 +231,13 @@ module DICOM
     # === Options
     #
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
+    #
+    # === Examples
+    #
+    #   # Retrieve numerical pixel array:
+    #   data = obj.get_image_narray
+    #   # Retrieve numerical pixel array rescaled from the original pixel values to presentation values:
+    #   data = obj.get_image_narray(:rescale => true)
     #
     def get_image_narray(options={})
       pixel_data_element = self[PIXEL_TAG]
@@ -361,6 +387,11 @@ module DICOM
     # * <tt>:max</tt> -- Fixnum. Pixel values will be rescaled using this as the new maximum value.
     # * <tt>:min</tt> -- Fixnum. Pixel values will be rescaled using this as the new minimum value.
     #
+    # === Examples
+    #
+    #   # Encode an image object while requesting that only a specific pixel value range is used:
+    #   obj.set_image_magick(my_image, :min => -2000, :max => 3000)
+    #
     def set_image_magick(magick_image, options={})
       # Export the RMagick object to a standard Ruby Array:
       pixels = magick_image.export_pixels(x=0, y=0, columns=magick_image.columns, rows=magick_image.rows, map="I")
@@ -389,6 +420,11 @@ module DICOM
     #
     # * <tt>:max</tt> -- Fixnum. Pixel values will be rescaled using this as the new maximum value.
     # * <tt>:min</tt> -- Fixnum. Pixel values will be rescaled using this as the new minimum value.
+    #
+    # === Examples
+    #
+    #   # Encode a numerical pixel array while requesting that only a specific pixel value range is used:
+    #   obj.set_image_narray(pixels, :min => -2000, :max => 3000)
     #
     def set_image_narray(narray, options={})
       # Rescale pixel values?

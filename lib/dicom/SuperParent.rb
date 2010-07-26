@@ -142,6 +142,11 @@ module DICOM
     # Returns all (immediate) child elements in an array (sorted by element tag).
     # If this particular parent doesn't have any children, an empty array is returned
     #
+    # === Examples
+    #
+    #   # Retrieve all top level data elements in a DICOM object:
+    #   top_level_elements = obj.children
+    #
     def children
       return @tags.sort.transpose[1] || Array.new
     end
@@ -457,6 +462,11 @@ module DICOM
     # === Parameters
     #
     # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
+    #
+    # === Examples
+    #
+    #   # Remove the File Meta Group of a DICOM object:
+    #   obj.remove_group("0002")
     #
     def remove_group(group_string)
       group_elements = group(group_string)

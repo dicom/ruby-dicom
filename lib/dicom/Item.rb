@@ -63,6 +63,11 @@ module DICOM
     #
     # * <tt>new_bin</tt> -- A binary string of encoded data.
     #
+    # === Examples
+    #
+    #   # Insert a custom jpeg in the (encapsulated) pixel data element, in it's first pixel data item:
+    #   obj["7FE0,0010"][1].children.first.bin = jpeg_binary_string
+    #
     def bin=(new_bin)
       if new_bin.is_a?(String)
         # Add an empty byte at the end if the length of the binary is odd:

@@ -27,7 +27,7 @@ module DICOM
     #
     # === Examples
     #
-    # a = Anonymizer.new
+    #   a = Anonymizer.new
     #
     def initialize
       # Default value of accessors:
@@ -62,6 +62,10 @@ module DICOM
     # === Parameters
     #
     # * <tt>path</tt> -- String. A path that will be avoided.
+    #
+    # === Examples
+    #
+    #   a.add_exception("/home/dicom/tutorials/")
     #
     def add_exception(path)
       if path
