@@ -1,49 +1,66 @@
-RUBY DICOM
+RUBY-DICOM
 ======================
 
 SUMMARY
 --------
 
-Ruby DICOM is a small and simple library for handling DICOM in Ruby. DICOM (Digital Imaging
+Ruby-DICOM is a small and simple library for handling DICOM in Ruby. DICOM (Digital Imaging
 and Communications in Medicine) is a standard for handling, storing, printing,
 and transmitting information in medical imaging. It includes a file format definition
-and a network communications protocol. Ruby DICOM supports reading from, editing
+and a network communications protocol. Ruby-DICOM supports reading from, editing
 and writing to this file format. It also features basic support for select network
 communication modalities like querying, moving, sending and receiving files.
+
+
+INSTALLATION
+------------
+
+gem install dicom
+
 
 BASIC USAGE
 -----------
 
 require "dicom"
 # Read file:
-dcm = DICOM::DObject.new("myFile.dcm")
+obj = DICOM::DObject.new("some_file.dcm")
 # Display some key information about the file:
-dcm.information
+obj.information
 # Print all data elements to screen:
-dcm.print
+obj.print
 # Retrieve a data element value:
-name = dcm.value("0010.0010")
+name = obj.value("0010.0010")
 # Remove a data element from the DICOM object:
-dcm.remove("7FE0,0010")
-# Retrieve pixel data to a Ruby Array:
-pixels = dcm.get_image
-# Load pixel data to a RMagick image object and display it on screen:
-image = dcm.get_image_magick
+obj.remove("7FE0,0010")
+# Retrieve the pixel data in a Ruby Array:
+pixels = obj.get_image
+# Load the pixel data to a RMagick image object and display it on the screen:
+image = obj.get_image_magick
 image.display
-# Load pixel data to a NArray object and display it on screen:
-pixel_data = dcm.get_image_narray
+# Load the pixel data to a NArray object and display it on screen (using NImage):
+pixel_data = obj.get_image_narray
 NImage.show pixel_data[0,true,true]
 # Send a local file to a server (PACS) over the network:
 node = DICOM::DClient.new("10.1.25.200", 104)
-node.send("myFile.dcm")
+node.send("some_file.dcm")
 
-Tip:
+IRB:
 When playing around with Ruby DICOM in irb, you may be annoyed with all the information
-that is printed to screen, regardless if you have specified verbose as false. This is because
+that is printed to screen, regardless if you have set verbose as false. This is because
 in irb every variable loaded in the program is automatically printed to the screen.
 A useful hack to avoid this effect is to append ";0" after a command.
 Example:
-dcm = DICOM::DObject.new("myFile.dcm") ;0
+obj = DICOM::DObject.new("some_file.dcm") ;0
+
+
+RESOURCES
+---------
+
+Official home page:
+http://dicom.rubyforge.org/
+Source code repository:
+http://github.com/cuthbert/ruby-dicom
+
 
 COPYRIGHT
 ---------
@@ -74,6 +91,6 @@ Location:
 Oslo, Norway
 
 Email:
-chris.lervag [@nospam] @gmail.com
-Please don't hesitate to email me if have any thoughts about this project!
+chris.lervag [@nospam.com] @gmail.com
+Please don't hesitate to email me if you have any thoughts about this project!
 
