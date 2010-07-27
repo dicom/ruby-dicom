@@ -114,7 +114,7 @@ module DICOM
     #  encoded_strings = obj.encode_segments(16384)
     #
     def encode_segments(max_size)
-      w = set_write_object
+      w = DWrite.new(self, transfer_syntax, file_name=nil)
       w.encode_segments(max_size)
       # Write process succesful?
       @write_success = w.success
@@ -255,9 +255,11 @@ module DICOM
     #
     def read(string, options={})
       r = DRead.new(self, string, options)
-      # If reading failed, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+      # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
       # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-      unless r.success
+      unless r.success or exists?("0002,0010")
+        # Clear the existing DObject tags:
+        @tags = Hash.new
         r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
         # Only extract information from this new attempt if it was successful:
         r = r_explicit if r_explicit.success
@@ -340,7 +342,7 @@ module DICOM
     #
     def write(file_name, options={})
       insert_missing_meta unless options[:add_meta] == false
-      w = set_write_object(file_name, options)
+      w = DWrite.new(self, transfer_syntax, file_name, options)
       w.write
       # Write process succesful?
       @write_success = w.success
@@ -405,23 +407,6 @@ module DICOM
         group_length += tag + vr + length + element.bin.length
       end
       return group_length
-    end
-
-    # Handles the creation of a DWrite instance, and returns this instance to the calling method,
-    # which is either the write() or the encode_segments() method.
-    #
-    # === Parameters
-    #
-    # * <tt>file_name</tt> -- Defaults to nil (when no file is going to be written). Else, if specified, the encoded DICOM string is to be written to the specified file.
-    # * <tt>options</tt> -- A hash of parameters. See the encode_segments() and write() methods for details.
-    #
-    def set_write_object(file_name=nil, options={})
-      # Set transfer syntax if not already specified externally:
-      options[:transfer_syntax] = transfer_syntax unless options[:transfer_syntax]
-      w_obj = DWrite.new(self, file_name, options)
-      w_obj.rest_endian = @file_endian
-      w_obj.rest_explicit = @explicit
-      return w_obj
     end
 
   end
