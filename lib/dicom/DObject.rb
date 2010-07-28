@@ -387,6 +387,8 @@ module DICOM
       # Source Application Entity Title:
       DataElement.new("0002,0016", SOURCE_APP_TITLE, :parent => self) unless exists?("0002,0016")
       # Group length:
+      # Remove old group length (if it exists) before creating a new one:
+      remove("0002,0000")
       DataElement.new("0002,0000", meta_group_length, :parent => self)
     end
 
