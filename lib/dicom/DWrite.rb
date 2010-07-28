@@ -27,40 +27,31 @@ module DICOM
     # A boolean which reports whether the DICOM string was encoded/written successfully (true) or not (false).
     attr_reader :success
     # A boolean which reports the endianness of the post-meta group part of the DICOM string (true for big endian, false for little endian).
-    attr_writer :rest_endian
+    attr_reader :rest_endian
     # A boolean which reports the explicitness of the DICOM string, true if explicit and false if implicit.
-    attr_writer :rest_explicit
+    attr_reader :rest_explicit
 
     # Creates a DWrite instance.
     #
     # === Parameters
     #
     # * <tt>obj</tt> -- A DObject instance which will be used to encode a DICOM string.
+    # * <tt>transfer_syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
     # * <tt>file_name</tt> -- A string, either specifying the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:transfer_syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
     # * <tt>:signature</tt> -- Boolean. If set as false, the DICOM header signature will not be written to the DICOM file.
-    # 
-    #--
-    # FIXME: The use of the transfer syntax option needs to be sorted out. It doesn't quite seem right.
     #
-    def initialize(obj, file_name=nil, options={})
+    def initialize(obj, transfer_syntax, file_name=nil, options={})
       @obj = obj
-      # Process option values, setting defaults for the ones that are not specified:
+      @transfer_syntax = transfer_syntax
       @file_name = file_name
-      @transfer_syntax = options[:transfer_syntax] || IMPLICIT_LITTLE_ENDIAN
       # As default, signature will be written and meta header added:
       @signature = (options[:signature] == false ? false : true)
       # Array for storing error/warning messages:
       @msg = Array.new
-      # Default values which the user may overwrite afterwards:
-      # Explicitness of the remaining groups after the initial 0002 group:
-      @rest_explicit = false
-      # Endianness of the remaining groups after the first group:
-      @rest_endian = false
     end
 
     # Handles the encoding of DICOM information to string as well as writing it to file.
