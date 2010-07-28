@@ -52,8 +52,8 @@ module DICOM
       @length = -1 unless options[:length] or options[:bin]
       if options[:parent]
         @parent = options[:parent]
+        @index = options[:index] if options[:index]
         @parent.add_item(self, :index => options[:index])
-        @index = options[:index]
       end
     end
 
