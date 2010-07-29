@@ -242,6 +242,15 @@ module DICOM
       return info
     end
 
+    # Prints information of interest related to the DICOM object.
+    # Calls the print() method of SuperParent as well as the information() method of DObject.
+    #
+    def print_all
+      puts ""
+      print(:value_max => 30)
+      information
+    end
+
     # Returns a DICOM object by reading and parsing the specified file.
     # This is accomplished by initializing the DRead class, which loads DICOM information to arrays.
     #
