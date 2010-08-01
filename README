@@ -30,6 +30,8 @@ obj.information
 obj.print
 # Retrieve a data element value:
 name = obj.value("0010.0010")
+# Modify the data element's value:
+obj["0010.0010"].value = "Anonymous"
 # Remove a data element from the DICOM object:
 obj.remove("7FE0,0010")
 # Retrieve the pixel data in a Ruby Array:
@@ -45,7 +47,7 @@ node = DICOM::DClient.new("10.1.25.200", 104)
 node.send("some_file.dcm")
 
 IRB:
-When playing around with Ruby DICOM in irb, you may be annoyed with all the information
+When working with Ruby DICOM in irb, you may be annoyed with all the information
 that is printed to screen, regardless if you have set verbose as false. This is because
 in irb every variable loaded in the program is automatically printed to the screen.
 A useful hack to avoid this effect is to append ";0" after a command.
@@ -58,6 +60,8 @@ RESOURCES
 
 Official home page:
 http://dicom.rubyforge.org/
+Discussion forum:
+http://groups.google.no/group/ruby-dicom
 Source code repository:
 http://github.com/cuthbert/ruby-dicom
 
