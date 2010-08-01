@@ -47,7 +47,9 @@ module DICOM
     #
     # === Examples
     #
-    #   # Add the element roi_name to the first item in the specified sequence:
+    #   # Set a new patient's name to the DICOM object:
+    #   obj.add(DataElement.new("0010,0010", "John_Doe"))
+    #   # Add a previously defined element roi_name to the first item in the following sequence:
     #   obj["3006,0020"][1].add(roi_name)
     #
     def add(element)
@@ -55,8 +57,9 @@ module DICOM
         unless self.is_a?(Sequence)
           # If we are replacing an existing Element, we need to make sure that this Element's parent value is erased before proceeding.
           self[element.tag].parent = nil if exists?(element.tag)
-          # Add the element:
+          # Add the element, and set its parent attribute:
           @tags[element.tag] = element
+          element.parent = self
         else
           raise "A Sequence is not allowed to have elements added to it. Use the method add_item() instead if the intention is to add an Item."
         end

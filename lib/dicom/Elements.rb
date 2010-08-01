@@ -50,9 +50,11 @@ module DICOM
       #   structure_set_roi.parent = obj
       #
       def parent=(new_parent)
-        # Remove ourselves from the previous parent first:
+        # Remove ourselves from the previous parent (if any) first:
         # Don't do this if parent is set as nil (by the remove method), or we'll get an endless loop!
-        self.parent.remove(self.tag) if new_parent
+        if self.parent
+          self.parent.remove(self.tag) if new_parent and self.parent != new_parent
+        end
         # Set the new parent (should we bother to test for parent validity here?):
         @parent = new_parent
       end
