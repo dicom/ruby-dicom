@@ -14,7 +14,7 @@
 # Core library:
 # Super classes/modules:
 require 'dicom/super_parent'
-require 'dicom/super_Item'
+require 'dicom/super_item'
 require 'dicom/elements'
 # Subclasses and independent classes:
 require 'dicom/data_element'
