@@ -13,27 +13,27 @@
 
 # Core library:
 # Super classes/modules:
-require 'dicom/SuperParent'
-require 'dicom/SuperItem'
-require 'dicom/Elements'
+require 'dicom/super_parent'
+require 'dicom/super_Item'
+require 'dicom/elements'
 # Subclasses and independent classes:
-require 'dicom/DataElement'
-require 'dicom/DClient'
-require 'dicom/Dictionary'
-require 'dicom/DLibrary'
-require 'dicom/DObject'
-require 'dicom/DRead'
-require 'dicom/DServer'
-require 'dicom/DWrite'
-require 'dicom/FileHandler'
-require 'dicom/Item'
-require 'dicom/Link'
-require 'dicom/Sequence'
-require 'dicom/Stream'
+require 'dicom/data_element'
+require 'dicom/d_client'
+require 'dicom/dictionary'
+require 'dicom/d_library'
+require 'dicom/d_object'
+require 'dicom/d_read'
+require 'dicom/d_server'
+require 'dicom/d_write'
+require 'dicom/file_handler'
+require 'dicom/item'
+require 'dicom/link'
+require 'dicom/sequence'
+require 'dicom/stream'
 # Extensions to the Ruby library:
 require 'dicom/ruby_extensions'
 # Module constants:
-require 'dicom/Constants'
+require 'dicom/constants'
 
 # Extensions (non-core functionality):
-require 'dicom/Anonymizer'
+require 'dicom/anonymizer'
