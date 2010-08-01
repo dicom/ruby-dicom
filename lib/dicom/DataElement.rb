@@ -49,11 +49,11 @@ module DICOM
       # We may beed to retrieve name and vr from the library:
       if options[:name] and options[:vr]
         @name = options[:name]
-        @vr = options[:vr]
+        @vr = options[:vr].upcase
       else
         name, vr = LIBRARY.get_name_vr(tag)
         @name = options[:name] || name
-        @vr = options[:vr] || vr
+        @vr = (options[:vr] ? options[:vr].upcase : vr)
       end
       # Value may in some cases be the binary string:
       unless options[:encoded]
