@@ -29,9 +29,9 @@ obj.information
 # Print all data elements to screen:
 obj.print
 # Retrieve a data element value:
-name = obj.value("0010.0010")
+name = obj.value("0010,0010")
 # Modify the data element's value:
-obj["0010.0010"].value = "Anonymous"
+obj["0010,0010"].value = "Anonymous"
 # Remove a data element from the DICOM object:
 obj.remove("7FE0,0010")
 # Retrieve the pixel data in a Ruby Array:
@@ -61,7 +61,7 @@ RESOURCES
 Official home page:
 http://dicom.rubyforge.org/
 Discussion forum:
-http://groups.google.no/group/ruby-dicom
+http://groups.google.com/group/ruby-dicom
 Source code repository:
 http://github.com/cuthbert/ruby-dicom
 

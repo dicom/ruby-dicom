@@ -193,7 +193,7 @@ module DICOM
     #   # Retrieve image object rescaled to presentation values according to window center/width settings:
     #   image = obj.get_image_magick(:rescale => true)
     #   # Retrieve rescaled image object while using a numerical array in the rescaling process (~2 times faster):
-    #   images = obj.get_image_magick(:rescale => true, :narray => true)
+    #   image = obj.get_image_magick(:rescale => true, :narray => true)
     #
     def get_image_magick(options={})
       if exists?(PIXEL_TAG)
