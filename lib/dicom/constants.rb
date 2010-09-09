@@ -5,7 +5,7 @@
 module DICOM
 
   # Ruby DICOM version string.
-  VERSION = "0.8"
+  VERSION = "0.8.1b"
 
   # Ruby DICOM's implementation UID.
   UID = "1.2.826.0.1.3680043.8.641"

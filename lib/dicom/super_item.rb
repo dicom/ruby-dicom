@@ -55,13 +55,19 @@ module DICOM
         stream.set_string(bin)
         # Number of bytes used per pixel will determine how to unpack this:
         case bit_depth_element.value.to_i
-          when 8
-            pixels = stream.decode_all("BY") # Byte/Character/Fixnum (1 byte)
-          when 16
+          when 8 # (1 byte)
+            pixels = stream.decode_all("BY") # Byte/Character/Fixnum
+          when 16 # (2 bytes)
             if pixel_representation_element.value.to_i == 1
-              pixels = stream.decode_all("SS") # Signed short (2 bytes)
+              pixels = stream.decode_all("SS") # Signed short
             else
-              pixels = stream.decode_all("US") # Unsigned short (2 bytes)
+              pixels = stream.decode_all("US") # Unsigned short
+            end
+          when 32 # (4 bytes)
+            if pixel_representation_element.value.to_i == 1
+              pixels = stream.decode_all("SL") # Signed long
+            else
+              pixels = stream.decode_all("UL") # Unsigned long
             end
           when 12
             # 12 BIT SIMPLY NOT WORKING YET!
@@ -93,13 +99,19 @@ module DICOM
       if bit_depth_element and pixel_representation_element
         # Number of bytes used per pixel will determine how to pack this:
         case bit_depth_element.value.to_i
-          when 8
-            bin = stream.encode(pixels, "BY") # Byte/Character/Fixnum (1 byte)
-          when 16
+          when 8 # (1 byte)
+            bin = stream.encode(pixels, "BY") # Byte/Character/Fixnum
+          when 16 # (2 bytes)
             if pixel_representation_element.value.to_i == 1
-              bin = stream.encode(pixels, "SS") # Signed short (2 bytes)
+              bin = stream.encode(pixels, "SS") # Signed short
             else
-              bin = stream.encode(pixels, "US") # Unsigned short (2 bytes)
+              bin = stream.encode(pixels, "US") # Unsigned short
+            end
+          when 32 # (4 bytes)
+            if pixel_representation_element.value.to_i == 1
+              bin = stream.encode(pixels, "SL") # Signed long
+            else
+              bin = stream.encode(pixels, "UL") # Unsigned long
             end
           when 12
             # 12 BIT SIMPLY NOT WORKING YET!
