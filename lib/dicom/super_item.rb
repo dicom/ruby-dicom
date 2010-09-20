@@ -502,7 +502,7 @@ module DICOM
       rescue
         add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!")
       end
-      return image
+      return pixels
     end
 
 
