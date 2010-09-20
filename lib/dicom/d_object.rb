@@ -199,13 +199,13 @@ module DICOM
         rows = self["0028,0010"] || "Rows missing"
         info << "Image Size:           #{cols.value}*#{rows.value}"
         # Frames:
-        frames = self["0028,0008"] || "1"
-        if frames != "1"
+        frames = value("0028,0008") || "1"
+        unless frames == "1" or frames == 1
           # Encapsulated or 3D pixel data:
           if pixels.is_a?(DataElement)
-            frames = frames.value + " (3D Pixel Data)"
+            frames = frames.to_s + " (3D Pixel Data)"
           else
-            frames = frames.value + " (Encapsulated Multiframe Image)"
+            frames = frames.to_s + " (Encapsulated Multiframe Image)"
           end
         end
         info << "Number of frames:     #{frames}"
