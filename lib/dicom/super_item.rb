@@ -181,7 +181,7 @@ module DICOM
       return pixels
     end
 
-    # Returns a RMagick image, created from the encoded pixel data using the image related data elements in the DObject instance.
+    # Returns an RMagick image, created from the encoded pixel data using the image related data elements in the DObject instance.
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     #
     # === Notes
@@ -393,13 +393,13 @@ module DICOM
       end
     end
 
-    # Encodes pixel data from a RMagick image object and writes it to the pixel data element (7FE0,0010).
+    # Encodes pixel data from an RMagick image object and writes it to the pixel data element (7FE0,0010).
     #
     # === Restrictions
     #
     # If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
     #
-    # Because of rescaling when importing pixel values to a RMagick object, and the possible
+    # Because of rescaling when importing pixel values to an RMagick object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
     # result in pixel data that differs from what is expected. This method must be used with care!
     #
@@ -431,7 +431,7 @@ module DICOM
       set_image(pixels)
     end
 
-    # Encodes pixel data from a NArray and writes it to the pixel data element (7FE0,0010).
+    # Encodes pixel data from an NArray and writes it to the pixel data element (7FE0,0010).
     #
     # === Restrictions
     #

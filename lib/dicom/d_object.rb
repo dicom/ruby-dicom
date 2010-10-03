@@ -21,7 +21,6 @@
 # * Full support for compressed image data.
 # * Read/Write 12 bit image data.
 # * Support for color image data.
-# * Complete support for Big endian (Everything but signed short and signed long has been implemented).
 # * Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
 # * Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
 # * More robust and flexible options for reorienting extracted pixel arrays?
