@@ -1,8 +1,5 @@
 = RUBY-DICOM
 
-
-== SUMMARY
-
 Ruby-DICOM is a small and simple library for handling DICOM in Ruby. DICOM (Digital Imaging
 and Communications in Medicine) is a standard for handling, storing, printing,
 and transmitting information in medical imaging. It includes a file format definition
@@ -54,9 +51,9 @@ Example:
 
 == RESOURCES
 
-* {Official home page} [http://dicom.rubyforge.org/]
-* {Discussion forum} [http://groups.google.com/group/ruby-dicom]
-* {Source code repository} [http://github.com/cuthbert/ruby-dicom]
+* {Official home page}[http://dicom.rubyforge.org/]
+* {Discussion forum}[http://groups.google.com/group/ruby-dicom]
+* {Source code repository}[http://github.com/cuthbert/ruby-dicom]
 
 
 == COPYRIGHT
