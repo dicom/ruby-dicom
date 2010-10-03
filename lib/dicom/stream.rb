@@ -464,7 +464,7 @@ module DICOM
     #--
     # FIXME: Surprisingly the Ruby pack/unpack methods lacks a format for signed short
     # and signed long in the network byte order. A hack has been implemented to to ensure
-    # correct behaviour in this case, but it is slow (~16 times slower than a normal pack/unpack).
+    # correct behaviour in this case, but it is slower (~4 times slower than a normal pack/unpack).
     #
     def set_string_formats
       if @equal_endian
@@ -478,9 +478,9 @@ module DICOM
       else
         # Network byte order:
         @us = "n*"
-        @ss = "k*" # Custom string for our redefined pack/unpack, which converts to unsigned and uses "n*".
+        @ss = "k*" # Custom string for our redefined pack/unpack.
         @ul = "N*"
-        @sl = "r*" # Custom string for our redefined pack/unpack, which converts to unsigned and uses "N*".
+        @sl = "r*" # Custom string for our redefined pack/unpack.
         @fs = "g*"
         @fd = "G*"
       end

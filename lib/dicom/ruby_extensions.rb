@@ -67,11 +67,15 @@ class String
     # Check for some custom unpack strings that we've invented:
     case string
       when "k*" # SS
-        wrong_sign = self.__original_unpack__("n*")
-        correct = wrong_sign.to_signed(16)
+        # Unpack BE US, repack LE US, then finally unpack LE SS:
+        wrongly_unpacked = self.__original_unpack__("n*")
+        repacked = wrongly_unpacked.__original_pack__("S*")
+        correct = repacked.__original_unpack__("s*")
       when "r*" # SL
-        wrong_sign = self.__original_unpack__("N*")
-        correct = wrong_sign.to_signed(32)
+        # Unpack BE UL, repack LE UL, then finally unpack LE SL:
+        wrongly_unpacked = self.__original_unpack__("N*")
+        repacked = wrongly_unpacked.__original_pack__("I*")
+        correct = repacked.__original_unpack__("l*")
       else
         # Call the original method for all other (normal) cases:
         self.__original_unpack__(string)
@@ -101,50 +105,19 @@ class Array
     # Check for some custom pack strings that we've invented:
     case string
       when "k*" # SS
-        converted = self.to_unsigned(16)
-        converted.__original_pack__("n*")
+        # Pack LE SS, re-unpack as LE US, then finally pack BE US:
+        wrongly_packed = self.__original_pack__("s*")
+        reunpacked = wrongly_packed.__original_unpack__("S*")
+        correct = reunpacked.__original_pack__("n*")
       when "r*" # SL
-        converted = self.to_unsigned(32)
-        converted.__original_pack__("N*")
+        # Pack LE SL, re-unpack as LE UL, then finally pack BE UL:
+        wrongly_packed = self.__original_pack__("l*")
+        reunpacked = wrongly_packed.__original_unpack__("I*")
+        correct = reunpacked.__original_pack__("N*")
       else
         # Call the original method for all other (normal) cases:
         self.__original_pack__(string)
     end
-  end
-
-  # Converts an array of unsigned integers to signed integers.
-  # Returns an array of signed integers.
-  #
-  # === Notes
-  #
-  # This is a hack to deal with the shortcomings of Ruby's built-in pack/unpack methods.
-  #
-  # === Parameters
-  #
-  # * <tt>bits</tt> -- An integer (Fixnum) which specifies the bit length of these integers.
-  #
-  def to_signed(bits)
-    max_unsigned = 2 ** bits
-    max_signed = 2 ** (bits - 1)
-    sign_it = proc { |n| (n >= max_signed) ? n - max_unsigned : n }
-    return self.collect!{|x| sign_it[x]}
-  end
-
-  # Converts an array of signed integers to unsigned integers.
-  # Returns an array of unsigned integers.
-  #
-  # === Notes
-  #
-  # This is a hack to deal with the shortcomings of Ruby's built-in pack/unpack methods.
-  #
-  # === Parameters
-  #
-  # * <tt>bits</tt> -- An integer (Fixnum) which specifies the bit length of these integers.
-  #
-  def to_unsigned(bits)
-    max_unsigned = 2 ** bits
-    unsign_it = proc { |n| (n < 0) ? n + max_unsigned : n }
-    return self.collect!{|x| unsign_it[x]}
   end
 
 end
