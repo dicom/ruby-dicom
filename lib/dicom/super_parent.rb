@@ -463,6 +463,14 @@ module DICOM
       end
     end
 
+    # Removes all child elements from this parent.
+    #
+    def remove_children
+      @tags.each_key do |tag|
+        remove(tag)
+      end
+    end
+
     # Removes all data elements of the specified group from this parent.
     #
     # === Parameters
