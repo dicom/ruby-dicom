@@ -20,7 +20,7 @@
 # * Make the networking code more intelligent in its handling of unexpected network communication.
 # * Full support for compressed image data.
 # * Read/Write 12 bit image data.
-# * Support for color image data.
+# * Complete color support (RGB and PALETTE COLOR with get_object_magick already implemented).
 # * Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
 # * Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
 # * More robust and flexible options for reorienting extracted pixel arrays?
