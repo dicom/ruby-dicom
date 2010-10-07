@@ -1,7 +1,9 @@
+require File.expand_path('../lib/dicom/version', __FILE__)
+
 Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name = "dicom"
-  s.version = "0.8"
+  s.version = DICOM::VERSION
   s.date = Time.now
   s.summary = "Library for handling DICOM files and DICOM network communication."
   s.require_paths = ["lib"]

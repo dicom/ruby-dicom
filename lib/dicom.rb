@@ -33,6 +33,7 @@ require 'dicom/stream'
 # Extensions to the Ruby library:
 require 'dicom/ruby_extensions'
 # Module constants:
+require 'dicom/version'
 require 'dicom/constants'
 
 # Extensions (non-core functionality):

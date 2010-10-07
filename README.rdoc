@@ -76,12 +76,8 @@ along with this program.  If not, see http://www.gnu.org/licenses/ .
 
 == ABOUT ME
 
-Name:
-Christoffer Lervåg
+* Name: Christoffer Lervåg
+* Location: Oslo, Norway
+* Email: chris.lervag [@nospam.com] @gmail.com
 
-Location:
-Oslo, Norway
-
-Email:
-chris.lervag [@nospam.com] @gmail.com
 Please don't hesitate to email me if you have any thoughts about this project!

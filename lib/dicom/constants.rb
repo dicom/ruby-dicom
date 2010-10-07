@@ -1,15 +1,12 @@
 #    Copyright 2010 Christoffer Lervag
 
-# This file contains module constants used by the Ruby DICOM library.
+# This file contains module constants used by the Ruby-DICOM library.
 
 module DICOM
 
-  # Ruby DICOM version string.
-  VERSION = "0.8.1b"
-
-  # Ruby DICOM's implementation UID.
+  # Ruby-DICOM's implementation UID.
   UID = "1.2.826.0.1.3680043.8.641"
-  # Ruby DICOM name & version (max 16 characters).
+  # Ruby-DICOM name & version (max 16 characters).
   NAME = "RUBY_DCM_" + DICOM::VERSION
   # Application title.
   SOURCE_APP_TITLE = "RUBY_DICOM"
