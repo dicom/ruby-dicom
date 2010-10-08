@@ -21,10 +21,10 @@
 # * Full support for compressed image data.
 # * Read/Write 12 bit image data.
 # * Complete color support (RGB and PALETTE COLOR with get_object_magick already implemented).
-# * Complete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
-# * Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
+# * Support for extraction of multiple encapsulated pixel data frames in get_image() and get_image_narray().
+# * Image handling currently ignores DICOM tags like Pixel Aspect Ratio, Image Orientation and (to some degree) Photometric Interpretation.
 # * More robust and flexible options for reorienting extracted pixel arrays?
-# * A curious observation: Creating a DLibrary instance is exceptionally slow on my Ruby 1.9.1 install: 0.4 seconds versus ~0.01 seconds on my Ruby 1.8.7 install!
+# * A curious observation: Creating a DLibrary instance is exceptionally slow on Ruby 1.9.1: 0.4 seconds versus ~0.01 seconds on Ruby 1.8.7!
 
 module DICOM
 

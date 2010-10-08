@@ -10,6 +10,21 @@ class String
   #
   alias __original_unpack__ unpack
 
+  # Divides a string into a number of sub-strings of equal length, and returns these in an array.
+  #
+  def divide(parts)
+    if parts > 1
+      sub_strings = Array.new
+      sub_length = self.length/parts
+      parts.times do
+        sub_strings << self.slice!(0..(sub_length-1))
+      end
+      return sub_strings
+    else
+      return [self]
+    end
+  end
+
   # Returns the element part of the tag string: The last 4 characters.
   #
   def element

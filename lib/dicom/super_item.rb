@@ -139,7 +139,8 @@ module DICOM
       return pixels
     end
 
-    # Returns an RMagick image, created from the encoded pixel data using the image related data elements in the DObject instance.
+    # Returns a single RMagick image, created from the encoded pixel data using the image related data elements in the DObject instance.
+    # If the DICOM object contains multiple image frames, the first image frame is returned.
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     #
     # === Notes
@@ -152,46 +153,89 @@ module DICOM
     #
     # === Options
     #
+    # * <tt>:frame</tt> -- Fixnum. For DICOM objects containing multiple frames, this option can be used to extract a specific image frame. Defaults to 0.
+    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
+    # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
+    #
+    # === Examples
+    #
+    #   # Retrieve pixel data as an RMagick image object and display it:
+    #   image = obj.get_image_magick
+    #   image.display
+    #   # Retrieve frame 5 in the pixel data, rescaled to presentation values:
+    #   image = obj.get_image_magick(:frame => 5, :rescale => true)
+    #
+    def get_image_magick(options={})
+      options[:frame] = options[:frame] || 0
+      return get_images_magick(options)
+    end
+
+    # Returns an array of RMagick images, created from the encoded pixel data using the image related data elements in the DObject instance.
+    #
+    # === Notes
+    #
+    # * To call this method the user needs to have loaded the ImageMagick bindings in advance (require 'RMagick').
+    #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:frame</tt> -- Fixnum. Returns an image object from the specified frame.
     # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
     #
     # === Examples
     #
-    #   # Retrieve pixel data as RMagick object and display it:
-    #   image = obj.get_image_magick
-    #   image.display
-    #   # Retrieve image object rescaled to presentation values according to window center/width settings:
-    #   image = obj.get_image_magick(:rescale => true)
-    #   # Retrieve rescaled image object while using a numerical array in the rescaling process (~2 times faster):
-    #   image = obj.get_image_magick(:rescale => true, :narray => true)
+    #   # Retrieve the pixel data as RMagick image objects:
+    #   images = obj.get_images_magick
+    #   # Retrieve the pixel data as RMagick image objects, rescaled to presentation values according to window center/width settings:
+    #   images = obj.get_images_magick(:rescale => true)
+    #   # Retrieve rescaled image objects while using numerical array in the rescaling process (~2 times faster):
+    #   images = obj.get_images_magick(:rescale => true, :narray => true)
     #
-    def get_image_magick(options={})
+    def get_images_magick(options={})
       if exists?(PIXEL_TAG)
-        # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+        rows, columns, nr_frames = image_properties
+        # If pixel data is compressed, retrieve the string frames, if uncompressed, retrieve the string and split it up in multiple parts, if it is a multiframe image:
         if compression?
-          pixels = decompress(image_strings.first)
+          frames = decompress(image_strings)
         else
-          pixels = decode_pixels(image_strings.first)
+          strings = image_strings.first.divide(nr_frames)
+          strings = [strings[options[:frame]]] if options[:frame]
+          frames = Array.new
+          strings.each do |string|
+            frames << decode_pixels(string)
+          end
         end
-        if pixels
-          # Pixel values and pixel order may need to be rearranged:
-          pixels = process_colors(pixels) if color?
-          if pixels
-            rows, columns, frames = image_properties
-            image = read_image_magick(pixels, columns, rows, options)
-            add_msg("Warning: Unfortunately, this method only supports reading the first image frame for 3D pixel data as of now.") if frames > 1
-          else
-            add_msg("Warning: Processing pixel values for this particular color mode failed. RMagick image can not be filled.")
-            image = false
+        if frames
+          images = Array.new
+          frames.each do |pixels|
+            # Pixel values and pixel order may need to be rearranged if we have color data:
+            pixels = process_colors(pixels) if color?
+            if pixels
+              image = read_image_magick(pixels, columns, rows, options)
+            else
+              add_msg("Warning: Processing pixel values for this particular color mode failed. RMagick image can not be filled.")
+              image = false
+            end
+            images << image
           end
         else
           add_msg("Warning: Decompressing pixel values has failed. RMagick image can not be filled.")
-          image = false
+          images = [false]
         end
       else
         image = nil
       end
-      return image
+      if options[:frame]
+        return images.first
+      else
+        # If first image failed, all failed. Return empty array instead of an array filled with false:
+        images = Array.new if images.first == false
+        return images
+      end
     end
 
     # Returns a 3-dimensional NArray object where the array dimensions corresponds to [frames, columns, rows].
@@ -430,8 +474,8 @@ module DICOM
     private
 
 
-    # Attempts to decompress compressed pixel data.
-    # If successful, returns the pixel data in a Ruby Array. If not, returns false.
+    # Attempts to decompress compressed frames of pixel data.
+    # If successful, returns the pixel data frames in a Ruby Array. If not, returns false.
     #
     # === Notes
     #
@@ -447,20 +491,25 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>string</tt> -- A binary string which has been extracted from the pixel data element of the DICOM object.
+    # * <tt>strings</tt> -- A binary string, or an array of strings, which have been extracted from the pixel data element of the DICOM object.
     #
-    def decompress(string)
-      pixels = false
+    def decompress(strings)
+      strings = [strings] unless strings.is_a?(Array)
+      pixels = Array.new
       # We attempt to decompress the pixels using RMagick (ImageMagick):
       begin
-        image = Magick::Image.from_blob(string)
-        if color?
-          pixels = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
-        else
-          pixels = image.export_pixels(0, 0, image.columns, image.rows, "I")
+        strings.each do |string|
+          image = Magick::Image.from_blob(string)
+          if color?
+            pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
+          else
+            pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "I")
+          end
+          pixels << pixel_frame
         end
       rescue
         add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!")
+        pixels = false
       end
       return pixels
     end
