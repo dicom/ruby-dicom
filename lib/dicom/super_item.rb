@@ -51,10 +51,14 @@ module DICOM
       bit_depth_element = self["0028,0100"]
       pixel_representation_element = self["0028,0103"]
       if bit_depth_element and pixel_representation_element
-        # Load the binary pixel data to the Stream instance:
-        stream.set_string(bin)
-        template = template_string(bit_depth_element.value.to_i)
-        pixels = stream.decode_all(template) if template
+        if bin.is_a?(String)
+          # Load the binary pixel data to the Stream instance:
+          stream.set_string(bin)
+          template = template_string(bit_depth_element.value.to_i)
+          pixels = stream.decode_all(template) if template
+        else
+          raise "The argument must be a string."
+        end
       else
         raise "The Data Element which specifies Bit Depth is missing. Unable to decode pixel data." unless bit_depth_element
         raise "The Data Element which specifies Pixel Representation is missing. Unable to decode pixel data." unless pixel_representation_element
@@ -76,8 +80,12 @@ module DICOM
       bit_depth_element = self["0028,0100"]
       pixel_representation_element = self["0028,0103"]
       if bit_depth_element and pixel_representation_element
-        template = template_string(bit_depth_element.value.to_i)
-        bin = stream.encode(pixels, template) if template
+        if pixels.is_a?(Array)
+          template = template_string(bit_depth_element.value.to_i)
+          bin = stream.encode(pixels, template) if template
+        else
+          raise "The argument must be an array (containing numbers)."
+        end
       else
         raise "The Data Element which specifies Bit Depth is missing. Unable to encode pixel data." unless bit_depth_element
         raise "The Data Element which specifies Pixel Representation is missing. Unable to encode pixel data." unless pixel_representation_element

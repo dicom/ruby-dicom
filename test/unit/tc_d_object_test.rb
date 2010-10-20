@@ -3,7 +3,7 @@ require File.dirname(__FILE__) + '/../test_helper'
 class TC_DObjectTest < Test::Unit::TestCase
 
   def setup
-    @obj = DObject.new(DICOM_TEST_FILE)
+    @obj = DObject.new(DICOM_TEST_FILE1)
   end
 
   def test_should_be_valid_dobject
@@ -63,7 +63,7 @@ class TC_DObjectTest < Test::Unit::TestCase
 =end
 
   def test_write_and_read
-    test_write = DICOM_TEST_FILE+"_WRITETEST.dcm"
+    test_write = DICOM_TEST_FILE1+"_WRITETEST.dcm"
     @obj.write(test_write)
     assert(@obj.write_success, "Should return true when a DObject instance has been successfully written to file.")
     obj_reloaded = DObject.new(test_write)
