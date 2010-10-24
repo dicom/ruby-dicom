@@ -57,7 +57,7 @@ module DICOM
           template = template_string(bit_depth_element.value.to_i)
           pixels = stream.decode_all(template) if template
         else
-          raise "The argument must be a string."
+          raise ArgumentError, "The argument must be a string."
         end
       else
         raise "The Data Element which specifies Bit Depth is missing. Unable to decode pixel data." unless bit_depth_element
@@ -84,7 +84,7 @@ module DICOM
           template = template_string(bit_depth_element.value.to_i)
           bin = stream.encode(pixels, template) if template
         else
-          raise "The argument must be an array (containing numbers)."
+          raise ArgumentError, "The argument must be an array (containing numbers)."
         end
       else
         raise "The Data Element which specifies Bit Depth is missing. Unable to encode pixel data." unless bit_depth_element
@@ -405,7 +405,7 @@ module DICOM
         # Write the binary data to the Pixel Data Element:
         set_pixels(bin)
       else
-        raise "Unexpected object type (#{pixels.class}) for the pixels parameter. Array was expected."
+        raise ArgumentError, "Unexpected object type (#{pixels.class}) for the pixels parameter. Array was expected."
       end
     end
 
@@ -856,7 +856,7 @@ module DICOM
           # This one is a bit tricky. I havent really given this priority so far as 12 bit image data is rather rare.
           raise "Packing/unpacking pixel data of bit depth 12 is not implemented yet! Please contact the author (or edit the source code)."
         else
-          raise "The Bit Depth #{bit_depth_element.value} has not received implementation in this procedure yet. Please contact the author (or edit the source code)."
+          raise ArgumentError, "Encoding/Decoding pixel data with this Bit Depth (#{bit_depth_element.value}) is not implemented."
       end
       return template
     end

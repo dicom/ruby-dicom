@@ -94,9 +94,11 @@ module DICOM
       # The DObject instance is the top of the hierarchy and unlike other elements it has no parent:
       @parent = nil
       # For convenience, call the read method if a string has been supplied:
-      if string.is_a?(String) and string != ""
+      if string.is_a?(String)
         @file = string unless options[:bin]
         read(string, options)
+      elsif not string == nil
+        raise ArgumentError, "Invalid argument. Expected String (or nil), got #{string.class}."
       end
     end
 
@@ -113,13 +115,17 @@ module DICOM
     #  encoded_strings = obj.encode_segments(16384)
     #
     def encode_segments(max_size)
-      w = DWrite.new(self, transfer_syntax, file_name=nil)
-      w.encode_segments(max_size)
-      # Write process succesful?
-      @write_success = w.success
-      # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.length > 0
-      return w.segments
+      if max_size.is_a?(Fixnum)
+        w = DWrite.new(self, transfer_syntax, file_name=nil)
+        w.encode_segments(max_size)
+        # Write process succesful?
+        @write_success = w.success
+        # If any messages has been recorded, send these to the message handling method:
+        add_msg(w.msg) if w.msg.length > 0
+        return w.segments
+      else
+        raise ArgumentError, "Invalid argument. Expected an integer (Fixnum), got #{max_size.class}."
+      end
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
@@ -262,29 +268,33 @@ module DICOM
     # FIXME: It should be considered whether this should be a private method.
     #
     def read(string, options={})
-      r = DRead.new(self, string, options)
-      # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
-      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-      unless r.success or exists?("0002,0010")
-        # Clear the existing DObject tags:
-        @tags = Hash.new
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
-        # Only extract information from this new attempt if it was successful:
-        r = r_explicit if r_explicit.success
-      end
-      # Store the data to the instance variables if the readout was a success:
-      if r.success
-        @read_success = true
-        # Update instance variables based on the properties of the DICOM object:
-        @explicit = r.explicit
-        @file_endian = r.file_endian
-        @signature = r.signature
-        @stream.endian = @file_endian
+      if string.is_a?(String)
+        r = DRead.new(self, string, options)
+        # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+        # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
+        unless r.success or exists?("0002,0010")
+          # Clear the existing DObject tags:
+          @tags = Hash.new
+          r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
+          # Only extract information from this new attempt if it was successful:
+          r = r_explicit if r_explicit.success
+        end
+        # Store the data to the instance variables if the readout was a success:
+        if r.success
+          @read_success = true
+          # Update instance variables based on the properties of the DICOM object:
+          @explicit = r.explicit
+          @file_endian = r.file_endian
+          @signature = r.signature
+          @stream.endian = @file_endian
+        else
+          @read_success = false
+        end
+        # If any messages has been recorded, send these to the message handling method:
+        add_msg(r.msg) if r.msg.length > 0
       else
-        @read_success = false
+        raise ArgumentError, "Invalid argument. Expected String, got #{string.class}."
       end
-      # If any messages has been recorded, send these to the message handling method:
-      add_msg(r.msg) if r.msg.length > 0
     end
 
     # Returns the transfer syntax string of the DObject.
@@ -328,7 +338,7 @@ module DICOM
           add_msg("New transfer syntax #{new_syntax} does not change encoding: No re-encoding needed.")
         end
       else
-        raise "Invalid transfer syntax specified: #{new_syntax}"
+        raise ArgumentError, "Invalid transfer syntax specified: #{new_syntax}"
       end
     end
 
@@ -349,13 +359,17 @@ module DICOM
     #   obj.write(path + "test.dcm")
     #
     def write(file_name, options={})
-      insert_missing_meta unless options[:add_meta] == false
-      w = DWrite.new(self, transfer_syntax, file_name, options)
-      w.write
-      # Write process succesful?
-      @write_success = w.success
-      # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.length > 0
+      if file_name.is_a?(String)
+        insert_missing_meta unless options[:add_meta] == false
+        w = DWrite.new(self, transfer_syntax, file_name, options)
+        w.write
+        # Write process succesful?
+        @write_success = w.success
+        # If any messages has been recorded, send these to the message handling method:
+        add_msg(w.msg) if w.msg.length > 0
+      else
+        raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}."
+      end
     end
 
 
