@@ -368,6 +368,7 @@ module DICOM
     # Prints all child elements of this particular parent.
     # Information such as tag, parent-child relationship, name, vr, length and value is gathered for each data element
     # and processed to produce a nicely formatted output.
+    # Returns an array of formatted data elements.
     #
     # === Parameters
     #
@@ -392,6 +393,7 @@ module DICOM
     # FIXME: Speed. The new print algorithm may seem to be slower than the old one (observed on complex, hiearchical DICOM files). Perhaps it can be optimized?
     #
     def print(options={})
+      elements = Array.new
       # We first gather some properties that is necessary to produce a nicely formatted printout (max_lengths, count_all),
       # then the actual information is gathered (handle_print),
       # and lastly, we pass this information on to the methods which print the output (print_file or print_screen).
@@ -408,6 +410,7 @@ module DICOM
       else
         puts "Notice: Object #{self} is empty (contains no data elements)!"
       end
+      return elements
     end
 
     # Finds and returns the maximum character lengths of name and length which occurs for any child element,
