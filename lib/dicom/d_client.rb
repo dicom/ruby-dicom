@@ -15,12 +15,14 @@ module DICOM
     attr_accessor :host_ae
     # The IP adress of the server.
     attr_accessor :host_ip
-    # The maximum allowed size of network packages (in bytes). 
+    # The maximum allowed size of network packages (in bytes).
     attr_accessor :max_package_size
     # The network port to be used.
     attr_accessor :port
     # The maximum period the client will wait on an answer from a server before aborting the communication.
     attr_accessor :timeout
+    # An array containing the transfer syntaxes which are proposed in the association negotiation for file transfer.
+    attr_accessor :transfer_syntax
     # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
     attr_accessor :verbose
     # An array, where each index contains a hash with the data elements received in a command response (with tags as keys).
@@ -44,7 +46,7 @@ module DICOM
     #
     # * <tt>:ae</tt> -- String. The name of this client (application entity).
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
-    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes). 
+    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
     # * <tt>:verbose</tt> -- Boolean. If set to false, the DClient instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
@@ -471,8 +473,8 @@ module DICOM
           end
         elsif file.is_a?(DObject)
           # Load the DICOM object and its abstract syntax:
-          objects << obj
-          abstracts << obj.value("0008,0016")
+          abstracts << file.value("0008,0016")
+          objects << file
         else
           status = false
           message = "Array contains invalid object #{file}."
