@@ -1,6 +1,7 @@
 $:.unshift(File.dirname(__FILE__) + '/../lib')
 
 require 'rubygems'
+require 'narray'
 require 'test/unit'
 
 require File.dirname(__FILE__) + '/../lib/dicom'

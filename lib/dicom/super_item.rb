@@ -106,17 +106,18 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of Ruby Array in the rescale process, for faster execution.
+    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
+    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
     #
     # === Examples
     #
     #   # Simply retrieve the pixel data:
     #   pixels = obj.get_image
-    #   # Retrieve the pixel data rescaled to presentation values according to window center/width settings:
-    #   pixels = obj.get_image(:rescale => true)
-    #   # Retrieve the rescaled pixel data while using a numerical array in the rescaling process (~2 times faster):
-    #   pixels = obj.get_image(:rescale => true, :narray => true)
+    #   # Retrieve the pixel data remapped to presentation values according to window center/width settings:
+    #   pixels = obj.get_image(:remap => true)
+    #   # Retrieve the remapped pixel data while using numerical array (~twice as fast):
+    #   pixels = obj.get_image(:remap => true, :narray => true)
     #
     def get_image(options={})
       if exists?(PIXEL_TAG)
@@ -128,13 +129,13 @@ module DICOM
         end
         if pixels
           # Remap the image from pixel values to presentation values if the user has requested this:
-          if options[:rescale]
+          if options[:remap] or options[:level]
             if options[:narray]
               # Use numerical array (faster):
-              pixels = process_presentation_values_narray(pixels, -65535, 65535).to_a
+              pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]).to_a
             else
               # Use standard Ruby array (slower):
-              pixels = process_presentation_values(pixels, -65535, 65535)
+              pixels = process_presentation_values(pixels, -65535, 65535, options[:level])
             end
           end
         else
@@ -162,9 +163,9 @@ module DICOM
     # === Options
     #
     # * <tt>:frame</tt> -- Fixnum. For DICOM objects containing multiple frames, this option can be used to extract a specific image frame. Defaults to 0.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
-    # * <tt>:rescale</tt> -- Boolean. If set, pixel values will be rescaled to presentation values (using intercept and slope values from the DICOM object).
-    # * <tt>:level</tt> -- Boolean or array. If set (as true) window leveling are performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
+    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
     #
     # === Examples
     #
@@ -192,19 +193,19 @@ module DICOM
     # === Options
     #
     # * <tt>:frame</tt> -- Fixnum. Returns an image object from the specified frame.
-    # * <tt>:rescale</tt> -- Boolean. If set, pixel values will be rescaled to presentation values (using intercept and slope values from the DICOM object).
-    # * <tt>:level</tt> -- Boolean or array. If set (as true) window leveling are performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
+    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
+    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
     #
     # === Examples
     #
     #   # Retrieve the pixel data as RMagick image objects:
     #   images = obj.get_images_magick
-    #   # Retrieve the pixel data as RMagick image objects, rescaled to presentation values (but without any leveling):
-    #   images = obj.get_images_magick(:rescale => true)
-    #   # Retrieve the pixel data as RMagick image objects, rescaled to presentation values and leveled using the default center/width values in the DICOM object:
+    #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values (but without any leveling):
+    #   images = obj.get_images_magick(:remap => true)
+    #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values and leveled using the default center/width values in the DICOM object:
     #   images = obj.get_images_magick(:level => true)
-    #   # Retrieve the pixel data as RMagick image objects, rescaled to presentation values, leveled with the specified center/width values and using numerical array for the rescaling (~twice as fast).
+    #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values, leveled with the specified center/width values and using numerical array for the rescaling (~twice as fast).
     #   images = obj.get_images_magick(:level => [-200,1000], :narray => true)
     #
     def get_images_magick(options={})
@@ -263,14 +264,15 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:rescale</tt> -- Boolean. If set as true, makes the method return processed, rescaled presentation values instead of the original, full pixel range.
+    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:remap</tt> -- Boolean.  If set as true, the returned pixel values are remapped to presentation values.
     #
     # === Examples
     #
     #   # Retrieve numerical pixel array:
     #   data = obj.get_image_narray
-    #   # Retrieve numerical pixel array rescaled from the original pixel values to presentation values:
-    #   data = obj.get_image_narray(:rescale => true)
+    #   # Retrieve numerical pixel array remapped from the original pixel values to presentation values:
+    #   data = obj.get_image_narray(:remap => true)
     #
     def get_image_narray(options={})
       if exists?(PIXEL_TAG)
@@ -286,7 +288,7 @@ module DICOM
             rows, columns, frames = image_properties
             pixel_data = NArray.to_na(pixels).reshape!(frames, columns, rows)
             # Remap the image from pixel values to presentation values if the user has requested this:
-            pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535) if options[:rescale]
+            pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535, options[:level]) if options[:remap] or options[:level]
           else
             add_msg("Warning: Decompressing pixel values has failed. Numerical array can not be filled.")
             pixel_data = false
@@ -598,12 +600,23 @@ module DICOM
     # === Parameters
     #
     # * <tt>pixel_data</tt> -- An array of pixel values (integers).
-    # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed for the returned pixels.
-    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed for the returned pixels.
+    # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed in the returned pixels.
+    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed in the returned pixels.
+    # * <tt>level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     #
-    def process_presentation_values(pixel_data, min_allowed, max_allowed)
+    def process_presentation_values(pixel_data, min_allowed, max_allowed, level=nil)
       # Process pixel data for presentation according to the image information in the DICOM object:
       center, width, intercept, slope = window_level_values
+      # Have image leveling been requested?
+      if level
+        # If custom values are specified in an array, use those. If not, the default values from the DICOM object are used:
+        if level.is_a?(Array)
+          center = level[0]
+          width = level[1]
+        end
+      else
+        center, width = false, false
+      end
       # PixelOutput = slope * pixel_values + intercept
       if intercept != 0 or slope != 1
         pixel_data.collect!{|x| (slope * x) + intercept}
@@ -645,12 +658,12 @@ module DICOM
     # === Parameters
     #
     # * <tt>pixel_data</tt> -- An array of pixel values (integers).
-    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed for the returned pixels.
+    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed in the returned pixels.
     # * <tt>columns</tt> -- Fixnum. Number of columns in the image to be created.
     # * <tt>rows</tt> -- Fixnum. Number of rows in the image to be created.
-    # * <tt>level</tt> -- Decides whether image leveling will be performed, and whether default or custom values will be used for this window leveling.
+    # * <tt>level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     #
-    def process_presentation_values_magick(pixel_data, max_allowed, columns, rows, level)
+    def process_presentation_values_magick(pixel_data, max_allowed, columns, rows, level=nil)
       # Process pixel data for presentation according to the image information in the DICOM object:
       center, width, intercept, slope = window_level_values
       # Have image leveling been requested?
@@ -688,8 +701,9 @@ module DICOM
     # === Parameters
     #
     # * <tt>pixel_data</tt> -- An Array/NArray of pixel values (integers).
-    # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed for the returned pixels.
-    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed for the returned pixels.
+    # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed in the returned pixels.
+    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed in the returned pixels.
+    # * <tt>level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     #
     def process_presentation_values_narray(pixel_data, min_allowed, max_allowed, level=nil)
       # Process pixel data for presentation according to the image information in the DICOM object:
@@ -710,7 +724,7 @@ module DICOM
       else
         n_arr = pixel_data
       end
-      # Rescale:
+      # Remap:
       # PixelOutput = slope * pixel_values + intercept
       if intercept != 0 or slope != 1
         n_arr = slope * n_arr + intercept
@@ -752,13 +766,13 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:rescale</tt> -- Boolean. If set, pixel values will be rescaled to presentation values (using intercept and slope values from the DICOM object).
+    # * <tt>:remap</tt> -- Boolean. If set, pixel values will be remapped to presentation values (using intercept and slope values from the DICOM object).
     # * <tt>:level</tt> -- Boolean or array. If set (as true) window leveling are performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray instead of RMagick/Ruby Array in the rescale process, for faster execution.
+    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
     #
     def read_image_magick(pixel_data, columns, rows, options={})
       # Remap the image from pixel values to presentation values if the user has requested this:
-      if options[:rescale] or options[:level]
+      if options[:remap] or options[:level]
         # What tools will be used to process the pixel presentation values?
         if options[:narray] == true
           # Use numerical array (fast):
@@ -784,7 +798,7 @@ module DICOM
     # === Parameters
     #
     # * <tt>pixels</tt> -- An array of pixel values.
-    # * <tt>return_rescale_values</tt> -- If set as true the method returns additional factors used in the value rescaling.
+    # * <tt>return_rescale_values</tt> -- Boolean. If set as true the method returns additional factors used in the value rescaling.
     #
     def rescale_for_magick(pixels, return_rescale_values=false)
       # Need to introduce an offset? (RMagick doesnt like negative numbers)
