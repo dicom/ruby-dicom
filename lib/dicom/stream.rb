@@ -462,7 +462,7 @@ module DICOM
     # Some of these depends on the endianness of the system and the String.
     #
     #--
-    # FIXME: Surprisingly the Ruby pack/unpack methods lacks a format for signed short
+    # Note: Surprisingly the Ruby pack/unpack methods lack a format for signed short
     # and signed long in the network byte order. A hack has been implemented to to ensure
     # correct behaviour in this case, but it is slower (~4 times slower than a normal pack/unpack).
     #
@@ -478,9 +478,9 @@ module DICOM
       else
         # Network byte order:
         @us = "n*"
-        @ss = "k*" # Custom string for our redefined pack/unpack.
+        @ss = CUSTOM_SS # Custom string for our redefined pack/unpack.
         @ul = "N*"
-        @sl = "r*" # Custom string for our redefined pack/unpack.
+        @sl = CUSTOM_SL # Custom string for our redefined pack/unpack.
         @fs = "g*"
         @fd = "G*"
       end

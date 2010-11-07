@@ -112,6 +112,11 @@ module DICOM
   # System (CPU) Endianness.
   CPU_ENDIAN = endian_type[Array(x).pack("L*")]
 
+  # Custom string used for (un)packing big endian signed short.
+  CUSTOM_SS = "k*"
+  # Custom string used for (un)packing big endian signed long.
+  CUSTOM_SL = "r*"
+
   # Ruby DICOM's library (data dictionary).
   LIBRARY =  DICOM::DLibrary.new
 
