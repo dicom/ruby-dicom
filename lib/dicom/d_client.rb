@@ -803,6 +803,7 @@ module DICOM
         ["0008,0030", ""], # Study Time
         ["0008,0050", ""], # Accession Number
         ["0008,0052", "STUDY"], # Query/Retrieve Level:  "STUDY"
+        ["0008,0061", ""], # Modalities in Study
         ["0008,0090", ""], # Referring Physician's Name
         ["0008,1030", ""], # Study Description
         ["0008,1060", ""], # Name of Physician(s) Reading Study
