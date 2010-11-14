@@ -214,7 +214,7 @@ module DICOM
         
         transfer_syntax = get_transfer_syntax()
         
-        if [TXS_JPEG_BASELINE].include?(transfer_syntax) 
+        if [TXS_JPEG_BASELINE, TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY].include?(transfer_syntax) 
           # Simply usig RMagick/ImageMagick for generating color images. 
           images = Array.new
           image_strings().each do |string|
@@ -227,10 +227,11 @@ module DICOM
           image_strings().each do |string|
             frames << rle_decode(columns, rows, string)
           end
-        elsif [TXS_JPEG_LOSSLESS_NH, TXS_JPEG_LOSSLESS_NH_FOP].include?(transfer_syntax) 
+        elsif [TXS_JPEG_LOSSLESS_NH, TXS_JPEG_LOSSLESS_NH_FOP, TXS_JPEG_2000_PART1_LOSSLESS].include?(transfer_syntax) 
           # What are going to do with those guys?
           # TXS_JPEG_LOSSLESS_NH is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
           # TXS_JPEG_LOSSLESS_NH_FOP is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
+          # TXS_JPEG_2000_PART1_LOSSLESS is not supported by (my) ImageMagick version "jpc_dec_decodepkts failed"
           add_msg("Warning: Currently unsupported transfer syntax '#{transfer_syntax}'.")
           return Array.new
         elsif compression?
@@ -533,34 +534,53 @@ module DICOM
     #
     def rle_decode(cols, rows, string)
       pixels = Array.new
-      next_bytes = -1
-      next_multiplier = 0
 
       # RLE Header specifying the number of segments
       header = string[0...64].unpack('L*')
 
-      # TODO Adding support for multiple planes, e.g. RGB RLE compression
-      throw "Two many RLE segment. Currently only one is supported." if header.first > 1
-
-      string[header[1]..-1].each_byte do |b|
-        if next_multiplier > 0
-          next_multiplier.times { pixels << b }
-          next_multiplier = 0
-        elsif next_bytes > 0
-          pixels << b
-          next_bytes -= 1
-        elsif b <= 127
-          next_bytes = b + 1
+      # Extracting all start and endpoints of the different segments
+      image_segments = Array.new 
+      header.each_index do |n|
+        if n == 0
+          # This one need no processing.
+        elsif n == header[0]
+          # It's the last one
+          image_segments << [header[n], -1]
+          break
         else
-          # Explaining the 257 at this point is a little bit complicate. Basically it has something
-          # to do with the algorithm described in the DICOM standard and that the value -1 as
-          # uint8 is 255. 
-          # TODO: Is this architectur safe or does it only work on Intel systems???
-          next_multiplier = 257 - b
+          image_segments << [header[n], header[n + 1] - 1]
         end
       end
       
-      throw "Size mismatch #{pixels.size} != #{rows * cols}" if pixels.size != rows * cols
+      
+      image_segments.each do |range|
+        segment_data = Array.new
+        
+        next_bytes = -1
+        next_multiplier = 0
+        
+        string[range[0]..range[1]].each_byte do |b|
+          if next_multiplier > 0
+            next_multiplier.times { segment_data << b }
+            next_multiplier = 0
+          elsif next_bytes > 0
+            segment_data << b
+            next_bytes -= 1
+          elsif b <= 127
+            next_bytes = b + 1
+          else
+            # Explaining the 257 at this point is a little bit complicate. Basically it has something
+            # to do with the algorithm described in the DICOM standard and that the value -1 as
+            # uint8 is 255. 
+            # TODO: Is this architectur safe or does it only work on Intel systems???
+            next_multiplier = 257 - b
+          end
+        end
+
+        throw "Size mismatch #{segment_data.size} != #{rows * cols}" if segment_data.size != rows * cols
+        
+        pixels += segment_data
+      end
 
       return pixels
     end
