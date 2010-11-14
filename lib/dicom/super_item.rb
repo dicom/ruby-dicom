@@ -559,7 +559,7 @@ module DICOM
           next_multiplier = 257 - b
         end
       end
-
+      
       throw "Size mismatch #{pixels.size} != #{rows * cols}" if pixels.size != rows * cols
 
       return pixels
@@ -647,17 +647,19 @@ module DICOM
         lookup_values = Array.new
         nr_bits = self["0028,1101"].value.split("\\").last.to_i
         template = template_string(nr_bits)
+        
         lookup_binaries.each do |bin|
           stream.set_string(bin)
           lookup_values << stream.decode_all(template)
         end
-
+        
         # Fill the RGB array:
         pixels.each_index do |i|
           rgb[i*3] = lookup_values[0][pixels[i]]
           rgb[(i*3)+1] = lookup_values[1][pixels[i]]
           rgb[(i*3)+2] = lookup_values[2][pixels[i]]
         end
+
         # As we have now ordered the pixels in RGB order, modify planar configuration to reflect this:
         planar = 0
       elsif photometric.include?("YBR")
@@ -869,11 +871,16 @@ module DICOM
       else
         # Although rescaling with presentation values is not wanted, we still need to make sure pixel values are within the accepted range:
         pixel_data = rescale_for_magick(pixel_data)
+        
+        image_magick_data_type = determine_image_magick_data_type()
+
         # Load original pixel values to a RMagick object:
-        if pixel_data.is_a?(Array)
-          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data.pack('C*'))
+        if image_magick_data_type == Magick::CharPixel
+          # A RMagick bug is files at github that it is not possible to call this function with the array values.
+          # Therefore, those values are packed before calling import_pixels.
+         image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data.pack('C*'), image_magick_data_type)
         else
-          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data)
+          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data, image_magick_data_type)
         end
       end
       return image
@@ -978,11 +985,49 @@ module DICOM
       return center, width, intercept, slope
     end
     
+    def number_of_bits_to_image_magick_data_type(nr_bits)
+      return case nr_bits
+      when 8
+        Magick::CharPixel
+      when 16
+        Magick::ShortPixel
+      else
+        add_msg("Warning found unsupported number of bits '#{nr_bits}', defaulting to 8.")
+        Magick::CharPixel
+      end
+    end
+    
+    
+    # Determines and returns the image magick data type for importing pixel data. 
+    #
+    # === Notes
+    #
+    # If some of these values are missing in the DObject instance, default values are used instead
+    # for intercept and slope, while center and width are set to nil. No errors are raised.
+    #
+    def determine_image_magick_data_type
+      image_magick_data_type = nil
+      if get_photometric_interpretation() == PI_PALETTE_COLOR
+        # OK, only one channel is checked and assumed that all channels have the same number of bits.
+        nr_bits = self["0028,1101"].value.split("\\").last.to_i
+        image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
+      elsif self["0028,0100"].is_a?(DataElement)
+        nr_bits = self["0028,0100"].value
+        image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
+      else
+        add_msg("Could not determine the pixel depth, using default value.ABSTRACT_SYNTAX_REJECTED")
+        image_magick_data_type = Magick::ShortPixel
+      end
+
+      return image_magick_data_type
+    end
+    
     
     def get_photometric_interpretation
       photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
       return photometric
     end
+    
     
     def get_transfer_syntax
       return (self['0002,0010'].is_a?(DataElement) == true ? self['0002,0010'].value : "")
