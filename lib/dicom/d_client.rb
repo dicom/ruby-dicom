@@ -328,8 +328,8 @@ module DICOM
       if success
         # Open a DICOM link:
         establish_association
-        if @association
-          if @request_approved
+        if association_established?
+          if request_approved?
             # Continue with our c-store operation, since our request was accepted.
             # Handle the transmission:
             perform_send(objects)
@@ -352,8 +352,8 @@ module DICOM
       @abstract_syntaxes = [VERIFICATION_SOP]
       # Open a DICOM link:
       establish_association
-      if @association
-        if @request_approved
+      if association_established?
+        if request_approved?
           success = true
         end
         # Close the DICOM link:
@@ -490,12 +490,11 @@ module DICOM
     def perform_echo
       # Open a DICOM link:
       establish_association
-      if @association
-        if @request_approved
+      if association_established?
+        if request_approved?
           # Continue with our echo, since the request was accepted.
           # Set the query command elements array:
           set_command_fragment_echo
-          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           # Listen for incoming responses and interpret them individually, until we have received the last command fragment.
@@ -515,12 +514,11 @@ module DICOM
     def perform_find
       # Open a DICOM link:
       establish_association
-      if @association
-        if @request_approved
+      if association_established?
+        if request_approved?
           # Continue with our query, since the request was accepted.
           # Set the query command elements array:
           set_command_fragment_find
-          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements, presentation_context_id)
@@ -544,10 +542,9 @@ module DICOM
     def perform_get(path)
       # Open a DICOM link:
       establish_association
-      if @association
-        if @request_approved
+      if association_established?
+        if request_approved?
           # Continue with our operation, since the request was accepted.
-          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements, presentation_context_id)
@@ -571,10 +568,9 @@ module DICOM
     def perform_move
       # Open a DICOM link:
       establish_association
-      if @association
-        if @request_approved
+      if association_established?
+        if request_approved?
           # Continue with our operation, since the request was accepted.
-          presentation_context_id = @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
           @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
           @link.transmit
           @link.build_data_fragment(@data_elements, presentation_context_id)
@@ -887,5 +883,17 @@ module DICOM
       ]
     end
 
+    def association_established?
+      @association == true
+    end
+    
+    def request_approved?
+      @request_approved == true
+    end
+    
+    def presentation_context_id
+      @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
+    end
+    
   end
 end
