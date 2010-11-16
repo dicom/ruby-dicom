@@ -75,6 +75,7 @@ module DICOM
       @association = nil # DICOM Association status
       @request_approved = nil # Status of our DICOM request
       @release = nil # Status of received, valid release response
+      @data_elements = []
       # Results from a query:
       @command_results = Array.new
       @data_results = Array.new
@@ -207,9 +208,33 @@ module DICOM
     def find_studies(options={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
-      # Prepare data elements for this operation:
-      set_data_fragment_find_studies
-      set_data_options(options)
+      
+      # Every default with a value != nil is a required query parameter
+      # and will be used. The rests are (allowed) optional query parameters:
+      defaults = {
+        "0008,0020" => "",  # Study Date
+        "0008,0030" => "",  # Study Time
+        "0008,0050" => "",  # Accession Number
+        "0008,0052" => "STUDY", # Query/Retrieve Level:  "STUDY"
+        "0008,0061" => nil, # Modalities in Study
+        "0008,0090" => nil, # Referring Physician's Name
+        "0008,1030" => nil, # Study Description
+        "0008,1060" => nil, # Name of Physician(s) Reading Study
+        "0010,0010" => "",  # Patient's Name
+        "0010,0020" => "",  # Patient ID
+        "0010,0030" => nil, # Patient's Birth Date
+        "0010,0040" => nil, # Patient's Sex
+        "0020,0010" => "",  # Study ID
+        "0020,000D" => nil  # Study Instance UID
+      }
+      
+      options.keys.each do |tag|
+        unless defaults.include?(tag)
+          raise ArgumentError, "unknown query parameter: #{tag}"
+        end
+      end
+      
+      set_data_elements(defaults.merge(options))      
       perform_find
       return @data_results
     end
@@ -791,27 +816,6 @@ module DICOM
       ]
     end
 
-    # Sets the data elements used in a query for studies.
-    #
-    def set_data_fragment_find_studies
-      @data_elements = [
-        ["0008,0020", ""], # Study Date
-        ["0008,0030", ""], # Study Time
-        ["0008,0050", ""], # Accession Number
-        ["0008,0052", "STUDY"], # Query/Retrieve Level:  "STUDY"
-        ["0008,0061", ""], # Modalities in Study
-        ["0008,0090", ""], # Referring Physician's Name
-        ["0008,1030", ""], # Study Description
-        ["0008,1060", ""], # Name of Physician(s) Reading Study
-        ["0010,0010", ""], # Patient's Name
-        ["0010,0020", ""], # Patient ID
-        ["0010,0030", ""], # Patient's Birth Date
-        ["0010,0040", ""], # Patient's Sex
-        ["0020,000D", ""], # Study Instance UID
-        ["0020,0010", ""] # Study ID
-      ]
-    end
-
     # Sets the data elements used for an image C-GET-RQ.
     #
     def set_data_fragment_get_image
@@ -893,6 +897,12 @@ module DICOM
     
     def presentation_context_id
       @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
+    end
+    
+    def set_data_elements(options)
+      options.keys.sort.each do |tag|
+        @data_elements << [ tag, options[tag] ] unless options[tag].nil?
+      end
     end
     
   end
