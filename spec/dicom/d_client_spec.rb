@@ -18,7 +18,7 @@ describe DICOM::DClient, '#find_studies' do
   end
   
    
-  it "should set default query parameters if no options given" do
+  it "should set required query parameters if not given" do
     data_elements = [["0008,0020", ""],
       ["0008,0030", ""],
       ["0008,0050", ""],
@@ -30,7 +30,7 @@ describe DICOM::DClient, '#find_studies' do
     @node.find_studies()
   end
   
-  it "should set query parameters from options if given" do
+  it "should set required query parameters if given" do
     data_elements = [["0008,0020", "20061231-20070201"],
       ["0008,0030", "015500-235559"],
       ["0008,0050", "Abc789"],
