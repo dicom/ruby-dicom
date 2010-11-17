@@ -205,13 +205,13 @@ module DICOM
     #
     #   node.find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789")
     #
-    def find_studies(options={})
+    def find_studies(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
       
-      # Every default with a value != nil is a required query parameter
-      # and will be used. The rests are (allowed) optional query parameters:
-      defaults = {
+      # Note: Every query parameter with a value != nil will be send in the
+      # dicom query.  The other query parameters with nil-value are optional.
+      allowed_query_params = {
         "0008,0020" => "",  # Study Date
         "0008,0030" => "",  # Study Time
         "0008,0050" => "",  # Accession Number
@@ -228,13 +228,13 @@ module DICOM
         "0020,000D" => nil  # Study Instance UID
       }
       
-      options.keys.each do |tag|
-        unless defaults.include?(tag)
+      query_params.keys.each do |tag|
+        unless allowed_query_params.include?(tag)
           raise ArgumentError, "unknown query parameter: #{tag}"
         end
       end
       
-      set_data_elements(defaults.merge(options))      
+      set_data_elements(allowed_query_params.merge(query_params))
       perform_find
       return @data_results
     end
