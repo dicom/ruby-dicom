@@ -82,5 +82,18 @@ describe DICOM::DClient, '#find_studies' do
       @node.find_studies( {"dead,beaf" => "this query parameter is unknown"} )
     }.should raise_error(ArgumentError, /dead,beaf/)
   end
+
+  it "should reset parameters from previous queries" do
+    data_elements = [["0008,0020", ""],
+      ["0008,0030", ""],
+      ["0008,0050", ""],
+      ["0008,0052", "STUDY"],
+      ["0010,0010", ""],
+      ["0010,0020", ""],
+      ["0020,0010", ""]]
+    @link.expects(:build_data_fragment).twice.with(data_elements, nil)
+    @node.find_studies()
+    @node.find_studies()
+  end
   
 end
