@@ -1,5 +1,17 @@
-# Build command:
-# rake package
+# For developers:
+
+# Required gems:
+#   gem install rake
+# For specs/testing:
+#   gem install rspec
+#   gem install mocha
+
+# Rake commands:
+# Packaging a new gem:
+#   rake package
+# Running specs/tests:
+#   rake spec
+#   rake tests
 
 require 'rubygems'
 require 'rake/gempackagetask'
@@ -12,18 +24,16 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.need_tar = true
 end
 
-desc "Default Task"
-task :default => 'test:units'
+desc "Run all unit tests"
+task :tests => 'test:units'
 
 # Run the unit tests
 namespace :test do
-
   Rake::TestTask.new(:units) do |t|
     t.pattern = 'test/unit/**/*_test.rb'
     t.ruby_opts << '-rubygems'
     t.verbose = true
   end
-
 end
 
 # RSpec 2.x
