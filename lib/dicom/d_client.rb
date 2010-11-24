@@ -4,6 +4,9 @@ module DICOM
 
   # This class contains code for handling the client side of DICOM TCP/IP network communication.
   #
+  # === Resources
+  #
+  # * For information regarding query, such as required/optional attributes and value matching, refer to the DICOM standard, PS3.4, C 2.2.
   #--
   # FIXME: The code which waits for incoming network packets seems to be very CPU intensive. Perhaps there is a more elegant way to wait for incoming messages?
   #
@@ -190,50 +193,73 @@ module DICOM
     # * <tt>"0008,0020"</tt> -- Study Date
     # * <tt>"0008,0030"</tt> -- Study Time
     # * <tt>"0008,0050"</tt> -- Accession Number
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
-    # * <tt>"0008,0090"</tt> -- Referring Physician's Name
-    # * <tt>"0008,1030"</tt> -- Study Description
-    # * <tt>"0008,1060"</tt> -- Name of Physician(s) Reading Study
     # * <tt>"0010,0010"</tt> -- Patient's Name
     # * <tt>"0010,0020"</tt> -- Patient ID
-    # * <tt>"0010,0030"</tt> -- Patient's Birth Date
-    # * <tt>"0010,0040"</tt> -- Patient's Sex
     # * <tt>"0020,000D"</tt> -- Study Instance UID
     # * <tt>"0020,0010"</tt> -- Study ID
+    #
+    # === Restrictions
+    #
+    # * In addition to the above attributes, a number of "optional" attributes may be specified.
+    # * For a complete list of accepted optional attributes, refer to the specification/source code.
+    # * For a general list of optional study level attributes, refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
     #
     # === Examples
     #
     #   node.find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789")
     #
+    #--
+    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are study level,
+    # this method could be refactored in order to avoid having to specify the rather big hash of allowed query parameters.
+    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid study level attributes.
+    #
     def find_studies(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
-      
-      # Note: Every query parameter with a value != nil will be send in the
-      # dicom query.  The other query parameters with nil-value are optional.
+      # Note: Every query attribute with a value != nil (required) will be sent in the dicom query.
+      # The query parameters with nil-value (optional) are left out unless specified.
       allowed_query_params = {
         "0008,0020" => "",  # Study Date
         "0008,0030" => "",  # Study Time
         "0008,0050" => "",  # Accession Number
         "0008,0052" => "STUDY", # Query/Retrieve Level:  "STUDY"
         "0008,0061" => nil, # Modalities in Study
+        "0008,0062" => nil, # SOP Classes in Study
         "0008,0090" => nil, # Referring Physician's Name
         "0008,1030" => nil, # Study Description
         "0008,1060" => nil, # Name of Physician(s) Reading Study
+        "0008,1080" => nil, # Admitting Diagnoses Description
         "0010,0010" => "",  # Patient's Name
         "0010,0020" => "",  # Patient ID
+        "0010,0021" => nil, # Issuer of Patient ID
         "0010,0030" => nil, # Patient's Birth Date
+        "0010,0032" => nil, # Patient's Birth Time
         "0010,0040" => nil, # Patient's Sex
-        "0020,0010" => "",  # Study ID
-        "0020,000D" => nil  # Study Instance UID
+        "0010,1000" => nil, # Other Patient Ids
+        "0010,1001" => nil, # Other Patient Names
+        "0010,1010" => nil, # Patient's Age
+        "0010,1020" => nil, # Patient's Size
+        "0010,1030" => nil, # Patient's Weight
+        "0010,2160" => nil, # Ethnic Group
+        "0010,2180" => nil, # Occupation
+        "0010,21B0" => nil, # Additional Patient History
+        "0010,4000" => nil, # Patient Comments
+        "0020,1070" => nil, # Other Study Numbers
+        "0020,1200" => nil, # Number of Patient Related Studies
+        "0020,1202" => nil, # Number of Patient Related Series
+        "0020,1204" => nil, # Number of Patient Related Instances
+        "0020,1206" => nil, # Number of Study Related Series
+        "0020,1208" => nil, # Number of Study Related Instances
+        "0020,000D" => "",  # Study Instance UID
+        "0020,0010" => ""  # Study ID
       }
-      
+      # Raising an error if unknown query attributes are present:
       query_params.keys.each do |tag|
         unless allowed_query_params.include?(tag)
           raise ArgumentError, "unknown query parameter: #{tag}"
         end
       end
-      
+      # Set up the query parameters and carry out the C-FIND:
       set_data_elements(allowed_query_params.merge(query_params))
       perform_find
       return @data_results
