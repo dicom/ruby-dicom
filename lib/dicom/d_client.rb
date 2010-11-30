@@ -157,27 +157,56 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A hash of parameters.
+    # * <tt>query_params</tt> -- A hash of query parameters.
     #
     # === Options
     #
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
     # * <tt>"0008,0060"</tt> -- Modality
-    # * <tt>"0008,103E"</tt> -- Series Description
-    # * <tt>"0020,000D"</tt> -- Study Instance UID
     # * <tt>"0020,000E"</tt> -- Series Instance UID
     # * <tt>"0020,0011"</tt> -- Series Number
+    #
+    # === Notes
+    #
+    # * Caution: Calling this method without parameters will instruct your PACS to return ALL series in the database!
+    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
+    # * For a general list of optional series level attributes, refer to the DICOM standard, PS3.4 C.1.1.1.4, Table C.6-3.
+    #
+    # === Restrictions
+    #
+    # * Not all series level attributes are currently supported.
+    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
     #
     # === Examples
     #
     #   node.find_series("0020,000D" => "1.2.840.1145.342")
     #
-    def find_series(options={})
+    #--
+    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are series level,
+    # this method could be refactored in order to avoid having to specify the hash of allowed query parameters.
+    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid series level attributes.
+    #
+    def find_series(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
-      # Prepare data elements for this operation:
-      set_data_fragment_find_series
-      set_data_options(options)
+      # Every query attribute with a value != nil (required) will be sent in the dicom query.
+      # The query parameters with nil-value (optional) are left out unless specified.
+      allowed_query_params = {
+        "0008,0052" => "SERIES", # Query/Retrieve Level: "SERIES"
+        "0008,0060" => "", # Modality
+        "0008,103E" => nil, # Series Description
+        "0020,000D" => nil, # Study Instance UID
+        "0020,000E" => "", # Series Instance UID
+        "0020,0011" => "", # Series Number
+        "0020,1209" => nil # Number of Series Related Instances
+      }
+      # Raising an error if unknown query attributes are present:
+      query_params.keys.each do |tag|
+        unless allowed_query_params.include?(tag)
+          raise ArgumentError, "unknown query parameter: #{tag}"
+        end
+      end
+      # Set up the query parameters and carry out the C-FIND:
+      set_data_elements(allowed_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -186,7 +215,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A hash of parameters.
+    # * <tt>query_params</tt> -- A hash of query parameters.
     #
     # === Options
     #
@@ -198,11 +227,16 @@ module DICOM
     # * <tt>"0020,000D"</tt> -- Study Instance UID
     # * <tt>"0020,0010"</tt> -- Study ID
     #
+    # === Notes
+    #
+    # * Caution: Calling this method without parameters will instruct your PACS to return ALL studies in the database!
+    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
+    # * For a general list of optional study level attributes, refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
+    #
     # === Restrictions
     #
-    # * In addition to the above attributes, a number of "optional" attributes may be specified.
-    # * For a complete list of accepted optional attributes, refer to the specification/source code.
-    # * For a general list of optional study level attributes, refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
+    # * Not all study level attributes are currently supported.
+    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
     #
     # === Examples
     #
@@ -216,7 +250,7 @@ module DICOM
     def find_studies(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
-      # Note: Every query attribute with a value != nil (required) will be sent in the dicom query.
+      # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
       allowed_query_params = {
         "0008,0020" => "",  # Study Date
@@ -826,19 +860,6 @@ module DICOM
         ["0010,0020", ""], # Patient ID
         ["0010,0030", ""], # Patient's Birth Date
         ["0010,0040", ""] # Patient's Sex
-      ]
-    end
-
-    # Sets the data elements used in a query for the series of a particular study.
-    #
-    def set_data_fragment_find_series
-      @data_elements = [
-        ["0008,0052", "SERIES"], # Query/Retrieve Level: "SERIES"
-        ["0008,0060", ""], # Modality
-        ["0008,103E", ""], # Series Description
-        ["0020,000D", ""], # Study Instance UID
-        ["0020,000E", ""], # Series Instance UID
-        ["0020,0011", ""] # Series Number
       ]
     end
 

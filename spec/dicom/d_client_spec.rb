@@ -1,13 +1,14 @@
 require 'spec_helper'
 
+
 describe DICOM::DClient, '#find_studies' do
+
   before :each do
     @link = mock("link")
     @link.stubs(:build_command_fragment)
     @link.stubs(:transmit)
     @link.stubs(:receive_multiple_transmissions)
     DICOM::Link.stubs(:new).returns(@link)
-    
     @node = DICOM::DClient.new("127.0.0.1", 11112)
     @node.stubs(:establish_association)
     @node.stubs(:association_established?).returns(true)
@@ -16,8 +17,7 @@ describe DICOM::DClient, '#find_studies' do
     @node.stubs(:process_returned_data)
     @node.stubs(:establish_release)
   end
-  
-   
+
   it "should set required query parameters if not given" do
     data_elements = [["0008,0020", ""],
       ["0008,0030", ""],
@@ -119,4 +119,82 @@ describe DICOM::DClient, '#find_studies' do
     @node.find_studies()
   end
   
+end
+
+
+describe DICOM::DClient, '#find_series' do
+
+  before :each do
+    @link = mock("link")
+    @link.stubs(:build_command_fragment)
+    @link.stubs(:transmit)
+    @link.stubs(:receive_multiple_transmissions)
+    DICOM::Link.stubs(:new).returns(@link)
+    @node = DICOM::DClient.new("127.0.0.1", 11112)
+    @node.stubs(:establish_association)
+    @node.stubs(:association_established?).returns(true)
+    @node.stubs(:request_approved?).returns(true)
+    @node.stubs(:presentation_context_id)
+    @node.stubs(:process_returned_data)
+    @node.stubs(:establish_release)
+  end
+
+  it "should set required query parameters if not given" do
+    data_elements = [["0008,0052", "SERIES"],
+      ["0008,0060", ""],
+      ["0020,000E", ""],
+      ["0020,0011", ""]
+    ]
+    @link.expects(:build_data_fragment).with(data_elements, nil)
+    @node.find_series()
+  end
+  
+  it "should set required query parameters if given" do
+    data_elements = [["0008,0052", "SERIES"],
+      ["0008,0060", "MR"],
+      ["0020,000E", "1.245.1233"],
+      ["0020,0011", "454"]
+    ]
+    options = {"0008,0052"=>"SERIES",  
+      "0008,0060"=>"MR",
+      "0020,000E"=>"1.245.1233",
+      "0020,0011"=>"454"
+    }
+    @link.expects(:build_data_fragment).with(data_elements, nil)
+    @node.find_series(options)
+  end
+  
+  it "should set optional query parameters if given" do
+    data_elements = [["0008,0052", "SERIES"],
+      ["0008,0060", "MR"],
+      ["0008,103E", "T1"],
+      ["0020,000D", "1.122.5433"],
+      ["0020,000E", "1.245.1233"],
+      ["0020,0011", "454"],
+      ["0020,1209", "45"]
+    ]
+    options=Hash.new
+    data_elements.collect {|element| options[element.first] = element.last}
+    @link.expects(:build_data_fragment).with(data_elements, nil)
+    @node.find_series(options)
+  end
+      
+  it "should raise error if unknown query parameter given" do
+    @link.stubs(:build_data_fragment)
+    lambda {
+      @node.find_series( {"dead,beaf" => "this query parameter is unknown"} )
+    }.should raise_error(ArgumentError, /dead,beaf/)
+  end
+
+  it "should reset parameters from previous queries" do
+    data_elements = [["0008,0052", "SERIES"],
+      ["0008,0060", ""],
+      ["0020,000E", ""],
+      ["0020,0011", ""]
+    ]
+    @link.expects(:build_data_fragment).twice.with(data_elements, nil)
+    @node.find_series()
+    @node.find_series()
+  end
+
 end
