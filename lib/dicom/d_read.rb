@@ -88,9 +88,10 @@ module DICOM
         begin
           # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
           data_element = process_data_element
-        rescue
+        rescue Exception => msg
           # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-          @msg << "Error! Failed to process a Data Element. This is probably the result of invalid or corrupt DICOM data."
+          @msg << msg
+          @msg << "Error: Failed to parse Data Elements. This was probably an invalid/corrupt DICOM file."
           @success = false
           data_element = false
         end
@@ -220,10 +221,7 @@ module DICOM
         # Create an ordinary Data Element:
         @current_element = DataElement.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
-        if length != @current_element.bin.length
-          set_abrupt_error
-          return false # (Failed)
-        end
+        raise "Error: The actual length of the binary (#{@current_element.bin.length}) does not match the specified length (#{length}) for Data Element #{@current_element.tag}." if length != @current_element.bin.length
       end
       # Return true to indicate success:
       return true
@@ -290,11 +288,8 @@ module DICOM
       else
         length = @stream.decode(bytes, "SL") # (4)
       end
-      if length%2 > 0 and length > 0
-        # According to the DICOM standard, all data element lengths should be an even number.
-        # If it is not, it may indicate a file that is not standards compliant or it might even not be a DICOM file.
-        @msg << "Warning: Odd number of bytes in data element's length occured. This is a violation of the DICOM standard, but program will attempt to read the rest of the file anyway."
-      end
+      # Check that length is valid (according to the DICOM standard, it must be even):
+      raise "Error: Encountered a Data Element (#{tag}) with an invalid (odd) value length." if length%2 == 1 and length > 0
       return vr, length
     end
 
@@ -361,14 +356,6 @@ module DICOM
       else
         @msg << "Error! The file you have supplied does not exist (#{file})."
       end
-    end
-
-    # Registers an unexpected error by toggling a success boolean and recording an error message.
-    # The DICOM string ended abruptly because the data element's value was shorter than expected.
-    #
-    def set_abrupt_error
-      @msg << "Error! The parsed data of the last data element #{@current_element.tag} does not match its specified length value. This is probably the result of invalid or corrupt DICOM data."
-      @success = false
     end
 
     # Changes encoding variables as the file reading proceeds past the initial meta group part (0002,xxxx) of the DICOM file.
