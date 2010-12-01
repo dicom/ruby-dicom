@@ -97,30 +97,60 @@ module DICOM
       perform_echo
     end
 
-    # Queries a service class provider for images that match the specified criteria.
+    # Queries a service class provider for images (composite object instances) that match the specified criteria.
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A hash of parameters.
+    # * <tt>query_params</tt> -- A hash of query parameters.
     #
     # === Options
     #
-    # * <tt>"0008,0018"</tt> --  SOP Instance UID
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
-    # * <tt>"0020,000D"</tt> -- Study Instance UID
-    # * <tt>"0020,000E"</tt> -- Series Instance UID
+    # * <tt>"0008,0018"</tt> -- SOP Instance UID
     # * <tt>"0020,0013"</tt> -- Instance Number
+    #
+    # === Notes
+    #
+    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL images in the database!
+    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
+    # * For a general list of optional object instance level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.5, Table C.6-4.
+    #
+    # === Restrictions
+    #
+    # * Not all object instance level attributes are currently supported.
+    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
     #
     # === Examples
     #
     #   node.find_images("0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844")
     #
-    def find_images(options={})
+    #--
+    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are object instance level,
+    # this method could be refactored in order to avoid having to specify the hash of allowed query parameters.
+    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid object instance level attributes.
+    #
+    def find_images(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
-      # Prepare data elements for this operation:
-      set_data_fragment_find_images
-      set_data_options(options)
+      # Every query attribute with a value != nil (required) will be sent in the dicom query.
+      # The query parameters with nil-value (optional) are left out unless specified.
+      allowed_query_params = {
+        "0008,0016" => nil, # SOP Class UID
+        "0008,0018" => "", # SOP Instance UID
+        "0008,001A" => nil, # Related General SOP Class UID
+        "0008,0052" => "IMAGE", # Query/Retrieve Level: "IMAGE"
+        "0020,000D" => nil, # Study Instance UID
+        "0020,000E" => nil, # Series Instance UID
+        "0020,0013" => "", # Instance Number
+        "0040,0512" => nil # Container Identifier
+      }
+      # Raising an error if unknown query attributes are present:
+      query_params.keys.each do |tag|
+        unless allowed_query_params.include?(tag)
+          raise ArgumentError, "unknown query parameter: #{tag}"
+        end
+      end
+      # Set up the query parameters and carry out the C-FIND:
+      set_data_elements(allowed_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -129,7 +159,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>options</tt> -- A hash of parameters.
+    # * <tt>query_params</tt> -- A hash of parameters.
     #
     # === Options
     #
@@ -139,16 +169,55 @@ module DICOM
     # * <tt>"0010,0030"</tt> -- Patient's Birth Date
     # * <tt>"0010,0040"</tt> -- Patient's Sex
     #
+    # === Notes
+    #
+    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL patients in the database!
+    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
+    # * For a general list of optional patient level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.2, Table C.6-1.
+    #
+    # === Restrictions
+    #
+    # * Not all patient level attributes are currently supported.
+    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
+    #
     # === Examples
     #
     #   node.find_patients("0010,0010" => "James*")
     #
-    def find_patients(options={})
+    #--
+    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are patient level,
+    # this method could be refactored in order to avoid having to specify the hash of allowed query parameters.
+    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid patient level attributes.
+    #
+    def find_patients(query_params={})
       # Patient Root Query/Retrieve Information Model - FIND:
       @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.1.1"]
-      # Prepare data elements for this operation:
-      set_data_fragment_find_patients
-      set_data_options(options)
+      # Every query attribute with a value != nil (required) will be sent in the dicom query.
+      # The query parameters with nil-value (optional) are left out unless specified.
+      allowed_query_params = {
+        "0008,0052" => "PATIENT", # Query/Retrieve Level: "PATIENT"
+        "0010,0010" => "", # Patient's Name
+        "0010,0020" => "", # Patient's ID
+        "0010,0021" => nil, # Issuer of Patient ID
+        "0010,0030" => nil, # Patient's Birth Date
+        "0010,0032" => nil, # Patient's Birth Time
+        "0010,0040" => nil, # Patient's Sex
+        "0010,1000" => nil, # Other Patient Ids
+        "0010,1001" => nil, # Other Patient Names
+        "0010,2160" => nil, # Ethnic Group
+        "0010,4000" => nil, # Patient Comments
+        "0020,1200" => nil, # Number of Patient Related Studies
+        "0020,1202" => nil, # Number of Patient Related Series
+        "0020,1204" => nil # Number of Patient Related Instances
+      }
+      # Raising an error if unknown query attributes are present:
+      query_params.keys.each do |tag|
+        unless allowed_query_params.include?(tag)
+          raise ArgumentError, "unknown query parameter: #{tag}"
+        end
+      end
+      # Set up the query parameters and carry out the C-FIND:
+      set_data_elements(allowed_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -167,9 +236,9 @@ module DICOM
     #
     # === Notes
     #
-    # * Caution: Calling this method without parameters will instruct your PACS to return ALL series in the database!
+    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL series in the database!
     # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
-    # * For a general list of optional series level attributes, refer to the DICOM standard, PS3.4 C.1.1.1.4, Table C.6-3.
+    # * For a general list of optional series level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.4, Table C.6-3.
     #
     # === Restrictions
     #
@@ -229,7 +298,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Caution: Calling this method without parameters will instruct your PACS to return ALL studies in the database!
+    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL studies in the database!
     # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
     # * For a general list of optional study level attributes, refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
     #
@@ -836,30 +905,6 @@ module DICOM
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", DATA_SET_PRESENT],
         ["0000,1000", "UI", instance] # Affected SOP Instance UID
-      ]
-    end
-
-    # Sets the data elements used in a query for the images of a particular series.
-    #
-    def set_data_fragment_find_images
-      @data_elements = [
-        ["0008,0018", ""], # SOP Instance UID
-        ["0008,0052", "IMAGE"], # Query/Retrieve Level:  "IMAGE"
-        ["0020,000D", ""], # Study Instance UID
-        ["0020,000E", ""], # Series Instance UID
-        ["0020,0013", ""] # Instance Number
-      ]
-    end
-
-    # Sets the data elements used in a query for patients.
-    #
-    def set_data_fragment_find_patients
-      @data_elements = [
-        ["0008,0052", "PATIENT"], # Query/Retrieve Level:  "PATIENT"
-        ["0010,0010", ""], # Patient's Name
-        ["0010,0020", ""], # Patient ID
-        ["0010,0030", ""], # Patient's Birth Date
-        ["0010,0040", ""] # Patient's Sex
       ]
     end
 
