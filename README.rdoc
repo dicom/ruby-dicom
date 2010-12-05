@@ -53,7 +53,7 @@ Example:
 
 * {Official home page}[http://dicom.rubyforge.org/]
 * {Discussion forum}[http://groups.google.com/group/ruby-dicom]
-* {Source code repository}[http://github.com/cuthbert/ruby-dicom]
+* {Source code repository}[https://github.com/dicom/ruby-dicom]
 
 
 == COPYRIGHT
