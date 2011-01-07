@@ -301,10 +301,11 @@ module DICOM
   class DRead
   
     def open_file(file)
-      ## can now read from any kind of uri using open-uri
+      ## can now read from any kind of uri using open-uri, limited to http for now though
       if file.index('http')==0
         @retrials = 0
         begin
+          ## Ensure we load the file using binary encoding (ruby 1.9.2)
           old_encoding = Encoding.default_internal
           Encoding.default_internal = 'ASCII-8BIT'
           @file = open(file, 'rb:ASCII-8BIT')
