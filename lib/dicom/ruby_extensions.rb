@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 # This file contains extensions to the Ruby library which are used by Ruby-DICOM.
 
 # Extension to the String class. These extensions are focused on processing/analysing Data Element tags.
@@ -95,6 +97,30 @@ class String
         # Call the original method for all other (normal) cases:
         self.__original_unpack__(string)
     end
+  end
+  
+  # Will return true for all values
+  # that LOOK like dicom names - they may not
+  # be valid
+  def dicom_name?
+    self==self.titleize
+  end
+  
+  # Will return true for all values
+  # that LOOK like dicom method names - they
+  # may not be valid
+  def dicom_method?
+    self==self.underscore
+  end
+  
+  ## Will return a proper dicom method name
+  def dicom_methodize(char_set='ISO-8859-1')
+    value = self
+    unless char_set.nil?
+      ic = Iconv.new('UTF-8//IGNORE', char_set)
+      value = ic.iconv(value + ' ')[0..-2]
+    end
+    value.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('Âµ','u').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
   end
 
 end
