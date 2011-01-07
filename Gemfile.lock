@@ -3,6 +3,7 @@ PATH
   specs:
     dicom (0.8.2g)
       activesupport (>= 3.0)
+      bundler (>= 1.0.0)
       i18n
 
 GEM
