@@ -14,6 +14,8 @@ module DICOM
     attr_accessor :index
     # The instance string.
     attr_accessor :string
+    # The endianness of the instance string.
+    attr_reader :str_endian
     # An array of warning/error messages that (may) have been accumulated.
     attr_reader :errors
     # A hash with vr as key and its corresponding pad byte as value.
@@ -77,17 +79,21 @@ module DICOM
         # We have reached the end and will return nil.
         value = nil
       else
-        # Decode the binary string and return value:
-        value = @string.slice(@index, length).unpack(vr_to_str(type))
-        # If the result is an array of one element, return the element instead of the array.
-        # If result is contained in a multi-element array, the original array is returned.
-        if value.length == 1
-          value = value[0]
-          # If value is a string, strip away possible trailing whitespace:
-          value = value.rstrip if value.is_a?(String)
+        if type == "AT"
+          value = decode_tag
+        else
+          # Decode the binary string and return value:
+          value = @string.slice(@index, length).unpack(vr_to_str(type))
+          # If the result is an array of one element, return the element instead of the array.
+          # If result is contained in a multi-element array, the original array is returned.
+          if value.length == 1
+            value = value[0]
+            # If value is a string, strip away possible trailing whitespace:
+            value = value.rstrip if value.is_a?(String)
+          end
+          # Update our position in the string:
+          skip(length)
         end
-        # Update our position in the string:
-        skip(length)
       end
       return value
     end
@@ -216,14 +222,18 @@ module DICOM
     # * <tt>vr</tt> -- String. The type of data to encode.
     #
     def encode_value(value, vr)
-      # Make sure the value is in an array:
-      value = [value] unless value.is_a?(Array)
-      # Get the proper pack string:
-      type = vr_to_str(vr)
-      # Encode:
-      bin = value.pack(type)
-      # Add an empty byte if the resulting binary has an odd length:
-      bin = bin + @pad_byte[vr] if bin.length[0] == 1
+      if vr == "AT"
+        bin = encode_tag(value)
+      else
+        # Make sure the value is in an array:
+        value = [value] unless value.is_a?(Array)
+        # Get the proper pack string:
+        type = vr_to_str(vr)
+        # Encode:
+        bin = value.pack(type)
+        # Add an empty byte if the resulting binary has an odd length:
+        bin = bin + @pad_byte[vr] if bin.length[0] == 1
+      end
       return bin
     end
 

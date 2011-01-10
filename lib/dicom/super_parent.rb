@@ -55,11 +55,15 @@ module DICOM
     def add(element)
       unless element.is_a?(Item)
         unless self.is_a?(Sequence)
+          # Does the element's binary value need to be reencoded?
+          reencode = true if element.endian != stream.str_endian
           # If we are replacing an existing Element, we need to make sure that this Element's parent value is erased before proceeding.
           self[element.tag].parent = nil if exists?(element.tag)
           # Add the element, and set its parent attribute:
           @tags[element.tag] = element
           element.parent = self
+          # As the element has been moved in place, perform re-encode if indicated:
+          element.value = element.value if reencode
         else
           raise "A Sequence is not allowed to have elements added to it. Use the method add_item() instead if the intention is to add an Item."
         end
@@ -576,14 +580,13 @@ module DICOM
       else
         # Not all types of tags needs to be reencoded when switching endianness:
         case element.vr
-          when "US", "SS", "UL", "SL", "FL", "FD", "OF", "OW" # Numbers
+          when "US", "SS", "UL", "SL", "FL", "FD", "OF", "OW", "AT" # Numbers or tag reference
             # Re-encode, as long as it is not a group 0002 element (which must always be little endian):
             unless element.tag.group == "0002"
               stream_old_endian = Stream.new(element.bin, old_endian)
-              numbers = stream_old_endian.decode(element.length, element.vr)
-              element.value = numbers
+              formatted_value = stream_old_endian.decode(element.length, element.vr)
+              element.value = formatted_value # (the value=() method also encodes a new binary for the element)
             end
-          #when "AT" # Tag reference
         end
       end
     end

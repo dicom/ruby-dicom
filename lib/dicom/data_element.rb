@@ -114,6 +114,13 @@ module DICOM
     def children?
       return false
     end
+    
+    # Returns the endianness of the encoded binary value of this data element.
+    # Returns false if little endian, true if big endian.
+    #
+    def endian
+      return stream.str_endian
+    end
 
     # Checks if an element is a parent.
     # Returns false, as DataElement instance can not be parents.
