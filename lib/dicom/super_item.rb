@@ -1,4 +1,4 @@
-#    Copyright 2008-2010 Christoffer Lervag
+#    Copyright 2008-2011 Christoffer Lervag
 
 module DICOM
 
@@ -769,6 +769,10 @@ module DICOM
     # * <tt>:remap</tt> -- Boolean. If set, pixel values will be remapped to presentation values (using intercept and slope values from the DICOM object).
     # * <tt>:level</tt> -- Boolean or array. If set (as true) window leveling are performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
+    #
+    # === Notes
+    #
+    # * Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
     #
     def read_image_magick(pixel_data, columns, rows, options={})
       # Remap the image from pixel values to presentation values if the user has requested this:

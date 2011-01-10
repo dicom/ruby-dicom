@@ -1,4 +1,4 @@
-#    Copyright 2010 Christoffer Lervag
+#    Copyright 2010-2011 Christoffer Lervag
 #
 # The purpose of this file is to make it as easy as possible for users to customize the way
 # DICOM files are handled when they are received through the network.

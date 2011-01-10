@@ -1,4 +1,4 @@
-#    Copyright 2008-2010 Christoffer Lervag
+#    Copyright 2008-2011 Christoffer Lervag
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 # * Make the networking code more intelligent in its handling of unexpected network communication.
 # * Full support for compressed image data.
 # * Read/Write 12 bit image data.
-# * Complete color support (RGB and PALETTE COLOR with get_object_magick already implemented).
+# * Full color support (RGB and PALETTE COLOR with get_object_magick() already implemented).
 # * Support for extraction of multiple encapsulated pixel data frames in get_image() and get_image_narray().
 # * Image handling currently ignores DICOM tags like Pixel Aspect Ratio, Image Orientation and (to some degree) Photometric Interpretation.
 # * More robust and flexible options for reorienting extracted pixel arrays?
