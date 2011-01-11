@@ -163,20 +163,5 @@ module DICOM
       return stream.encode_value(formatted_value, @vr)
     end
 
-    # Returns a Stream instance which can be used for encoding a value to binary.
-    #
-    # === Notes
-    #
-    # * Retrieves the Stream instance of the top parent DObject instance.
-    # If this fails, a new Stream instance is created (with Little Endian encoding assumed).
-    #
-    def stream
-      if top_parent.is_a?(DObject)
-        return top_parent.stream
-      else
-        return Stream.new(nil, file_endian=false)
-      end
-    end
-
   end
 end

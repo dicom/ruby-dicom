@@ -56,7 +56,7 @@ module DICOM
       unless element.is_a?(Item)
         unless self.is_a?(Sequence)
           # Does the element's binary value need to be reencoded?
-          reencode = true if element.endian != stream.str_endian
+          reencode = true if element.is_a?(DataElement) && element.endian != stream.str_endian
           # If we are replacing an existing Element, we need to make sure that this Element's parent value is erased before proceeding.
           self[element.tag].parent = nil if exists?(element.tag)
           # Add the element, and set its parent attribute:

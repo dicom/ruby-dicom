@@ -59,6 +59,21 @@ module DICOM
         @parent = new_parent
       end
 
+    # Returns a Stream instance which can be used for encoding a value to binary.
+    #
+    # === Notes
+    #
+    # * Retrieves the Stream instance of the top parent DObject instance.
+    # If this fails, a new Stream instance is created (with Little Endian encoding assumed).
+    #
+    def stream
+      if top_parent.is_a?(DObject)
+        return top_parent.stream
+      else
+        return Stream.new(nil, file_endian=false)
+      end
+    end
+
       # Returns the top parent of a particular element.
       #
       # === Notes
