@@ -211,9 +211,7 @@ module DICOM
     def get_images_magick(options={})
       if exists?(PIXEL_TAG)
         rows, columns, nr_frames = image_properties
-        
         transfer_syntax = get_transfer_syntax()
-        
         if [TXS_JPEG_BASELINE, TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY].include?(transfer_syntax) 
           # Simply usig RMagick/ImageMagick for generating color images. 
           images = Array.new
@@ -267,7 +265,7 @@ module DICOM
       else
         image = nil
       end
-      
+      # Return specific frame or all images?
       if options[:frame]
         return images.first
       else
@@ -513,18 +511,12 @@ module DICOM
     # Following methods are private:
     private
 
-    # Performce a run length decoding on the input stream. For details on the DICOM pack format,
-    # please see DICOM PS 3.5 Appendix G.3 THE RLE ALGORITHM
+
+    # Performes a run length decoding on the input stream.
     #
     # === Notes
     #
-    # At the moment only index values are supported. DICOM can store RGB images RLE compressed
-    # as well. In this case the encoding has to be peformed for each channel independently
-    #
-    # The implementation makes the impresion to me that it will be slow as hell. Is it possible to
-    # significantly speed it up in Ruby or is some external code needed?
-    #
-    # TODO: Remove cols and rows, were only added for debugging. 
+    # * For details on RLE encoding, refer to the DICOM standard, PS3.5, Section 8.2.2 as well as Annex G.
     #
     # === Parameters
     #
@@ -532,14 +524,15 @@ module DICOM
     # * <tt>rows</tt>    - number of rows of the encoded image
     # * <tt>string</tt> - packed data
     #
+    #--
+    # TODO: Remove cols and rows, were only added for debugging. 
+    #
     def rle_decode(cols, rows, string)
       pixels = Array.new
-
-      # RLE Header specifying the number of segments
+      # RLE header specifying the number of segments:
       header = string[0...64].unpack('L*')
-
-      # Extracting all start and endpoints of the different segments
-      image_segments = Array.new 
+      image_segments = Array.new
+      # Extracting all start and endpoints of the different segments:
       header.each_index do |n|
         if n == 0
           # This one need no processing.
@@ -551,14 +544,12 @@ module DICOM
           image_segments << [header[n], header[n + 1] - 1]
         end
       end
-      
-      
+      # Iterate over each segment and extract pixel data:
       image_segments.each do |range|
         segment_data = Array.new
-        
         next_bytes = -1
         next_multiplier = 0
-        
+        # Iterate this segment's pixel string:
         string[range[0]..range[1]].each_byte do |b|
           if next_multiplier > 0
             next_multiplier.times { segment_data << b }
@@ -570,18 +561,15 @@ module DICOM
             next_bytes = b + 1
           else
             # Explaining the 257 at this point is a little bit complicate. Basically it has something
-            # to do with the algorithm described in the DICOM standard and that the value -1 as
-            # uint8 is 255. 
+            # to do with the algorithm described in the DICOM standard and that the value -1 as uint8 is 255. 
             # TODO: Is this architectur safe or does it only work on Intel systems???
             next_multiplier = 257 - b
           end
         end
-
+        # Verify that the RLE decoding has executed properly:
         throw "Size mismatch #{segment_data.size} != #{rows * cols}" if segment_data.size != rows * cols
-        
         pixels += segment_data
       end
-
       return pixels
     end
 
@@ -650,15 +638,16 @@ module DICOM
     #
     # * <tt>pixels</tt> -- An array of pixel values (integers).
     #
+    #--
+    # FIXME: Processing Palette Color is really slow, can it be improved somehow?!
+    #
     def process_colors(pixels)
       proper_rgb = false
       photometric = get_photometric_interpretation()
-
-      # With RLE COLOR PALETTE this element is not set
+      # (With RLE COLOR PALETTE the Planar Configuration is not set)
       planar = self["0028,0006"].is_a?(DataElement) ? self["0028,0006"].value : 0
-
-      # Step 1: Produce an array with RGB values. At this time, YBR is not supported, so this leaves
-      # us with a possible conversion from PALETTE COLOR:
+      # Step 1: Produce an array with RGB values. At this time, YBR is not supported in ruby-dicom,
+      # so this leaves us with a possible conversion from PALETTE COLOR:
       if photometric.include?("COLOR")
         # Pseudo colors (rgb values grabbed from a lookup table):
         rgb = Array.new(pixels.length*3)
@@ -667,19 +656,16 @@ module DICOM
         lookup_values = Array.new
         nr_bits = self["0028,1101"].value.split("\\").last.to_i
         template = template_string(nr_bits)
-        
         lookup_binaries.each do |bin|
           stream.set_string(bin)
           lookup_values << stream.decode_all(template)
         end
-        
         # Fill the RGB array:
         pixels.each_index do |i|
           rgb[i*3] = lookup_values[0][pixels[i]]
           rgb[(i*3)+1] = lookup_values[1][pixels[i]]
           rgb[(i*3)+2] = lookup_values[2][pixels[i]]
         end
-
         # As we have now ordered the pixels in RGB order, modify planar configuration to reflect this:
         planar = 0
       elsif photometric.include?("YBR")
@@ -687,7 +673,7 @@ module DICOM
       else
         rgb = pixels
       end
-      # Step 2: In indicated by the planar configuration, the order of the pixels need to be rearranged:
+      # Step 2: If indicated by the planar configuration, the order of the pixels need to be rearranged:
       if rgb
         if planar == 1
           # Rearrange from [RRR...GGG....BBB...] to [(RGB)(RGB)(RGB)...]:
@@ -880,6 +866,9 @@ module DICOM
     #
     # * Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
     #
+    #--
+    # FIXME: Monitor the RMagick situation with import_pixels, array and CharPixel.
+    #
     def read_image_magick(pixel_data, columns, rows, options={})
       # Remap the image from pixel values to presentation values if the user has requested this:
       if options[:remap] or options[:level]
@@ -895,9 +884,7 @@ module DICOM
       else
         # Although rescaling with presentation values is not wanted, we still need to make sure pixel values are within the accepted range:
         pixel_data = rescale_for_magick(pixel_data)
-        
         image_magick_data_type = determine_image_magick_data_type()
-
         # Load original pixel values to a RMagick object:
         if image_magick_data_type == Magick::CharPixel
           # A RMagick bug is files at github that it is not possible to call this function with the array values.
@@ -1009,6 +996,8 @@ module DICOM
       return center, width, intercept, slope
     end
     
+    # Returns the RMagick StorageType pixel value corresponding to a given bit length.
+    #
     def number_of_bits_to_image_magick_data_type(nr_bits)
       return case nr_bits
       when 8
@@ -1022,7 +1011,7 @@ module DICOM
     end
     
     
-    # Determines and returns the image magick data type for importing pixel data. 
+    # Determines and returns the RMagick StorageType pixel value for the pixel data of this DICOM image instance.
     #
     # === Notes
     #
@@ -1032,7 +1021,7 @@ module DICOM
     def determine_image_magick_data_type
       image_magick_data_type = nil
       if get_photometric_interpretation() == PI_PALETTE_COLOR
-        # OK, only one channel is checked and assumed that all channels have the same number of bits.
+        # Only one channel is checked and it is assumed that all channels have the same number of bits.
         nr_bits = self["0028,1101"].value.split("\\").last.to_i
         image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
       elsif self["0028,0100"].is_a?(DataElement)
@@ -1042,17 +1031,18 @@ module DICOM
         add_msg("Could not determine the pixel depth, using default value.ABSTRACT_SYNTAX_REJECTED")
         image_magick_data_type = Magick::ShortPixel
       end
-
       return image_magick_data_type
     end
     
-    
+    # Returns the Photometric Interpretation value string of this DICOM instance.
+    #
     def get_photometric_interpretation
       photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
       return photometric
     end
     
-    
+    # Returns the transfer syntax value string of this DICOM instance.
+    #
     def get_transfer_syntax
       return (self['0002,0010'].is_a?(DataElement) == true ? self['0002,0010'].value : "")
     end
