@@ -17,7 +17,7 @@ module DICOM
     #
     def color?
       # "Photometric Interpretation" is contained in the data element "0028,0004":
-      photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
+      photometric = get_photometric_interpretation()
       if photometric.include?("COLOR") or photometric.include?("RGB") or photometric.include?("YBR")
         return true
       else
@@ -211,8 +211,31 @@ module DICOM
     def get_images_magick(options={})
       if exists?(PIXEL_TAG)
         rows, columns, nr_frames = image_properties
-        # If pixel data is compressed, retrieve the string frames, if uncompressed, retrieve the string and split it up in multiple parts, if it is a multiframe image:
-        if compression?
+        
+        transfer_syntax = get_transfer_syntax()
+        
+        if [TXS_JPEG_BASELINE, TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY].include?(transfer_syntax) 
+          # Simply usig RMagick/ImageMagick for generating color images. 
+          images = Array.new
+          image_strings().each do |string|
+            im = Magick::Image.from_blob(string).first
+            images << im
+          end
+          return images
+        elsif [TXS_RLE].include?(transfer_syntax)
+          frames = Array.new
+          image_strings().each do |string|
+            frames << rle_decode(columns, rows, string)
+          end
+        elsif [TXS_JPEG_LOSSLESS_NH, TXS_JPEG_LOSSLESS_NH_FOP, TXS_JPEG_2000_PART1_LOSSLESS].include?(transfer_syntax) 
+          # What are going to do with those guys?
+          # TXS_JPEG_LOSSLESS_NH is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
+          # TXS_JPEG_LOSSLESS_NH_FOP is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
+          # TXS_JPEG_2000_PART1_LOSSLESS is not supported by (my) ImageMagick version "jpc_dec_decodepkts failed"
+          add_msg("Warning: Currently unsupported transfer syntax '#{transfer_syntax}'.")
+          return Array.new
+        elsif compression?
+          puts transfer_syntax
           frames = decompress(image_strings)
         else
           strings = image_strings.first.divide(nr_frames)
@@ -236,12 +259,15 @@ module DICOM
             images << image
           end
         else
-          add_msg("Warning: Decompressing pixel values has failed. RMagick image can not be filled.")
-          images = [false]
+          if images.nil?
+            add_msg("Warning: Decompressing pixel values has failed. RMagick image can not be filled.")
+            images = [false]
+          end
         end
       else
         image = nil
       end
+      
       if options[:frame]
         return images.first
       else
@@ -487,6 +513,78 @@ module DICOM
     # Following methods are private:
     private
 
+    # Performce a run length decoding on the input stream. For details on the DICOM pack format,
+    # please see DICOM PS 3.5 Appendix G.3 THE RLE ALGORITHM
+    #
+    # === Notes
+    #
+    # At the moment only index values are supported. DICOM can store RGB images RLE compressed
+    # as well. In this case the encoding has to be peformed for each channel independently
+    #
+    # The implementation makes the impresion to me that it will be slow as hell. Is it possible to
+    # significantly speed it up in Ruby or is some external code needed?
+    #
+    # TODO: Remove cols and rows, were only added for debugging. 
+    #
+    # === Parameters
+    #
+    # * <tt>cols</tt>   - number of colums of the encoded image
+    # * <tt>rows</tt>    - number of rows of the encoded image
+    # * <tt>string</tt> - packed data
+    #
+    def rle_decode(cols, rows, string)
+      pixels = Array.new
+
+      # RLE Header specifying the number of segments
+      header = string[0...64].unpack('L*')
+
+      # Extracting all start and endpoints of the different segments
+      image_segments = Array.new 
+      header.each_index do |n|
+        if n == 0
+          # This one need no processing.
+        elsif n == header[0]
+          # It's the last one
+          image_segments << [header[n], -1]
+          break
+        else
+          image_segments << [header[n], header[n + 1] - 1]
+        end
+      end
+      
+      
+      image_segments.each do |range|
+        segment_data = Array.new
+        
+        next_bytes = -1
+        next_multiplier = 0
+        
+        string[range[0]..range[1]].each_byte do |b|
+          if next_multiplier > 0
+            next_multiplier.times { segment_data << b }
+            next_multiplier = 0
+          elsif next_bytes > 0
+            segment_data << b
+            next_bytes -= 1
+          elsif b <= 127
+            next_bytes = b + 1
+          else
+            # Explaining the 257 at this point is a little bit complicate. Basically it has something
+            # to do with the algorithm described in the DICOM standard and that the value -1 as
+            # uint8 is 255. 
+            # TODO: Is this architectur safe or does it only work on Intel systems???
+            next_multiplier = 257 - b
+          end
+        end
+
+        throw "Size mismatch #{segment_data.size} != #{rows * cols}" if segment_data.size != rows * cols
+        
+        pixels += segment_data
+      end
+
+      return pixels
+    end
+
 
     # Attempts to decompress compressed frames of pixel data.
     # If successful, returns the pixel data frames in a Ruby Array. If not, returns false.
@@ -515,6 +613,8 @@ module DICOM
         strings.each do |string|
           image = Magick::Image.from_blob(string)
           if color?
+            # Magick::Image.from_blob returns an array in case JPEG (YBR_FULL_4_2_2) data is provides as input
+            image = image.first if image.kind_of?(Array)
             pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
           else
             pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "I")
@@ -522,7 +622,7 @@ module DICOM
           pixels << pixel_frame
         end
       rescue
-        add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!")
+        add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!\n" + $!.to_s)
         pixels = false
       end
       return pixels
@@ -532,7 +632,7 @@ module DICOM
     #
     def magick_pixel_map
       # "Photometric Interpretation" is contained in the data element "0028,0004":
-      photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
+      photometric = get_photometric_interpretation()
       if photometric.include?("COLOR") or photometric.include?("RGB")
         return "RGB"
       elsif photometric.include?("YBR")
@@ -552,8 +652,11 @@ module DICOM
     #
     def process_colors(pixels)
       proper_rgb = false
-      photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
-      planar = self["0028,0006"].value
+      photometric = get_photometric_interpretation()
+
+      # With RLE COLOR PALETTE this element is not set
+      planar = self["0028,0006"].is_a?(DataElement) ? self["0028,0006"].value : 0
+
       # Step 1: Produce an array with RGB values. At this time, YBR is not supported, so this leaves
       # us with a possible conversion from PALETTE COLOR:
       if photometric.include?("COLOR")
@@ -564,16 +667,19 @@ module DICOM
         lookup_values = Array.new
         nr_bits = self["0028,1101"].value.split("\\").last.to_i
         template = template_string(nr_bits)
+        
         lookup_binaries.each do |bin|
           stream.set_string(bin)
           lookup_values << stream.decode_all(template)
         end
+        
         # Fill the RGB array:
         pixels.each_index do |i|
           rgb[i*3] = lookup_values[0][pixels[i]]
           rgb[(i*3)+1] = lookup_values[1][pixels[i]]
           rgb[(i*3)+2] = lookup_values[2][pixels[i]]
         end
+
         # As we have now ordered the pixels in RGB order, modify planar configuration to reflect this:
         planar = 0
       elsif photometric.include?("YBR")
@@ -789,8 +895,17 @@ module DICOM
       else
         # Although rescaling with presentation values is not wanted, we still need to make sure pixel values are within the accepted range:
         pixel_data = rescale_for_magick(pixel_data)
+        
+        image_magick_data_type = determine_image_magick_data_type()
+
         # Load original pixel values to a RMagick object:
-        image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data)
+        if image_magick_data_type == Magick::CharPixel
+          # A RMagick bug is files at github that it is not possible to call this function with the array values.
+          # Therefore, those values are packed before calling import_pixels.
+         image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data.pack('C*'), image_magick_data_type)
+        else
+          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data, image_magick_data_type)
+        end
       end
       return image
     end
@@ -892,6 +1007,54 @@ module DICOM
       intercept = (self["0028,1052"].is_a?(DataElement) == true ? self["0028,1052"].value.to_i : 0)
       slope = (self["0028,1053"].is_a?(DataElement) == true ? self["0028,1053"].value.to_i : 1)
       return center, width, intercept, slope
+    end
+    
+    def number_of_bits_to_image_magick_data_type(nr_bits)
+      return case nr_bits
+      when 8
+        Magick::CharPixel
+      when 16
+        Magick::ShortPixel
+      else
+        add_msg("Warning found unsupported number of bits '#{nr_bits}', defaulting to 8.")
+        Magick::CharPixel
+      end
+    end
+    
+    
+    # Determines and returns the image magick data type for importing pixel data. 
+    #
+    # === Notes
+    #
+    # If some of these values are missing in the DObject instance, default values are used instead
+    # for intercept and slope, while center and width are set to nil. No errors are raised.
+    #
+    def determine_image_magick_data_type
+      image_magick_data_type = nil
+      if get_photometric_interpretation() == PI_PALETTE_COLOR
+        # OK, only one channel is checked and assumed that all channels have the same number of bits.
+        nr_bits = self["0028,1101"].value.split("\\").last.to_i
+        image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
+      elsif self["0028,0100"].is_a?(DataElement)
+        nr_bits = self["0028,0100"].value
+        image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
+      else
+        add_msg("Could not determine the pixel depth, using default value.ABSTRACT_SYNTAX_REJECTED")
+        image_magick_data_type = Magick::ShortPixel
+      end
+
+      return image_magick_data_type
+    end
+    
+    
+    def get_photometric_interpretation
+      photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
+      return photometric
+    end
+    
+    
+    def get_transfer_syntax
+      return (self['0002,0010'].is_a?(DataElement) == true ? self['0002,0010'].value : "")
     end
 
   end

@@ -119,5 +119,57 @@ module DICOM
 
   # Ruby DICOM's library (data dictionary).
   LIBRARY =  DICOM::DLibrary.new
+  
+  # Transfer Syntaxes
+  # Taken from DICOM Specification PS 3.5, Chapter 10
+  
+  # General
+  TXS_IMPLICIT_LITTLE_ENDIAN            = '1.2.840.10008.1.2'      # also defined as IMPLICIT_LITTLE_ENDIAN, default transfer syntax
+  TXS_EXPLICIT_LITTLE_ENDIAN            = '1.2.840.10008.1.2.1'    # also defined as EXPLICIT_LITTLE_ENDIAN
+  TXS_EXPLICIT_BIG_ENDIAN               = '1.2.840.10008.1.2.2'    # also defined as EXPLICIT_BIG_ENDIAN
+  
+  # TRANSFER SYNTAXES FOR ENCAPSULATION OF ENCODED PIXEL DATA
+  TXS_JPEG_BASELINE                     = '1.2.840.10008.1.2.4.50'
+  TXS_JPEG_EXTENDED                     = '1.2.840.10008.1.2.4.51'
+  TXS_JPEG_LOSSLESS_NH                  = '1.2.840.10008.1.2.4.57' # NH: non-hirarchical
+  TXS_JPEG_LOSSLESS_NH_FOP              = '1.2.840.10008.1.2.4.70' # NH: non-hirarchical, FOP: first-order prediction
+  
+  TXS_JPEG_LS_LOSSLESS                  = '1.2.840.10008.1.2.4.80'
+  TXS_JPEG_LS_NEAR_LOSSLESS             = '1.2.840.10008.1.2.4.81'
+  
+  TXS_JPEG_2000_PART1_LOSSLESS          = '1.2.840.10008.1.2.4.90'
+  TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY = '1.2.840.10008.1.2.4.91'
+  TXS_JPEG_2000_PART2_LOSSLESS          = '1.2.840.10008.1.2.4.92'
+  TXS_JPEG_2000_PART2_LOSSLESS_OR_LOSSY = '1.2.840.10008.1.2.4.93'
+  
+  TXS_MPEG2_MP_ML                       = '1.2.840.10008.1.2.4.100'
+  TXS_MPEG2_MP_HL                       = '1.2.840.10008.1.2.4.101'
+  
+  TXS_DEFLATED_LITTLE_ENDIAN            = '1.2.840.10008.1.2.1.99'  # ZIP Compression
+  
+  TXS_JPIP                              = '1.2.840.10008.1.2.4.94'
+  TXS_JPIP_DEFLATE                      = '1.2.840.10008.1.2.4.95'
+  
+  TXS_RLE                               = '1.2.840.10008.1.2.5'
+  
+  
+  # Photometric Interpretations
+  # Taken from DICOM Specification PS 3.3 C.7.6.3.1.2 Photometric Interpretation
+  
+  PI_MONOCHROME1     = 'MONOCHROME1'
+  PI_MONOCHROME2     = 'MONOCHROME2'
+  PI_PALETTE_COLOR   = 'PALETTE COLOR'
+  PI_RGB             = 'RGB'
+  PI_YBR_FULL        = 'YBR_FULL'
+  PI_YBR_FULL_422    = 'YBR_FULL_422 '
+  PI_YBR_PARTIAL_422 = 'YBR_PARTIAL_422'
+  PI_YBR_PARTIAL_420 = 'YBR_PARTIAL_420'
+  PI_YBR_ICT         = 'YBR_ICT'
+  PI_YBR_RCT         = 'YBR_RCT'
+
+  # Retired Photometric Interpretations, are those needed to be supported?  
+  PI_HSV             = 'HSV'
+  PI_ARGB            = 'ARGB'
+  PI_CMYK            = 'CMYK'
 
 end
