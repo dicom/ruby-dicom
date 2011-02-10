@@ -133,8 +133,8 @@ module DICOM
     # This information includes properties like encoding, byte order, modality and various image properties.
     #
     #--
-    # FIXME: Perhaps this method should be split up in one or two separate methods which just builds the information arrays,
-    # and a third method for printing this to the screen.
+    # FIXME: Perhaps this method should be split up in one or two separate methods
+    # which just builds the information arrays, and a third method for printing this to the screen.
     #
     def information
       sys_info = Array.new
@@ -142,45 +142,27 @@ module DICOM
       # Version of Ruby DICOM used:
       sys_info << "Ruby DICOM version:   #{VERSION}"
       # System endian:
-      if CPU_ENDIAN
-        cpu = "Big Endian"
-      else
-        cpu = "Little Endian"
-      end
+      cpu = (CPU_ENDIAN ? "Big Endian" : "Little Endian")
       sys_info << "Byte Order (CPU):     #{cpu}"
       # File path/name:
       info << "File:                 #{@file}"
       # Modality:
-      sop_class_uid = self["0008,0016"]
-      if sop_class_uid
-        modality = LIBRARY.get_syntax_description(sop_class_uid.value) || "Unknown UID!"
-      else
-        modality = "SOP Class not specified!"
-      end
+      modality = (exists?("0008,0016") ? LIBRARY.get_syntax_description(self["0008,0016"].value) : "SOP Class unknown or not specified!")
       info << "Modality:             #{modality}"
       # Meta header presence (Simply check for the presence of the transfer syntax data element), VR and byte order:
       transfer_syntax = self["0002,0010"]
       if transfer_syntax
         syntax_validity, explicit, endian = LIBRARY.process_transfer_syntax(transfer_syntax.value)
         if syntax_validity
-          meta_comment = ""
-          explicit_comment = ""
-          encoding_comment = ""
+          meta_comment, explicit_comment, encoding_comment = "", "", ""
         else
           meta_comment = " (But unknown/invalid transfer syntax: #{transfer_syntax})"
           explicit_comment = " (Assumed)"
           encoding_comment = " (Assumed)"
         end
-        if explicit
-          explicitness = "Explicit"
-        else
-          explicitness = "Implicit"
-        end
-        if endian
-          encoding = "Big Endian"
-        else
-          encoding = "Little Endian"
-        end
+        explicitness = (explicit ? "Explicit" : "Implicit")
+        encoding = (endian ? "Big Endian" : "Little Endian")
+        meta = "Yes#{meta_comment}"
       else
         meta = "No"
         explicitness = (@explicit == true ? "Explicit" : "Implicit")
@@ -188,11 +170,9 @@ module DICOM
         explicit_comment = " (Assumed)"
         encoding_comment = " (Assumed)"
       end
-      meta = "Yes#{meta_comment}"
-      explicit = "#{explicitness}#{explicit_comment}"
-      encoding = "#{encoding}#{encoding_comment}"
-      info << "Value Representation: #{explicit}"
-      info << "Byte Order (File):    #{encoding}"
+      info << "Meta Header:          #{meta}"
+      info << "Value Representation: #{explicitness}#{explicit_comment}"
+      info << "Byte Order (File):    #{encoding}#{encoding_comment}"
       # Pixel data:
       pixels = self[PIXEL_TAG]
       unless pixels
@@ -200,9 +180,9 @@ module DICOM
       else
         info << "Pixel Data:           Yes"
         # Image size:
-        cols = self["0028,0011"] || "Columns missing"
-        rows = self["0028,0010"] || "Rows missing"
-        info << "Image Size:           #{cols.value}*#{rows.value}"
+        cols = (exists?("0028,0011") ? self["0028,0011"].value : "Columns missing")
+        rows = (exists?("0028,0010") ? self["0028,0010"].value : "Rows missing")
+        info << "Image Size:           #{cols}*#{rows}"
         # Frames:
         frames = value("0028,0008") || "1"
         unless frames == "1" or frames == 1
@@ -215,8 +195,8 @@ module DICOM
         end
         info << "Number of frames:     #{frames}"
         # Color:
-        colors = self["0028,0004"] || "Not specified"
-        info << "Photometry:           #{colors.value}"
+        colors = (exists?("0028,0004") ? self["0028,0004"].value : "Not specified")
+        info << "Photometry:           #{colors}"
         # Compression:
         if transfer_syntax
           compression = LIBRARY.get_compression(transfer_syntax.value)
@@ -230,14 +210,13 @@ module DICOM
         end
         info << "Compression:          #{compression}"
         # Pixel bits (allocated):
-        bits = self["0028,0100"] || "Not specified"
-        info << "Bits per Pixel:       #{bits.value}"
+        bits = (exists?("0028,0100") ? self["0028,0100"].value : "Not specified")
+        info << "Bits per Pixel:       #{bits}"
       end
       # Print the DICOM object's key properties:
       separator = "-------------------------------------------"
-      puts "\n"
       puts "System Properties:"
-      puts separator
+      puts separator + "\n"
       puts sys_info
       puts "\n"
       puts "DICOM Object Properties:"
