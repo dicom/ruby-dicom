@@ -1,3 +1,16 @@
+# Gem build:
 pkg
+*.gem
+
+# Eclipse project file:
 .project
 
+# NetBeans:
+nbproject
+
+# System files:
+.DS_Store
+Thumbs.db
+
+# Bundler gem dependency snapshot:
+Gemfile.lock
