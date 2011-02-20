@@ -36,6 +36,7 @@ module DICOM
     #   encapsulated_pixel_data = Sequence.new("7FE0,0010", :name => "Encapsulated Pixel Data", :parent => obj, :vr => "OW")
     #
     def initialize(tag, options={})
+      raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       # Set common parent variables:
       initialize_parent
       # Set instance variables:
