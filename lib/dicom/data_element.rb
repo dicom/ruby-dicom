@@ -44,6 +44,7 @@ module DICOM
     #   private_data = DataElement.new("0011,2102", some_data, :parent => obj, :vr => "LO")
     #
     def initialize(tag, value, options={})
+      raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       # Set instance variables:
       @tag = tag
       # We may beed to retrieve name and vr from the library:
