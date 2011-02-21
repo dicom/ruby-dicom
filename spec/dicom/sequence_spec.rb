@@ -30,7 +30,7 @@ module DICOM
       s.length.should eql 30
     end
     
-    it "should set the bin attribute as nil, as a Sequence, by our definition, don't have binary data" do
+    it "should set the bin attribute as nil, as a Sequence, by our definition, doesn't have binary data" do
       s = Sequence.new("0008,0006")
       s.bin.should be_nil
     end

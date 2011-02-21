@@ -47,9 +47,11 @@ module DICOM
       @value = nil
       @name = options[:name] || "Item"
       @vr = options[:vr] || ITEM_VR
-      @bin = options[:bin]
-      @length = options[:length]
-      @length = -1 unless options[:length] or options[:bin]
+      if options[:bin]
+        self.bin=options[:bin]
+      else
+        @length = options[:length] || -1
+      end
       if options[:parent]
         @parent = options[:parent]
         @index = options[:index] if options[:index]
@@ -69,18 +71,15 @@ module DICOM
     #   obj["7FE0,0010"][1].children.first.bin = jpeg_binary_string
     #
     def bin=(new_bin)
-      if new_bin.is_a?(String)
-        # Add an empty byte at the end if the length of the binary is odd:
-        if new_bin.length[0] == 1
-          @bin = new_bin + "\x00"
-        else
-          @bin = new_bin
-        end
-        @value = nil
-        @length = @bin.length
+      raise ArgumentError, "Invalid parameter type. String was expected, got #{new_bin.class}." unless new_bin.is_a?(String)
+      # Add an empty byte at the end if the length of the binary is odd:
+      if new_bin.length[0] == 1
+        @bin = new_bin + "\x00"
       else
-        raise "Invalid parameter type. String was expected, got #{new_bin.class}."
+        @bin = new_bin
       end
+      @value = nil
+      @length = @bin.length
     end
 
   end
