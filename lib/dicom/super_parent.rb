@@ -101,9 +101,9 @@ module DICOM
             if options[:index]
               # This Item will take a specific index, and all existing Items with index higher or equal to this number will have their index increased by one.
               # Check if index is valid (must be an existing index):
-              if options[:index] >= 1
+              if options[:index] >= 0
                 # If the index value is larger than the max index present, we dont need to modify the existing items.
-                unless options[:index] > @tags.length
+                if options[:index] < @tags.length
                   # Extract existing Hash entries to an array:
                   pairs = @tags.sort
                   @tags = Hash.new
@@ -118,17 +118,17 @@ module DICOM
                   end
                 else
                   # Set the index value one higher than the already existing max value:
-                  options[:index] = @tags.length + 1
+                  options[:index] = @tags.length
                 end
                 #,Add the new Item and set its index:
                 @tags[options[:index]] = item
                 item.index = options[:index]
               else
-                raise "The specified index (#{options[:index]}) is out of range (Minimum allowed index value is 1)."
+                raise "The specified index (#{options[:index]}) is out of range (Must be a positive integer)."
               end
             else
               # Add the existing Item to this Sequence:
-              index = @tags.length + 1
+              index = @tags.length
               @tags[index] = item
               # Let the Item know what index key it's got in it's parent's Hash:
               item.index = index
@@ -138,7 +138,7 @@ module DICOM
           end
         else
           # Create an empty Item with self as parent.
-          index = @tags.length + 1
+          index = @tags.length
           item = Item.new(:parent => self)
         end
       else
@@ -294,7 +294,7 @@ module DICOM
         # Formatting: Name (and Tag)
         if element.tag == ITEM_TAG
           # Add index numbers to the Item names:
-          name = "#{element.name} (\##{i+1})"
+          name = "#{element.name} (\##{i})"
         else
           name = element.name
         end

@@ -50,7 +50,7 @@ module DICOM
     it "should set its index if the :index option is specified along with a :parent option" do
       s = Sequence.new("0008,0006")
       i = Item.new(:index => 1, :parent => s)
-      i.index.should eql 1
+      i.index.should eql 0
     end
     
     it "should set a correct index value when an Item is created with a reference to a Sequence which is already occupied by several items" do
@@ -58,7 +58,7 @@ module DICOM
       i1 = Item.new(:parent => s)
       i2 = Item.new(:parent => s)
       i = Item.new(:parent => s)
-      i.index.should eql 3
+      i.index.should eql 2
     end
     
     it "should set its parent attribute to nil when no parent is specified" do
