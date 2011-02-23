@@ -53,7 +53,11 @@ module DICOM
         # Remove ourselves from the previous parent (if any) first:
         # Don't do this if parent is set as nil (by the remove method), or we'll get an endless loop!
         if self.parent
-          self.parent.remove(self.tag) if new_parent and self.parent != new_parent
+          if self.is_a?(Item)
+            self.parent.remove(self.index) if new_parent and self.parent != new_parent
+          else
+            self.parent.remove(self.tag) if new_parent and self.parent != new_parent
+          end
         end
         # Set the new parent (should we bother to test for parent validity here?):
         @parent = new_parent

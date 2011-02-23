@@ -48,7 +48,7 @@ module DICOM
       @name = options[:name] || "Item"
       @vr = options[:vr] || ITEM_VR
       if options[:bin]
-        self.bin=options[:bin]
+        self.bin = options[:bin]
       else
         @length = options[:length] || -1
       end
