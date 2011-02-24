@@ -17,60 +17,6 @@ class TC_RubyExtensionsTest < Test::Unit::TestCase
     assert_equal(@str, @str.divide(10).join, "A divided string that is rejoined should be equal to the original string.")
   end
 
-  def test_element
-    assert_equal("0010", "0002,0010".element)
-  end
-
-  def test_group
-    assert_equal("0002", "0002,0010".group)
-  end
-
-  def test_group_length
-    assert_equal("0010,0000", "0010,0020".group_length)
-    assert_equal("0010,0000", "0010".group_length)
-  end
-
-  def test_group_length?
-    assert("0000,0000".group_length?)
-    assert("2222,0000".group_length?)
-    assert_equal(false, "0010,0020".group_length?)
-    assert_equal(false, "0010".group_length?)
-  end
-
-  def test_private?
-    assert("0001,0000".private?)
-    assert("0003,0000".private?)
-    assert("0005,0000".private?)
-    assert("0007,0000".private?)
-    assert("0009,0000".private?)
-    assert("000B,0000".private?)
-    assert("000D,0000".private?)
-    assert("000F,0000".private?)
-    assert_equal(false, "0000,0000".private?)
-    assert_equal(false, "1110,1111".private?)
-    assert_equal(false, "0002,0003".private?)
-    assert_equal(false, "0004,0055".private?)
-    assert_equal(false, "0006,0707".private?)
-    assert_equal(false, "0008,9009".private?)
-    assert_equal(false, "00BA,000B".private?)
-    assert_equal(false, "0D0C,000D".private?)
-    assert_equal(false, "F00E,000F".private?)
-  end
-
-  def test_tag?
-    assert("0000,0000".tag?)
-    assert("AAEE,0010".tag?)
-    assert("FFFF,FFFF".tag?)
-    assert_equal(false, "0000".tag?)
-    assert_equal(false, "0010,00000".tag?)
-    assert_equal(false, "F00E,".tag?)
-    assert_equal(false, ",0000".tag?)
-    assert_equal(false, "000G,0000".tag?)
-    assert_equal(false, "0000,000H".tag?)
-    assert_equal(false, "0000.0000".tag?)
-    assert_equal(false, "00000000".tag?)
-  end
-
   def test_unpack
     assert_instance_of(Array, "00".unpack(CUSTOM_SS), "Unpacking a string with our extension to the method should return an Array, as normal.")
     assert_instance_of(Array, "0000".unpack(CUSTOM_SL), "Unpacking a string with our extension to the method should return an Array, as normal.")
