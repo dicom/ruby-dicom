@@ -102,5 +102,41 @@ module DICOM
     end
     
   end
+  
+  describe String, "#divide" do
+    
+    it "should raise ArgumentError if argument is not a Fixnum" do
+      expect {"test".divide("error")}.to raise_error(ArgumentError)
+    end
+    
+    it "should raise ArgumentError if argument is less than 1" do
+      expect {"test".divide(0)}.to raise_error(ArgumentError)
+    end
+    
+    it "should raise ArgumentError if argument is bigger than the length of the string" do
+      expect {"test".divide(5)}.to raise_error(ArgumentError)
+    end
+    
+    it "should return an array when the method is called with unity, i.e. it doesn't split the string" do
+      "test".divide(1).class.should eql Array
+    end
+    
+    it "should return an array when the method is called with an argument that splits the string in several pieces" do
+      "test".divide(2).class.should eql Array
+    end
+    
+    it "should return an array with length equal to that specified in the argument" do
+      "Custom test string".divide(1).length.should eql 1
+      "Custom test string".divide(2).length.should eql 2
+      "Custom test string".divide(10).length.should eql 10
+    end
+    
+    it "should return an array of sub-strings which when joined together is equal to the original string" do
+      "Custom test string".divide(1).join.should eql "Custom test string"
+      "Custom test string".divide(2).join.should eql "Custom test string"
+      "Custom test string".divide(10).join.should eql "Custom test string"
+    end
+    
+  end
 
 end
