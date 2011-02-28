@@ -117,6 +117,10 @@ module DICOM
       expect {"test".divide(5)}.to raise_error(ArgumentError)
     end
     
+    it "should raise ArgumentError if an argument is used that results in the string not being a multiple of the argument" do
+      expect {"Custom test string".divide(10)}.to raise_error(ArgumentError)
+    end
+    
     it "should return an array when the method is called with unity, i.e. it doesn't split the string" do
       "test".divide(1).class.should eql Array
     end
@@ -128,13 +132,13 @@ module DICOM
     it "should return an array with length equal to that specified in the argument" do
       "Custom test string".divide(1).length.should eql 1
       "Custom test string".divide(2).length.should eql 2
-      "Custom test string".divide(10).length.should eql 10
+      "Custom test string".divide(9).length.should eql 9
     end
     
     it "should return an array of sub-strings which when joined together is equal to the original string" do
       "Custom test string".divide(1).join.should eql "Custom test string"
       "Custom test string".divide(2).join.should eql "Custom test string"
-      "Custom test string".divide(10).join.should eql "Custom test string"
+      "Custom test string".divide(9).join.should eql "Custom test string"
     end
     
   end

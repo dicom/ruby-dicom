@@ -10,16 +10,17 @@ class String
   #
   alias __original_unpack__ unpack
 
-  # Divides a string into a number of sub-strings of (roughly) equal length, and returns these in an array.
+  # Divides a string into a number of sub-strings of exactly equal length, and returns these in an array.
+  # The length of self must be a multiple of parts, or an error will be raised.
   #
   def divide(parts)
     raise ArgumentError, "Expected an integer (Fixnum). Got #{parts.class}." unless parts.is_a?(Fixnum)
     raise ArgumentError, "Argument must be in the range <1 - self.length (#{self.length})>. Got #{parts}." if parts < 1 or parts > self.length
+    raise ArgumentError, "Length of self (#{self.length}) must be a multiple of parts (#{parts})." unless (self.length/parts).to_f == self.length/parts.to_f
     if parts > 1
       sub_strings = Array.new
       sub_length = self.length/parts
-      (parts - 1).times { sub_strings << self.slice!(0..(sub_length-1)) }
-      sub_strings << self
+      parts.times { sub_strings << self.slice!(0..(sub_length-1)) }
       return sub_strings
     else
       return [self]
