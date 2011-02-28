@@ -149,6 +149,7 @@ module DICOM
     # * <tt>type</tt> -- String. The type (vr) of data to encode.
     #
     def encode(value, type)
+      raise ArgumentError, "Invalid argument type. Expected string, got #{type.class}" unless type.is_a?(String)
       value = [value] unless value.is_a?(Array)
       return value.pack(vr_to_str(type))
     end
@@ -408,7 +409,7 @@ module DICOM
         "OB" => @by, # Other byte string (1-byte integers)
         "OF" => @fs, # Other float string (4-byte floating point numbers)
         "OW" => @us, # Other word string (2-byte integers)
-        "AT" => @hex, # Tag reference (4 bytes) NB: This may need to be revisited at some point...
+        "AT" => @hex, # Tag reference (4 bytes) NB: For tags the spesialized encode_tag/decode_tag methods are used instead of this lookup table.
         "UN" => @hex, # Unknown information (header element is not recognized from local database)
         "HEX" => @hex, # HEX
         # We have a number of VRs that are decoded as string:
