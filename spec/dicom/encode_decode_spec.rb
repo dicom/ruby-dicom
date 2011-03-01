@@ -81,6 +81,7 @@ module DICOM
     
   end
   
+  
   # Big endian string encoding:
   describe Stream, "#encode" do
     
@@ -134,8 +135,157 @@ module DICOM
     
   end
   
-  # Little endian string encoding:
-  #describe Stream, "#decode" do
-  #end
+  
+  # Little endian string decoding:
+  describe Stream, "#decode" do
+    
+    it "should raise ArgumentError if the length is not an Integer" do
+      stream = Stream.new("test", endian=false)
+      expect {stream.decode(false, "US")}.to raise_error(ArgumentError)
+      expect {stream.decode("test", "AE")}.to raise_error(ArgumentError)
+    end
+    
+    it "should raise ArgumentError if the VR is not a string" do
+      stream = Stream.new("test", endian=false)
+      expect {stream.decode(4, false)}.to raise_error(ArgumentError)
+      expect {stream.decode(4, 2)}.to raise_error(ArgumentError)
+    end
+
+    it "should return the expected string when decoding with the various string type value representations" do
+      stream = Stream.new("test"*15, endian=false)
+      stream.decode(4, "AE").should eql "test"
+      stream.decode(4, "AS").should eql "test"
+      stream.decode(4, "CS").should eql "test"
+      stream.decode(4, "DA").should eql "test"
+      stream.decode(4, "DS").should eql "test"
+      stream.decode(4, "DT").should eql "test"
+      stream.decode(4, "IS").should eql "test"
+      stream.decode(4, "LO").should eql "test"
+      stream.decode(4, "LT").should eql "test"
+      stream.decode(4, "PN").should eql "test"
+      stream.decode(4, "SH").should eql "test"
+      stream.decode(4, "ST").should eql "test"
+      stream.decode(4, "TM").should eql "test"
+      stream.decode(4, "UI").should eql "test"
+      stream.decode(4, "UT").should eql "test"
+    end
+    
+    it "should return the expected string when decoding with our custom string type value representation" do
+      stream = Stream.new("test", endian=false)
+      stream.decode(4, "STR").should eql "test"
+    end
+    
+    it "should properly decode a byte integer from a little endian binary string" do
+      stream = Stream.new("\377", endian=false)
+      stream.decode(1, "BY").should eql 255
+    end
+    
+    it "should properly decode an unsigned short integer from a little endian binary string" do
+      stream = Stream.new("\377\000", endian=false)
+      stream.decode(2, "US").should eql 255
+    end
+    
+    it "should properly decode a signed short integer from a little endian binary string" do
+      stream = Stream.new("\001\377", endian=false)  
+      stream.decode(2, "SS").should eql -255
+    end
+    
+    it "should properly decode an unsigned long integer from a little endian binary string" do
+      stream = Stream.new("\320\001\001\000", endian=false)
+      stream.decode(4, "UL").should eql 66000
+    end
+    
+    it "should properly decode a signed long integer from a little endian binary string" do
+      stream = Stream.new("0\376\376\377", endian=false)
+      stream.decode(4, "SL").should eql -66000
+    end
+    
+    it "should properly decode a floating point single from a little endian binary string" do
+      stream = Stream.new("\000\000\177C", endian=false)
+      stream.decode(4, "FL").should eql 255.0
+    end
+    
+    it "should properly decode a floating point double from a little endian binary string" do
+      stream = Stream.new("\315\314\314\314\314@\217@", endian=false)
+      stream.decode(8, "FD").should eql 1000.1
+    end
+    
+    it "should properly decode an 'other byte' as a byte integer from a little endian binary string" do
+      stream = Stream.new("\377", endian=false)
+      stream.decode(1, "OB").should eql 255
+    end
+    
+    it "should properly decode an 'other word' as an unsigned short from a little endian binary string" do
+      stream = Stream.new("\377\000", endian=false)
+      stream.decode(2, "OW").should eql 255
+    end
+    
+    it "should properly decode an 'other float' as a floating point single from a little endian binary string" do
+      stream = Stream.new("\000\000\177C", endian=false)
+      stream.decode(4, "OF").should eql 255.0
+    end
+
+  end
+  
+  
+  # Big endian string decoding:
+  describe Stream, "#decode" do
+    
+    it "should return the expected string when decoding with our custom string type value representation" do
+      stream = Stream.new("test", endian=true)
+      stream.decode(4, "STR").should eql "test"
+    end
+    
+    it "should properly decode a byte integer from a big endian binary string" do
+      stream = Stream.new("\377", endian=true)
+      stream.decode(1, "BY").should eql 255
+    end
+    
+    it "should properly decode an unsigned short integer from a big endian binary string" do
+      stream = Stream.new("\000\377", endian=true)
+      stream.decode(2, "US").should eql 255
+    end
+    
+    it "should properly decode a signed short integer from a big endian binary string" do
+      stream = Stream.new("\377\001", endian=true)  
+      stream.decode(2, "SS").should eql -255
+    end
+    
+    it "should properly decode an unsigned long integer from a big endian binary string" do
+      stream = Stream.new("\000\001\001\320", endian=true)
+      stream.decode(4, "UL").should eql 66000
+    end
+    
+    it "should properly decode a signed long integer from a big endian binary string" do
+      stream = Stream.new("\377\376\3760", endian=true)
+      stream.decode(4, "SL").should eql -66000
+    end
+    
+    it "should properly decode a floating point single from a big endian binary string" do
+      stream = Stream.new("C\177\000\000", endian=true)
+      stream.decode(4, "FL").should eql 255.0
+    end
+    
+    it "should properly decode a floating point double from a big endian binary string" do
+      stream = Stream.new("@\217@\314\314\314\314\315", endian=true)
+      stream.decode(8, "FD").should eql 1000.1
+    end
+    
+    it "should properly decode an 'other byte' as a byte integer from a big endian binary string" do
+      stream = Stream.new("\377", endian=true)
+      stream.decode(1, "OB").should eql 255
+    end
+    
+    it "should properly decode an 'other word' as an unsigned short from a big endian binary string" do
+      stream = Stream.new("\000\377", endian=true)
+      stream.decode(2, "OW").should eql 255
+    end
+    
+    it "should properly decode an 'other float' as a floating point single from a big endian binary string" do
+      stream = Stream.new("C\177\000\000", endian=true)
+      stream.decode(4, "OF").should eql 255.0
+    end
+
+  end
   
 end

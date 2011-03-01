@@ -73,6 +73,8 @@ module DICOM
     # * <tt>type</tt> -- String. The type (vr) of data to decode.
     #
     def decode(length, type)
+      raise ArgumentError, "Invalid argument length. Expected Fixnum, got #{length.class}" unless length.is_a?(Fixnum)
+      raise ArgumentError, "Invalid argument type. Expected string, got #{type.class}" unless type.is_a?(String)
       # Check if values are valid:
       if (@index + length) > @string.length
         # The index number is bigger then the length of the binary string.
