@@ -105,8 +105,6 @@ class TC_DObjectTest < Test::Unit::TestCase
     assert_raise(ArgumentError) {@obj.read(nil)} # Needs String.
     assert_raise(ArgumentError) {@obj.encode_segments(nil)} # Needs Fixnum.
     assert_raise(ArgumentError) {@obj.encode_segments(1024.0)} # Needs Fixnum.
-    assert_raise(ArgumentError) {empty_obj = DObject.new(true)} # Needs String (or nil).
-    assert_raise(ArgumentError) {empty_obj = DObject.new(false)} # Needs String (or nil).
   end
 
 end

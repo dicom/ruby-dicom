@@ -97,7 +97,7 @@ module DICOM
       if string.is_a?(String)
         @file = string unless options[:bin]
         read(string, options)
-      elsif not string == nil
+      elsif string
         raise ArgumentError, "Invalid argument. Expected String (or nil), got #{string.class}."
       end
     end
