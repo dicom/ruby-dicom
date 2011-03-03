@@ -134,19 +134,21 @@ module DICOM
         else
           # As the encoded DICOM string will be cut in multiple, smaller pieces, we need to monitor the length of our encoded strings:
           if (string.length + @stream.length) > @max_size
-            append = string.slice!(0, @max_size-@stream.length)
+            # Duplicate the string as not to ruin the binary of the data element with our slicing:
+            segment = string.dup
+            append = segment.slice!(0, @max_size-@stream.length)
             # Join these strings together and add them to the segments:
             @segments << @stream.export + append
-            if (30 + string.length) > @max_size
+            if (30 + segment.length) > @max_size
               # The remaining part of the string is bigger than the max limit, fill up more segments:
               # How many full segments will this string fill?
-              number = (string.length/@max_size.to_f).floor
-              number.times {@segments << string.slice!(0, @max_size)}
+              number = (segment.length/@max_size.to_f).floor
+              number.times {@segments << segment.slice!(0, @max_size)}
               # The remaining part is added to the stream:
-              @stream.add_last(string)
+              @stream.add_last(segment)
             else
               # The rest of the string is small enough that it can be added to the stream:
-              @stream.add_last(string)
+              @stream.add_last(segment)
             end
           elsif (30 + @stream.length) > @max_size
             # End the current segment, and start on a new segment for this string.

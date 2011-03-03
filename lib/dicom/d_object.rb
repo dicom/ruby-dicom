@@ -115,17 +115,16 @@ module DICOM
     #  encoded_strings = obj.encode_segments(16384)
     #
     def encode_segments(max_size)
-      if max_size.is_a?(Fixnum)
-        w = DWrite.new(self, transfer_syntax, file_name=nil)
-        w.encode_segments(max_size)
-        # Write process succesful?
-        @write_success = w.success
-        # If any messages has been recorded, send these to the message handling method:
-        add_msg(w.msg) if w.msg.length > 0
-        return w.segments
-      else
-        raise ArgumentError, "Invalid argument. Expected an integer (Fixnum), got #{max_size.class}."
-      end
+      raise ArgumentError, "Invalid argument. Expected an Integer, got #{max_size.class}." unless max_size.is_a?(Integer)
+      raise ArgumentError, "Argument too low (#{max_size}), please specify a bigger Integer." unless max_size > 16
+      raise "Can not encode binary segments for an empty DICOM object." if children.length == 0
+      w = DWrite.new(self, transfer_syntax, file_name=nil)
+      w.encode_segments(max_size)
+      # Write process succesful?
+      @write_success = w.success
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(w.msg) if w.msg.length > 0
+      return w.segments
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.

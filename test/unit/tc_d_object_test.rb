@@ -78,17 +78,6 @@ class TC_DObjectTest < Test::Unit::TestCase
     assert_equal(123, printed.length)
   end
 
-  # This method's assertions fail for some reason. Needs to be investigated further.
-=begin
-  def test_encode_segments
-    assert_equal(1, @obj.encode_segments(16384).length)
-    assert_equal(2, @obj.encode_segments(8192).length)
-    assert_equal(3, @obj.encode_segments(4096).length)
-    assert_equal(6, @obj.encode_segments(2048).length)
-    assert_equal(11, @obj.encode_segments(1024).length)
-  end
-=end
-
   def test_write_and_read
     test_write = DICOM_TEST_FILE1+"_WRITETEST.dcm"
     @obj.write(test_write)
@@ -103,8 +92,6 @@ class TC_DObjectTest < Test::Unit::TestCase
   def test_exceptions
     assert_raise(ArgumentError) {@obj.write(nil)} # Needs String.
     assert_raise(ArgumentError) {@obj.read(nil)} # Needs String.
-    assert_raise(ArgumentError) {@obj.encode_segments(nil)} # Needs Fixnum.
-    assert_raise(ArgumentError) {@obj.encode_segments(1024.0)} # Needs Fixnum.
   end
 
 end
