@@ -12,15 +12,6 @@ class TC_DObjectTest < Test::Unit::TestCase
     @obj_bin = DObject.new(str, :bin => true)
   end
 
-  def test_should_be_valid_dobject
-    assert_instance_of(DObject, @obj0, "Should be a valid (even though empty) instance.")
-    assert_nil(@obj0.read_success, "Should be nil as no DICOM file has been parsed.")
-    assert_instance_of(DObject, @obj, "Should be a valid instance regardless of DICOM file parse success.")
-    assert(@obj.read_success, "Should return true when DICOM file has been successfully parsed.")
-    assert_instance_of(DObject, @obj_bin, "Should be a valid instance regardless of DICOM file parse success.")
-    assert(@obj_bin.read_success, "Should return true when DICOM file has been successfully parsed.")
-  end
-
   # Tests a small sample of values in the DICOM object.
   def test_value
     assert_nil(@obj0.value("0010,0010"), "Should return nil as there are no tags yet in the DObject.")
@@ -47,23 +38,6 @@ class TC_DObjectTest < Test::Unit::TestCase
     #assert_equal(123, @obj_bin.count_all, "The DICOM file contains 123 tags in total.")
   end
 
-  def test_transfer_syntax
-    assert_equal(IMPLICIT_LITTLE_ENDIAN, @obj0.transfer_syntax, "The default transfer syntax (Implicit, little endian) should be assumed when it is not defined in the DObject.")
-    assert_equal("1.2.840.10008.1.2.4.50", @obj.transfer_syntax)
-    assert_equal("1.2.840.10008.1.2.4.50", @obj_bin.transfer_syntax)
-  end
-
-  def test_attributes
-    assert_nil(@obj0.write_success, "Should be nil as a file write has not been attempted yet.")
-    assert_instance_of(Stream, @obj0.stream)
-    assert_nil(@obj0.parent, "A DObject instance is the top level and has no parent (should be nil).")
-    assert_equal(0, @obj0.errors.length)
-    assert_nil(@obj.write_success, "Should be nil as a file write has not been attempted yet.")
-    assert_instance_of(Stream, @obj.stream)
-    assert_nil(@obj.parent, "A DObject instance is the top level and has no parent (should be nil).")
-    assert_equal(0, @obj.errors.length)
-  end
-
   def test_information
     assert_instance_of(Array, @obj0.information)
     assert_instance_of(Array, @obj.information)
@@ -76,22 +50,6 @@ class TC_DObjectTest < Test::Unit::TestCase
     printed = @obj.print
     assert_instance_of(Array, printed)
     assert_equal(123, printed.length)
-  end
-
-  def test_write_and_read
-    test_write = DICOM_TEST_FILE1+"_WRITETEST.dcm"
-    @obj.write(test_write)
-    assert(@obj.write_success, "Should return true when a DObject instance has been successfully written to file.")
-    obj_reloaded = DObject.new(test_write)
-    assert_instance_of(DObject, obj_reloaded, "Should be a valid instance regardless of DICOM file parse success.")
-    assert(obj_reloaded.read_success, "Should return true when DICOM file has been successfully parsed.")
-    # Clean up:
-    File.delete(test_write)
-  end
-
-  def test_exceptions
-    assert_raise(ArgumentError) {@obj.write(nil)} # Needs String.
-    assert_raise(ArgumentError) {@obj.read(nil)} # Needs String.
   end
 
 end

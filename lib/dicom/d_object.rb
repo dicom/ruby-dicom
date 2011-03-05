@@ -246,33 +246,32 @@ module DICOM
     # FIXME: It should be considered whether this should be a private method.
     #
     def read(string, options={})
-      if string.is_a?(String)
-        r = DRead.new(self, string, options)
-        # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
-        # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-        unless r.success or exists?("0002,0010")
-          # Clear the existing DObject tags:
-          @tags = Hash.new
-          r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
-          # Only extract information from this new attempt if it was successful:
-          r = r_explicit if r_explicit.success
-        end
-        # Store the data to the instance variables if the readout was a success:
-        if r.success
-          @read_success = true
-          # Update instance variables based on the properties of the DICOM object:
-          @explicit = r.explicit
-          @file_endian = r.file_endian
-          @signature = r.signature
-          @stream.endian = @file_endian
-        else
-          @read_success = false
-        end
-        # If any messages has been recorded, send these to the message handling method:
-        add_msg(r.msg) if r.msg.length > 0
-      else
-        raise ArgumentError, "Invalid argument. Expected String, got #{string.class}."
+      raise ArgumentError, "Invalid argument. Expected String, got #{string.class}." unless string.is_a?(String)
+      # Clear any existing DObject tags, then read:
+      @tags = Hash.new
+      r = DRead.new(self, string, options)
+      # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
+      unless r.success or exists?("0002,0010")
+        # Clear the existing DObject tags:
+        @tags = Hash.new
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
+        # Only extract information from this new attempt if it was successful:
+        r = r_explicit if r_explicit.success
       end
+      # Store the data to the instance variables if the readout was a success:
+      if r.success
+        @read_success = true
+        # Update instance variables based on the properties of the DICOM object:
+        @explicit = r.explicit
+        @file_endian = r.file_endian
+        @signature = r.signature
+        @stream.endian = @file_endian
+      else
+        @read_success = false
+      end
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(r.msg) if r.msg.length > 0
     end
 
     # Returns the transfer syntax string of the DObject.
@@ -296,27 +295,24 @@ module DICOM
     # * <tt>new_syntax</tt> -- The new transfer syntax string which will be applied to the DObject.
     #
     def transfer_syntax=(new_syntax)
-      valid, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
-      if valid
-        # Get the old transfer syntax and write the new one to the DICOM object:
-        old_syntax = transfer_syntax
-        valid, old_explicit, old_endian = LIBRARY.process_transfer_syntax(old_syntax)
-        if exists?("0002,0010")
-          self["0002,0010"].value = new_syntax
-        else
-          add(DataElement.new("0002,0010", new_syntax))
-        end
-        # Update our Stream instance with the new encoding:
-        @stream.endian = new_endian
-        # Determine if re-encoding is needed:
-        if old_endian != new_endian
-          # Re-encode all Data Elements with number values:
-          encode_children(old_endian)
-        else
-          add_msg("New transfer syntax #{new_syntax} does not change encoding: No re-encoding needed.")
-        end
+      valid_ts, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
+      raise ArgumentError, "Invalid transfer syntax specified: #{new_syntax}" unless valid_ts
+      # Get the old transfer syntax and write the new one to the DICOM object:
+      old_syntax = transfer_syntax
+      valid_ts, old_explicit, old_endian = LIBRARY.process_transfer_syntax(old_syntax)
+      if exists?("0002,0010")
+        self["0002,0010"].value = new_syntax
       else
-        raise ArgumentError, "Invalid transfer syntax specified: #{new_syntax}"
+        add(DataElement.new("0002,0010", new_syntax))
+      end
+      # Update our Stream instance with the new encoding:
+      @stream.endian = new_endian
+      # Determine if re-encoding is needed:
+      if old_endian != new_endian
+        # Re-encode all Data Elements with number values:
+        encode_children(old_endian)
+      else
+        add_msg("New transfer syntax #{new_syntax} does not change encoding: No re-encoding needed.")
       end
     end
 
@@ -337,17 +333,14 @@ module DICOM
     #   obj.write(path + "test.dcm")
     #
     def write(file_name, options={})
-      if file_name.is_a?(String)
-        insert_missing_meta unless options[:add_meta] == false
-        w = DWrite.new(self, transfer_syntax, file_name, options)
-        w.write
-        # Write process succesful?
-        @write_success = w.success
-        # If any messages has been recorded, send these to the message handling method:
-        add_msg(w.msg) if w.msg.length > 0
-      else
-        raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}."
-      end
+      raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}." unless file_name.is_a?(String)
+      insert_missing_meta unless options[:add_meta] == false
+      w = DWrite.new(self, transfer_syntax, file_name, options)
+      w.write
+      # Write process succesful?
+      @write_success = w.success
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(w.msg) if w.msg.length > 0
     end
 
 
@@ -365,7 +358,7 @@ module DICOM
     def add_msg(msg)
       puts msg if @verbose
       @errors << msg
-      @errors.flatten
+      @errors.flatten!
     end
 
     # Adds any missing meta group (0002,xxxx) data elements to the DICOM object,
