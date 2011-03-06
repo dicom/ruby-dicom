@@ -37,7 +37,7 @@ module DICOM
       end
     end
 
-    # Unpacks a binary pixel string and returns decoded pixel values in an array. Returns false if the decoding is unsuccesful.
+    # Unpacks a binary pixel string and returns decoded pixel values in an array.
     # The decode is performed using values defined in the image related data elements of the DObject instance.
     #
     # === Parameters
@@ -46,19 +46,16 @@ module DICOM
     # * <tt>stream</tt> -- A Stream instance to be used for decoding the pixels (optional).
     #
     def decode_pixels(bin, stream=@stream)
+      raise ArgumentError, "The argument must be a string." unless bin.is_a?(String)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth_element = self["0028,0100"]
       pixel_representation_element = self["0028,0103"]
       if bit_depth_element and pixel_representation_element
-        if bin.is_a?(String)
-          # Load the binary pixel data to the Stream instance:
-          stream.set_string(bin)
-          template = template_string(bit_depth_element.value.to_i)
-          pixels = stream.decode_all(template) if template
-        else
-          raise ArgumentError, "The argument must be a string."
-        end
+        # Load the binary pixel data to the Stream instance:
+        stream.set_string(bin)
+        template = template_string(bit_depth_element.value.to_i)
+        pixels = stream.decode_all(template) if template
       else
         raise "The Data Element which specifies Bit Depth is missing. Unable to decode pixel data." unless bit_depth_element
         raise "The Data Element which specifies Pixel Representation is missing. Unable to decode pixel data." unless pixel_representation_element
@@ -66,7 +63,7 @@ module DICOM
       return pixels
     end
 
-    # Packs a pixel value array and returns an encoded binary string. Returns false if the encoding is unsuccesful.
+    # Packs a pixel value array and returns an encoded binary string.
     # The encoding is performed using values defined in the image related data elements of the DObject instance.
     #
     # === Parameters
@@ -75,17 +72,14 @@ module DICOM
     # * <tt>stream</tt> -- A Stream instance to be used for encoding the pixels (optional).
     #
     def encode_pixels(pixels, stream=@stream)
+      raise ArgumentError, "The argument must be an array (containing numbers)." unless pixels.is_a?(Array)
       bin = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth_element = self["0028,0100"]
       pixel_representation_element = self["0028,0103"]
       if bit_depth_element and pixel_representation_element
-        if pixels.is_a?(Array)
-          template = template_string(bit_depth_element.value.to_i)
-          bin = stream.encode(pixels, template) if template
-        else
-          raise ArgumentError, "The argument must be an array (containing numbers)."
-        end
+        template = template_string(bit_depth_element.value.to_i)
+        bin = stream.encode(pixels, template) if template
       else
         raise "The Data Element which specifies Bit Depth is missing. Unable to encode pixel data." unless bit_depth_element
         raise "The Data Element which specifies Pixel Representation is missing. Unable to encode pixel data." unless pixel_representation_element
