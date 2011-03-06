@@ -62,7 +62,7 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM string, and not a path string, which is the default behaviour.
+    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
     # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
@@ -234,16 +234,23 @@ module DICOM
       information
     end
 
-    # Returns a DICOM object by reading and parsing the specified file.
-    # This is accomplished by initializing the DRead class, which loads DICOM information to arrays.
+    # Fills a DICOM object by reading and parsing the specified DICOM file,
+    # and transfers the DICOM data to the DICOM object (self).
     #
     # === Notes
     #
-    # This method is called automatically when initializing the DObject class with a file parameter,
-    # and in practice should not be called by users.
+    # This method is called automatically when initializing the DObject class with a file parameter.
+    # In practice this method is rarely called by the user.
     #
-    #--
-    # FIXME: It should be considered whether this should be a private method.
+    # === Parameters
+    #
+    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
     #
     def read(string, options={})
       raise ArgumentError, "Invalid argument. Expected String, got #{string.class}." unless string.is_a?(String)

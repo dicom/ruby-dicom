@@ -38,7 +38,7 @@ module DICOM
     # === Options
     #
     # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
-    # * <tt>:bin</tt> -- Boolean. If set to true, string parameter will be interpreted as a binary DICOM string, and not a path string, which is the default behaviour.
+    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
     # 
     def initialize(obj, string=nil, options={})
       # Set the DICOM object as an instance variable:

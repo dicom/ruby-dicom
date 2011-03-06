@@ -77,6 +77,23 @@ module DICOM
       obj.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
     end
     
+    it "should register an error when an invalid file is supplied" do
+      obj = DObject.new("foo", :verbose => false)
+      obj.errors.length.should be > 0
+    end
+    
+    it "should print the error/warning message(s) to $stdout in verbose (default) mode" do
+      obj = DObject.new(nil)
+      obj.expects(:puts).at_least_once
+      obj.read("foo")
+    end
+    
+    it "should not print the error/warning message(s) to $stdout when non-verbose mode has been set" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.expects(:puts).never
+      obj.read("foo")
+    end
+    
   end
   
   
