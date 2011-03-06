@@ -47,13 +47,13 @@ module DICOM
     end
     
     it "should successfully read this DICOM file" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_no-header_implicit_mr_16bit_mono2.dcm', :verbose => false)
+      obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.read_success.should be_true
       obj.children.length.should eql 85 # (This file is known to have 85 top level data elements)
     end
     
     it "should successfully read this DICOM file, when it is supplied as a binary string instead of a file name" do
-      file = File.new(Dir.pwd+'/spec/support/sample_no-header_implicit_mr_16bit_mono2.dcm', "rb")
+      file = File.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, "rb")
       str = file.read
       file.close
       obj = DObject.new(str, :bin => true, :verbose => false)
@@ -62,17 +62,17 @@ module DICOM
     end
     
     it "should fail to read this DICOM file when an incorrect transfer syntax option is supplied" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit_mr_jpeg-lossy_mono2.dcm', :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
       obj.read_success.should be_false
     end
     
     it "should register one or more errors/messages in the errors array when failing to successfully read a DICOM file" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit_mr_jpeg-lossy_mono2.dcm', :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
       obj.errors.length.should be > 0
     end
     
     it "should return the data elements that were successfully read before a failure occured (the file meta header elements in this case)" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit_mr_jpeg-lossy_mono2.dcm', :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
       obj.read_success.should be_false
       obj.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
     end
@@ -115,7 +115,7 @@ module DICOM
     end
     
     it "should encode exactly the same binary string regardless of the max segment length chosen" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_no-header_implicit_mr_16bit_mono2.dcm', :verbose => false)
+      obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       binaries = Array.new
       binaries << obj.encode_segments(32768).join
       binaries << obj.encode_segments(16384).join
@@ -127,7 +127,7 @@ module DICOM
     end
     
     it "should should have its rejoined, segmented binary be successfully read to a DICOM object" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_no-header_implicit_mr_16bit_mono2.dcm', :verbose => false)
+      obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       binary = obj.encode_segments(16384).join
       obj_reloaded = DObject.new(binary, :bin => true, :verbose => false)
       obj_reloaded.read_success.should be_true
@@ -144,7 +144,7 @@ module DICOM
     end
     
     it "should return the value of the transfer syntax tag of the DICOM object" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit-big-endian_us_8bit_rgb.dcm', :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG, :verbose => false)
       obj.transfer_syntax.should eql EXPLICIT_BIG_ENDIAN
     end
     
@@ -160,7 +160,7 @@ module DICOM
     end
     
     it "should change the transfer syntax of the DICOM object which has been read from file" do
-      obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit-big-endian_us_8bit_rgb.dcm', :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG, :verbose => false)
       obj.transfer_syntax = IMPLICIT_LITTLE_ENDIAN
       obj.transfer_syntax.should eql IMPLICIT_LITTLE_ENDIAN
     end
@@ -193,7 +193,7 @@ module DICOM
   describe DObject, "#read" do
     
     before :each do
-      @file = Dir.pwd+'/spec/support/sample_explicit_mr_jpeg-lossy_mono2.dcm'
+      @file = DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2
     end
     
     it "should raise ArgumentError when a non-string argument is used" do
@@ -214,8 +214,8 @@ module DICOM
   describe DObject, "#write" do
     
     before :each do
-      @obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit_mr_jpeg-lossy_mono2.dcm', :verbose => false)
-      @tmp = Dir.pwd+'/spec/support/sample_explicit_mr_jpeg-lossy_mono2.dcm' + "_WRITETEST.dcm"
+      @obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      @tmp = DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2 + "_WRITETEST.dcm"
     end
     
     it "should raise ArgumentError when a non-string argument is used" do

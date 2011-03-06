@@ -10,7 +10,7 @@ module DICOM
     context DObject, "#value" do
       
       it "should return the proper tag string" do
-        obj = DObject.new(Dir.pwd+'/spec/support/sample_no-header_implicit_mr_16bit_mono2.dcm', :verbose => false)
+        obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
         obj.value("0020,5000").should eql "0010,0010"
       end
     
@@ -19,7 +19,7 @@ module DICOM
     context DObject, "#value=()" do
       
       it "should encode the value as a proper binary tag, for a little endian DICOM object" do
-        obj = DObject.new(Dir.pwd+'/spec/support/sample_no-header_implicit_mr_16bit_mono2.dcm', :verbose => false)
+        obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
         obj["0020,5000"].value = "10B0,C0A0"
         obj["0020,5000"].bin.should eql "\260\020\240\300"
       end
@@ -71,12 +71,12 @@ module DICOM
     context DObject, "#read" do
       
       it "should have properly decoded this File Meta Header tag (from a DICOM file with big endian TS), using little endian byte order" do
-        obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit-big-endian_us_8bit_rgb.dcm', :verbose => false)
+        obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG, :verbose => false)
         obj.exists?("0002,0010").should eql true
       end
       
       it "should have properly decoded the DICOM tag (from a DICOM file with big endian TS), using big endian byte order" do
-        obj = DObject.new(Dir.pwd+'/spec/support/sample_explicit-big-endian_us_8bit_rgb.dcm', :verbose => false)
+        obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG, :verbose => false)
         obj.exists?("0008,0060").should eql true
       end
     
@@ -85,7 +85,7 @@ module DICOM
     context DObject, "#write" do
       
       before :each do
-        @file = Dir.pwd+'/spec/support/sample_explicit-big-endian_us_8bit_rgb.dcm'
+        @file = DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG
         @obj = DObject.new(@file, :verbose => false)
         @tmp_file = @file + "_tmp.dcm"
       end
