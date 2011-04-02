@@ -28,28 +28,4 @@ class TC_DObjectTest < Test::Unit::TestCase
     assert_equal("Anonymized", @obj_bin.value("0010,0010"), "Checking the validity of an ordinary string value.")
   end
 
-  def test_count
-    assert_equal(0, @obj0.count, "The empty DICOM object contains 0 tags.")
-    assert_equal(0, @obj0.count_all, "The empty DICOM object contains 0 tags.")
-    assert_equal(97, @obj.count, "The DICOM file contains 97 top level tags.")
-    assert_equal(123, @obj.count_all, "The DICOM file contains 123 tags in total.")
-    # This fails, and so needs to be investigated:
-    #assert_equal(97, @obj_bin.count, "The DICOM file contains 97 top level tags.")
-    #assert_equal(123, @obj_bin.count_all, "The DICOM file contains 123 tags in total.")
-  end
-
-  def test_information
-    assert_instance_of(Array, @obj0.information)
-    assert_instance_of(Array, @obj.information)
-  end
-
-  def test_print
-    printed0 = @obj0.print
-    assert_instance_of(Array, printed0)
-    assert_equal(0, printed0.length)
-    printed = @obj.print
-    assert_instance_of(Array, printed)
-    assert_equal(123, printed.length)
-  end
-
 end

@@ -35,7 +35,7 @@ module DICOM
       return @tags[tag]
     end
 
-    # Adds a DataElement or Sequence instance to self (where self can be either a DObject or Item instance).
+    # Adds a DataElement or Sequence instance to self (where self can be either a DObject or an Item).
     #
     # === Restrictions
     #
@@ -50,7 +50,7 @@ module DICOM
     #   # Set a new patient's name to the DICOM object:
     #   obj.add(DataElement.new("0010,0010", "John_Doe"))
     #   # Add a previously defined element roi_name to the first item in the following sequence:
-    #   obj["3006,0020"][1].add(roi_name)
+    #   obj["3006,0020"][0].add(roi_name)
     #
     def add(element)
       unless element.is_a?(Item)
@@ -65,10 +65,10 @@ module DICOM
           # As the element has been moved in place, perform re-encode if indicated:
           element.value = element.value if reencode
         else
-          raise "A Sequence is not allowed to have elements added to it. Use the method add_item() instead if the intention is to add an Item."
+          raise "A Sequence is only allowed to have Item elements added to it. Use add_item() instead if the intention is to add an Item."
         end
       else
-        raise "An Item is not allowed as a parameter to the add() method. Use add_item() instead."
+        raise ArgumentError, "An Item is not allowed as a parameter to the add() method. Use add_item() instead."
       end
     end
 
@@ -76,7 +76,8 @@ module DICOM
     # If no existing Item is specified, an empty item will be added.
     #
     # === Notes
-    # * Items are specified by index (starting at 1) instead of a tag string!
+    #
+    # * Items are specified by index (starting at 0) instead of a tag string!
     #
     # === Parameters
     #
@@ -124,7 +125,7 @@ module DICOM
                 @tags[options[:index]] = item
                 item.index = options[:index]
               else
-                raise "The specified index (#{options[:index]}) is out of range (Must be a positive integer)."
+                raise ArgumentError, "The specified index (#{options[:index]}) is out of range (Must be a positive integer)."
               end
             else
               # Add the existing Item to this Sequence:
@@ -134,7 +135,7 @@ module DICOM
               item.index = index
             end
           else
-            raise "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
+            raise ArgumentError, "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
           end
         else
           # Create an empty Item with self as parent.
@@ -225,7 +226,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag string which identifies the data element that is queried (Exception: In the case of an Item query, an index (Fixnum) is used instead).
+    # * <tt>tag</tt> -- A tag string which identifies the data element that is queried (Exception: In the case of an Item query, an index integer is used instead).
     #
     # === Examples
     #
@@ -247,6 +248,7 @@ module DICOM
     # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
     #
     def group(group_string)
+      raise ArgumentError, "Expected String, got #{group_string.class}." unless group_string.is_a?(String)
       found = Array.new
       children.each do |child|
         found << child if child.tag.group == group_string
@@ -356,6 +358,12 @@ module DICOM
     end
 
     # Sets the length of a Sequence or Item.
+    #
+    # === Notes
+    #
+    # Currently, Ruby DICOM does not use sequence/item lengths when writing DICOM files
+    # (it sets the length to -1, which means UNDEFINED). Therefore, in practice, it isn't
+    # necessary to use this method, at least as far as writing (valid) DICOM files is concerned.
     #
     # === Parameters
     #
