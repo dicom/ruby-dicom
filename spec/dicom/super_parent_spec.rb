@@ -48,6 +48,20 @@ module DICOM
       obj[seq_tag].should eql seq
     end
 
+    it "should update the parent attribute of the DataElement when it is added to a parent" do
+      obj = DObject.new(nil, :verbose => false)
+      name = DataElement.new("0010,0010", "John_Doe")
+      obj.add(name)
+      name.parent.should eql obj
+    end
+
+    it "should update the parent attribute of the Sequence when it is added to a parent" do
+      obj = DObject.new(nil, :verbose => false)
+      seq = Sequence.new("0008,1140")
+      obj.add(seq)
+      seq.parent.should eql obj
+    end
+
     it "should raise ArgumentError when it is called with an Item" do
       obj = DObject.new(nil, :verbose => false)
       expect {obj.add(Item.new)}.to raise_error(ArgumentError)
@@ -78,6 +92,17 @@ module DICOM
       item = Item.new
       @obj["0008,1140"].add_item(item)
       @obj["0008,1140"].children.first.should eql item
+    end
+
+    it "should update the parent attribute of the Item when it is added to a parent" do
+      item = Item.new
+      @obj["0008,1140"].add_item(item)
+      item.parent.should eql @obj["0008,1140"]
+    end
+
+    it "should set the parent attribute of the Item that is created when the method is used without an argument" do
+      @obj["0008,1140"].add_item
+      @obj["0008,1140"].children.last.parent.should eql @obj["0008,1140"]
     end
 
     it "should raise ArgumentError if a non-positive integer is specified as an option" do
@@ -410,6 +435,198 @@ module DICOM
       @obj["0008,1140"].add_item
       @obj.expects(:puts).at_least_once
       @obj.print.length.should eql 4
+    end
+
+  end
+
+
+  describe SuperParent, "#remove" do
+
+    before :each do
+      @obj = DObject.new(nil, :verbose => false)
+      @d = DataElement.new("0010,0030", "20000101")
+      @s = Sequence.new("0008,1140")
+      @i = Item.new
+      @obj.add(@d)
+      @obj.add(@s)
+      @obj["0008,1140"].add_item(@i)
+      @number_of_elements_before = @obj.children.length
+    end
+
+    it "should raise ArgumentError when the argument is not a string or integer" do
+      expect {@obj.remove(3.55)}.to raise_error(ArgumentError)
+    end
+
+    it "should raise ArgumentError when the argument is not a valid tag" do
+      expect {@obj.remove("asdf,asdf")}.to raise_error(ArgumentError)
+    end
+
+    it "should raise ArgumentError when the argument is a negative integer" do
+      expect {@obj.remove(-1)}.to raise_error(ArgumentError)
+    end
+
+    it "should not remove any elements when the specified tag is not part of the parent's children" do
+      @obj.remove("0010,0013")
+      @obj.children.length.should eql @number_of_elements_before
+    end
+
+    it "should remove the DataElement when the tag is part of the parent's children" do
+      @obj.remove("0010,0030")
+      @obj.exists?("0010,0030").should be_false
+      @obj.children.length.should eql @number_of_elements_before - 1
+    end
+
+    it "should remove the Sequence when the tag is part of the parent's children" do
+      @obj.remove("0008,1140")
+      @obj.exists?("0008,1140").should be_false
+      @obj.children.length.should eql @number_of_elements_before - 1
+    end
+
+    it "should remove the Item from the parent Sequence" do
+      @obj["0008,1140"].remove(0)
+      @obj["0008,1140"].exists?(1).should be_false
+      @obj["0008,1140"].children.length.should eql 0
+    end
+
+    it "should reset the parent reference from the DataElement when it is removed" do
+      @obj.remove("0010,0030")
+      @d.parent.should be_nil
+    end
+
+    it "should reset the parent reference from the Sequence when it is removed" do
+      @obj.remove("0008,1140")
+      @s.parent.should be_nil
+    end
+
+    it "should reset the parent reference from the Item when it is removed" do
+      @obj["0008,1140"].remove(0)
+      @i.parent.should be_nil
+    end
+
+  end
+
+
+  describe SuperParent, "#remove_children" do
+
+    it "should remove all children from the parent element" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0010,0030", "20000101"))
+      obj.add(DataElement.new("0011,0030", "42"))
+      obj.add(DataElement.new("0010,0010", "John_Doe"))
+      obj.add(DataElement.new("0010,0020", "12345"))
+      obj.add(Sequence.new("0008,1140"))
+      obj["0008,1140"].add_item
+      obj.remove_children
+      obj.children.length.should eql 0
+    end
+
+  end
+
+
+  describe SuperParent, "#remove_group" do
+
+    it "should remove all children from the parent element" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0010,0030", "20000101"))
+      obj.add(DataElement.new("0011,0030", "42"))
+      obj.add(DataElement.new("0010,0010", "John_Doe"))
+      obj.add(DataElement.new("0010,0020", "12345"))
+      obj.add(Sequence.new("0008,1140"))
+      obj["0008,1140"].add_item
+      obj.remove_group("0010")
+      obj.children.length.should eql 2
+    end
+
+  end
+
+
+  describe SuperParent, "#remove_private" do
+
+    it "should remove all private children from the parent element" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0010,0030", "20000101"))
+      obj.add(DataElement.new("0011,0030", "42"))
+      obj.add(DataElement.new("0013,0010", "John_Doe"))
+      obj.add(DataElement.new("0015,0020", "12345"))
+      obj.add(Sequence.new("0008,1140"))
+      obj["0008,1140"].add_item
+      obj.remove_private
+      obj.children.length.should eql 2
+    end
+
+  end
+
+
+  describe SuperParent, "#reset_length" do
+
+    before :each do
+      @obj = DObject.new(nil, :verbose => false)
+      @s = Sequence.new("0008,1140", :parent => @obj)
+      @i = Item.new(:parent => @s)
+      @s.length, @i.length = 42, 42
+    end
+
+    it "should raise an error when the method is executed on a DObject" do
+      expect {@obj.reset_length}.to raise_error
+    end
+
+    it "should set the length of the Sequence to -1 (UNDEFINED)" do
+      @s.reset_length
+      @s.length.should eql -1
+    end
+
+    it "should set the length of the Item to -1 (UNDEFINED)" do
+      @i.reset_length
+      @i.length.should eql -1
+    end
+
+  end
+
+
+  describe SuperParent, "#value" do
+
+    before :each do
+      @obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+    end
+
+    it "should raise ArgumentError when the argument is not a string or integer" do
+      expect {@obj.value(3.55)}.to raise_error(ArgumentError)
+    end
+
+    it "should raise ArgumentError when the argument is not a valid tag" do
+      expect {@obj.value("asdf,asdf")}.to raise_error(ArgumentError)
+    end
+
+    it "should raise ArgumentError when the argument is a negative integer" do
+      expect {@obj.value(-1)}.to raise_error(ArgumentError)
+    end
+
+    it "should raise ArgumentError when the argument is a Sequence (as parent elements by our definition don't have a value)" do
+      expect {@obj.value("0008,1140")}.to raise_error(ArgumentError)
+    end
+
+    it "should raise ArgumentError when the argument is an Item (as parent elements by our definition don't have a value)" do
+      expect {@obj["0008,1140"].value(0)}.to raise_error(ArgumentError)
+    end
+
+    it "should return nil when the specified tag is not part of the parent's children" do
+      @obj.value("1234,5678").should be_nil
+    end
+
+    it "should return the expected string value from the DataElement" do
+      @obj.value("0010,0010").should eql "Anonymized"
+    end
+
+    it "should return a properly right-stripped string when the DataElement originally has had a string of odd length that has been padded" do
+      @obj.value("0018,0022").should eql "PFP"
+    end
+
+    it "should return the expected integer (unsigned short)" do
+      @obj.value("0028,0010").should eql 256
+    end
+
+    it "should return the numbers in a backslash separated string when the DataElement contains multiple numbers in its value field" do
+      @obj.value("0018,1310").should eql "0\\256\\208\\0"
     end
 
   end

@@ -134,6 +134,8 @@ module DICOM
               # Let the Item know what index key it's got in it's parent's Hash:
               item.index = index
             end
+            # Set ourself as this item's new parent:
+            item.parent = self
           else
             raise ArgumentError, "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
           end
@@ -470,6 +472,12 @@ module DICOM
     #   obj["3006,0020"].remove(1)
     #
     def remove(tag)
+      if tag.is_a?(String) or tag.is_a?(Integer)
+        raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
+        raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
+      else
+        raise ArgumentError, "Expected String or Integer, got #{tag.class}."
+      end
       # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
       element = @tags[tag]
       if element
@@ -549,12 +557,18 @@ module DICOM
     #   # Get the patient's name value:
     #   name = obj.value("0010,0010")
     #   # Get the Frame of Reference UID from the first item in the Referenced Frame of Reference Sequence:
-    #   uid = obj["3006,0010"][1].value("0020,0052")
+    #   uid = obj["3006,0010"][0].value("0020,0052")
     #
     def value(tag)
+      if tag.is_a?(String) or tag.is_a?(Integer)
+        raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
+        raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
+      else
+        raise ArgumentError, "Expected String or Integer, got #{tag.class}."
+      end
       if exists?(tag)
         if @tags[tag].is_parent?
-          raise "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only DataElement tags are valid."
+          raise ArgumentError, "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only DataElement tags are valid."
         else
           return @tags[tag].value
         end
