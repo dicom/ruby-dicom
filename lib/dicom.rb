@@ -13,6 +13,7 @@
 
 # Core library:
 # Super classes/modules:
+require 'dicom/image_processor'
 require 'dicom/super_parent'
 require 'dicom/super_item'
 require 'dicom/elements'
@@ -35,6 +36,9 @@ require 'dicom/ruby_extensions'
 # Module constants:
 require 'dicom/version'
 require 'dicom/constants'
+# Image processors:
+require 'dicom/image_processor_mini_magick'
+require 'dicom/image_processor_r_magick'
 
 # Extensions (non-core functionality):
 require 'dicom/anonymizer'

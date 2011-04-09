@@ -12,15 +12,21 @@ module DICOM
   #
   class SuperItem < SuperParent
 
+    include ImageProcessor
+
     # Checks if colored pixel data is present.
     # Returns true if it is, false if not.
     #
     def color?
       # "Photometric Interpretation" is contained in the data element "0028,0004":
-      photometric = get_photometric_interpretation()
-      if photometric.include?("COLOR") or photometric.include?("RGB") or photometric.include?("YBR")
-        return true
-      else
+      begin
+        photometric = photometry
+        if photometric.include?("COLOR") or photometric.include?("RGB") or photometric.include?("YBR")
+          return true
+        else
+          return false
+        end
+      rescue
         return false
       end
     end
@@ -205,29 +211,26 @@ module DICOM
     def get_images_magick(options={})
       if exists?(PIXEL_TAG)
         rows, columns, nr_frames = image_properties
-        transfer_syntax = get_transfer_syntax()
-        if [TXS_JPEG_BASELINE, TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY].include?(transfer_syntax) 
-          # Simply usig RMagick/ImageMagick for generating color images. 
+        if [TXS_JPEG_BASELINE, TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY].include?(transfer_syntax)
+          # Simply usig RMagick/ImageMagick for generating color images.
           images = Array.new
           image_strings().each do |string|
             im = Magick::Image.from_blob(string).first
             images << im
           end
-          return images
         elsif [TXS_RLE].include?(transfer_syntax)
           frames = Array.new
           image_strings().each do |string|
             frames << rle_decode(columns, rows, string)
           end
-        elsif [TXS_JPEG_LOSSLESS_NH, TXS_JPEG_LOSSLESS_NH_FOP, TXS_JPEG_2000_PART1_LOSSLESS].include?(transfer_syntax) 
+        elsif [TXS_JPEG_LOSSLESS_NH, TXS_JPEG_LOSSLESS_NH_FOP, TXS_JPEG_2000_PART1_LOSSLESS].include?(transfer_syntax)
           # What are going to do with those guys?
           # TXS_JPEG_LOSSLESS_NH is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
           # TXS_JPEG_LOSSLESS_NH_FOP is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
           # TXS_JPEG_2000_PART1_LOSSLESS is not supported by (my) ImageMagick version "jpc_dec_decodepkts failed"
           add_msg("Warning: Currently unsupported transfer syntax '#{transfer_syntax}'.")
-          return Array.new
+          frames = false
         elsif compression?
-          puts transfer_syntax
           frames = decompress(image_strings)
         else
           strings = image_strings.first.divide(nr_frames)
@@ -261,7 +264,11 @@ module DICOM
       end
       # Return specific frame or all images?
       if options[:frame]
-        return images.first
+        if images
+          return images[options[:frame]]
+        else
+          return images
+        end
       else
         # If first image failed, all failed. Return empty array instead of an array filled with false:
         images = Array.new if images.first == false
@@ -506,6 +513,13 @@ module DICOM
     private
 
 
+    # Returns the value from the "Bits Allocated" DataElement.
+    #
+    def bit_depth
+      raise "The 'Bits Allocated' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
+      return value("0028,0100")
+    end
+
     # Performes a run length decoding on the input stream.
     #
     # === Notes
@@ -519,7 +533,7 @@ module DICOM
     # * <tt>string</tt> - packed data
     #
     #--
-    # TODO: Remove cols and rows, were only added for debugging. 
+    # TODO: Remove cols and rows, were only added for debugging.
     #
     def rle_decode(cols, rows, string)
       pixels = Array.new
@@ -555,7 +569,7 @@ module DICOM
             next_bytes = b + 1
           else
             # Explaining the 257 at this point is a little bit complicate. Basically it has something
-            # to do with the algorithm described in the DICOM standard and that the value -1 as uint8 is 255. 
+            # to do with the algorithm described in the DICOM standard and that the value -1 as uint8 is 255.
             # TODO: Is this architectur safe or does it only work on Intel systems???
             next_multiplier = 257 - b
           end
@@ -567,7 +581,7 @@ module DICOM
       return pixels
     end
 
-
+=begin
     # Attempts to decompress compressed frames of pixel data.
     # If successful, returns the pixel data frames in a Ruby Array. If not, returns false.
     #
@@ -609,20 +623,7 @@ module DICOM
       end
       return pixels
     end
-
-    # Returns a pixel map string, used by RMagick when building an image object from an array.
-    #
-    def magick_pixel_map
-      # "Photometric Interpretation" is contained in the data element "0028,0004":
-      photometric = get_photometric_interpretation()
-      if photometric.include?("COLOR") or photometric.include?("RGB")
-        return "RGB"
-      elsif photometric.include?("YBR")
-        return "YBR"
-      else
-        return "I" # (Assuming greyscale)
-      end
-    end
+=end
 
     # Processes the pixel array based on attributes defined in the DICOM object to produce a pixel array
     # with correct pixel colors (RGB) as well as pixel order (RGB-pixel1, RGB-pixel2, etc).
@@ -637,7 +638,7 @@ module DICOM
     #
     def process_colors(pixels)
       proper_rgb = false
-      photometric = get_photometric_interpretation()
+      photometric = photometry()
       # (With RLE COLOR PALETTE the Planar Configuration is not set)
       planar = self["0028,0006"].is_a?(DataElement) ? self["0028,0006"].value : 0
       # Step 1: Produce an array with RGB values. At this time, YBR is not supported in ruby-dicom,
@@ -860,9 +861,6 @@ module DICOM
     #
     # * Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
     #
-    #--
-    # FIXME: Monitor the RMagick situation with import_pixels, array and CharPixel.
-    #
     def read_image_magick(pixel_data, columns, rows, options={})
       # Remap the image from pixel values to presentation values if the user has requested this:
       if options[:remap] or options[:level]
@@ -878,15 +876,7 @@ module DICOM
       else
         # Although rescaling with presentation values is not wanted, we still need to make sure pixel values are within the accepted range:
         pixel_data = rescale_for_magick(pixel_data)
-        image_magick_data_type = determine_image_magick_data_type()
-        # Load original pixel values to a RMagick object:
-        if image_magick_data_type == Magick::CharPixel
-          # A RMagick bug is files at github that it is not possible to call this function with the array values.
-          # Therefore, those values are packed before calling import_pixels.
-         image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data.pack('C*'), image_magick_data_type)
-        else
-          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data, image_magick_data_type)
-        end
+        image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
       end
       return image
     end
@@ -975,21 +965,6 @@ module DICOM
       return template
     end
 
-    # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
-    #
-    # === Notes
-    #
-    # If some of these values are missing in the DObject instance, default values are used instead
-    # for intercept and slope, while center and width are set to nil. No errors are raised.
-    #
-    def window_level_values
-      center = (self["0028,1050"].is_a?(DataElement) == true ? self["0028,1050"].value.to_i : nil)
-      width = (self["0028,1051"].is_a?(DataElement) == true ? self["0028,1051"].value.to_i : nil)
-      intercept = (self["0028,1052"].is_a?(DataElement) == true ? self["0028,1052"].value.to_i : 0)
-      slope = (self["0028,1053"].is_a?(DataElement) == true ? self["0028,1053"].value.to_i : 1)
-      return center, width, intercept, slope
-    end
-    
     # Returns the RMagick StorageType pixel value corresponding to a given bit length.
     #
     def number_of_bits_to_image_magick_data_type(nr_bits)
@@ -1003,8 +978,8 @@ module DICOM
         Magick::CharPixel
       end
     end
-    
-    
+
+
     # Determines and returns the RMagick StorageType pixel value for the pixel data of this DICOM image instance.
     #
     # === Notes
@@ -1014,7 +989,7 @@ module DICOM
     #
     def determine_image_magick_data_type
       image_magick_data_type = nil
-      if get_photometric_interpretation() == PI_PALETTE_COLOR
+      if photometry() == PI_PALETTE_COLOR
         # Only one channel is checked and it is assumed that all channels have the same number of bits.
         nr_bits = self["0028,1101"].value.split("\\").last.to_i
         image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
@@ -1027,18 +1002,27 @@ module DICOM
       end
       return image_magick_data_type
     end
-    
-    # Returns the Photometric Interpretation value string of this DICOM instance.
+
+    # Returns the value from the "Photometric Interpretation" DataElement.
     #
-    def get_photometric_interpretation
-      photometric = (self["0028,0004"].is_a?(DataElement) == true ? self["0028,0004"].value.upcase : "")
-      return photometric
+    def photometry
+      raise "The 'Photometric Interpretation' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
+      return value("0028,0004").upcase
     end
-    
-    # Returns the transfer syntax value string of this DICOM instance.
+
+    # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
     #
-    def get_transfer_syntax
-      return (self['0002,0010'].is_a?(DataElement) == true ? self['0002,0010'].value : "")
+    # === Notes
+    #
+    # If some of these values are missing in the DObject instance, default values are used instead
+    # for intercept and slope, while center and width are set to nil. No errors are raised.
+    #
+    def window_level_values
+      center = (self["0028,1050"].is_a?(DataElement) == true ? self["0028,1050"].value.to_i : nil)
+      width = (self["0028,1051"].is_a?(DataElement) == true ? self["0028,1051"].value.to_i : nil)
+      intercept = (self["0028,1052"].is_a?(DataElement) == true ? self["0028,1052"].value.to_i : 0)
+      slope = (self["0028,1053"].is_a?(DataElement) == true ? self["0028,1053"].value.to_i : 1)
+      return center, width, intercept, slope
     end
 
   end

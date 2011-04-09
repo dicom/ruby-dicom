@@ -137,4 +137,21 @@ class Array
     end
   end
 
+  # Packs an array of (unsigned) integers to a binary string (blob).
+  #
+  # === Parameters
+  #
+  # * <tt>depth</tt> -- The bith depth to be used when encoding the unsigned integers.
+  #
+  def to_blob(depth)
+    raise ArgumentError, "Expected Integer, got #{depth.class}" unless depth.is_a?(Integer)
+    raise ArgumentError, "Unsupported bit depth #{depth}." unless [8,16].include?(depth)
+    case depth
+    when 8
+      return self.pack("C*") # Unsigned char
+    when 16
+      return self.pack("S*") # Unsigned short, native byte order
+    end
+  end
+
 end
