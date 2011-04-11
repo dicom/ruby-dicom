@@ -11,27 +11,27 @@ module DICOM
         #
         # * <tt>blobs</tt> -- An array of binary string blobs containing compressed pixel data.
         #
-        #--
-        # FIXME: Work in progress
         def decompress(blobs)
-          pixels = Array.new
-          # We attempt to decompress the pixels with ImageMagick:
-          begin
-            strings.each do |string|
-              image = MiniMagick::Image.read(string)
-              if color?
-                image = image.first if image.kind_of?(Array)
-                pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
-              else
-                pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "I")
-              end
-              pixels << pixel_frame
-            end
-          rescue
-            add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!\n" + $!.to_s)
-            pixels = false
+          images = Array.new
+          # We attempt to decompress the pixels using ImageMagick:
+          blobs.each do |string|
+            images << MiniMagick::Image.read(string)
           end
-          return pixels
+          return images
+        end
+
+        # Extracts an array of pixels (integers) from an image object.
+        #
+        # === Notes
+        #
+        # * This feature is not available as of yet in the mini_magick image processor. If this feature is needed, please try another image processor (RMagick).
+        #
+        # === Parameters
+        #
+        # * <tt>image</tt> -- An MiniMagick image object.
+        #
+        def export_pixels(image)
+          raise "Exporting pixels is not yet available with the mini_magick processor. Please try another image processor (RMagick)."
         end
 
         # Creates an image object from a binary string blob which contains raw pixel data.

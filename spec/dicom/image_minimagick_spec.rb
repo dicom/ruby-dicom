@@ -10,7 +10,7 @@ require 'mini_magick'
 
 module DICOM
 
-  describe SuperItem, "#get_image_magick" do
+  describe SuperItem, "#get_image_magick [using :mini_magick]" do
 
     before :each do
       DICOM.image_processor = :mini_magick
@@ -31,7 +31,26 @@ module DICOM
 
     it "should read the pixel data of this DICOM file and return an image object" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_magick.should be_a(MiniMagick::Image)
+      image = obj.get_image_magick
+      image.should be_a(MiniMagick::Image)
+    end
+
+    it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return an image object" do
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      image = obj.get_image_magick
+      image.should be_a(MiniMagick::Image)
+    end
+
+    it "should decompress the RLE encoded pixel data of this DICOM file and return an image object" do
+      obj = DObject.new(DCM_EXPLICIT_MR_RLE_MONO2, :verbose => false)
+      image = obj.get_image_magick
+      image.should be_a(MiniMagick::Image)
+    end
+
+    it "should return false when not suceeding in decompressing the pixel data of this DICOM file" do
+      obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2, :verbose => false)
+      image = obj.get_image_magick
+      image.should eql false
     end
 
   end

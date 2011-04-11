@@ -18,12 +18,19 @@ end
 
 suppress_warnings do
   # Sample DICOM files:
+  # Uncompressed:
   DICOM::DCM_IMPLICIT_MR_16BIT_MONO2 = File.dirname(__FILE__) + '/support/sample_implicit_mr_16bit_mono2.dcm'
   DICOM::DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2 = File.dirname(__FILE__) + '/support/sample_no-header_implicit_mr_16bit_mono2.dcm'
   DICOM::DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG = File.dirname(__FILE__) + '/support/sample_explicit-big-endian_us_8bit_rgb.dcm'
   DICOM::DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL = File.dirname(__FILE__) + '/support/sample_no-header_implicit_ot_8bit_pal.dcm'
+  DICOM::DCM_EXPLICIT_MR_16BIT_MONO2_NON_SQUARE_PAL_ICON = File.dirname(__FILE__) + '/support/sample_explicit_mr_16bit_mono2_non-square_pal_icon.dcm'
+  DICOM::DCM_EXPLICIT_RTDOSE_16BIT_MONO2_3D_VOLUME = File.dirname(__FILE__) + '/support/sample_explicit_rtdose_16bit_mono2_3d-volume.dcm'
+  # With compression:
   DICOM::DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2 = File.dirname(__FILE__) + '/support/sample_explicit_mr_jpeg-lossy_mono2.dcm'
   DICOM::DCM_EXPLICIT_US_RLE_PAL_MULTIFRAME = File.dirname(__FILE__) + '/support/sample_explicit_us_rle_pal_multiframe.dcm'
+  DICOM::DCM_EXPLICIT_MR_RLE_MONO2 = File.dirname(__FILE__) + '/support/sample_explicit_mr_rle_mono2.dcm'
+  DICOM::DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2 = File.dirname(__FILE__) + '/support/sample_explicit_ct_jpeg-lossless-nh_mono2.dcm'
+  DICOM::DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME = File.dirname(__FILE__) + '/support/sample_implicit_us_jpeg2k-lossless-mono2-multiframe.dcm'
   # Directory for writing temporary files:
   DICOM::TMPDIR = "tmp/"
 end

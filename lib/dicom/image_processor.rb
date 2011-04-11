@@ -9,9 +9,23 @@ module DICOM
     # * <tt>blobs</tt> -- Binary string blob(s) containing compressed pixel data.
     #
     def decompress(blobs)
-      raise ArgumentError, "Expected Array or String, got #{blobs.class}." unless [String, Array].includes?(blobs.class)
+      raise ArgumentError, "Expected Array or String, got #{blobs.class}." unless [String, Array].include?(blobs.class)
       blobs = [blobs] unless blobs.is_a?(Array)
-      image_module.decompress(blobs)
+      begin
+        return image_module.decompress(blobs)
+      rescue
+        return false
+      end
+    end
+
+    # Extracts an array of pixels (integers) from an image object.
+    #
+    # === Parameters
+    #
+    # * <tt>image</tt> -- An Rmagick image object.
+    #
+    def export_pixels(image)
+      image_module.export_pixels(image)
     end
 
     # Creates an image object from a binary string blob.

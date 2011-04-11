@@ -148,13 +148,14 @@ module DICOM
       return pixels
     end
 
-    # Returns a single RMagick image, created from the encoded pixel data using the image related data elements in the DObject instance.
-    # If the DICOM object contains multiple image frames, the first image frame is returned.
+    # Returns a single image object, created from the encoded pixel data using the image related data elements in the DICOM object.
+    # If the object contains multiple image frames, the first image frame is returned, unless the :frame option is used.
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     #
     # === Notes
     #
-    # * To call this method the user needs to have loaded the ImageMagick bindings in advance (require 'RMagick').
+    # * Returns an image object in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
+    # * When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
     #
     # === Parameters
     #
@@ -180,11 +181,13 @@ module DICOM
       return get_images_magick(options)
     end
 
-    # Returns an array of RMagick images, created from the encoded pixel data using the image related data elements in the DObject instance.
+    # Returns an array of image objects, created from the encoded pixel data using the image related data elements in the DICOM object.
+    # Returns an empty array if no data is present, or if it fails to retrieve pixel data which is present.
     #
     # === Notes
     #
-    # * To call this method the user needs to have loaded the ImageMagick bindings in advance (require 'RMagick').
+    # * Returns an array of image objects in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
+    # * When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
     #
     # === Parameters
     #
@@ -192,7 +195,7 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:frame</tt> -- Fixnum. Returns an image object from the specified frame.
+    # * <tt>:frame</tt> -- Fixnum. Returns only an image object from the specified frame.
     # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
     # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
@@ -210,68 +213,54 @@ module DICOM
     #
     def get_images_magick(options={})
       if exists?(PIXEL_TAG)
-        rows, columns, nr_frames = image_properties
-        if [TXS_JPEG_BASELINE, TXS_JPEG_2000_PART1_LOSSLESS_OR_LOSSY].include?(transfer_syntax)
-          # Simply usig RMagick/ImageMagick for generating color images.
-          images = Array.new
-          image_strings().each do |string|
-            im = Magick::Image.from_blob(string).first
-            images << im
+        # Gather the necessary image data, and extract the frame of interest if indicated:
+        rows, columns, frames = image_properties
+        strings = image_strings(true)
+        strings = [strings[options[:frame]]] if options[:frame]
+        if compression?
+          # Decompress, either to numbers (RLE) or to an image object (jpeg):
+          if [TXS_RLE].include?(transfer_syntax)
+            pixel_frames = Array.new
+            strings.each {|string| pixel_frames << rle_decode(columns, rows, string)}
+          else
+            images = decompress(strings)
+            add_msg("Warning: Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}')") unless images
           end
-        elsif [TXS_RLE].include?(transfer_syntax)
-          frames = Array.new
-          image_strings().each do |string|
-            frames << rle_decode(columns, rows, string)
-          end
-        elsif [TXS_JPEG_LOSSLESS_NH, TXS_JPEG_LOSSLESS_NH_FOP, TXS_JPEG_2000_PART1_LOSSLESS].include?(transfer_syntax)
-          # What are going to do with those guys?
-          # TXS_JPEG_LOSSLESS_NH is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
-          # TXS_JPEG_LOSSLESS_NH_FOP is not supported by (my) ImageMagick version "Unsupported JPEG process: SOF type 0xc3"
-          # TXS_JPEG_2000_PART1_LOSSLESS is not supported by (my) ImageMagick version "jpc_dec_decodepkts failed"
-          add_msg("Warning: Currently unsupported transfer syntax '#{transfer_syntax}'.")
-          frames = false
-        elsif compression?
-          frames = decompress(image_strings)
         else
-          strings = image_strings.first.divide(nr_frames)
-          strings = [strings[options[:frame]]] if options[:frame]
-          frames = Array.new
-          strings.each do |string|
-            frames << decode_pixels(string)
-          end
+          # Uncompressed: Decode to numbers.
+          pixel_frames = Array.new
+          strings.each {|string| pixel_frames << decode_pixels(string)}
         end
-        if frames
+        if pixel_frames
           images = Array.new
-          frames.each do |pixels|
+          pixel_frames.each do |pixels|
             # Pixel values and pixel order may need to be rearranged if we have color data:
             pixels = process_colors(pixels) if color?
             if pixels
               image = read_image_magick(pixels, columns, rows, options)
             else
-              add_msg("Warning: Processing pixel values for this particular color mode failed. RMagick image can not be filled.")
+              add_msg("Warning: Processing pixel values for this particular color mode failed, unable to construct image(s).")
               image = false
             end
-            images << image
+            images << image if image
           end
         else
-          if images.nil?
-            add_msg("Warning: Decompressing pixel values has failed. RMagick image can not be filled.")
-            images = [false]
-          end
+          images = false unless images
         end
       else
-        image = nil
+        images = nil
       end
-      # Return specific frame or all images?
+      # Return specific frame or array with all images?
       if options[:frame]
+        # Return image object (if success) or false/nil on failure:
         if images
-          return images[options[:frame]]
+          return images.first
         else
           return images
         end
       else
-        # If first image failed, all failed. Return empty array instead of an array filled with false:
-        images = Array.new if images.first == false
+        # Return array of image objects or an empty array if decoding images failed.
+        images = Array.new unless images
         return images
       end
     end
@@ -392,21 +381,28 @@ module DICOM
       end
     end
 
-    # Returns the pixel data binary string(s) of this parent in an array.
+    # Returns the pixel data binary string(s) in an array.
     # If no pixel data is present, returns an empty array.
     #
-    def image_strings
+    # === Parameters
+    #
+    # * <tt>split</tt> -- Boolean. If true, a pixel data string containing 3d volumetric data will be split into N substrings, where N equals the number of frames.
+    #
+    def image_strings(split=false)
       # Pixel data may be a single binary string in the pixel data element,
       # or located in several encapsulated item elements:
       pixel_element = self[PIXEL_TAG]
       strings = Array.new
       if pixel_element.is_a?(DataElement)
-        strings << pixel_element.bin
+        if split
+          rows, columns, frames = image_properties
+          strings = pixel_element.bin.dup.divide(frames)
+        else
+          strings << pixel_element.bin
+        end
       elsif pixel_element.is_a?(Sequence)
         pixel_items = pixel_element.children.first.children
-        pixel_items.each do |item|
-          strings << item.bin
-        end
+        pixel_items.each {|item| strings << item.bin}
       end
       return strings
     end
@@ -768,7 +764,7 @@ module DICOM
         pixel_data.collect!{|x| (slope * x) + intercept}
       end
       pixel_data, offset, factor = rescale_for_magick(pixel_data, return_rescale_values=true)
-      image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data)
+      image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
       # Contrast enhancement by black and white thresholding:
       if center and width
         low = (center - width/2 + offset) / factor
@@ -868,7 +864,7 @@ module DICOM
         if options[:narray] == true
           # Use numerical array (fast):
           pixel_data = process_presentation_values_narray(pixel_data, 0, Magick::QuantumRange, options[:level]).to_a
-          image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, magick_pixel_map, pixel_data)
+          image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
         else
           # Use a combination of ruby array and RMagick processing:
           image = process_presentation_values_magick(pixel_data, Magick::QuantumRange, columns, rows, options[:level])
@@ -881,7 +877,7 @@ module DICOM
       return image
     end
 
-    # Rescales the pixel range so that it fits within RMagick's range of accepted values (0-QuantumRange).
+    # Offsets the pixel values so they are all positive (ImageMagick doesnt like signed integers.
     # Returns the rescaled array.
     # Also returns the offset and factor used in value rescaling if requested.
     #
@@ -891,20 +887,15 @@ module DICOM
     # * <tt>return_rescale_values</tt> -- Boolean. If set as true the method returns additional factors used in the value rescaling.
     #
     def rescale_for_magick(pixels, return_rescale_values=false)
-      # Need to introduce an offset? (RMagick doesnt like negative numbers)
+      # Need to introduce an offset? (ImageMagick doesnt like negative numbers)
       offset = 0
       min_pixel_value = pixels.min
       if min_pixel_value < 0
         offset = min_pixel_value.abs
         pixels.collect!{|x| x + offset}
       end
-      # Downscale pixel range?
+      # With the new way of handling pixel blobs with the image processors, downscaling to the QuantumRange should not be necessary anymore.
       factor = 1
-      max_pixel_value = pixels.max
-      if max_pixel_value > Magick::QuantumRange
-        factor = (max_pixel_value.to_f/Magick::QuantumRange.to_f).ceil
-        pixels.collect!{|x| x / factor}
-      end
       if return_rescale_values
         return pixels, offset, factor
       else

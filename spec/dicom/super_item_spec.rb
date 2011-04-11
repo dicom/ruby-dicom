@@ -213,14 +213,21 @@ module DICOM
       obj.get_image_narray.length.should eql 65536 # 256*256 pixels
     end
 
-    # FIXME: Replace this dicom file with one that has pixel data where rows != columns.
-    # Add another example with a dicom file which has 3d volume pixel data.
-    it "should return an NArray which is sized according to the number of rows and columns in the pixel data" do
-      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+    it "should return an NArray which is sized according to the dimensions of the 2D pixel image" do
+      obj = DObject.new(DCM_EXPLICIT_MR_16BIT_MONO2_NON_SQUARE_PAL_ICON, :verbose => false)
       narr = obj.get_image_narray
       narr.shape[0].should eql 1 # nr of frames
-      narr.shape[1].should eql 256
-      narr.shape[2].should eql 256
+      narr.shape[1].should eql 448 # nr of columns
+      narr.shape[2].should eql 268 # nr of rows
+      narr.shape.length.should eql 3
+    end
+
+    it "should return an NArray which is sized according to the dimensions of the 3D pixel volume" do
+      obj = DObject.new(DCM_EXPLICIT_RTDOSE_16BIT_MONO2_3D_VOLUME, :verbose => false)
+      narr = obj.get_image_narray
+      narr.shape[0].should eql 126 # nr of frames
+      narr.shape[1].should eql 82 # nr of columns
+      narr.shape[2].should eql 6 # nr of rows
       narr.shape.length.should eql 3
     end
 

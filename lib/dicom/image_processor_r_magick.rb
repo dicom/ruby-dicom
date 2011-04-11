@@ -24,25 +24,31 @@ module DICOM
         # * <tt>blobs</tt> -- An array of binary string blobs containing compressed pixel data.
         #
         #--
-        # FIXME: Work in progress
+        # The following transfer syntaxes have been verified as failing with ImageMagick:
+        # TXS_JPEG_LOSSLESS_NH is not supported by (my) ImageMagick version: "Unsupported JPEG process: SOF type 0xc3"
+        # TXS_JPEG_LOSSLESS_NH_FOP is not supported by (my) ImageMagick version: "Unsupported JPEG process: SOF type 0xc3"
+        # TXS_JPEG_2000_PART1_LOSSLESS is not supported by (my) ImageMagick version: "jpc_dec_decodepkts failed"
+        #
         def decompress(blobs)
-          pixels = Array.new
+          images = Array.new
           # We attempt to decompress the pixels using ImageMagick:
-          begin
-            strings.each do |string|
-              image = Magick::Image.from_blob(string)
-              if color?
-                # Magick::Image.from_blob returns an array in case JPEG (YBR_FULL_4_2_2) data is provides as input
-                image = image.first if image.kind_of?(Array)
-                pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
-              else
-                pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "I")
-              end
-              pixels << pixel_frame
+            blobs.each do |string|
+              images << Magick::Image.from_blob(string).first
             end
-          rescue
-            add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!\n" + $!.to_s)
-            pixels = false
+          return images
+        end
+
+        # Extracts an array of pixels (integers) from an image object.
+        #
+        # === Parameters
+        #
+        # * <tt>image</tt> -- An Rmagick image object.
+        #
+        def export_pixels(image)
+          if color?
+            pixels = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
+          else
+            pixels = image.export_pixels(0, 0, image.columns, image.rows, "I")
           end
           return pixels
         end
