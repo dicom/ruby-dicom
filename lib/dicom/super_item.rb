@@ -325,17 +325,17 @@ module DICOM
     #
     # === Examples
     #
-    #   obj.image_from_file("custom_image.bin")
+    #   obj.image_from_file("custom_image.dat")
     #
     def image_from_file(file)
-      # Read and extract:
+      raise ArgumentError, "Expected #{String}, got #{file.class}." unless file.is_a?(String)
       f = File.new(file, "rb")
       bin = f.read(f.stat.size)
       if bin.length > 0
         # Write the binary data to the Pixel Data Element:
         set_pixels(bin)
       else
-        add_msg("Notice: The specified file (#{file}) is empty. Nothing to store.")
+        add_msg("Notice: The specified file (#{file}) is empty. Nothing to transfer.")
       end
     end
 
@@ -357,7 +357,11 @@ module DICOM
       end
     end
 
-    # Dumps the binary content of the Pixel Data element to a file.
+    # Dumps the binary content of the Pixel Data element to the specified file.
+    #
+    # === Notes
+    #
+    # * If the DICOM object contains multi-fragment pixel data, each fragment will be dumped to separate files (e.q. 'fragment-0.dat', 'fragment-1.dat').
     #
     # === Parameters
     #
@@ -365,16 +369,26 @@ module DICOM
     #
     # === Examples
     #
-    #   obj.image_to_file("exported_image.bin")
+    #   obj.image_to_file("exported_image.dat")
     #
     def image_to_file(file)
-      # Get the binary image strings and dump them to file:
+      raise ArgumentError, "Expected #{String}, got #{file.class}." unless file.is_a?(String)
+      # Split the file name in case of multiple fragments:
+      parts = file.split('.')
+      if parts.length > 1
+        base = parts[0..-2].join
+        extension = "." + parts.last
+      else
+        base = file
+        extension = ""
+      end
+      # Get the binary image strings and dump them to the file(s):
       images = image_strings
       images.each_index do |i|
         if images.length == 1
           f = File.new(file, "wb")
         else
-          f = File.new("#{file}_#{i}", "wb")
+          f = File.new("#{base}-#{i}#{extension}", "wb")
         end
         f.write(images[i])
         f.close
@@ -422,14 +436,11 @@ module DICOM
     # * <tt>pixels</tt> -- An array of pixel values (integers).
     #
     def set_image(pixels)
-      if pixels.is_a?(Array)
-        # Encode the pixel data:
-        bin = encode_pixels(pixels)
-        # Write the binary data to the Pixel Data Element:
-        set_pixels(bin)
-      else
-        raise ArgumentError, "Unexpected object type (#{pixels.class}) for the pixels parameter. Array was expected."
-      end
+      raise ArgumentError, "Expected Array, got #{pixels.class}." unless pixels.is_a?(Array)
+      # Encode the pixel data:
+      bin = encode_pixels(pixels)
+      # Write the binary data to the Pixel Data Element:
+      set_pixels(bin)
     end
 
     # Encodes pixel data from an RMagick image object and writes it to the pixel data element (7FE0,0010).

@@ -46,7 +46,7 @@ module DICOM
         # * <tt>format</tt> -- String describing the image format to be used when creating the image object. Defaults to 'png'.
         #
         def import_pixels(blob, columns, rows, depth, photometry, format="png")
-          image = MiniMagick::Image.import_pixels(blob, columns, rows, depth, im_map(photometry), "png")
+          image = MiniMagick::Image.import_pixels(blob, columns, rows, depth, im_map(photometry), format)
         end
 
         # Returns an ImageMagick pixel map string based on the input DICOM photometry string.

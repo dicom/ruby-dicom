@@ -9,7 +9,7 @@ module DICOM
   describe SuperItem, "#color?" do
 
     it "should return false when the DICOM object has no pixel data" do
-      obj = DObject.new(nil)
+      obj = DObject.new(nil, :verbose => false)
       obj.color?.should be_false
     end
 
@@ -34,7 +34,7 @@ module DICOM
   describe SuperItem, "#compression?" do
 
     it "should return false when the DICOM object has no pixel data" do
-      obj = DObject.new(nil)
+      obj = DObject.new(nil, :verbose => false)
       obj.compression?.should be_false
     end
 
@@ -59,7 +59,7 @@ module DICOM
   describe SuperItem, "#decode_pixels" do
 
     it "should raise an error when the DICOM object doesn't have the necessary data elements needed to decode the pixel data" do
-      obj = DObject.new(nil)
+      obj = DObject.new(nil, :verbose => false)
       expect {obj.decode_pixels("0000")}.to raise_error
     end
 
@@ -81,7 +81,7 @@ module DICOM
   describe SuperItem, "#encode_pixels" do
 
     it "should raise an error when the DICOM object doesn't have the necessary data elements needed to decode the pixel data" do
-      obj = DObject.new(nil)
+      obj = DObject.new(nil, :verbose => false)
       expect {obj.encode_pixels([42, 42])}.to raise_error
     end
 
@@ -273,6 +273,146 @@ module DICOM
     it "should remap the pixel values using the requested window center & width values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.get_image_narray(:level => [1100, 100]).max.should eql 1150
+    end
+
+  end
+
+
+  describe SuperItem, "#image_from_file" do
+
+    it "should raise an ArgumentError when a non-string argument is passed" do
+      obj = DObject.new(nil, :verbose => false)
+      expect {obj.image_from_file(42)}.to raise_error(ArgumentError)
+    end
+
+    it "should copy the content of the specified file to the DICOM object's pixel data element" do
+      file_string = "abcdefghijkl"
+      File.open(TMPDIR + "string.dat", 'wb') {|f| f.write(file_string) }
+      obj = DObject.new(nil, :verbose => false)
+      obj.image_from_file(TMPDIR + "string.dat")
+      obj["7FE0,0010"].bin.should eql file_string
+    end
+
+  end
+
+  describe SuperItem, "#image_properties" do
+
+    it "should raise an error when the 'Columns' data element is missing from the DICOM object" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0010", 512)) # Rows
+      expect {obj.image_properties}.to raise_error
+    end
+
+    it "should raise an error when the 'Rows' data element is missing from the DICOM object" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0011", 512)) # Columns
+      expect {obj.image_properties}.to raise_error
+    end
+
+    it "should return rows, columns and frames (=1) when the 'Number of Frames' data element is missing from the DICOM object" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0010", 512)) # Rows
+      obj.add(DataElement.new("0028,0011", 512)) # Columns
+      rows, columns, frames = obj.image_properties
+      rows.should eql 512
+      columns.should eql 512
+      frames.should eql 1
+    end
+
+    it "should return correct integer values for rows, columns and frames when all corresponding data elements are defined in the DICOM object" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0010", 512)) # Rows
+      obj.add(DataElement.new("0028,0011", 256)) # Columns
+      obj.add(DataElement.new("0028,0008", "8")) # Number of Frames
+      rows, columns, frames = obj.image_properties
+      rows.should eql 512
+      columns.should eql 256
+      frames.should eql 8
+    end
+
+  end
+
+
+  describe SuperItem, "#image_to_file" do
+
+    it "should raise an ArgumentError when a non-string argument is passed" do
+      obj = DObject.new(nil, :verbose => false)
+      expect {obj.image_to_file(42)}.to raise_error(ArgumentError)
+    end
+
+    it "should write the DICOM object's pixel data string to the specified file" do
+      pixel_data = "abcdefghijkl"
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("7FE0,0010", pixel_data, :encoded => true))
+      obj.image_to_file(TMPDIR + "string.dat")
+      f = File.new(TMPDIR + "string.dat", "rb")
+      f.read.should eql pixel_data
+    end
+
+    it "should write multiple files, using the expected file enumeration and image fragments, when the DICOM object has multi-fragment pixel data" do
+      obj = DObject.new(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME, :verbose => false) # 8 frames
+      obj.image_to_file(TMPDIR + "multi.dat")
+      File.readable?(TMPDIR + "multi-0.dat").should be_true
+      File.readable?(TMPDIR + "multi-7.dat").should be_true
+      f0 = File.new(TMPDIR + "multi-0.dat", "rb")
+      f0.read.should eql obj["7FE0,0010"][0][0].bin
+      f7 = File.new(TMPDIR + "multi-7.dat", "rb")
+      f7.read.should eql obj["7FE0,0010"][0][7].bin
+    end
+
+  end
+
+
+  describe SuperItem, "#remove_sequences" do
+
+    it "should remove all sequences from the DICOM object" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0010,0030", "20000101"))
+      obj.add(Sequence.new("0008,1140"))
+      obj.add(Sequence.new("0009,1140"))
+      obj.add(Sequence.new("0088,0200"))
+      obj["0008,1140"].add_item
+      obj.add(DataElement.new("0011,0030", "42"))
+      obj.remove_sequences
+      obj.children.length.should eql 2
+      obj.exists?("0008,1140").should be_false
+      obj.exists?("0009,1140").should be_false
+      obj.exists?("0088,0200").should be_false
+    end
+
+    it "should remove all sequences from the Item" do
+      i = Item.new
+      i.add(DataElement.new("0010,0030", "20000101"))
+      i.add(Sequence.new("0008,1140"))
+      i.add(Sequence.new("0009,1140"))
+      i.add(Sequence.new("0088,0200"))
+      i["0008,1140"].add_item
+      i.add(DataElement.new("0011,0030", "42"))
+      i.remove_sequences
+      i.children.length.should eql 2
+      i.exists?("0008,1140").should be_false
+      i.exists?("0009,1140").should be_false
+      i.exists?("0088,0200").should be_false
+    end
+
+  end
+
+
+  describe SuperItem, "#set_image" do
+
+    it "should raise an ArgumentError when a non-array argument is passed" do
+      obj = DObject.new(nil, :verbose => false)
+      expect {obj.set_image(42)}.to raise_error(ArgumentError)
+    end
+
+    it "should encode the pixel array and write it to the DICOM object's pixel data element" do
+      pixel_data = [0,42,0,42]
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0100", 8)) # Bit depth
+      obj.add(DataElement.new("0028,0103", 0)) # Pixel Representation
+      obj.set_image(pixel_data)
+      obj["7FE0,0010"].bin.length.should eql 4
+      obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
     end
 
   end

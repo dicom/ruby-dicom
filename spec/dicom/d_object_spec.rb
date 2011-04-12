@@ -215,7 +215,7 @@ module DICOM
 
     before :each do
       @obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
-      @tmp = DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2 + "_WRITETEST.dcm"
+      @output = TMPDIR + File.basename(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
     end
 
     it "should raise ArgumentError when a non-string argument is used" do
@@ -223,18 +223,14 @@ module DICOM
     end
 
     it "should set the write_success attribute as true after successfully writing this DICOM object to file" do
-      @obj.write(@tmp)
+      @obj.write(@output)
       @obj.write_success.should be_true
     end
 
     it "should be able to successfully read the written DICOM file if it was written correctly" do
-      @obj.write(@tmp)
-      obj_reloaded = DObject.new(@tmp, :verbose => false)
+      @obj.write(@output)
+      obj_reloaded = DObject.new(@output, :verbose => false)
       obj_reloaded.read_success.should be_true
-    end
-
-    after :each do
-      File.delete(@tmp) if File.exist?(@tmp)
     end
 
   end
