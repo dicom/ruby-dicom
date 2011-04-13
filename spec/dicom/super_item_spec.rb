@@ -417,4 +417,24 @@ module DICOM
 
   end
 
+
+  describe SuperItem, "#set_image_narray" do
+
+    it "should raise an ArgumentError when a non-NArray argument is passed" do
+      obj = DObject.new(nil, :verbose => false)
+      expect {obj.set_image_narray(42)}.to raise_error(ArgumentError)
+    end
+
+    it "should encode the pixels of the NArray and write them to the DICOM object's pixel data element" do
+      pixel_data = [0,42,0,42]
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0100", 8)) # Bit depth
+      obj.add(DataElement.new("0028,0103", 0)) # Pixel Representation
+      obj.set_image_narray(NArray.to_na(pixel_data))
+      obj["7FE0,0010"].bin.length.should eql 4
+      obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
+    end
+
+  end
+
 end

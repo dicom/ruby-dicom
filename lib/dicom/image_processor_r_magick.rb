@@ -44,12 +44,9 @@ module DICOM
         #
         # * <tt>image</tt> -- An Rmagick image object.
         #
-        def export_pixels(image)
-          if color?
-            pixels = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
-          else
-            pixels = image.export_pixels(0, 0, image.columns, image.rows, "I")
-          end
+        def export_pixels(image, photometry)
+          raise ArgumentError, "Expected Magick::Image, got #{image.class}." unless image.is_a?(Magick::Image)
+          pixels = image.export_pixels(0, 0, image.columns, image.rows, rm_map(photometry))
           return pixels
         end
 

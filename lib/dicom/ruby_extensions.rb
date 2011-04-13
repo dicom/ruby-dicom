@@ -103,8 +103,7 @@ end
 
 
 # Extensions to the Array class.
-# These methods deal with decoding & encoding big endian signed integers,
-# which is surprisingly not supported out of the box in Ruby.
+# These methods deal with encoding Integer arrays as well as conversion between signed and unsigned integers.
 #
 class Array
 
@@ -112,7 +111,8 @@ class Array
   #
   alias __original_pack__ pack
 
-  # Redefines the old pack method, adding the ability to encode signed integers in big endian.
+  # Redefines the old pack method, adding the ability to encode signed integers in big endian
+  # (which surprisingly has not been supported out of the box in Ruby).
   #
   # === Parameters
   #
@@ -151,6 +151,42 @@ class Array
       return self.pack("C*") # Unsigned char
     when 16
       return self.pack("S*") # Unsigned short, native byte order
+    end
+  end
+
+  # Shifts the integer values of the array to make a signed data set.
+  # The size of the shift is determined by the bit depth.
+  #
+  # === Parameters
+  #
+  # * <tt>depth</tt> -- The bith depth of the integers.
+  #
+  def to_signed(depth)
+    raise ArgumentError, "Expected Integer, got #{depth.class}" unless depth.is_a?(Integer)
+    raise ArgumentError, "Unsupported bit depth #{depth}." unless [8,16].include?(depth)
+    case depth
+    when 8
+      return self.collect {|i| i - 128}
+    when 16
+      return self.collect {|i| i - 32768}
+    end
+  end
+
+  # Shifts the integer values of the array to make an unsigned data set.
+  # The size of the shift is determined by the bit depth.
+  #
+  # === Parameters
+  #
+  # * <tt>depth</tt> -- The bith depth of the integers.
+  #
+  def to_unsigned(depth)
+    raise ArgumentError, "Expected Integer, got #{depth.class}" unless depth.is_a?(Integer)
+    raise ArgumentError, "Unsupported bit depth #{depth}." unless [8,16].include?(depth)
+    case depth
+    when 8
+      return self.collect {|i| i + 128}
+    when 16
+      return self.collect {|i| i + 32768}
     end
   end
 

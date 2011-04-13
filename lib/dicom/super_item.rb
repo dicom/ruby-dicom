@@ -443,29 +443,30 @@ module DICOM
       set_pixels(bin)
     end
 
-    # Encodes pixel data from an RMagick image object and writes it to the pixel data element (7FE0,0010).
+    # Encodes pixel data from a (Magick) image object and writes it to the pixel data element (7FE0,0010).
     #
     # === Restrictions
     #
     # If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
     #
-    # Because of rescaling when importing pixel values to an RMagick object, and the possible
+    # Because of the rescaling of pixel values which happens creating a (Magick) image object, and the possible
     # difference between presentation values and pixel values, the use of set_image_magick() may
-    # result in pixel data that differs from what is expected. This method must be used with care!
+    # result in pixel data that differs somewhat from what is expected. Use with care!
     #
     # === Options
     #
-    # * <tt>:max</tt> -- Fixnum. Pixel values will be rescaled using this as the new maximum value.
-    # * <tt>:min</tt> -- Fixnum. Pixel values will be rescaled using this as the new minimum value.
+    # * <tt>:max</tt> -- Integer. Pixel values will be rescaled using this as the new maximum value.
+    # * <tt>:min</tt> -- Integer. Pixel values will be rescaled using this as the new minimum value.
     #
     # === Examples
     #
     #   # Encode an image object while requesting that only a specific pixel value range is used:
     #   obj.set_image_magick(my_image, :min => -2000, :max => 3000)
     #
-    def set_image_magick(magick_image, options={})
-      # Export the RMagick object to a standard Ruby Array:
-      pixels = magick_image.export_pixels(x=0, y=0, columns=magick_image.columns, rows=magick_image.rows, map="I")
+    def set_image_magick(image, options={})
+      raise ArgumentError, "Expected one of the supported image objects (#{valid_image_objects}), got #{image.class}." unless valid_image_objects.include?(image.class)
+      # Export to pixels using the proper image processor:
+      pixels = export_pixels(image, photometry)
       # Rescale pixel values?
       if options[:min] and options[:max]
         p_min = pixels.min
@@ -474,7 +475,7 @@ module DICOM
           wanted_range = options[:max] - options[:min]
           factor = wanted_range.to_f/(pixels.max - pixels.min).to_f
           offset = pixels.min - options[:min]
-          pixels.collect!{|x| ((x*factor)-offset).round}
+          pixels.collect! {|x| ((x*factor)-offset).round}
         end
       end
       # Encode and write to the Pixel Data Element:
@@ -498,6 +499,7 @@ module DICOM
     #   obj.set_image_narray(pixels, :min => -2000, :max => 3000)
     #
     def set_image_narray(narray, options={})
+      raise ArgumentError, "Expected NArray, got #{narray.class}." unless narray.is_a?(NArray)
       # Rescale pixel values?
       if options[:min] and options[:max]
         n_min = narray.min
@@ -510,7 +512,7 @@ module DICOM
         end
       end
       # Export the NArray object to a standard Ruby Array:
-      pixels = narray.to_a.flatten!
+      pixels = narray.to_a.flatten
       # Encode and write to the Pixel Data Element:
       set_image(pixels)
     end
@@ -521,6 +523,9 @@ module DICOM
 
 
     # Returns the value from the "Bits Allocated" DataElement.
+    #
+    #--
+    # FIXME: Is this wrong for palette color images? Should value("0028,1101").split("\\").last.to_i be used instead in this case?
     #
     def bit_depth
       raise "The 'Bits Allocated' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
@@ -882,7 +887,7 @@ module DICOM
         end
       else
         # Although rescaling with presentation values is not wanted, we still need to make sure pixel values are within the accepted range:
-        pixel_data = rescale_for_magick(pixel_data)
+        pixel_data = pixel_data.to_unsigned(bit_depth) if signed_pixels?
         image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
       end
       return image
@@ -967,49 +972,27 @@ module DICOM
       return template
     end
 
-    # Returns the RMagick StorageType pixel value corresponding to a given bit length.
-    #
-    def number_of_bits_to_image_magick_data_type(nr_bits)
-      return case nr_bits
-      when 8
-        Magick::CharPixel
-      when 16
-        Magick::ShortPixel
-      else
-        add_msg("Warning found unsupported number of bits '#{nr_bits}', defaulting to 8.")
-        Magick::CharPixel
-      end
-    end
-
-
-    # Determines and returns the RMagick StorageType pixel value for the pixel data of this DICOM image instance.
-    #
-    # === Notes
-    #
-    # If some of these values are missing in the DObject instance, default values are used instead
-    # for intercept and slope, while center and width are set to nil. No errors are raised.
-    #
-    def determine_image_magick_data_type
-      image_magick_data_type = nil
-      if photometry() == PI_PALETTE_COLOR
-        # Only one channel is checked and it is assumed that all channels have the same number of bits.
-        nr_bits = self["0028,1101"].value.split("\\").last.to_i
-        image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
-      elsif self["0028,0100"].is_a?(DataElement)
-        nr_bits = self["0028,0100"].value
-        image_magick_data_type = number_of_bits_to_image_magick_data_type(nr_bits)
-      else
-        add_msg("Could not determine the pixel depth, using default value.ABSTRACT_SYNTAX_REJECTED")
-        image_magick_data_type = Magick::ShortPixel
-      end
-      return image_magick_data_type
-    end
-
     # Returns the value from the "Photometric Interpretation" DataElement.
+    # Raises an error if it is missing.
     #
     def photometry
       raise "The 'Photometric Interpretation' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
       return value("0028,0004").upcase
+    end
+
+    # Returns true if the Pixel Representation indicates signed pixel values, and false if it indicates unsigned pixel values.
+    # Raises an error if the Pixel Representation element is not present.
+    #
+    def signed_pixels?
+      raise "The 'Pixel Representation' data element is missing from this DICOM instance. Unable to process pixel data." unless exists?("0028,0103")
+      case value("0028,0103")
+      when 1
+        return true
+      when 0
+        return false
+      else
+        raise "Invalid value encountered (#{value("0028,0103")}) in the 'Pixel Representation' data element. Expected 0 or 1."
+      end
     end
 
     # Gathers and returns the window level values needed to convert the original pixel values to presentation values.

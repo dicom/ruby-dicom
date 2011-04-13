@@ -30,7 +30,8 @@ module DICOM
         #
         # * <tt>image</tt> -- An MiniMagick image object.
         #
-        def export_pixels(image)
+        def export_pixels(image, photometry)
+          raise ArgumentError, "Expected MiniMagick::Image, got #{image.class}." unless image.is_a?(MiniMagick::Image)
           raise "Exporting pixels is not yet available with the mini_magick processor. Please try another image processor (RMagick)."
         end
 

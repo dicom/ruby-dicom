@@ -24,8 +24,9 @@ module DICOM
     #
     # * <tt>image</tt> -- An Rmagick image object.
     #
-    def export_pixels(image)
-      image_module.export_pixels(image)
+    def export_pixels(image, photometry)
+      raise ArgumentError, "Expected String, got #{photometry.class}." unless photometry.is_a?(String)
+      image_module.export_pixels(image, photometry)
     end
 
     # Creates an image object from a binary string blob.
@@ -41,6 +42,12 @@ module DICOM
     def import_pixels(blob, columns, rows, depth, photometry)
       raise ArgumentError, "Expected String, got #{blob.class}." unless blob.is_a?(String)
       image_module.import_pixels(blob, columns, rows, depth, photometry)
+    end
+
+    # Returns an array containing the image objects that are supported by the image processor.
+    #
+    def valid_image_objects
+      return [Magick::Image, MiniMagick::Image]
     end
 
 
