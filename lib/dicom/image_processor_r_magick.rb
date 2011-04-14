@@ -74,7 +74,7 @@ module DICOM
           when 16
             Magick::ShortPixel
           else
-            raise ArgumentError, "Unsupported bit depth #{bit_depth}."
+            raise ArgumentError, "Unsupported bit depth: #{bit_depth}."
           end
         end
 

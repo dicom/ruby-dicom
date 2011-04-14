@@ -95,18 +95,15 @@ module DICOM
     # * <tt>new_bin</tt> -- A binary string of encoded data.
     #
     def bin=(new_bin)
-      if new_bin.is_a?(String)
-        # Add a zero byte at the end if the length of the binary is odd:
-        if new_bin.length[0] == 1
-          @bin = new_bin + stream.pad_byte[@vr]
-        else
-          @bin = new_bin
-        end
-        @value = nil
-        @length = @bin.length
+      raise ArgumentError, "Expected String, got #{new_bin.class}." unless new_bin.is_a?(String)
+      # Add a zero byte at the end if the length of the binary is odd:
+      if new_bin.length[0] == 1
+        @bin = new_bin + stream.pad_byte[@vr]
       else
-        raise "Invalid parameter type. String was expected, got #{new_bin.class}."
+        @bin = new_bin
       end
+      @value = nil
+      @length = @bin.length
     end
 
     # Checks if an element actually has any child elements.
@@ -115,7 +112,7 @@ module DICOM
     def children?
       return false
     end
-    
+
     # Returns the endianness of the encoded binary value of this data element.
     # Returns false if little endian, true if big endian.
     #

@@ -27,6 +27,18 @@ module DICOM
       obj.get_image_magick.should be_false
     end
 
+    it "should raise an ArgumentError when an unsupported bit depth is used" do
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj["0028,0100"].value = 42
+      expect {obj.get_image_magick}.to raise_error(ArgumentError)
+    end
+
+    it "should raise an error when an invalid Pixel Representation is set" do
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj["0028,0103"].value = 42
+      expect {obj.get_image_magick}.to raise_error
+    end
+
     it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return an image object" do
       obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
       image = obj.get_image_magick
@@ -55,6 +67,22 @@ module DICOM
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       image = obj.get_image_magick(:level => true)
       image.should be_a(Magick::Image)
+    end
+
+    it "should read the RGP colored pixel data of this DICOM file and return an image object" do
+      obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG, :verbose => false)
+      image = obj.get_image_magick
+      image.should be_a(Magick::Image)
+      # Visual test:
+      image.normalize.write(TMPDIR + "visual_test_rgb_color.png")
+    end
+
+    it "should read the palette colored pixel data of this DICOM file and return an image object" do
+      obj = DObject.new(DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL, :verbose => false)
+      image = obj.get_image_magick
+      image.should be_a(Magick::Image)
+      # Visual test:
+      image.normalize.write(TMPDIR + "visual_test_palette_color.png")
     end
 
   end
@@ -144,11 +172,14 @@ module DICOM
       obj2.add(DataElement.new("0028,0103", 1)) # Pixel Representation
       obj2.set_image_magick(image)
       obj2["7FE0,0010"].bin.length.should eql obj1["7FE0,0010"].bin.length
-      # Save images to disk for visual comparison:
+      # Save a set of images to disk for visual comparison:
       image_full = obj1.get_image_magick
-      image_full.write(TMPDIR + "visual_test1_" + "full_range(~black).png")
-      image.write(TMPDIR + "visual_test2_" + "rmagick_extracted.png")
-      obj2.get_image_magick.write(TMPDIR + "visual_test2_" + "rmagick_extracted_written_extracted.png")
+      image_full.normalize.write(TMPDIR + "visual_test1_" + "full_range.png")
+      image.normalize.write(TMPDIR + "visual_test1_" + "default_range.png")
+      obj2.get_image_magick.normalize.write(TMPDIR + "visual_test1_" + "default_range_extracted_written_extracted.png")
+      obj1.get_image_magick(:remap => true).normalize.write(TMPDIR + "visual_test1_" + "full_range_remapped.png")
+      obj1.get_image_magick(:level => [1095, 84]).normalize.write(TMPDIR + "visual_test1_" + "custom_range_equal_to_default.png")
+      obj1.get_image_magick(:level => [1000, 100]).normalize.write(TMPDIR + "visual_test1_" + "custom_range.png")
     end
 
   end

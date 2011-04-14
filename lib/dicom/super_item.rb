@@ -52,7 +52,7 @@ module DICOM
     # * <tt>stream</tt> -- A Stream instance to be used for decoding the pixels (optional).
     #
     def decode_pixels(bin, stream=@stream)
-      raise ArgumentError, "The argument must be a string." unless bin.is_a?(String)
+      raise ArgumentError, "Expected String, got #{bin.class}." unless bin.is_a?(String)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth_element = self["0028,0100"]
@@ -78,7 +78,7 @@ module DICOM
     # * <tt>stream</tt> -- A Stream instance to be used for encoding the pixels (optional).
     #
     def encode_pixels(pixels, stream=@stream)
-      raise ArgumentError, "The argument must be an array (containing numbers)." unless pixels.is_a?(Array)
+      raise ArgumentError, "Expected Array, got #{pixels.class}." unless pixels.is_a?(Array)
       bin = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
       bit_depth_element = self["0028,0100"]
@@ -218,10 +218,10 @@ module DICOM
         strings = image_strings(true)
         strings = [strings[options[:frame]]] if options[:frame]
         if compression?
-          # Decompress, either to numbers (RLE) or to an image object (jpeg):
+          # Decompress, either to numbers (RLE) or to an image object (image based compressions):
           if [TXS_RLE].include?(transfer_syntax)
             pixel_frames = Array.new
-            strings.each {|string| pixel_frames << rle_decode(columns, rows, string)}
+            strings.each {|string| pixel_frames << decode_rle(columns, rows, string)}
           else
             images = decompress(strings)
             add_msg("Warning: Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}')") unless images
@@ -237,7 +237,7 @@ module DICOM
             # Pixel values and pixel order may need to be rearranged if we have color data:
             pixels = process_colors(pixels) if color?
             if pixels
-              image = read_image_magick(pixels, columns, rows, options)
+              image = read_image(pixels, columns, rows, options)
             else
               add_msg("Warning: Processing pixel values for this particular color mode failed, unable to construct image(s).")
               image = false
@@ -333,7 +333,7 @@ module DICOM
       bin = f.read(f.stat.size)
       if bin.length > 0
         # Write the binary data to the Pixel Data Element:
-        set_pixels(bin)
+        write_pixels(bin)
       else
         add_msg("Notice: The specified file (#{file}) is empty. Nothing to transfer.")
       end
@@ -355,6 +355,32 @@ module DICOM
       else
         return row_element.value, column_element.value, frames
       end
+    end
+
+    # Returns the pixel data binary string(s) in an array.
+    # If no pixel data is present, returns an empty array.
+    #
+    # === Parameters
+    #
+    # * <tt>split</tt> -- Boolean. If true, a pixel data string containing 3d volumetric data will be split into N substrings, where N equals the number of frames.
+    #
+    def image_strings(split=false)
+      # Pixel data may be a single binary string in the pixel data element,
+      # or located in several encapsulated item elements:
+      pixel_element = self[PIXEL_TAG]
+      strings = Array.new
+      if pixel_element.is_a?(DataElement)
+        if split
+          rows, columns, frames = image_properties
+          strings = pixel_element.bin.dup.divide(frames)
+        else
+          strings << pixel_element.bin
+        end
+      elsif pixel_element.is_a?(Sequence)
+        pixel_items = pixel_element.children.first.children
+        pixel_items.each {|item| strings << item.bin}
+      end
+      return strings
     end
 
     # Dumps the binary content of the Pixel Data element to the specified file.
@@ -395,32 +421,6 @@ module DICOM
       end
     end
 
-    # Returns the pixel data binary string(s) in an array.
-    # If no pixel data is present, returns an empty array.
-    #
-    # === Parameters
-    #
-    # * <tt>split</tt> -- Boolean. If true, a pixel data string containing 3d volumetric data will be split into N substrings, where N equals the number of frames.
-    #
-    def image_strings(split=false)
-      # Pixel data may be a single binary string in the pixel data element,
-      # or located in several encapsulated item elements:
-      pixel_element = self[PIXEL_TAG]
-      strings = Array.new
-      if pixel_element.is_a?(DataElement)
-        if split
-          rows, columns, frames = image_properties
-          strings = pixel_element.bin.dup.divide(frames)
-        else
-          strings << pixel_element.bin
-        end
-      elsif pixel_element.is_a?(Sequence)
-        pixel_items = pixel_element.children.first.children
-        pixel_items.each {|item| strings << item.bin}
-      end
-      return strings
-    end
-
     # Removes all Sequence elements from the DObject or Item instance.
     #
     def remove_sequences
@@ -440,7 +440,7 @@ module DICOM
       # Encode the pixel data:
       bin = encode_pixels(pixels)
       # Write the binary data to the Pixel Data Element:
-      set_pixels(bin)
+      write_pixels(bin)
     end
 
     # Encodes pixel data from a (Magick) image object and writes it to the pixel data element (7FE0,0010).
@@ -449,9 +449,10 @@ module DICOM
     #
     # If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
     #
-    # Because of the rescaling of pixel values which happens creating a (Magick) image object, and the possible
-    # difference between presentation values and pixel values, the use of set_image_magick() may
-    # result in pixel data that differs somewhat from what is expected. Use with care!
+    # Because of pixel value issues related to image objects (images dont like signed integers), and the possible
+    # difference between presentation values and raw pixel values, the use of set_image_magick() may
+    # result in pixel data where the integer values differs somewhat from what is expected. Use with care!
+    # For precise pixel value processing, use the Array and NArray based pixel data methods instead.
     #
     # === Options
     #
@@ -521,11 +522,20 @@ module DICOM
     # Following methods are private:
     private
 
+    # Returns the effective bit depth of the pixel data (considers a special case for Palette colored images).
+    #
+    def actual_bit_depth
+      raise "The 'Bits Allocated' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
+      if photometry == PI_PALETTE_COLOR
+      # Only one channel is checked and it is assumed that all channels have the same number of bits.
+        return self["0028,1101"].value.split("\\").last.to_i
+      else
+        return bit_depth
+      end
+    end
+
 
     # Returns the value from the "Bits Allocated" DataElement.
-    #
-    #--
-    # FIXME: Is this wrong for palette color images? Should value("0028,1101").split("\\").last.to_i be used instead in this case?
     #
     def bit_depth
       raise "The 'Bits Allocated' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
@@ -547,7 +557,7 @@ module DICOM
     #--
     # TODO: Remove cols and rows, were only added for debugging.
     #
-    def rle_decode(cols, rows, string)
+    def decode_rle(cols, rows, string)
       pixels = Array.new
       # RLE header specifying the number of segments:
       header = string[0...64].unpack('L*')
@@ -593,49 +603,13 @@ module DICOM
       return pixels
     end
 
-=begin
-    # Attempts to decompress compressed frames of pixel data.
-    # If successful, returns the pixel data frames in a Ruby Array. If not, returns false.
+    # Returns the value from the "Photometric Interpretation" DataElement.
+    # Raises an error if it is missing.
     #
-    # === Notes
-    #
-    # The method tries to use RMagick of unpacking, but it seems that ImageMagick is not able to handle most of the
-    # compressed image variants used in the DICOM standard. To get a more robust implementation which is able to handle
-    # most types of compressed DICOM files, something else is needed.
-    #
-    # Probably a good candidate to use is the PVRG-JPEG library, which seems to be able to handle everything that is jpeg.
-    # It exists in the Ubuntu repositories, where it can be installed and run through terminal. For source code, and some
-    # additional information, check this link:  http://www.panix.com/~eli/jpeg/
-    #
-    # Another idea would be to study how other open source libraries, like GDCM handle these files.
-    #
-    # === Parameters
-    #
-    # * <tt>strings</tt> -- A binary string, or an array of strings, which have been extracted from the pixel data element of the DICOM object.
-    #
-    def decompress(strings)
-      strings = [strings] unless strings.is_a?(Array)
-      pixels = Array.new
-      # We attempt to decompress the pixels using RMagick (ImageMagick):
-      begin
-        strings.each do |string|
-          image = Magick::Image.from_blob(string)
-          if color?
-            # Magick::Image.from_blob returns an array in case JPEG (YBR_FULL_4_2_2) data is provides as input
-            image = image.first if image.kind_of?(Array)
-            pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "RGB")
-          else
-            pixel_frame = image.export_pixels(0, 0, image.columns, image.rows, "I")
-          end
-          pixels << pixel_frame
-        end
-      rescue
-        add_msg("Warning: Decoding the compressed image data from this DICOM object was NOT successful!\n" + $!.to_s)
-        pixels = false
-      end
-      return pixels
+    def photometry
+      raise "The 'Photometric Interpretation' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
+      return value("0028,0004").upcase
     end
-=end
 
     # Processes the pixel array based on attributes defined in the DICOM object to produce a pixel array
     # with correct pixel colors (RGB) as well as pixel order (RGB-pixel1, RGB-pixel2, etc).
@@ -751,45 +725,6 @@ module DICOM
       return pixel_data
     end
 
-    # Converts original pixel data values to a RMagick image object containing presentation values.
-    # Returns the RMagick image object.
-    #
-    # === Parameters
-    #
-    # * <tt>pixel_data</tt> -- An array of pixel values (integers).
-    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed in the returned pixels.
-    # * <tt>columns</tt> -- Fixnum. Number of columns in the image to be created.
-    # * <tt>rows</tt> -- Fixnum. Number of rows in the image to be created.
-    # * <tt>level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    #
-    def process_presentation_values_magick(pixel_data, max_allowed, columns, rows, level=nil)
-      # Process pixel data for presentation according to the image information in the DICOM object:
-      center, width, intercept, slope = window_level_values
-      # Have image leveling been requested?
-      if level
-        # If custom values are specified in an array, use those. If not, the already extracted default values from the DICOM object are used:
-        if level.is_a?(Array)
-          center = level[0]
-          width = level[1]
-        end
-      else
-        center, width = false, false
-      end
-      # PixelOutput = slope * pixel_values + intercept
-      if intercept != 0 or slope != 1
-        pixel_data.collect!{|x| (slope * x) + intercept}
-      end
-      pixel_data, offset, factor = rescale_for_magick(pixel_data, return_rescale_values=true)
-      image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
-      # Contrast enhancement by black and white thresholding:
-      if center and width
-        low = (center - width/2 + offset) / factor
-        high = (center + width/2 + offset) / factor
-        image = image.level(low, high)
-      end
-      return image
-    end
-
     # Converts original pixel data values to presentation values, using the efficient NArray library.
     #
     # === Notes
@@ -854,7 +789,8 @@ module DICOM
       return n_arr
     end
 
-    # Creates a RMagick image object from the specified pixel value array, and returns this image.
+    # Creates an image object from the specified pixel value array, performing presentation value processing if requested.
+    # Returns the image object.
     #
     # === Parameters
     #
@@ -873,111 +809,21 @@ module DICOM
     #
     # * Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
     #
-    def read_image_magick(pixel_data, columns, rows, options={})
+    def read_image(pixel_data, columns, rows, options={})
       # Remap the image from pixel values to presentation values if the user has requested this:
       if options[:remap] or options[:level]
-        # What tools will be used to process the pixel presentation values?
+        # How to perform the remapping? NArray (fast) or Ruby Array (slow)?
         if options[:narray] == true
-          # Use numerical array (fast):
-          pixel_data = process_presentation_values_narray(pixel_data, 0, Magick::QuantumRange, options[:level]).to_a
-          image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
+          pixel_data = process_presentation_values_narray(pixel_data, 0, 65535, options[:level]).to_a
         else
-          # Use a combination of ruby array and RMagick processing:
-          image = process_presentation_values_magick(pixel_data, Magick::QuantumRange, columns, rows, options[:level])
+          pixel_data = process_presentation_values(pixel_data, 0, 65535, options[:level])
         end
       else
-        # Although rescaling with presentation values is not wanted, we still need to make sure pixel values are within the accepted range:
+        # No remapping, but make sure that we pass on unsigned pixel values to the image processor:
         pixel_data = pixel_data.to_unsigned(bit_depth) if signed_pixels?
-        image = import_pixels(pixel_data.to_blob(bit_depth), columns, rows, bit_depth, photometry)
       end
+      image = import_pixels(pixel_data.to_blob(actual_bit_depth), columns, rows, actual_bit_depth, photometry)
       return image
-    end
-
-    # Offsets the pixel values so they are all positive (ImageMagick doesnt like signed integers.
-    # Returns the rescaled array.
-    # Also returns the offset and factor used in value rescaling if requested.
-    #
-    # === Parameters
-    #
-    # * <tt>pixels</tt> -- An array of pixel values.
-    # * <tt>return_rescale_values</tt> -- Boolean. If set as true the method returns additional factors used in the value rescaling.
-    #
-    def rescale_for_magick(pixels, return_rescale_values=false)
-      # Need to introduce an offset? (ImageMagick doesnt like negative numbers)
-      offset = 0
-      min_pixel_value = pixels.min
-      if min_pixel_value < 0
-        offset = min_pixel_value.abs
-        pixels.collect!{|x| x + offset}
-      end
-      # With the new way of handling pixel blobs with the image processors, downscaling to the QuantumRange should not be necessary anymore.
-      factor = 1
-      if return_rescale_values
-        return pixels, offset, factor
-      else
-        return pixels
-      end
-    end
-
-    # Transfers a pre-encoded binary string to the pixel data element, either by overwriting the existing
-    # element value, or creating a new one DataElement.
-    #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- A binary string containing encoded pixel data.
-    #
-    def set_pixels(bin)
-      if self.exists?(PIXEL_TAG)
-        # Update existing Data Element:
-        self[PIXEL_TAG].bin = bin
-      else
-        # Create new Data Element:
-        pixel_element = DataElement.new(PIXEL_TAG, bin, :encoded => true, :parent => self)
-      end
-    end
-
-    # Determines and returns a template string for pack/unpacking pixel data, based on the number of bits
-    # per pixel as well as the pixel representation (signed or unsigned).
-    #
-    # === Parameters
-    #
-    # * <tt>bits</tt> -- Fixnum. The number of allocated bits in the integers to be decoded/encoded.
-    #
-    def template_string(bits)
-      template = false
-      pixel_representation = self["0028,0103"].value.to_i
-      # Number of bytes used per pixel will determine how to unpack this:
-      case bits
-        when 8 # (1 byte)
-          template = "BY" # Byte/Character/Fixnum
-        when 16 # (2 bytes)
-          if pixel_representation == 1
-           template = "SS" # Signed short
-          else
-            template = "US" # Unsigned short
-          end
-        when 32 # (4 bytes)
-          if pixel_representation == 1
-            template = "SL" # Signed long
-          else
-            template = "UL" # Unsigned long
-          end
-        when 12
-          # 12 BIT SIMPLY NOT IMPLEMENTED YET!
-          # This one is a bit tricky. I havent really given this priority so far as 12 bit image data is rather rare.
-          raise "Packing/unpacking pixel data of bit depth 12 is not implemented yet! Please contact the author (or edit the source code)."
-        else
-          raise ArgumentError, "Encoding/Decoding pixel data with this Bit Depth (#{bit_depth_element.value}) is not implemented."
-      end
-      return template
-    end
-
-    # Returns the value from the "Photometric Interpretation" DataElement.
-    # Raises an error if it is missing.
-    #
-    def photometry
-      raise "The 'Photometric Interpretation' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
-      return value("0028,0004").upcase
     end
 
     # Returns true if the Pixel Representation indicates signed pixel values, and false if it indicates unsigned pixel values.
@@ -995,6 +841,42 @@ module DICOM
       end
     end
 
+    # Determines and returns a template string for pack/unpacking pixel data, based on
+    # the number of bits per pixel as well as the pixel representation (signed or unsigned).
+    #
+    # === Parameters
+    #
+    # * <tt>depth</tt> -- Integer. The number of allocated bits in the integers to be decoded/encoded.
+    #
+    def template_string(depth)
+      template = false
+      pixel_representation = self["0028,0103"].value.to_i
+      # Number of bytes used per pixel will determine how to unpack this:
+      case depth
+      when 8 # (1 byte)
+        template = "BY" # Byte/Character/Fixnum
+      when 16 # (2 bytes)
+        if pixel_representation == 1
+         template = "SS" # Signed short
+        else
+          template = "US" # Unsigned short
+        end
+      when 32 # (4 bytes)
+        if pixel_representation == 1
+          template = "SL" # Signed long
+        else
+          template = "UL" # Unsigned long
+        end
+      when 12
+        # 12 BIT SIMPLY NOT IMPLEMENTED YET!
+        # This one is a bit tricky. I havent really given this priority so far as 12 bit image data is rather rare.
+        raise "Packing/unpacking pixel data of bit depth 12 is not implemented yet! Please contact the author (or edit the source code)."
+      else
+        raise ArgumentError, "Encoding/Decoding pixel data with this Bit Depth (#{depth}) is not implemented."
+      end
+      return template
+    end
+
     # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
     #
     # === Notes
@@ -1008,6 +890,23 @@ module DICOM
       intercept = (self["0028,1052"].is_a?(DataElement) == true ? self["0028,1052"].value.to_i : 0)
       slope = (self["0028,1053"].is_a?(DataElement) == true ? self["0028,1053"].value.to_i : 1)
       return center, width, intercept, slope
+    end
+
+    # Transfers a pre-encoded binary string to the pixel data element, either by
+    # overwriting the existing element value, or creating a new "Pixel Data" element.
+    #
+    # === Parameters
+    #
+    # * <tt>bin</tt> -- A binary string containing encoded pixel data.
+    #
+    def write_pixels(bin)
+      if self.exists?(PIXEL_TAG)
+        # Update existing Data Element:
+        self[PIXEL_TAG].bin = bin
+      else
+        # Create new Data Element:
+        pixel_element = DataElement.new(PIXEL_TAG, bin, :encoded => true, :parent => self)
+      end
     end
 
   end

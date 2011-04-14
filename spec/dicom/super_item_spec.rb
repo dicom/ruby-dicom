@@ -58,8 +58,14 @@ module DICOM
 
   describe SuperItem, "#decode_pixels" do
 
-    it "should raise an error when the DICOM object doesn't have the necessary data elements needed to decode the pixel data" do
+    it "should raise an error when the DICOM object doesn't have any of the necessary data elements needed to decode pixel data" do
       obj = DObject.new(nil, :verbose => false)
+      expect {obj.decode_pixels("0000")}.to raise_error
+    end
+
+    it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to decode pixel data" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0100", 16))
       expect {obj.decode_pixels("0000")}.to raise_error
     end
 
@@ -80,8 +86,14 @@ module DICOM
 
   describe SuperItem, "#encode_pixels" do
 
-    it "should raise an error when the DICOM object doesn't have the necessary data elements needed to decode the pixel data" do
+    it "should raise an error when the DICOM object doesn't have the necessary data elements needed to encode the pixel data" do
       obj = DObject.new(nil, :verbose => false)
+      expect {obj.encode_pixels([42, 42])}.to raise_error
+    end
+
+    it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to encode the pixel data" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.add(DataElement.new("0028,0100", 16))
       expect {obj.encode_pixels([42, 42])}.to raise_error
     end
 
@@ -349,6 +361,13 @@ module DICOM
       f.read.should eql pixel_data
     end
 
+    it "should write multiple files as expected, when a file extension is omitted" do
+      obj = DObject.new(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME, :verbose => false) # 8 frames
+      obj.image_to_file(TMPDIR + "data")
+      File.readable?(TMPDIR + "data-0").should be_true
+      File.readable?(TMPDIR + "data-7").should be_true
+    end
+
     it "should write multiple files, using the expected file enumeration and image fragments, when the DICOM object has multi-fragment pixel data" do
       obj = DObject.new(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME, :verbose => false) # 8 frames
       obj.image_to_file(TMPDIR + "multi.dat")
@@ -412,6 +431,14 @@ module DICOM
       obj.add(DataElement.new("0028,0103", 0)) # Pixel Representation
       obj.set_image(pixel_data)
       obj["7FE0,0010"].bin.length.should eql 4
+      obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
+    end
+
+    it "should encode the pixel array and update the DICOM object's pixel data element" do
+      pixel_data = [0,42,0,42]
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj.set_image(pixel_data)
+      obj["7FE0,0010"].bin.length.should eql 8
       obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
     end
 
