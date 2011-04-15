@@ -18,7 +18,7 @@ module DICOM
     # A boolean which reports the endianness of the post-meta group part of the DICOM string (true for big endian, false for little endian).
     attr_reader :file_endian
     # An array which records any status messages that are generated while parsing the DICOM string.
-    attr_reader :msg    
+    attr_reader :msg
     # A DObject instance which the parsed data elements will be connected to.
     attr_reader :obj
     # A boolean which records whether the DICOM string contained the proper DICOM header signature of 128 bytes + 'DICM'.
@@ -39,7 +39,7 @@ module DICOM
     #
     # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
     # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # 
+    #
     def initialize(obj, string=nil, options={})
       # Set the DICOM object as an instance variable:
       @obj = obj
@@ -72,7 +72,7 @@ module DICOM
         # Read and verify the DICOM header:
         header = check_header
         # If the file didnt have the expected header, we will attempt to read
-        # data elements from the very start file:
+        # data elements from the very start of the file:
         if header == false
           @stream.skip(-132)
         elsif header == nil

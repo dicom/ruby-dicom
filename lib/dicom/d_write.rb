@@ -211,7 +211,7 @@ module DICOM
             # Among group length elements, only write the meta group element (the others have been retired in the DICOM standard):
             write_data_element(element) if element.tag == "0002,0000"
           else
-            write_data_element(element) 
+            write_data_element(element)
           end
         end
       end
@@ -349,7 +349,7 @@ module DICOM
           unless File.directory?(path)
             # We need to create (parts of) this path:
             require 'fileutils'
-            FileUtils.mkdir_p path
+            FileUtils.mkdir_p(path)
           end
         end
         # The path to this non-existing file is verified, and we can proceed to create the file:

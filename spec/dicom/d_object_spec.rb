@@ -94,6 +94,23 @@ module DICOM
       obj.read("foo")
     end
 
+    it "should fail gracefully when an small, non-dicom file is passed as an argument" do
+      File.open(TMPDIR + "small_invalid.dcm", 'wb') {|f| f.write("fail"*20) }
+      obj = DObject.new(TMPDIR + "small_invalid.dcm", :verbose => false)
+      obj.read_success.should be_false
+    end
+
+    it "should fail gracefully when an tiny, non-dicom file is passed as an argument" do
+      File.open(TMPDIR + "tiny_invalid.dcm", 'wb') {|f| f.write("fail") }
+      obj = DObject.new(TMPDIR + "tiny_invalid.dcm", :verbose => false)
+      obj.read_success.should be_false
+    end
+
+    it "should fail gracefully when an directory is passed as an argument" do
+      obj = DObject.new(TMPDIR, :verbose => false)
+      obj.read_success.should be_false
+    end
+
   end
 
 
@@ -231,6 +248,13 @@ module DICOM
       @obj.write(@output)
       obj_reloaded = DObject.new(@output, :verbose => false)
       obj_reloaded.read_success.should be_true
+    end
+
+    it "should create non-existing directories that are part of the file path, and write the file successfully" do
+      path = TMPDIR + "create/these/directories/" + "test-directory-create.dcm"
+      @obj.write(path)
+      @obj.write_success.should be_true
+      File.exists?(path).should be_true
     end
 
   end
