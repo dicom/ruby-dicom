@@ -16,8 +16,10 @@ module DICOM
     attr_accessor :blank
     # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
     attr_accessor :enumeration
-    # A boolean, which if enumeration has been selected, can be set as true to make the anonymization produce an identity file that will provide a relationship between original and anonymized values.
+    # A string, which if set (and enumeration has been set as well), will make the Anonymizer produce an identity file that provides a relationship between the original and enumerated, anonymized values.
     attr_accessor :identity_file
+    # An array containing status messages accumulated for the Anonymization instance.
+    attr_accessor :log
     # A boolean that if set as true, will make the anonymization remove all private tags.
     attr_accessor :remove_private
     # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
@@ -29,7 +31,9 @@ module DICOM
     #
     #   a = Anonymizer.new
     #
-    def initialize
+    def initialize(options={})
+      # Default verbosity is true if verbosity hasn't been specified (nil):
+      @verbose = (options[:verbose] == false ? false : true)
       # Default value of accessors:
       @blank = false
       @enumeration = false
@@ -45,7 +49,7 @@ module DICOM
       # Default values to use on anonymized data elements:
       @values = Array.new
       # Which data elements will have enumeration applied, if requested by the user:
-      @enum = Array.new
+      @enumerations = Array.new
       # We use a Hash to store information from DICOM files if enumeration is desired:
       @enum_old_hash = Hash.new
       @enum_new_hash = Hash.new
@@ -53,6 +57,8 @@ module DICOM
       @files = Array.new
       # Write paths will be determined later and put in this array:
       @write_paths = Array.new
+      # Keep track of status messages:
+      @log = Array.new
       # Set the default data elements to be anonymized:
       set_defaults
     end
@@ -68,10 +74,11 @@ module DICOM
     #   a.add_exception("/home/dicom/tutorials/")
     #
     def add_exception(path)
+      raise ArgumentError, "Expected String, got #{path.class}." unless path.is_a?(String)
       if path
         # Remove last character if the path ends with a file separator:
         path.chop! if path[-1..-1] == File::SEPARATOR
-        @exceptions << path if path
+        @exceptions << path
       end
     end
 
@@ -86,88 +93,26 @@ module DICOM
     #   a.add_folder("/home/dicom")
     #
     def add_folder(path)
-      @folders << path if path
+      raise ArgumentError, "Expected String, got #{path.class}." unless path.is_a?(String)
+      @folders << path
     end
 
-    # Adds a tag to the list of tags that will be anonymized.
+    # Returns the enumeration status for this tag.
+    # Returns nil if no match is found for the provided tag.
     #
     # === Parameters
     #
     # * <tt>tag</tt> -- String. A data element tag.
-    # * <tt>options</tt> -- A hash of parameters.
     #
-    # === Options
-    #
-    # * <tt>:value</tt> -- A replacement value to use for when anonymizing this data element.
-    # * <tt>:enum</tt> -- Boolean. Specifies if enumeration is to be used for this tag (true) or not (false).
-    #
-    # === Examples
-    #
-    #   a.add_tag("0010,0010, :value => "MrAnonymous", :enum => true)
-    #
-    def add_tag(tag, options={})
-      # Options and defaults:
-      value =  options[:value]  || ""
-      enum =  options[:enum]  || false
-      if tag
-        if tag.is_a?(String)
-          if tag.length == 9
-            # Add anonymization information for this tag:
-            @tags << tag
-            @values << value
-            @enum << enum
-          else
-            puts "Warning: Invalid tag length. Please use the form 'GGGG,EEEE'."
-          end
-        else
-          puts "Warning: Tag is not a string. Can not add tag."
-        end
-      else
-        puts "Warning: No tag supplied. Nothing to add."
-      end
-    end
-
-    # Sets the enumeration status for a specific tag.
-    #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
-    # * <tt>enum</tt> -- Boolean. True to enable enumeration, false to disable it.
-    #
-    def change_enum(tag, enum)
+    def enum(tag)
+      raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
+      raise ArgumentError, "Expected a valid tag of format 'GGGG,EEEE', got #{tag}." unless tag.tag?
       pos = @tags.index(tag)
       if pos
-        if enum
-          @enum[pos] = true
-        else
-          @enum[pos] = false
-        end
+        return @enumerations[pos]
       else
-        puts "Specified tag not found in anonymization array. No changes made."
-      end
-    end
-
-    # Changes the value to be used in the anonymization of a specific tag.
-    #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
-    # * <tt>value</tt> -- The new anonymization replacement value for this data element.
-    #
-    # === Examples
-    #
-    #   a.change_value("0008,0090", "Dr.No")
-    #
-    def change_value(tag, value)
-      pos = @tags.index(tag)
-      if pos
-        if value
-          @values[pos] = value
-        else
-          puts "No value were specified. No changes made."
-        end
-      else
-        puts "Specified tag not found in anonymization array. No changes made."
+        add_msg("The specified tag is not found in the list of tags to be anonymized.")
+        return nil
       end
     end
 
@@ -188,30 +133,30 @@ module DICOM
     #
     def execute(verbose=false)
       # Search through the folders to gather all the files to be anonymized:
-      puts "*******************************************************"
-      puts "Initiating anonymization process."
+      add_msg("*******************************************************")
+      add_msg("Initiating anonymization process.")
       start_time = Time.now.to_f
-      puts "Searching for files..."
+      add_msg("Searching for files...")
       load_files
-      puts "Done."
+      add_msg("Done.")
       if @files.length > 0
         if @tags.length > 0
-          puts @files.length.to_s + " files have been identified in the specified folder(s)."
+          add_msg(@files.length.to_s + " files have been identified in the specified folder(s).")
           if @write_path
             # Determine the write paths, as anonymized files will be written to a separate location:
-            puts "Processing write paths..."
+            add_msg("Processing write paths...")
             process_write_paths
-            puts "Done"
+            add_msg("Done")
           else
             # Overwriting old files:
-            puts "Separate write folder not specified. Will overwrite existing DICOM files."
+            add_msg("Separate write folder not specified. Will overwrite existing DICOM files.")
             @write_paths = @files
           end
           # If the user wants enumeration, we need to prepare variables for storing
           # existing information associated with each tag:
           create_enum_hash if @enumeration
           # Start the read/update/write process:
-          puts "Initiating read/update/write process (This may take some time)..."
+          add_msg("Initiating read/update/write process (This may take some time)...")
           # Monitor whether every file read/write was successful:
           all_read = true
           all_write = true
@@ -230,20 +175,17 @@ module DICOM
                       value = ""
                     elsif @enumeration
                       old_value = element.value
-                      # Only launch enumeration logic if tag exists:
+                      # Only launch enumeration logic if there is an actual value to the data element:
                       if old_value
                         value = get_enumeration_value(old_value, j)
                       else
                         value = ""
                       end
                     else
-                      # Value is simply value in array:
+                      # Use the value that has been set for this tag:
                       value = @values[j]
                     end
                     element.value = value
-                  elsif element.is_a?(Item)
-                    # Possibly a binary data item:
-                    element.bin = ""
                   end
                 end
               end
@@ -263,32 +205,32 @@ module DICOM
           end
           # Finished anonymizing files. Print elapsed time and status of anonymization:
           end_time = Time.now.to_f
-          puts "Anonymization process completed!"
+          add_msg("Anonymization process completed!")
           if all_read
-            puts "All files in specified folder(s) were SUCCESSFULLY read to DICOM objects."
+            add_msg("All files in specified folder(s) were SUCCESSFULLY read to DICOM objects.")
           else
-            puts "Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason."
+            add_msg("Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason.")
           end
           if all_write
-            puts "All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files)."
+            add_msg("All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files).")
           else
-            puts "Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written)."
+            add_msg("Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written).")
           end
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
           if @enumeration and @identity_file
-            puts "Writing identity file."
+            add_msg("Writing identity file.")
             write_identity_file
-            puts "Done"
+            add_msg("Done")
           end
           elapsed = (end_time-start_time).to_s
-          puts "Elapsed time: " + elapsed[0..elapsed.index(".")+1] + " seconds"
+          add_msg("Elapsed time: " + elapsed[0..elapsed.index(".")+1] + " seconds")
         else
-          puts "No tags have been selected for anonymization. Aborting."
+          add_msg("No tags have been selected for anonymization. Aborting.")
         end
       else
-        puts "No files were found in specified folders. Aborting."
+        add_msg("No files were found in specified folders. Aborting.")
       end
-      puts "*******************************************************"
+      add_msg("*******************************************************")
     end
 
     # Prints to screen a list of which tags are currently selected for anonymization along with
@@ -328,7 +270,7 @@ module DICOM
         f4 = " " if @blank
         f4 = " "*(value_maxL-@values[i].to_s.length+1) unless @blank
         if @enumeration
-          enum = @enum[i]
+          enum = @enumerations[i]
         else
           enum = ""
         end
@@ -357,13 +299,67 @@ module DICOM
     #   a.remove_tag("0010,0010")
     #
     def remove_tag(tag)
+      raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
+      raise ArgumentError, "Expected a valid tag of format 'GGGG,EEEE', got #{tag}." unless tag.tag?
       pos = @tags.index(tag)
       if pos
         @tags.delete_at(pos)
         @values.delete_at(pos)
-        @enum.delete_at(pos)
+        @enumerations.delete_at(pos)
+      end
+    end
+
+    # Sets the anonymization settings for the specified tag. If the tag is already present in the list
+    # of tags to be anonymized, its settings are updated, and if not, a new tag entry is created.
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:value</tt> -- The replacement value to be used when anonymizing this data element. Defaults to the pre-existing value and "" for new tags.
+    # * <tt>:enum</tt> -- Boolean. Specifies if enumeration is to be used for this tag. Defaults to the pre-existing value and false for new tags.
+    #
+    # === Examples
+    #
+    #   a.set_tag("0010,0010, :value => "MrAnonymous", :enum => true)
+    #
+    def set_tag(tag, options={})
+      raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
+      raise ArgumentError, "Expected a valid tag of format 'GGGG,EEEE', got #{tag}." unless tag.tag?
+      pos = @tags.index(tag)
+      if pos
+        # Update existing values:
+        @values[pos] = options[:value] if options[:value]
+        @enumerations[pos] = options[:enum] if options[:enum] != nil
       else
-        puts "Specified tag not found in anonymization array. No changes made."
+        # Add new elements:
+        @tags << tag
+        @values << (options[:value] ? options[:value] : "")
+        @enumerations << (options[:enum] ? options[:enum] : false)
+      end
+    end
+
+    # Returns the value which will be used when anonymizing this tag.
+    # If enumeration is selected for the particular tag, a number will be
+    # appended in addition to the string that is returned here.
+    # Returns nil if no match is found for the provided tag.
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    #
+    def value(tag)
+      raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
+      raise ArgumentError, "Expected a valid tag of format 'GGGG,EEEE', got #{tag}." unless tag.tag?
+      pos = @tags.index(tag)
+      if pos
+        return @values[pos]
+      else
+        add_msg("The specified tag is not found in the list of tags to be anonymized.")
+        return nil
       end
     end
 
@@ -371,6 +367,18 @@ module DICOM
     # The following methods are private:
     private
 
+
+    # Adds one or more status messages to the log instance array, and if the verbose
+    # instance variable is true, the status message is printed to the screen as well.
+    #
+    # === Parameters
+    #
+    # * <tt>msg</tt> -- Status message string.
+    #
+    def add_msg(msg)
+      puts msg if @verbose
+      @log << msg
+    end
 
     # Finds the common path (if any) in the instance file path array, by performing a recursive search
     # on the folders that make up the path of one such file.
@@ -402,7 +410,7 @@ module DICOM
     # Creates a hash that is used for storing information that is used when enumeration is selected.
     #
     def create_enum_hash
-      @enum.each_index do |i|
+      @enumerations.each_index do |i|
         @enum_old_hash[@tags[i]] = Array.new
         @enum_new_hash[@tags[i]] = Array.new
       end
@@ -420,7 +428,7 @@ module DICOM
     #
     def get_enumeration_value(current, j)
       # Is enumeration requested for this tag?
-      if @enum[j]
+      if @enumerations[j]
         # Retrieve earlier used anonymization values:
         previous_old = @enum_old_hash[@tags[j]]
         previous_new = @enum_new_hash[@tags[j]]
@@ -527,18 +535,19 @@ module DICOM
       ].transpose
       @tags = data[0]
       @values = data[1]
-      @enum = data[2]
+      @enumerations = data[2]
     end
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
     # using the enumeration feature. Values are saved in a text file, using semi colon delineation.
     #
     def write_identity_file
+      raise ArgumentError, "Expected String, got #{@identity_file.class}. Unable to write identity file." unless @identity_file.is_a?(String)
       # Open file and prepare to write text:
-      File.open( @identity_file, 'w' ) do |output|
+      File.open(@identity_file, 'w') do |output|
         # Cycle through each
         @tags.each_index do |i|
-          if @enum[i]
+          if @enumerations[i]
             # This tag has had enumeration. Gather original and anonymized values:
             old_values = @enum_old_hash[@tags[i]]
             new_values = @enum_new_hash[@tags[i]]

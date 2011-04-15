@@ -69,8 +69,8 @@ module DICOM
     it "should parse this DICOM file and build a valid DICOM object" do
       obj = DObject.new(DCM_EXPLICIT_MR_RLE_MONO2, :verbose => false)
       obj.read_success.should be_true
-      obj.count.should eql 97
-      obj.count_all.should eql 123
+      obj.count.should eql 104
+      obj.count_all.should eql 130
     end
 
     it "should parse this DICOM file and build a valid DICOM object" do
