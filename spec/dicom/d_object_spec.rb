@@ -94,19 +94,19 @@ module DICOM
       obj.read("foo")
     end
 
-    it "should fail gracefully when an small, non-dicom file is passed as an argument" do
+    it "should fail gracefully when a small, non-dicom file is passed as an argument" do
       File.open(TMPDIR + "small_invalid.dcm", 'wb') {|f| f.write("fail"*20) }
       obj = DObject.new(TMPDIR + "small_invalid.dcm", :verbose => false)
       obj.read_success.should be_false
     end
 
-    it "should fail gracefully when an tiny, non-dicom file is passed as an argument" do
+    it "should fail gracefully when a tiny, non-dicom file is passed as an argument" do
       File.open(TMPDIR + "tiny_invalid.dcm", 'wb') {|f| f.write("fail") }
       obj = DObject.new(TMPDIR + "tiny_invalid.dcm", :verbose => false)
       obj.read_success.should be_false
     end
 
-    it "should fail gracefully when an directory is passed as an argument" do
+    it "should fail gracefully when a directory is passed as an argument" do
       obj = DObject.new(TMPDIR, :verbose => false)
       obj.read_success.should be_false
     end

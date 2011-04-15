@@ -27,9 +27,19 @@ module DICOM
 
     # Creates an Anonymizer instance.
     #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:verbose</tt> -- Boolean. If set to false, the Anonymizer instance will run silently and not output status updates to the screen. Defaults to true.
+    #
     # === Examples
     #
     #   a = Anonymizer.new
+    #   # Create an instance in non-verbose mode:
+    #   a = Anonymizer.new(:verbose => false)
     #
     def initialize(options={})
       # Default verbosity is true if verbosity hasn't been specified (nil):
