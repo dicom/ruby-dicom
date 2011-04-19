@@ -111,6 +111,15 @@ module DICOM
       obj.read_success.should be_false
     end
 
+    it "should apply the specified transfer syntax to the DICOM object, when passing a syntax-less DICOM binary string" do
+      obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2, :verbose => false)
+      syntax = obj.transfer_syntax
+      obj.remove_group("0002")
+      parts = obj.encode_segments(16384)
+      obj_from_bin = DObject.new(parts.join, :verbose => false, :bin => true, :syntax => syntax)
+      obj_from_bin.transfer_syntax.should eql syntax
+    end
+
   end
 
 

@@ -259,7 +259,7 @@ module DICOM
       r = DRead.new(self, string, options)
       # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
       # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-      unless r.success or exists?("0002,0010")
+      if !r.success and !exists?("0002,0010")
         # Clear the existing DObject tags:
         @tags = Hash.new
         r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)

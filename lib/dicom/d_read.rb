@@ -43,8 +43,11 @@ module DICOM
     def initialize(obj, string=nil, options={})
       # Set the DICOM object as an instance variable:
       @obj = obj
-      # Some of the options need to be transferred to instance variables:
-      @transfer_syntax = options[:syntax]
+      # If a transfer syntax has been specified as an option for a DICOM object, make sure that it makes it into the object:
+      if options[:syntax]
+        @transfer_syntax = options[:syntax]
+        obj.add(DataElement.new("0002,0010", options[:syntax])) if obj.is_a?(DObject)
+      end
       # Initiate the variables that are used during file reading:
       init_variables
       # Are we going to read from a file, or read from a binary string?

@@ -317,7 +317,7 @@ module DICOM
     #
     def write_value(bin)
       # This is pretty straightforward, just dump the binary data to the file/string:
-      add(bin)
+      add(bin) if bin
     end
 
 
