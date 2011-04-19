@@ -37,13 +37,14 @@ module DICOM
     #
     def self.save_file(path_prefix, obj, transfer_syntax)
       # File name is set using the SOP Instance UID:
-      file_name = obj.value("0008,0018") || "missing_SOP_UID.dcm"
+      file_name = obj.value("0008,0018") || "missing_SOP_UID"
+      extension = ".dcm"
       folders = Array.new(3)
       folders[0] = obj.value("0010,0020") || "PatientID"
       folders[1] = obj.value("0008,0020") || "StudyDate"
       folders[2] = obj.value("0008,0060") || "Modality"
       local_path = folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
-      full_path = path_prefix + local_path
+      full_path = path_prefix + local_path + extension
       # Save the DICOM object to disk:
       obj.write(full_path, :transfer_syntax => transfer_syntax)
       message = "DICOM file saved to: #{full_path}"
