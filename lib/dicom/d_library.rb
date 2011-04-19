@@ -64,12 +64,12 @@ module DICOM
     # * <tt>uid</tt> -- String. A DICOM UID value.
     #
     def get_compression(uid)
+      raise ArgumentError, "Expected String, got #{uid.class}" unless uid.is_a?(String)
       result = false
-      if uid
-        value = @uid[uid]
-        if value
-          result = true if value[1] == "Transfer Syntax" and not value[0].include?("Endian")
-        end
+      value = @uid[uid]
+      if value
+        first_word = value[0].split(" ").first
+        result = true if value[1] == "Transfer Syntax" and not ["Implicit", "Explicit"].include?(first_word)
       end
       return result
     end
