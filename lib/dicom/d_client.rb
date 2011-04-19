@@ -24,8 +24,6 @@ module DICOM
     attr_accessor :port
     # The maximum period the client will wait on an answer from a server before aborting the communication.
     attr_accessor :timeout
-    # An array containing the transfer syntaxes which are proposed in the association negotiation for file transfer.
-    attr_accessor :transfer_syntax
     # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
     attr_accessor :verbose
     # An array, where each index contains a hash with the data elements received in a command response (with tags as keys).
@@ -82,8 +80,7 @@ module DICOM
       # Results from a query:
       @command_results = Array.new
       @data_results = Array.new
-      # Set default values like transfer syntax, user information, endianness:
-      set_default_values
+      # Setup the user information used in the association request::
       set_user_information_array
       # Initialize the network package handler:
       @link = Link.new(:ae => @ae, :host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout)
@@ -93,7 +90,7 @@ module DICOM
     #
     def echo
       # Verification SOP Class:
-      @abstract_syntaxes = [VERIFICATION_SOP]
+      set_default_presentation_context(VERIFICATION_SOP)
       perform_echo
     end
 
@@ -130,7 +127,7 @@ module DICOM
     #
     def find_images(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
       allowed_query_params = {
@@ -191,7 +188,7 @@ module DICOM
     #
     def find_patients(query_params={})
       # Patient Root Query/Retrieve Information Model - FIND:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.1.1"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.1.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
       allowed_query_params = {
@@ -256,7 +253,7 @@ module DICOM
     #
     def find_series(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
       allowed_query_params = {
@@ -318,7 +315,7 @@ module DICOM
     #
     def find_studies(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.1"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
       allowed_query_params = {
@@ -392,7 +389,7 @@ module DICOM
     #
     def get_image(path, options={})
       # Study Root Query/Retrieve Information Model - GET:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.3"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.3")
       # Transfer the current options to the data_elements hash:
       set_command_fragment_get
       # Prepare data elements for this operation:
@@ -425,7 +422,7 @@ module DICOM
     #
     def move_image(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.2"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.2")
       # Transfer the current options to the data_elements hash:
       set_command_fragment_move(destination)
       # Prepare data elements for this operation:
@@ -457,7 +454,7 @@ module DICOM
     #
     def move_study(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
-      @abstract_syntaxes = ["1.2.840.10008.5.1.4.1.2.2.2"]
+      set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.2")
       # Transfer the current options to the data_elements hash:
       set_command_fragment_move(destination)
       # Prepare data elements for this operation:
@@ -478,7 +475,7 @@ module DICOM
     #
     def send(files)
       # Prepare the DICOM object(s):
-      objects, @abstract_syntaxes, success, message = load_files(files)
+      objects, success, message = load_files(files)
       if success
         # Open a DICOM link:
         establish_association
@@ -503,7 +500,7 @@ module DICOM
       add_notice("TESTING CONNECTION...")
       success = false
       # Verification SOP Class:
-      @abstract_syntaxes = [VERIFICATION_SOP]
+      set_default_presentation_context(VERIFICATION_SOP)
       # Open a DICOM link:
       establish_association
       if association_established?
@@ -550,6 +547,22 @@ module DICOM
       @notices << notice
     end
 
+    # Returns an array of supported transfer syntaxes for the specified transfer syntax.
+    # For compressed transfer syntaxes, we currently do not support reencoding these to other syntaxes.
+    #
+    def available_transfer_syntaxes(transfer_syntax)
+      case transfer_syntax
+      when IMPLICIT_LITTLE_ENDIAN
+        return [IMPLICIT_LITTLE_ENDIAN, EXPLICIT_LITTLE_ENDIAN]
+      when EXPLICIT_LITTLE_ENDIAN
+        return [EXPLICIT_LITTLE_ENDIAN, IMPLICIT_LITTLE_ENDIAN]
+      when EXPLICIT_BIG_ENDIAN
+        return [EXPLICIT_BIG_ENDIAN, IMPLICIT_LITTLE_ENDIAN]
+      else # Compression:
+        return [transfer_syntax]
+      end
+    end
+
     # Opens a TCP session with the server, and handles the association request as well as the response.
     #
     def establish_association
@@ -557,12 +570,12 @@ module DICOM
       @association = false
       @request_approved = false
       # Initiate the association:
-      @link.build_association_request(@application_context_uid, @abstract_syntaxes, @transfer_syntax, @user_information)
+      @link.build_association_request(@presentation_contexts, @user_information)
       @link.start_session(@host_ip, @port)
       @link.transmit
       info = @link.receive_multiple_transmissions.first
       # Interpret the results:
-      if info[:valid]
+      if info && info[:valid]
         if info[:pdu] == PDU_ASSOCIATION_ACCEPT
           # Values of importance are extracted and put into instance variables:
           @association = true
@@ -601,6 +614,14 @@ module DICOM
       @abort = false
     end
 
+    # Finds and retuns the abstract syntax that is associated with the specified context id.
+    #
+    def find_abstract_syntax(id)
+      @presentation_contexts.each_pair do |abstract_syntax, context_ids|
+        return abstract_syntax if context_ids[id]
+      end
+    end
+
     # Loads one or more DICOM files.
     # Returns an array of DObject instances, an array of unique abstract syntaxes found among the files, a status boolean and a message string.
     #
@@ -613,14 +634,15 @@ module DICOM
       message = ""
       objects = Array.new
       abstracts = Array.new
+      id = 1
+      @presentation_contexts = Hash.new
       files = [files] unless files.is_a?(Array)
       files.each do |file|
         if file.is_a?(String)
           obj = DObject.new(file, :verbose => false)
           if obj.read_success
-            # Load the DICOM object and its abstract syntax:
+            # Load the DICOM object:
             objects << obj
-            abstracts << obj.value("0008,0016")
           else
             status = false
             message = "Failed to successfully parse a DObject for the following string: #{file}"
@@ -634,7 +656,32 @@ module DICOM
           message = "Array contains invalid object #{file}."
         end
       end
-      return objects, abstracts.uniq, status, message
+      # Extract available transfer syntaxes for the various sop classes found amongst these objects
+      syntaxes = Hash.new
+      objects.each do |obj|
+        sop_class = obj.value("0008,0016")
+        if sop_class
+          transfer_syntaxes = available_transfer_syntaxes(obj.transfer_syntax)
+          if syntaxes[sop_class]
+            syntaxes[sop_class] << transfer_syntaxes
+          else
+            syntaxes[sop_class] = transfer_syntaxes
+          end
+        else
+          status = false
+          message = "Missing SOP Class UID. Unable to transmit DICOM object"
+        end
+        # Extract the unique variations of SOP Class and syntaxes and construct the presentation context hash:
+        syntaxes.each_pair do |sop_class, ts|
+          selected_transfer_syntaxes = ts.flatten.uniq
+          @presentation_contexts[sop_class] = Hash.new
+          selected_transfer_syntaxes.each do |syntax|
+            @presentation_contexts[sop_class][id] = {:transfer_syntaxes => [syntax]}
+            id += 2
+          end
+        end
+      end
+      return objects, status, message
     end
 
     # Handles the communication involved in a DICOM C-ECHO.
@@ -745,17 +792,17 @@ module DICOM
     def perform_send(objects)
       objects.each_with_index do |obj, index|
         # Gather necessary information from the object (SOP Class & Instance UID):
-        modality = obj.value("0008,0016")
-        instance = obj.value("0008,0018")
-        if modality and instance
-          # Only send the image if its modality has been accepted by the receiver:
-          if @approved_syntaxes[modality]
+        sop_class = obj.value("0008,0016")
+        sop_instance = obj.value("0008,0018")
+        if sop_class and sop_instance
+          # Only send the image if its sop_class has been accepted by the receiver:
+          if @approved_syntaxes[sop_class]
             # Set the command array to be used:
             message_id = index + 1
-            set_command_fragment_store(modality, instance, message_id)
+            set_command_fragment_store(sop_class, sop_instance, message_id)
             # Find context id and transfer syntax:
-            presentation_context_id = @approved_syntaxes[modality][0]
-            selected_transfer_syntax = @approved_syntaxes[modality][1]
+            presentation_context_id = @approved_syntaxes[sop_class][0]
+            selected_transfer_syntax = @approved_syntaxes[sop_class][1]
             # Encode our DICOM object to a binary string which is split up in pieces, sufficiently small to fit within the specified maximum pdu length:
             # Set the transfer syntax of the DICOM object equal to the one accepted by the SCP:
             obj.transfer_syntax = selected_transfer_syntax
@@ -795,13 +842,14 @@ module DICOM
       rejected = Hash.new
       # Reset the presentation context instance variable:
       @link.presentation_contexts = Hash.new
+      accepted_pc = 0
       presentation_contexts.each do |pc|
         # Determine what abstract syntax this particular presentation context's id corresponds to:
         id = pc[:presentation_context_id]
         raise "Error! Even presentation context ID received in the association response. This is not allowed according to the DICOM standard!" if id[0] == 0 # If even number.
-        index = (id-1)/2
-        abstract_syntax = @abstract_syntaxes[index]
+        abstract_syntax = find_abstract_syntax(id)
         if pc[:result] == 0
+          accepted_pc += 1
           @approved_syntaxes[abstract_syntax] = [id, pc[:transfer_syntax]]
           @link.presentation_contexts[id] = pc[:transfer_syntax]
         else
@@ -810,10 +858,10 @@ module DICOM
       end
       if rejected.length == 0
         @request_approved = true
-        if @approved_syntaxes.length == 1
+        if @approved_syntaxes.length == 1 and presentation_contexts.length == 1
           add_notice("The presentation context was accepted by host #{@host_ae}.")
         else
-          add_notice("All #{@approved_syntaxes.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
+          add_notice("All #{presentation_contexts.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
         end
       else
         @request_approved = false
@@ -847,7 +895,7 @@ module DICOM
     #
     def set_command_fragment_echo
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
+        ["0000,0002", "UI", @presentation_contexts.keys.first], # Affected SOP Class UID
         ["0000,0100", "US", C_ECHO_RQ],
         ["0000,0110", "US", DEFAULT_MESSAGE_ID],
         ["0000,0800", "US", NO_DATA_SET_PRESENT]
@@ -862,7 +910,7 @@ module DICOM
     #
     def set_command_fragment_find
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
+        ["0000,0002", "UI", @presentation_contexts.keys.first], # Affected SOP Class UID
         ["0000,0100", "US", C_FIND_RQ],
         ["0000,0110", "US", DEFAULT_MESSAGE_ID],
         ["0000,0700", "US", 0], # Priority: 0: medium
@@ -874,7 +922,7 @@ module DICOM
     #
     def set_command_fragment_get
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
+        ["0000,0002", "UI", @presentation_contexts.keys.first], # Affected SOP Class UID
         ["0000,0100", "US", C_GET_RQ],
         ["0000,0600", "AE", @ae], # Destination is ourselves
         ["0000,0700", "US", 0], # Priority: 0: medium
@@ -886,7 +934,7 @@ module DICOM
     #
     def set_command_fragment_move(destination)
       @command_elements = [
-        ["0000,0002", "UI", @abstract_syntaxes.first], # Affected SOP Class UID
+        ["0000,0002", "UI", @presentation_contexts.keys.first], # Affected SOP Class UID
         ["0000,0100", "US", C_MOVE_RQ],
         ["0000,0110", "US", DEFAULT_MESSAGE_ID],
         ["0000,0600", "AE", destination],
@@ -956,13 +1004,15 @@ module DICOM
       end
     end
 
-    # Sets the default values for proposed transfer syntaxes.
+    # Creates the presentation context used for the non-file-transmission association requests..
     #
-    def set_default_values
-      # DICOM Application Context Name (unknown if this will vary or is always the same):
-      @application_context_uid = APPLICATION_CONTEXT
-      # Transfer syntax string array (preferred syntax appearing first):
-      @transfer_syntax = [IMPLICIT_LITTLE_ENDIAN, EXPLICIT_LITTLE_ENDIAN, EXPLICIT_BIG_ENDIAN]
+    def set_default_presentation_context(abstract_syntax)
+      raise ArgumentError, "Expected String, got #{abstract_syntax.class}" unless abstract_syntax.is_a?(String)
+      id = 1
+      transfer_syntaxes = [IMPLICIT_LITTLE_ENDIAN, EXPLICIT_LITTLE_ENDIAN, EXPLICIT_BIG_ENDIAN]
+      item = {:transfer_syntaxes => transfer_syntaxes}
+      pc = {id => item}
+      @presentation_contexts = {abstract_syntax => pc}
     end
 
     # Sets the @user_information items instance array.
@@ -982,21 +1032,21 @@ module DICOM
     def association_established?
       @association == true
     end
-    
+
     def request_approved?
       @request_approved == true
     end
-    
+
     def presentation_context_id
       @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
     end
-    
+
     def set_data_elements(options)
       @data_elements = []
       options.keys.sort.each do |tag|
         @data_elements << [ tag, options[tag] ] unless options[tag].nil?
       end
     end
-    
+
   end
 end

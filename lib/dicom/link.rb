@@ -8,7 +8,7 @@ module DICOM
 
     # A customized FileHandler class to use instead of the default FileHandler included with Ruby DICOM.
     attr_accessor :file_handler
-    # The maximum allowed size of network packages (in bytes). 
+    # The maximum allowed size of network packages (in bytes).
     attr_accessor :max_package_size
     # A hash which keeps track of the relationship between context ID and chosen transfer syntax.
     attr_accessor :presentation_contexts
@@ -32,7 +32,7 @@ module DICOM
     # * <tt>:ae</tt> -- String. The name of the client (application entity).
     # * <tt>:file_handler</tt> -- A customized FileHandler class to use instead of the default FileHandler.
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
-    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes). 
+    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period to wait for an answer before aborting the communication.
     # * <tt>:verbose</tt> -- Boolean. If set to false, the DLink instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
@@ -121,17 +121,19 @@ module DICOM
       # encodes the presentation context, we pass on a one-element array containing nil).
       abstract_syntaxes = Array.new(1, nil)
       # Note: The order of which these components are built is not arbitrary.
-      append_application_context(info[:application_context])
+      append_application_context
       # Reset the presentation context instance variable:
       @presentation_contexts = Hash.new
+      # Create the presentation context hash object that will be passed to the builder method:
+      p_contexts = Hash.new
       # Build the presentation context strings, one by one:
       info[:pc].each do |pc|
-        context_id = pc[:presentation_context_id]
-        result = pc[:result]
-        transfer_syntax = pc[:selected_transfer_syntax]
-        @presentation_contexts[context_id] = transfer_syntax
-        append_presentation_contexts(abstract_syntaxes, ITEM_PRESENTATION_CONTEXT_RESPONSE, transfer_syntax, context_id, result)
+        @presentation_contexts[pc[:presentation_context_id]] = pc[:selected_transfer_syntax]
+        # Add the information from this pc item to the p_contexts hash:
+        p_contexts[pc[:abstract_syntax]] = Hash.new unless p_contexts[pc[:abstract_syntax]]
+        p_contexts[pc[:abstract_syntax]][pc[:presentation_context_id]] = {:transfer_syntaxes => [pc[:selected_transfer_syntax]], :result => pc[:result]}
       end
+      append_presentation_contexts(p_contexts, ITEM_PRESENTATION_CONTEXT_RESPONSE)
       append_user_information(@user_information)
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(PDU_ASSOCIATION_ACCEPT, info[:called_ae])
@@ -170,20 +172,18 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>ac_uid</tt> -- The application context UID string.
-    # * <tt>as</tt> -- An array of abstract syntax strings.
-    # * <tt>ts</tt> -- An array of transfer syntax strings.
+    # * <tt>presentation_contexts</tt> -- A hash containing abstract_syntaxes, presentation context ids and transfer syntaxes.
     # * <tt>user_info</tt> -- A user information items array.
     #
-    def build_association_request(ac_uid, as, ts, user_info)
+    def build_association_request(presentation_contexts, user_info)
       # Big endian encoding:
       @outgoing.endian = @net_endian
       # Clear the outgoing binary string:
       @outgoing.reset
       # Note: The order of which these components are built is not arbitrary.
       # (The first three are built 'in order of appearance', the header is built last, but is put first in the message)
-      append_application_context(ac_uid)
-      append_presentation_contexts(as, ITEM_PRESENTATION_CONTEXT_REQUEST, ts)
+      append_application_context
+      append_presentation_contexts(presentation_contexts, ITEM_PRESENTATION_CONTEXT_REQUEST, request=true)
       append_user_information(user_info)
       # Header must be built last, because we need to know the length of the other components.
       append_association_header(PDU_ASSOCIATION_REQUEST, @host_ae)
@@ -1136,19 +1136,15 @@ module DICOM
 
     # Builds the application context (which is part of the association request/response).
     #
-    # === Parameters
-    #
-    # * <tt>ac_uid</tt> -- Application context UID string.
-    #
-    def append_application_context(ac_uid)
+    def append_application_context
       # Application context item type (1 byte)
       @outgoing.encode_last(ITEM_APPLICATION_CONTEXT, "HEX")
       # Reserved (1 byte)
       @outgoing.encode_last("00", "HEX")
       # Application context item length (2 bytes)
-      @outgoing.encode_last(ac_uid.length, "US")
+      @outgoing.encode_last(APPLICATION_CONTEXT.length, "US")
       # Application context (variable length)
-      @outgoing.encode_last(ac_uid, "STR")
+      @outgoing.encode_last(APPLICATION_CONTEXT, "STR")
     end
 
     # Builds the binary string that makes up the header part the association request/response.
@@ -1202,70 +1198,58 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>abstract_syntaxes</tt> -- An array of abstract syntax strings.
-    # * <tt>pc</tt> -- Presentation context item (request or response).
-    # * <tt>ts</tt> -- An array of transfer syntax strings.
-    # * <tt>context_id</tt> -- The ID of the current presentation context.
-    # * <tt>result</tt> -- The result (accepted/refused) for the current presentation context.
+    # * <tt>presentation_contexts</tt> -- A nested hash object with abstract syntaxes, presentation context ids, transfer syntaxes and result codes.
+    # * <tt>item_type</tt> -- Presentation context item (request or response).
+    # * <tt>request</tt> -- Boolean. If true, an ossociate request message is generated, if false, an asoociate accept message is generated.
     #
-    def append_presentation_contexts(abstract_syntaxes, pc, ts, context_id=nil, result=ACCEPTANCE)
-      # One presentation context for each abstract syntax:
-      abstract_syntaxes.each_with_index do |as, index|
-        # PRESENTATION CONTEXT:
-        # Presentation context item type (1 byte)
-        @outgoing.encode_last(pc, "HEX")
-        # Reserved (1 byte)
-        @outgoing.encode_last("00", "HEX")
-        # Presentation context item length (2 bytes)
-        if ts.is_a?(Array)
-          ts_length = 4*ts.length + ts.join.length
-        else # (String)
-          ts_length = 4 + ts.length
-        end
-        if as
-          items_length = 4 + (4 + as.length) + ts_length
-        else
-          items_length = 4 + ts_length
-        end
-        @outgoing.encode_last(items_length, "US")
-        # Presentation context ID (1 byte)
-        # Generate a number based on the index of the abstract syntax, unless one has been supplied to this method already.
-        # (NB! This number should be odd, and in the range 1..255)
-        if context_id
-          presentation_context_id = context_id
-        else
-          presentation_context_id = index*2 + 1
-        end
-        @outgoing.encode_last(presentation_context_id, "BY")
-        # Reserved (1 byte)
-        @outgoing.encode_last("00", "HEX")
-        # (1 byte) Reserved (for association request) & Result/reason (for association accept response)
-        @outgoing.encode_last(result, "BY")
-        # Reserved (1 byte)
-        @outgoing.encode_last("00", "HEX")
-        ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
-        if as
-          # Abstract syntax item type (1 byte)
-          @outgoing.encode_last(ITEM_ABSTRACT_SYNTAX, "HEX")
+    def append_presentation_contexts(presentation_contexts, item_type, request=false)
+      # Iterate the abstract syntaxes:
+      presentation_contexts.each_pair do |abstract_syntax, context_ids|
+        # Iterate the context ids:
+        context_ids.each_pair do |context_id, syntax|
+          # PRESENTATION CONTEXT:
+          # Presentation context item type (1 byte)
+          @outgoing.encode_last(item_type, "HEX")
           # Reserved (1 byte)
           @outgoing.encode_last("00", "HEX")
-          # Abstract syntax item length (2 bytes)
-          @outgoing.encode_last(as.length, "US")
-          # Abstract syntax (variable length)
-          @outgoing.encode_last(as, "STR")
-        end
-        ## TRANSFER SYNTAX SUB-ITEM (not included if result indicates error):
-        if result == ACCEPTANCE
-          ts = [ts] if ts.is_a?(String)
-          ts.each do |t|
-            # Transfer syntax item type (1 byte)
-            @outgoing.encode_last(ITEM_TRANSFER_SYNTAX, "HEX")
+          # Presentation context item length (2 bytes)
+          ts_length = 4*syntax[:transfer_syntaxes].length + syntax[:transfer_syntaxes].join.length
+          # Abstract syntax item only included in requests, not accepts:
+          items_length = 4 + ts_length
+          items_length += 4 + abstract_syntax.length if request
+          @outgoing.encode_last(items_length, "US")
+          # Presentation context ID (1 byte)
+          @outgoing.encode_last(context_id, "BY")
+          # Reserved (1 byte)
+          @outgoing.encode_last("00", "HEX")
+          # (1 byte) Reserved (for association request) & Result/reason (for association accept response)
+          result = (syntax[:result] ? syntax[:result] : 0)
+          @outgoing.encode_last(result, "BY")
+          # Reserved (1 byte)
+          @outgoing.encode_last("00", "HEX")
+          ## ABSTRACT SYNTAX SUB-ITEM: (only for request, not response)
+          if request
+            # Abstract syntax item type (1 byte)
+            @outgoing.encode_last(ITEM_ABSTRACT_SYNTAX, "HEX")
             # Reserved (1 byte)
             @outgoing.encode_last("00", "HEX")
-            # Transfer syntax item length (2 bytes)
-            @outgoing.encode_last(t.length, "US")
-            # Transfer syntax (variable length)
-            @outgoing.encode_last(t, "STR")
+            # Abstract syntax item length (2 bytes)
+            @outgoing.encode_last(abstract_syntax.length, "US")
+            # Abstract syntax (variable length)
+            @outgoing.encode_last(abstract_syntax, "STR")
+          end
+          ## TRANSFER SYNTAX SUB-ITEM (not included if result indicates error):
+          if result == ACCEPTANCE
+            syntax[:transfer_syntaxes].each do |t|
+              # Transfer syntax item type (1 byte)
+              @outgoing.encode_last(ITEM_TRANSFER_SYNTAX, "HEX")
+              # Reserved (1 byte)
+              @outgoing.encode_last("00", "HEX")
+              # Transfer syntax item length (2 bytes)
+              @outgoing.encode_last(t.length, "US")
+              # Transfer syntax (variable length)
+              @outgoing.encode_last(t, "STR")
+            end
           end
         end
       end
