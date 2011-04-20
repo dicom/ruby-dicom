@@ -111,43 +111,25 @@ module DICOM
     # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
     # * For a general list of optional object instance level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.5, Table C.6-4.
     #
-    # === Restrictions
-    #
-    # * Not all object instance level attributes are currently supported.
-    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
-    #
     # === Examples
     #
     #   node.find_images("0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844")
     #
-    #--
-    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are object instance level,
-    # this method could be refactored in order to avoid having to specify the hash of allowed query parameters.
-    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid object instance level attributes.
-    #
     def find_images(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.1")
-      # Every query attribute with a value != nil (required) will be sent in the dicom query.
-      # The query parameters with nil-value (optional) are left out unless specified.
-      allowed_query_params = {
-        "0008,0016" => nil, # SOP Class UID
+      # These query attributes will always be present in the dicom query:
+      default_query_params = {
         "0008,0018" => "", # SOP Instance UID
-        "0008,001A" => nil, # Related General SOP Class UID
         "0008,0052" => "IMAGE", # Query/Retrieve Level: "IMAGE"
-        "0020,000D" => nil, # Study Instance UID
-        "0020,000E" => nil, # Series Instance UID
-        "0020,0013" => "", # Instance Number
-        "0040,0512" => nil # Container Identifier
+        "0020,0013" => "" # Instance Number
       }
-      # Raising an error if unknown query attributes are present:
+      # Raising an error if a non-tag query attribute is used:
       query_params.keys.each do |tag|
-        unless allowed_query_params.include?(tag)
-          raise ArgumentError, "unknown query parameter: #{tag}"
-        end
+        raise ArgumentError, "The supplied tag (#{tag}) is not valid. It must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       end
       # Set up the query parameters and carry out the C-FIND:
-      set_data_elements(allowed_query_params.merge(query_params))
+      set_data_elements(default_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -172,49 +154,26 @@ module DICOM
     # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
     # * For a general list of optional patient level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.2, Table C.6-1.
     #
-    # === Restrictions
-    #
-    # * Not all patient level attributes are currently supported.
-    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
-    #
     # === Examples
     #
     #   node.find_patients("0010,0010" => "James*")
-    #
-    #--
-    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are patient level,
-    # this method could be refactored in order to avoid having to specify the hash of allowed query parameters.
-    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid patient level attributes.
     #
     def find_patients(query_params={})
       # Patient Root Query/Retrieve Information Model - FIND:
       set_default_presentation_context("1.2.840.10008.5.1.4.1.2.1.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
-      allowed_query_params = {
+      default_query_params = {
         "0008,0052" => "PATIENT", # Query/Retrieve Level: "PATIENT"
         "0010,0010" => "", # Patient's Name
-        "0010,0020" => "", # Patient's ID
-        "0010,0021" => nil, # Issuer of Patient ID
-        "0010,0030" => nil, # Patient's Birth Date
-        "0010,0032" => nil, # Patient's Birth Time
-        "0010,0040" => nil, # Patient's Sex
-        "0010,1000" => nil, # Other Patient Ids
-        "0010,1001" => nil, # Other Patient Names
-        "0010,2160" => nil, # Ethnic Group
-        "0010,4000" => nil, # Patient Comments
-        "0020,1200" => nil, # Number of Patient Related Studies
-        "0020,1202" => nil, # Number of Patient Related Series
-        "0020,1204" => nil # Number of Patient Related Instances
+        "0010,0020" => "" # Patient's ID
       }
-      # Raising an error if unknown query attributes are present:
+      # Raising an error if a non-tag query attribute is used:
       query_params.keys.each do |tag|
-        unless allowed_query_params.include?(tag)
-          raise ArgumentError, "unknown query parameter: #{tag}"
-        end
+        raise ArgumentError, "The supplied tag (#{tag}) is not valid. It must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       end
       # Set up the query parameters and carry out the C-FIND:
-      set_data_elements(allowed_query_params.merge(query_params))
+      set_data_elements(default_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -237,42 +196,27 @@ module DICOM
     # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
     # * For a general list of optional series level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.4, Table C.6-3.
     #
-    # === Restrictions
-    #
-    # * Not all series level attributes are currently supported.
-    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
-    #
     # === Examples
     #
     #   node.find_series("0020,000D" => "1.2.840.1145.342")
-    #
-    #--
-    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are series level,
-    # this method could be refactored in order to avoid having to specify the hash of allowed query parameters.
-    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid series level attributes.
     #
     def find_series(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
-      allowed_query_params = {
+      default_query_params = {
         "0008,0052" => "SERIES", # Query/Retrieve Level: "SERIES"
         "0008,0060" => "", # Modality
-        "0008,103E" => nil, # Series Description
-        "0020,000D" => nil, # Study Instance UID
         "0020,000E" => "", # Series Instance UID
-        "0020,0011" => "", # Series Number
-        "0020,1209" => nil # Number of Series Related Instances
+        "0020,0011" => "" # Series Number
       }
-      # Raising an error if unknown query attributes are present:
+      # Raising an error if a non-tag query attribute is used:
       query_params.keys.each do |tag|
-        unless allowed_query_params.include?(tag)
-          raise ArgumentError, "unknown query parameter: #{tag}"
-        end
+        raise ArgumentError, "The supplied tag (#{tag}) is not valid. It must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       end
       # Set up the query parameters and carry out the C-FIND:
-      set_data_elements(allowed_query_params.merge(query_params))
+      set_data_elements(default_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -299,68 +243,31 @@ module DICOM
     # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
     # * For a general list of optional study level attributes, refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
     #
-    # === Restrictions
-    #
-    # * Not all study level attributes are currently supported.
-    # * For a complete list of the accepted "optional" attributes, refer to the specification/source code.
-    #
     # === Examples
     #
     #   node.find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789")
-    #
-    #--
-    # NOTE: If at some point in the future, our dictionary should get awareness of which attributes are study level,
-    # this method could be refactored in order to avoid having to specify the rather big hash of allowed query parameters.
-    # Alternatively, it could be considered to allow any attribute, and leave it up to the user to restrict himself to valid study level attributes.
     #
     def find_studies(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
       set_default_presentation_context("1.2.840.10008.5.1.4.1.2.2.1")
       # Every query attribute with a value != nil (required) will be sent in the dicom query.
       # The query parameters with nil-value (optional) are left out unless specified.
-      allowed_query_params = {
+      default_query_params = {
         "0008,0020" => "",  # Study Date
         "0008,0030" => "",  # Study Time
         "0008,0050" => "",  # Accession Number
         "0008,0052" => "STUDY", # Query/Retrieve Level:  "STUDY"
-        "0008,0061" => nil, # Modalities in Study
-        "0008,0062" => nil, # SOP Classes in Study
-        "0008,0090" => nil, # Referring Physician's Name
-        "0008,1030" => nil, # Study Description
-        "0008,1060" => nil, # Name of Physician(s) Reading Study
-        "0008,1080" => nil, # Admitting Diagnoses Description
         "0010,0010" => "",  # Patient's Name
         "0010,0020" => "",  # Patient ID
-        "0010,0021" => nil, # Issuer of Patient ID
-        "0010,0030" => nil, # Patient's Birth Date
-        "0010,0032" => nil, # Patient's Birth Time
-        "0010,0040" => nil, # Patient's Sex
-        "0010,1000" => nil, # Other Patient Ids
-        "0010,1001" => nil, # Other Patient Names
-        "0010,1010" => nil, # Patient's Age
-        "0010,1020" => nil, # Patient's Size
-        "0010,1030" => nil, # Patient's Weight
-        "0010,2160" => nil, # Ethnic Group
-        "0010,2180" => nil, # Occupation
-        "0010,21B0" => nil, # Additional Patient History
-        "0010,4000" => nil, # Patient Comments
-        "0020,1070" => nil, # Other Study Numbers
-        "0020,1200" => nil, # Number of Patient Related Studies
-        "0020,1202" => nil, # Number of Patient Related Series
-        "0020,1204" => nil, # Number of Patient Related Instances
-        "0020,1206" => nil, # Number of Study Related Series
-        "0020,1208" => nil, # Number of Study Related Instances
         "0020,000D" => "",  # Study Instance UID
         "0020,0010" => ""  # Study ID
       }
-      # Raising an error if unknown query attributes are present:
+      # Raising an error if a non-tag query attribute is used:
       query_params.keys.each do |tag|
-        unless allowed_query_params.include?(tag)
-          raise ArgumentError, "unknown query parameter: #{tag}"
-        end
+        raise ArgumentError, "The supplied tag (#{tag}) is not valid. It must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       end
       # Set up the query parameters and carry out the C-FIND:
-      set_data_elements(allowed_query_params.merge(query_params))
+      set_data_elements(default_query_params.merge(query_params))
       perform_find
       return @data_results
     end
@@ -988,11 +895,11 @@ module DICOM
       ]
     end
 
-    # Transfers the user query options to the @data_elements instance array.
+    # Transfers the user-specified options to the @data_elements instance array.
     #
     # === Restrictions
     #
-    # * Only tag & value pairs for tags which are predefined for the specific query type will be stored!
+    # * Only tag & value pairs for tags which are predefined for the specific request type will be stored!
     #
     def set_data_options(options)
       options.each_pair do |key, value|
