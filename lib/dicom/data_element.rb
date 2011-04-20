@@ -79,7 +79,7 @@ module DICOM
       # Manage the parent relation if specified:
       if options[:parent]
         @parent = options[:parent]
-        @parent.add(self)
+        @parent.add(self, :no_follow => true)
       end
     end
 

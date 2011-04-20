@@ -48,6 +48,15 @@ module DICOM
       obj[seq_tag].should eql seq
     end
 
+    it "should have two children, when adding a DataElement and a Sequence to the empty DICOM object" do
+      obj = DObject.new(nil, :verbose => false)
+      seq = Sequence.new("0008,1140")
+      obj.add(seq)
+      name = DataElement.new("0010,0010", "John_Doe")
+      obj.add(name)
+      obj.count.should eql 2
+    end
+
     it "should update the parent attribute of the DataElement when it is added to a parent" do
       obj = DObject.new(nil, :verbose => false)
       name = DataElement.new("0010,0010", "John_Doe")

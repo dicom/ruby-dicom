@@ -63,21 +63,42 @@ module DICOM
       d.parent.should eql i
     end
 
-=begin # Fails, should be looked at some time...
     it "should register itself as a child of the new parent element when the parent=() method is called" do
       i = Item.new
       d = DataElement.new("3006,0084", "1")
       d.parent = i
       i.children?.should eql true
     end
-=end
 
-    it "should remove itself as a child of the old parent element when a new parent is set with the parent=() method" do
+    it "should remove itself as a child of the old parent element when a new parent is set to a child which already has a parent" do
       i_old = Item.new
       d = DataElement.new("3006,0084", "1", :parent => i_old)
       i_new = Item.new
       d.parent = i_new
       i_old.children?.should be_false
+    end
+
+    it "should add itself as a child of the new parent element when a new parent is set to a child which already has a parent" do
+      i_old = Item.new
+      d = DataElement.new("3006,0084", "1", :parent => i_old)
+      i_new = Item.new
+      d.parent = i_new
+      i_new.children?.should be_true
+    end
+
+    it "should remove itself as a child of the old parent element when parent is set as nil" do
+      i = Item.new
+      d = DataElement.new("3006,0084", "1", :parent => i)
+      d.parent = nil
+      i.children?.should be_false
+    end
+
+    it "should keep its parent and the parent should keep its child if the existing parent is set with the parent=() method" do
+      i = Item.new
+      d = DataElement.new("3006,0084", "1", :parent => i)
+      d.parent = i
+      i.count.should eql 1
+      d.parent.should eql i
     end
 
     it "should return an empty array when the parents method is called and no parent has been specified" do

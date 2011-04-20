@@ -44,6 +44,11 @@ module DICOM
     # === Parameters
     #
     # * <tt>element</tt> -- An element (DataElement or Sequence).
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is added.
     #
     # === Examples
     #
@@ -52,7 +57,7 @@ module DICOM
     #   # Add a previously defined element roi_name to the first item in the following sequence:
     #   obj["3006,0020"][0].add(roi_name)
     #
-    def add(element)
+    def add(element, options={})
       unless element.is_a?(Item)
         unless self.is_a?(Sequence)
           # Does the element's binary value need to be reencoded?
@@ -61,7 +66,7 @@ module DICOM
           self[element.tag].parent = nil if exists?(element.tag)
           # Add the element, and set its parent attribute:
           @tags[element.tag] = element
-          element.parent = self
+          element.parent = self unless options[:no_follow]
           # As the element has been moved in place, perform re-encode if indicated:
           element.value = element.value if reencode
         else
@@ -87,6 +92,7 @@ module DICOM
     # === Options
     #
     # * <tt>:index</tt> -- Fixnum. If the Item is to be inserted at a specific index (Item number), this option parameter needs to set.
+    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is added.
     #
     # === Examples
     #
@@ -135,7 +141,7 @@ module DICOM
               item.index = index
             end
             # Set ourself as this item's new parent:
-            item.parent = self
+            item.set_parent(self) unless options[:no_follow]
           else
             raise ArgumentError, "The specified parameter is not an Item. Only Items are allowed to be added to a Sequence."
           end
@@ -463,6 +469,11 @@ module DICOM
     # === Parameters
     #
     # * <tt>tag</tt> -- A tag string which specifies the element to be removed (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is removed.
     #
     # === Examples
     #
@@ -471,7 +482,7 @@ module DICOM
     #   # Remove Item 1 from a specific Sequence:
     #   obj["3006,0020"].remove(1)
     #
-    def remove(tag)
+    def remove(tag, options={})
       if tag.is_a?(String) or tag.is_a?(Integer)
         raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
         raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
@@ -481,7 +492,7 @@ module DICOM
       # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
       element = @tags[tag]
       if element
-        element.parent = nil
+        element.parent = nil unless options[:no_follow]
         @tags.delete(tag)
       end
     end

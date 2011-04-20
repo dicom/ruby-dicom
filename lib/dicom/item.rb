@@ -55,7 +55,7 @@ module DICOM
       if options[:parent]
         @parent = options[:parent]
         @index = options[:index] if options[:index]
-        @parent.add_item(self, :index => options[:index])
+        @parent.add_item(self, :index => options[:index], :no_follow => true)
       end
     end
 
