@@ -1,5 +1,8 @@
 #    Copyright 2008-2011 Christoffer Lervag
-
+require 'rubygems'
+require 'sqlite3'
+require 'progressbar'
+require 'fileutils'
 module DICOM
 
   # This is a convenience class for handling anonymization of DICOM files.
@@ -69,6 +72,14 @@ module DICOM
       @write_paths = Array.new
       # Keep track of status messages:
       @log = Array.new
+      # Set the org_root to be used when anonymizing study_uid series_uid and sop_instance_uid
+      @org_root = options[:root]
+      if not @org_root
+        @org_root = "555" # Register for one at http://www.medicalconnections.co.uk/FreeUID.html
+      end
+      # Set sqlite database file if it exists
+      @db = options[:db]
+     
       # Set the default data elements to be anonymized:
       set_defaults
     end
@@ -149,6 +160,8 @@ module DICOM
       add_msg("Searching for files...")
       load_files
       add_msg("Done.")
+      delete_burn_in = false
+      initialize_db if @db
       if @files.length > 0
         if @tags.length > 0
           add_msg(@files.length.to_s + " files have been identified in the specified folder(s).")
@@ -172,15 +185,48 @@ module DICOM
           all_write = true
           files_written = 0
           files_failed_read = 0
+          pbar = ProgressBar.new("Anonymizing", @files.length)
           @files.each_index do |i|
+            pbar.inc
             # Read existing file to DICOM object:
             obj = DICOM::DObject.new(@files[i], :verbose => verbose)
             if obj.read_success
+              # This function should return true if this file should be considered for manual review
+              if suspicious(obj, @files[i])
+                  # This file was marked as suspicious, move it
+                  all_write = false
+                  delete_burn_in = true
+                  pwd = Dir.pwd
+                  susp_dir =  pwd + File::SEPARATOR + "suspicious_dicom_files" + File::SEPARATOR
+                  str_arr = susp_dir.split(File::SEPARATOR)
+                  last_match_index = common_path(str_arr, 0)
+                  if last_match_index >= 0
+                      arr = @files[i].split(File::SEPARATOR)
+                      part_to_write = arr[(last_match_index+1)..(arr.length-1)].join(File::SEPARATOR)
+                  else
+                      part_to_write = @files[i]
+                  end
+                  new_file = susp_dir + part_to_write
+                  FileUtils.mkdir_p(File.dirname(new_file))
+                  add_msg("Moving " + @files[i] + " to " + new_file)
+                  FileUtils.move(@files[i], new_file)
+                  next
+              end
+              # StudyDate is needed for studyUID cleaning
+              studyDateElement = obj["0008,0020"]
+              if studyDateElement 
+                studyDate = studyDateElement.value.strip
+              else
+                studyDate = "20000101"
+              end
               # Anonymize the desired tags:
               @tags.each_index do |j|
                 if obj.exists?(@tags[j])
                   element = obj[@tags[j]]
-                  if element.is_a?(DataElement)
+                  # Aanonymizing StudyUID?
+                  if @tags[j].upcase == "0020,000D"
+                    clean_uids(@files[i], obj, element, @values[j], studyDate) if element
+                  elsif element.is_a?(DataElement)
                     if @blank
                       value = ""
                     elsif @enumeration
@@ -201,6 +247,13 @@ module DICOM
               end
               # Remove private tags?
               obj.remove_private if @remove_private
+              
+              # Remove Tags marked for removal
+              @removetags.each_index do |j|
+                elementRemove = obj[@removetags[j]]
+                obj.remove(@removetags[j]) if elementRemove
+              end
+              
               # Write DICOM file:
               obj.write(@write_paths[i])
               if obj.write_success
@@ -213,6 +266,7 @@ module DICOM
               files_failed_read += 1
             end
           end
+          pbar.finish
           # Finished anonymizing files. Print elapsed time and status of anonymization:
           end_time = Time.now.to_f
           add_msg("Anonymization process completed!")
@@ -225,9 +279,13 @@ module DICOM
             add_msg("All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files).")
           else
             add_msg("Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written).")
+            if delete_burn_in
+              add_msg( "At least some of these dicom files have been identified as possibly containing burnt-in patient data.")
+              add_msg("They have been moved to directory call suspect_dicom_files in your current working directory.")
+            end
           end
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
-          if @enumeration and @identity_file
+          if @enumeration and @identity_file and not @db
             add_msg("Writing identity file.")
             write_identity_file
             add_msg("Done")
@@ -242,7 +300,70 @@ module DICOM
       end
       add_msg("*******************************************************")
     end
-
+    
+    def clean_uids(filename, obj, element, value, studyDate)
+      # UID anonymization is a more complex case, it requires the preservation of relationships
+      # While technically we could just generate a new value for each study,instance,object
+      # It would destroy the relationships between files
+      previous_old_study = nil
+      previous_new_study = nil
+      studyUID = nil
+      seriesUID = nil
+      old_value = element.value
+      if @db
+        db_value = check_db(value, old_value)
+        if db_value != nil
+          studyUID = db_value
+        else
+          studyUID = generate_uid
+          store_db(value, old_value, studyUID, studyDate)
+        end
+      else                  
+        previous_old_study = @enum_old_hash["0020,000D"]
+        previous_new_study = @enum_new_hash["0020,000D"]
+        studyUID = nil
+        if previous_old_study.index(old_value) == nil
+          studyUID = generate_uid
+          previous_old_study << old_value
+          previous_new_study << studyUID
+        else
+          studyUID = previous_new_study[previous_old_study.index(old_value)]
+        end
+      end
+      
+      seriesNumberElement = obj["0020,0011"]
+      instanceNumberElement = obj["0020,0013"]
+      instanceUIDElement = obj["0008,0018"]
+      seriesUIDElement = obj["0020,000E"]
+      
+      # I have seen instances when there was no instance or series number, I am not sure what to do here.
+      if seriesUIDElement and seriesNumberElement and seriesNumberElement.value
+        seriesUID = studyUID + ".2." + seriesNumberElement.value.strip.to_i.to_s # easy way to remove spaces and leading 0's
+        seriesUIDElement.value = seriesUID
+      else
+        seriesUID = studyUID + ".2"
+        seriesUIDElement.value = seriesUID
+        add_msg("DICOM file " + filename + " did not have a series number, this can cause issues.")
+      end
+      
+      if instanceUIDElement and instanceNumberElement and instanceNumberElement.value
+        instanceUID = seriesUID + ".3." + instanceNumberElement.value.strip.to_i.to_s
+        instanceUIDElement.value = instanceUID
+      else
+        instanceUID = seriesUID + ".3"
+        instanceUIDElement.value = instanceUID
+        add_msg("DICOM file " + filename + " did not have an instance number, this can cause issues.")
+      end
+      
+      element.value = studyUID
+      
+      # We also need to change (0002,0003) Media Storage SOP Instance UID because this is equal to the SOP Instance UID
+      # DCM4CHEE will not accept these if they don't match
+      mediaSOPUIDElement = obj["0002,0003"]
+      if mediaSOPUIDElement
+         mediaSOPUIDElement.value = instanceUID
+      end
+    end
     # Prints to screen a list of which tags are currently selected for anonymization along with
     # the replacement values that will be used and enumeration status.
     #
@@ -318,6 +439,31 @@ module DICOM
         @enumerations.delete_at(pos)
       end
     end
+    
+    
+    
+    # Scans a DICOM object to determine if it is suspect to include PHI in the image
+    #
+    # === Parameters
+    #
+    # * <tt>obj</tt> -- DICOM Object
+    # * <tt>filename</tt> -- Filename of DICOM file
+    #
+    def suspicious(obj, filename)
+       suspect = false
+       # If the series description is patient protocol, this is typically a single series with
+       # white text on black containing at least the study date
+       seriesDescripElement = obj["0008,103E"]
+       return if not seriesDescripElement
+       seriesDescrip = seriesDescripElement.value
+       if seriesDescrip.upcase.strip == "PATIENT PROTOCOL"
+         suspect = true
+         add_msg("File: " + filename + " has series description of 'Patient Protocol'. It will be moved for manual review.")
+         break
+       end
+       return suspect
+    end
+    
 
     # Sets the anonymization settings for the specified tag. If the tag is already present in the list
     # of tags to be anonymized, its settings are updated, and if not, a new tag entry is created.
@@ -439,21 +585,38 @@ module DICOM
     def get_enumeration_value(current, j)
       # Is enumeration requested for this tag?
       if @enumerations[j]
-        # Retrieve earlier used anonymization values:
-        previous_old = @enum_old_hash[@tags[j]]
-        previous_new = @enum_new_hash[@tags[j]]
-        p_index = previous_old.length
-        if previous_old.index(current) == nil
-          # Current value has not been encountered before:
-          value = @values[j]+(p_index + 1).to_s
-          # Store value in array (and hash):
-          previous_old << current
-          previous_new << value
-          @enum_old_hash[@tags[j]] = previous_old
-          @enum_new_hash[@tags[j]] = previous_new
+        if @db
+          new_value = check_db(@values[j],current)
+          if new_value != nil
+            value = new_value
+          else
+            index = get_next_db_index(@values[j])
+            # This should really check to see if the type of the tag is an int, but for now, the only 
+            # one this is a proble for is assession so
+            if @tags[j] == "0008,0050"
+                value = index.to_s
+            else
+                value = @values[j] + index.to_s
+            end
+            store_db(@values[j], current, value)
+          end
         else
-          # Current value has been observed before:
-          value = previous_new[previous_old.index(current)]
+           # Retrieve earlier used anonymization values:
+           previous_old = @enum_old_hash[@tags[j]]
+           previous_new = @enum_new_hash[@tags[j]]
+           p_index = previous_old.length
+           if previous_old.index(current) == nil
+             # Current value has not been encountered before:
+             value = @values[j]+(p_index + 1).to_s
+             # Store value in array (and hash):
+             previous_old << current
+             previous_new << value
+             @enum_old_hash[@tags[j]] = previous_old
+             @enum_new_hash[@tags[j]] = previous_new
+           else
+             # Current value has been observed before:
+             value = previous_new[previous_old.index(current)]
+           end
         end
       else
         value = @values[j]
@@ -527,30 +690,126 @@ module DICOM
     #
     def set_defaults
       data = [
-      ["0008,0012", "20000101", false], # Instance Creation Date
-      ["0008,0013", "000000.00", false], # Instance Creation Time
-      ["0008,0020", "20000101", false], # Study Date
-      ["0008,0023", "20000101", false], # Image Date
-      ["0008,0030", "000000.00", false], # Study Time
-      ["0008,0033", "000000.00", false], # Image Time
-      ["0008,0080", "Institution", true], # Institution name
-      ["0008,0090", "Physician", true], # Referring Physician's name
-      ["0008,1010", "Station", true], # Station name
-      ["0008,1070", "Operator", true], # Operator's Name
-      ["0010,0010", "Patient", true], # Patient's name
-      ["0010,0020", "ID", true], # Patient's ID
-      ["0010,0030", "20000101", false], # Patient's Birth Date
-      ["0010,0040", "N", false], # Patient's Sex
-      ["0020,4000", "", false], # Image Comments
+        ["0008,0050", "Accession", true], # Accession Number
+        ["0008,0080", "Institution", true], # Institution name
+        ["0008,0081", "InstAddress", true], # Institution Address
+        ["0008,0090", "Physician", true], # Referring Physician's name
+        ["0008,0092", "PhysAddr", true], # Referring Physician's address
+        ["0008,0094", "PhysPhoner", true], # Referring Physician's Phone
+        ["0008,1048", "PhysOfRecord", true], # Physician(s) of Record
+        ["0008,1049", "PhysOfRecordID", true], # Physician(s) of Record Identification
+        ["0008,1050", "PerfPhysName", true], # Performing Physician's Name
+        ["0008,1060", "ReadPhysName", true], # Reading Physicians Name
+        ["0008,1070", "Operator", true], # Operator's Name
+        ["0008,1010", "Station", true], # Station name
+        ["0010,0010", "Patient", true], # Patient's name
+        ["0010,1005", "PatientBName", true], # Patient's Birth Name
+        ["0010,0020", "ID", true], # Patient's ID
+        
+        ["0008,0012", "20000101", false], # Instance Creation Date
+        ["0008,0013", "000000.00", false], # Instance Creation Time
+        ["0008,0020", "20000101", false], # Study Date
+        ["0008,0021", "20000101", false], # Series Date
+        ["0008,0023", "20000101", false], # Image Date
+        ["0008,0030", "000000.00", false], # Study Time
+        ["0008,0022", "20000101", false], # Acquisition Date
+        ["0008,0033", "000000.00", false], # Image Time
+        ["0010,0030", "20000101", false], # Patient's Birth Date
+        ["0010,0040", "", false], # Patient's Sex
+        ["0010,1001", "OtherPatientNames", false], # Other Patient Names
+        ["0010,1010", "", false], # Patients Age
+        ["0010,1020", "", false], # Patient Size
+        ["0010,1030", "", false], # Patient Weight
+        ["0020,4000", "", false], # Image Comments
       ].transpose
       @tags = data[0]
       @values = data[1]
       @enumerations = data[2]
+      
+      
+      #Removing some tags because of difficulty in creating anonymized versions or
+      #tag's thats presence might give away something
+      @removetags = [
+        "0008,1140", # Referenced Image Sequence
+        "0008,1110", # Referenced Study Sequence
+        "0008,1120", # Referenced Patient Sequence
+        "0008,114A", # Referenced Instance Sequence
+        "0008,1150", # Referenced SOP Class UID Sequence
+        "0008,1155", # Referenced SOP ClassInstance UID Sequence 
+        "0010,0050", # Patient Insurance Plan Sequence
+        "0010,1002", # Other Patient ID sequence
+        "0010,1050", # Patient Insurance Plan Sequence
+        "0010,1040", # Patient's Address    
+        "0010,1060", # Patient's Mother's Birth Name
+        "0010,1080", # Military Rank
+        "0010,1081", # Branch of Service
+        "0010,1090", # Medical Record Location
+        "0010,2000", # Medical alerts
+        "0010,2110", # Allergies
+        "0010,2150", # Country of Residence
+        "0010,2152", # Region of Residence
+        "0010,2154", # Patient Phone
+        "0010,2160", # Ethnic Group
+        "0010,2180", # Occupation Group
+        "0010,2297", # Responsible Persons Name
+        "0010,2299", # Responsible Organization
+        "0010,21A0", # Smoking Status
+        "0010,21B0", # Additional Patient History
+        "0010,21C0", # Pregnancy Status
+        "0010,21D0", # Last Menstrual Date
+        "0010,21F0", # Religious Pref
+        "0020,0052", # Frame of reference UID
+        "0032,0012", # Study ID Issuer RET
+        "0032,1032", # Requesting Physician
+        "0032,1064", # Requested Procedure Sequence
+        "0040,0275", # Requested Attributes Sequence
+        "0040,1010", # Names of intended recipient of results
+        "0040,1011", # ID sequence recipient of results
+        "0040,0006", # Scheduled Performing Physician's Name
+        "0040,1012", # Reason for peformed procedure sequence
+        "0040,1101", # Person Identification Sequence
+        "0040,1102", # Person's address
+        "0040,1104", # Person's telephone numbers
+        "0040,1400", # Requested Procedure Comments
+        "0040,2001", # Reason for imagin gservie request RET
+        "0040,2008", # Order entered by
+        "0040,4037", # Human performers name
+        "0040,A075", # Verifying observers name
+        "0040,A123", # Person Name
+        "0040,A124", # UID
+        "0070,0083", # Content Creators Name
+        "0072,006A", # Selector PN Value
+        "3006,00A6", # ROI Interpreter
+        "300E,0008", # Reviewer Name
+        "4008,0102", # Interpretation Recorder
+        "4008,010A", # Interpretation Transcriber
+        "4008,010B", # Interpretation Text
+        "4008,010C", # Interpretation Author
+        "4008,0114", # Physician Approving Interpretation
+        "4008,0119", # Distribution Name
+        # Additional Attributes as recommended by Digital Imaging and Communications in Medicine (DICOM)
+        # Supplement 55: Attribute Level Confidentiality (including De-identification)
+        "0008,0014", # Instance Creator UID
+        "0008,1040", # Institutional Name
+        "0008,1080", # Admitting Diagnoses Description
+        "0008,2111", # Derivation Description 
+        "0010,0032", # Patient's Birth Time
+        "0010,1000", # Other Patient ID's
+        "0010,4000", # Patient Comments
+        "0018,1000", # Device Serial Number
+        "0018,1030", # Protocol Name
+        "0020,0200", # Synchronization Frame of Reference UID
+        "0040,0275", # Request Attribute Sequence
+        "0040,A730", # Content Sequence
+        "0088,0140", # Storage Media File-set UID
+        "3006,0024", # Referenced Frame of Reference UID
+        "3006,00C2", # Related Frame of Reference UID
+        "0020,0010"  # Study ID
+      ]
     end
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
     # using the enumeration feature. Values are saved in a text file, using semi colon delineation.
-    #
     def write_identity_file
       raise ArgumentError, "Expected String, got #{@identity_file.class}. Unable to write identity file." unless @identity_file.is_a?(String)
       # Open file and prepare to write text:
@@ -572,6 +831,74 @@ module DICOM
         end
       end
     end
-
+    
+    def generate_uid
+      new_guid = ""
+      begin
+          current_time = Time.new
+          new_guid =  @org_root  + "." + current_time.year.to_s +  current_time.month.to_s + current_time.day.to_s + current_time.min.to_s + current_time.sec.to_s + "." + current_time.usec.to_s + ".1"
+      end until new_guid != @last_guid
+      @last_guid = new_guid
+      return new_guid
+    end
+    
+    # To make this anonymizer work for files anonymized during different runs and stored in the same PACS
+    # this function stores the enumerated identity information in an sqlite database. This allows for consistancy
+    # in generating aliases as well as providing an easy way to link back to the studies that were anonymized.
+    def initialize_db
+      db = SQLite3::Database.open("identity.db")
+      # There needs to be a table to store each of the enumerated values, check to see if the tables exist, if not, create them
+      tables = @values.select {|x| @enumerations[@values.index(x)]}
+      tables.map!{|x| x.downcase}
+      tables.each { |x|
+        rows = db.execute("SELECT name FROM sqlite_master WHERE name='"+x+"'")
+        if rows.length == 0
+          # Table does not exist, create it
+          if x == "studyuid"
+            db.execute("CREATE TABLE "+x+" (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned, date)")
+          else
+            db.execute("CREATE TABLE "+x+" (id INTEGER PRIMARY KEY AUTOINCREMENT, original, cleaned)")
+          end
+        end
+      }
+      db.close
+      
+    end
+    
+    def check_db(tag, value)
+      new_value = nil
+      db = SQLite3::Database.open("identity.db")
+      rows = db.execute("SELECT cleaned FROM "+tag.downcase+" WHERE original = ?", value)
+      if rows.length != 0
+        new_value = rows[0][0]
+      end
+      db.close
+      return new_value
+    end
+    
+    def store_db(tag, old_value, new_value, date = nil)
+      db = SQLite3::Database.open("identity.db")
+      if tag.downcase == "studyuid" and not date.nil?
+        db.execute("INSERT INTO "+tag.downcase+" (original, cleaned,date) VALUES (?,?,?)", old_value, new_value, date)
+      else
+        db.execute("INSERT INTO "+tag.downcase+" (original, cleaned) VALUES (?,?)", old_value, new_value)
+      end
+      
+      db.close
+    end
+    
+    def get_next_db_index(tag)
+      index = nil
+      db = SQLite3::Database.open("identity.db")
+      rows = db.execute("SELECT max(id) FROM "+tag.downcase)
+      if rows[0][0].nil?
+        index = 1
+      else
+        index = rows[0][0].to_i + 1
+      end
+      db.close
+      return index
+    end
+    
   end
 end
