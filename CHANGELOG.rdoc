@@ -15,15 +15,15 @@
 * Implemented proper handling of data element values with VR "AT" (tag references).
 * Changed the specification for Item indices (now starts at 0).
 * Introduced the concept of ImageProcessors to replace the previously integrated RMagick image methods:
-   * The user can select which ImageProcessor to be used at run-time.
-   * Initially supported ImageProcessors: RMagick and mini_magick.
-   * Additional ImageProcessors can easily be added using existing template.
-   * Major refactoring and simplification of all image related code.
+  * The user can select which ImageProcessor to be used at run-time.
+  * Initially supported ImageProcessors: RMagick and mini_magick.
+  * Additional ImageProcessors can easily be added using existing template.
+  * Major refactoring and simplification of all image related code.
 * Some changes of the Anonymizer class:
-   * Added a :verbose option.
-   * Added enum(), set_tag() and value() methods.
-   * Removed add_tag, change_enum() and change_value() methods.
-   * Added a log attribute.
+  * Added a :verbose option.
+  * Added enum(), set_tag() and value() methods.
+  * Removed add_tag, change_enum() and change_value() methods.
+  * Added a log attribute.
 * Fixed an issue where using a transfer syntax option with a binary string did not result in a correct application of the supplied syntax.
 * Added a .dcm extension to DICOM files received by DServer.
 * Fixed an issue where sending DICOM files with compressed pixel data resulted in an invalid DICOM transfer.
@@ -37,54 +37,54 @@
 === 1st August, 2010
 
 * Overall changes:
-   * A complete rewrite of data element handling has resulted in a substantially different syntax and significantly cleaner and simpler code.
-   * Greatly increased speed in DICOM object interaction. Especially noticeable on larger DICOM files.
-   * A complete overhaul of the documentation has resulted in a consistent RDoc-style documentation across all classes/modules.
-   * Increased use of module constants for improved code readability.
-   * Major cleanup of codes and comments to make it consistent with Ruby 'best practice' guidelines.
-   * Ready for Rails 3 (compatible with Bundler).
+  * A complete rewrite of data element handling has resulted in a substantially different syntax and significantly cleaner and simpler code.
+  * Greatly increased speed in DICOM object interaction. Especially noticeable on larger DICOM files.
+  * A complete overhaul of the documentation has resulted in a consistent RDoc-style documentation across all classes/modules.
+  * Increased use of module constants for improved code readability.
+  * Major cleanup of codes and comments to make it consistent with Ruby 'best practice' guidelines.
+  * Ready for Rails 3 (compatible with Bundler).
 * Resulting from the rewrite is a number of new classes and modules for handling the various data objects:
-   * DataElement: Ordinary data elements are instances of this class.
-   * Item: Item elements are instances of this class.
-   * Sequence: Sequence elements are instances of this class.
-   * SuperItem: Methods which are shared between DObject and Item (mostly image related methods).
-   * SuperParent: Methods which are shared between all parent objects (DObject, Item & Sequence).
-   * Elements: A mix-in module used by all element objects (DataElement, Item & Sequence).
+  * DataElement: Ordinary data elements are instances of this class.
+  * Item: Item elements are instances of this class.
+  * Sequence: Sequence elements are instances of this class.
+  * SuperItem: Methods which are shared between DObject and Item (mostly image related methods).
+  * SuperParent: Methods which are shared between all parent objects (DObject, Item & Sequence).
+  * Elements: A mix-in module used by all element objects (DataElement, Item & Sequence).
 * DObject:
-   * Completely rewritten data element handling.
-   * Rewritten print() method with improved tree structure visualization, item indices and the ability to run on any parent element.
-   * Renamed the print_properties() method to information(), and improved the amount of information outputted.
-   * Removed the following methods: get_frames(), get_image_pos(), get_pos(), get_value(), get_bin(), set_value()
-   * Renamed get_pixels() method to decode_pixels().
-   * Replaced get_value() with value(). The set_value() method is replaced by the new() methods of DataElement, Sequence and Item classes.
-   * Added the ability to add items at a specific index (shifting any existing items to appear after the inserted item).
-   * Added the transfer_syntax=() method for changing the transfer syntax of a DICOM object.
-   * Implemented a more robust padding of data element values with odd length, based on data element VR.
-   * Added methods for removing all sequences, removing selected groups and returning all data elements of a selected group.
-   * Optimized the get_image_narray() method to more efficiently return the pixel data.
-   * Refined the print_all convenience method to call both print() and information().
+  * Completely rewritten data element handling.
+  * Rewritten print() method with improved tree structure visualization, item indices and the ability to run on any parent element.
+  * Renamed the print_properties() method to information(), and improved the amount of information outputted.
+  * Removed the following methods: get_frames(), get_image_pos(), get_pos(), get_value(), get_bin(), set_value()
+  * Renamed get_pixels() method to decode_pixels().
+  * Replaced get_value() with value(). The set_value() method is replaced by the new() methods of DataElement, Sequence and Item classes.
+  * Added the ability to add items at a specific index (shifting any existing items to appear after the inserted item).
+  * Added the transfer_syntax=() method for changing the transfer syntax of a DICOM object.
+  * Implemented a more robust padding of data element values with odd length, based on data element VR.
+  * Added methods for removing all sequences, removing selected groups and returning all data elements of a selected group.
+  * Optimized the get_image_narray() method to more efficiently return the pixel data.
+  * Refined the print_all convenience method to call both print() and information().
 * DRead:
-   * More robust against crashing when parsing invalid files by proper use of exception handling.
-   * Fixed some cases where a failed read where incorrectly marked as successful.
-   * Increased compatibility (handles DICOM files saved with explicit syntax but no transfer syntax tag).
-   * Explicit DICOM files with data elements of type "OF" are now handled correctly (both read and write).
+  * More robust against crashing when parsing invalid files by proper use of exception handling.
+  * Fixed some cases where a failed read where incorrectly marked as successful.
+  * Increased compatibility (handles DICOM files saved with explicit syntax but no transfer syntax tag).
+  * Explicit DICOM files with data elements of type "OF" are now handled correctly (both read and write).
 * DWrite:
-   * Simplified code and execution by removing group lengths (deprecated in the DICOM standard) and using undefined length for sequences/items.
-   * More flexible insertion of missing meta group elements.
+  * Simplified code and execution by removing group lengths (deprecated in the DICOM standard) and using undefined length for sequences/items.
+  * More flexible insertion of missing meta group elements.
 * Dictionary:
-   * Some minor text corrections.
+  * Some minor text corrections.
 * Anonymizer:
-   * Anonymizations executes much faster thanks to the work done with DObject data element handling.
-   * Only top level data elements can be anonymized.
+  * Anonymizations executes much faster thanks to the work done with DObject data element handling.
+  * Only top level data elements can be anonymized.
 * DClient:
-   * Can transmit multiple DICOM files at once with the send() method, which now will accept both DObjects and file strings.
-   * Added the echo() method for performing a C-ECHO-RQ against a SCP.
+  * Can transmit multiple DICOM files at once with the send() method, which now will accept both DObjects and file strings.
+  * Added the echo() method for performing a C-ECHO-RQ against a SCP.
 * DServer:
-   * Support for role negotiation.
-   * Properly returns called AE title in association response.
-   * The lists of acceptable abstract and transfer syntax can now be easily modified by the user.
-   * Receiving multiple files (like an entire series, or study) in a single association is now supported.
-   * Properly receives and responds to a C-ECHO-RQ.
+  * Support for role negotiation.
+  * Properly returns called AE title in association response.
+  * The lists of acceptable abstract and transfer syntax can now be easily modified by the user.
+  * Receiving multiple files (like an entire series, or study) in a single association is now supported.
+  * Properly receives and responds to a C-ECHO-RQ.
 
 
 = 0.7
@@ -223,13 +223,3 @@ First public release.
 The library does have several known issues and lacks some features I would like it to have, but it does
 offer basic functionality and should be usable for people interested in working with DICOM files in Ruby.
 The reading algorithm has been tested succesfully with some 40 different DICOM files, so it should be fairly robust.
-
-
-Known issues:
-* The retrieve file network functionality (get_image() in DClient class) has not been tested.
-* Compressed pixel data is poorly handled.
-* Read/Write 12 bit image data not available.
-* Color image data is poorly handled.
-* Incomplete support for Big endian (Everything but signed short and signed long has been implemented).
-* Incomplete support for multiple frame image data to NArray and RMagick objects (partial support already featured).
-* Image handling does not take into consideration DICOM tags which specify orientation, samples per pixel and photometric interpretation.
