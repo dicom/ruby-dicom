@@ -2,10 +2,35 @@
 
 === (In development)
 
-* Added specifications and tests.
-* Fixed proper handling of data element values with VR "AT" (tag references).
 * Fixed an issue where data elements added to a DObject didn't get their endianness updated.
-* +Various improvements and fixes not listed yet.
+* Added the ability to encode/decode 32 bit pixel data.
+* Added the ability to encode/decode big endian signed integers.
+* Added the remove_children() method to parent elements.
+* Added the ability to decode color images.
+* Added the ability to retrieve multiple pixel frames as image objects.
+* Added a :level option to the image retrieval methods which accepts custom window center/width values.
+* Renamed the :rescale option to :remap in the image retrieval methods.
+* Added the ability to decode RLE and JPEG Baseline compressed images.
+* Added a specification test suite (using rspec and mocha).
+* Implemented proper handling of data element values with VR "AT" (tag references).
+* Changed the specification for Item indices (now starts at 0).
+* Introduced the concept of ImageProcessors to replace the previously integrated RMagick image methods:
+   * The user can select which ImageProcessor to be used at run-time.
+   * Initially supported ImageProcessors: RMagick and mini_magick.
+   * Additional ImageProcessors can easily be added using existing template.
+   * Major refactoring and simplification of all image related code.
+* Some changes of the Anonymizer class:
+   * Added a :verbose option.
+   * Added enum(), set_tag() and value() methods.
+   * Removed add_tag, change_enum() and change_value() methods.
+   * Added a log attribute.
+* Fixed an issue where using a transfer syntax option with a binary string did not result in a correct application of the supplied syntax.
+* Added a .dcm extension to DICOM files received by DServer.
+* Fixed an issue where sending DICOM files with compressed pixel data resulted in an invalid DICOM transfer.
+* Changed the specification to allow the query methods of DClient to accept any tag as a query parameter.
+* Improved the handling ofparent-child relations so these are always properly updated when adding, removing or changing parent elements.
+* Added various ArgumentError exceptions to facility easier debugging.
+* Various bug fixes.
 
 = 0.8
 
