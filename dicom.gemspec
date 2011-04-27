@@ -1,3 +1,5 @@
+# -*- encoding: utf-8 -*-
+
 require File.expand_path('../lib/dicom/version', __FILE__)
 
 Gem::Specification.new do |s|
@@ -15,4 +17,13 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "dicom"
   s.required_ruby_version = ">= 1.8.6"
   s.required_rubygems_version = ">= 1.3.4"
+  
+  s.add_dependency('i18n')
+  s.add_dependency('activesupport', '>=3.0')
+  
+  s.add_development_dependency("bundler", ">= 1.0.0")
+  s.add_development_dependency('rspec', '>= 2.1.0')
+  s.add_development_dependency('mocha')
+  
+  
 end
