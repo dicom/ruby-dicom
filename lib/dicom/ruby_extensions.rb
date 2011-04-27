@@ -1,7 +1,6 @@
 # coding: UTF-8
 
 # This file contains extensions to the Ruby library which are used by Ruby-DICOM.
->>>>>>> 49266a765bbe35c27768aa9f867bfebe3ed6bc1b
 
 # Extension to the String class. These extensions are focused on processing/analysing Data Element tags.
 # A tag string (as used by the Ruby DICOM library) is 9 characters long and of the form "GGGG,EEEE"
