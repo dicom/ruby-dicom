@@ -31,8 +31,18 @@ module DICOM
     end
 
     it "should correctly encode its value to a binary string on creation" do
-      d = DataElement.new("0028,0010", 512)
+      d = DataElement.new("0018,1310", 512)
       d.bin.should eql "\000\002"
+    end
+
+    it "should correctly encode an integer value placed in an array to the known binary string of this integer" do
+      d = DataElement.new("0018,1310", [512])
+      d.bin.should eql "\000\002"
+    end
+
+    it "should correctly encode multiple integer values placed in an array to the known binary string of these integers" do
+      d = DataElement.new("0018,1310", [512, 512])
+      d.bin.should eql "\000\002\000\002"
     end
 
     it "should get its VR attribute from the dictionary on creation" do

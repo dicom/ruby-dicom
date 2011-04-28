@@ -1,6 +1,6 @@
-# coding: UTF-8
+# encoding: UTF-8
 
-# This file contains extensions to the Ruby library which are used by Ruby-DICOM.
+# This file contains extensions to the Ruby library which are used by Ruby DICOM.
 
 # Extension to the String class. These extensions are focused on processing/analysing Data Element tags.
 # A tag string (as used by the Ruby DICOM library) is 9 characters long and of the form "GGGG,EEEE"
@@ -100,29 +100,47 @@ class String
         self.__original_unpack__(string)
     end
   end
-  
+
   # Will return true for all values
   # that LOOK like dicom names - they may not
   # be valid
   def dicom_name?
     self==self.titleize
   end
-  
+
   # Will return true for all values
   # that LOOK like dicom method names - they
   # may not be valid
   def dicom_method?
     self==self.underscore
   end
-  
+
   ## Will return a proper dicom method name
-  def dicom_methodize(char_set='ISO-8859-1')
+  def dicom_methodize #(char_set='ISO-8859-1')
+=begin
     value = self
     unless char_set.nil?
       ic = Iconv.new('UTF-8//IGNORE', char_set)
       value = ic.iconv(value + ' ')[0..-2]
     end
-    value.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('Âµ','u').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
+  value.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('Âµ','u').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
+=end
+    self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
+  end
+
+  # Capitalizes all the words and replaces some characters in the string to make a nicer looking title.
+  #
+  def titleize
+    self.underscore.gsub(/_/, " ").gsub(/\b('?[a-z])/) { $1.capitalize }
+  end
+
+  # Makes an underscored, lowercase form from the string expression.
+  #
+  def underscore
+    word = self.dup
+    word.tr!("-", "_")
+    word.downcase!
+    word
   end
 
 end

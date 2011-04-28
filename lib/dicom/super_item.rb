@@ -421,6 +421,18 @@ module DICOM
       end
     end
 
+    def num_cols
+      self["0028,0011"].value rescue nil
+    end
+
+    def num_frames
+      (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
+    end
+
+    def num_rows
+      self["0028,0010"].value rescue nil
+    end
+
     # Removes all Sequence elements from the DObject or Item instance.
     #
     def remove_sequences

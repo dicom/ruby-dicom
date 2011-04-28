@@ -1,16 +1,8 @@
 # For developers:
-
-# Required gems:
-#   gem install rake
-# For specs/testing:
-#   gem install rspec
-#   gem install mocha
-
-# Rake commands:
-# Packaging a new gem:
-#   rake package
 # Test the specification:
 #   rake spec
+# Build gem from source:
+#   rake package
 
 require 'rubygems'
 require 'rake/gempackagetask'

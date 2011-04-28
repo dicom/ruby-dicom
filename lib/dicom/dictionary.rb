@@ -1,4 +1,4 @@
-# coding: ISO-8859-1
+# encoding: UTF-8
 #
 #    Copyright 2008-2011 Christoffer Lervag
 

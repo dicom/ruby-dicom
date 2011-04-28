@@ -43,5 +43,4 @@ require 'dicom/image_processor_r_magick'
 # Extensions (non-core functionality):
 require 'dicom/anonymizer'
 
-require 'active_support/core_ext'
 require 'dicom/dicom_extensions'
