@@ -116,15 +116,7 @@ class String
   end
 
   ## Will return a proper dicom method name
-  def dicom_methodize #(char_set='ISO-8859-1')
-=begin
-    value = self
-    unless char_set.nil?
-      ic = Iconv.new('UTF-8//IGNORE', char_set)
-      value = ic.iconv(value + ' ')[0..-2]
-    end
-  value.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('Âµ','u').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
-=end
+  def dicom_methodize
     self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
   end
 

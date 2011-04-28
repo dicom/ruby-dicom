@@ -49,96 +49,17 @@ module DICOM
       @obj.sop_instance_uid?.should be_false
     end
 
-=begin
-    it "sets file_meta_information_group_length from a hash value" do
-      hash = { :ahash => 4567, :should => "work" }
-      @obj.file_meta_information_group_length = hash
-      @obj.file_meta_information_group_length.value.should == hash.to_s.to_i
-    end
-
-
-    it "sets file_meta_information_group_length from an array value" do
-      arr = [1,2,3,4,5,"string"]
-      @obj.file_meta_information_group_length = arr
-      @obj.file_meta_information_group_length.value.should == arr.to_s.to_i
-    end
-
-    it "sets file_meta_information_group_length from a float value" do
-      float = 1267.38991
-      @obj.file_meta_information_group_length = float
-      @obj.file_meta_information_group_length.value.should == float.to_s.to_i
-    end
-=end
-
     it "should set file_meta_information_group_length from an integer value" do
       integer = 12345
       @obj.file_meta_information_group_length = integer
       @obj.file_meta_information_group_length.value.should == integer.to_s.to_i
     end
 
-=begin
-    it "sets file_meta_information_group_length from an object value" do
-      object = Object.new
-      @obj.file_meta_information_group_length = object
-      @obj.file_meta_information_group_length.value.should == object.to_s.to_i
-    end
-
-    it "sets file_meta_information_group_length from a string value" do
-      string = "this is a string value"
-      @obj.file_meta_information_group_length = string
-      @obj.file_meta_information_group_length.value.should == string.to_s.to_i
-    end
-
-    it "sets sop_instance_uid from a hash value" do
-      hash = { :ahash => 4567, :should => "work" }
-      @obj.sop_instance_uid = hash
-      @obj.sop_instance_uid.value.should == hash.to_s
-    end
-
-    it "sets sop_instance_uid from an array value" do
-      arr = [1,2,3,4,5,"string"]
-      @obj.sop_instance_uid = arr
-      @obj.sop_instance_uid.value.should == arr.to_s
-    end
-
-    it "sets sop_instance_uid from a float value" do
-      float = 1267.38991
-      @obj.sop_instance_uid = float
-      @obj.sop_instance_uid.value.should == float.to_s
-    end
-
-    it "sets sop_instance_uid from a fixnum value" do
-      fixnum = 12345
-      @obj.sop_instance_uid = fixnum
-      @obj.sop_instance_uid.value.should == fixnum.to_s
-    end
-
-    it "sets sop_instance_uid from an object value" do
-      object = Object.new
-      @obj.sop_instance_uid = object
-      @obj.sop_instance_uid.value.should == object.to_s
-    end
-=end
-
     it "should set sop_instance_uid from a string value" do
       string = "this is a string value"
       @obj.sop_instance_uid = string
       @obj.sop_instance_uid.value.should == string.to_s
     end
-
-=begin
-    it "sets examined_body_thickness from a hash value" do
-      hash = { :ahash => 4567, :should => "work" }
-      @obj.examined_body_thickness = hash
-      @obj.examined_body_thickness.value.should == hash.to_s.to_f
-    end
-
-    it "sets examined_body_thickness from an array value" do
-      arr = [1,2,3,4,5,"string"]
-      @obj.examined_body_thickness = arr
-      @obj.examined_body_thickness.value.should == arr.to_s.to_f
-    end
-=end
 
     it "should set examined_body_thickness from a float value" do
       float = 1267.38991
@@ -151,20 +72,6 @@ module DICOM
       @obj.examined_body_thickness = integer
       @obj.examined_body_thickness.value.should == integer.to_s.to_f
     end
-
-=begin
-    it "sets examined_body_thickness from an object value" do
-      object = Object.new
-      @obj.examined_body_thickness = object
-      @obj.examined_body_thickness.value.should == object.to_s.to_f
-    end
-
-    it "sets examined_body_thickness from a string value" do
-      string = "this is a string value"
-      @obj.examined_body_thickness = string
-      @obj.examined_body_thickness.value.should == string.to_s.to_f
-    end
-=end
 
     it "should create a hash with DICOM names as keys" do
       DICOM.key_use_names

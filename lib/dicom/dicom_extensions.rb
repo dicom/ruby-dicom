@@ -5,27 +5,7 @@
 ## ruby-dicom when things are more final and properly discussed
 ## in the community. /John Axel Eriksson, john@insane.se, http://github.com/johnae
 
-require 'iconv'
-
 module DICOM
-
-=begin
-  DICOM_CHARACTER_SET_CONVERSION_TABLE = {
-    'ISO_IR 100' => 'ISO-8859-1',
-    'ISO_IR 101' => 'ISO-8859-2',
-    'ISO_IR 109' => 'ISO-8859-3',
-    'ISO_IR 110' => 'ISO-8859-4',
-    'ISO_IR 144' => 'ISO-8859-5',
-    'ISO_IR 127' => 'ISO-8859-6',
-    'ISO_IR 126' => 'ISO-8859-7',
-    'ISO_IR 138' => 'ISO-8859-8',
-    'ISO_IR 148' => 'ISO-8859-9',
-    'ISO_IR 13'  => 'JIS_X0201',
-    'ISO_IR 166' => 'ISO-8859-11',
-    'GB18030'    => 'GB18030',
-    'ISO_IR 192' => 'UTF-8'
-  }.freeze
-=end
 
   class << self
 
@@ -151,32 +131,6 @@ module DICOM
 
 
   class DataElement
-
-=begin
-    ## since the values are autoconverted
-    ## from whatever charset they're in -
-    ## enable getting the original value
-    ## here
-    def original_value
-      @value
-    end
-
-    ## ensure the return value is in utf-8 if value is a string
-    def value
-      ## we must check if this element is
-      ## in fact the element containing
-      ## the charset - otherwise we get
-      # stack level too deep of course
-      if @value.is_a?(String) && self.tag!="0008,0005"
-        char_set = self.top_parent.specific_character_set.value rescue nil
-        if DICOM_CHARACTER_SET_CONVERSION_TABLE.has_key?(char_set)
-          ic = Iconv.new('UTF-8//IGNORE', DICOM_CHARACTER_SET_CONVERSION_TABLE[char_set])
-          return ic.iconv(@value + ' ')[0..-2]
-        end
-      end
-      @value
-    end
-=end
 
     def inspect
       to_hash.inspect
@@ -312,7 +266,6 @@ module DICOM
           else
             hash_key = child.send(DICOM.tag_or_name)
           end
-          #hash_key = (child.tag.private?) ? child.tag : child.send(DICOM.tag_or_name)
           as_hash[hash_key] = child.to_hash
         end
       end
