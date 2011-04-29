@@ -33,9 +33,10 @@ require 'dicom/sequence'
 require 'dicom/stream'
 # Extensions to the Ruby library:
 require 'dicom/ruby_extensions'
-# Module constants:
+# Module settings:
 require 'dicom/version'
 require 'dicom/constants'
+require 'dicom/variables'
 # Image processors:
 require 'dicom/image_processor_mini_magick'
 require 'dicom/image_processor_r_magick'

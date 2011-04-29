@@ -6,6 +6,10 @@ module DICOM
   #
   class DLibrary
 
+    #
+    attr_reader :method_name_conversion_table
+    #
+    attr_reader :name_method_conversion_table
     # A hash containing tags as key and an array as value, where the array contains data element vr and name.
     attr_reader :tags
     # A hash containing UIDs as key and an array as value, where the array contains name and type.
@@ -20,6 +24,49 @@ module DICOM
       # Load UID hash (DICOM unique identifiers), where the keys are UID strings,
       # and values are two-element arrays [description, type]:
       @uid = Dictionary.load_uid
+      create_method_conversion_table
+    end
+
+    def as_method(value)
+      case true
+      when value.tag?
+        name, vr = get_name_vr(value)
+        @method_name_conversion_table[name.to_sym]
+      when value.dicom_name?
+        @method_name_conversion_table[value.to_sym]
+      when value.dicom_method?
+        @name_method_conversion_table.has_key?(value.to_sym) ? value.to_sym : nil
+      else
+        nil
+      end
+    end
+
+    def as_name(value)
+      case true
+      when value.tag?
+        name, vr = get_name_vr(value)
+        name
+      when value.dicom_name?
+        @method_name_conversion_table.has_key?(value.to_sym) ? value.to_s : nil
+      when value.dicom_method?
+        @name_method_conversion_table[value.to_sym]
+      else
+        nil
+      end
+    end
+
+    def as_tag(value)
+      case true
+      when value.tag?
+        name, vr = get_name_vr(value)
+        name.nil? ? nil : value
+      when value.dicom_name?
+        get_tag(value)
+      when value.dicom_method?
+        get_tag(@name_method_conversion_table[value.to_sym])
+      else
+        nil
+      end
     end
 
     # Checks whether a given string is a valid transfer syntax or not.
@@ -36,6 +83,19 @@ module DICOM
         result = true if value[1] == "Transfer Syntax"
       end
       return result
+    end
+
+    def create_method_conversion_table
+      if @method_name_conversion_table.nil?
+        @method_name_conversion_table = Hash.new
+        @name_method_conversion_table = Hash.new
+        @tags.each_pair do |key,value|
+          original = value[1]
+          method_name = original.dicom_methodize
+          @method_name_conversion_table[original.to_sym] = method_name.to_sym
+          @name_method_conversion_table[method_name.to_sym] = original
+        end
+      end
     end
 
     # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,
@@ -151,9 +211,15 @@ module DICOM
     #
     def get_tag(name)
       tag = nil
+      name = name.to_s.downcase
+      @tag_name_pairs_cache ||= Hash.new
+      return @tag_name_pairs_cache[name] unless @tag_name_pairs_cache[name].nil?
       @tags.each_pair do |key, value|
-        tag = key if value[1] == name
+        next unless value[1].downcase == name
+        tag = key
+        break
       end
+      @tag_name_pairs_cache[name]=tag
       return tag
     end
 

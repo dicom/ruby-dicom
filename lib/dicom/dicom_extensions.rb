@@ -7,124 +7,10 @@
 
 module DICOM
 
-  class << self
-
-    @@tag_or_name = :name
-
-    def key_use_tags
-      @@tag_or_name = :tag
-    end
-
-    def key_use_names
-      @@tag_or_name = :name
-    end
-
-    def key_use_method_names
-      @@tag_or_name = :name_as_method
-    end
-
-    def tag_or_name
-      @@tag_or_name
-    end
-
-  end
-
-
-  class DLibrary
-
-    alias_method :initialize_original, :initialize
-
-    attr_reader :method_name_conversion_table, :name_method_conversion_table
-
-    def initialize
-      initialize_original
-      create_method_conversion_table
-    end
-
-    # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
-    # Returns nil if no match is found.
-    #
-    # === Parameters
-    #
-    # * <tt>name</tt> -- String. A data element name.
-    #
-
-    def get_tag(name)
-      tag = nil
-      name = name.to_s.downcase
-      @tag_name_pairs_cache ||= Hash.new
-      return @tag_name_pairs_cache[name] unless @tag_name_pairs_cache[name].nil?
-      @tags.each_pair do |key, value|
-        next unless value[1].downcase == name
-        tag = key
-        break
-      end
-      @tag_name_pairs_cache[name]=tag
-      return tag
-    end
-
-    def create_method_conversion_table
-      if @method_name_conversion_table.nil?
-        @method_name_conversion_table = Hash.new
-        @name_method_conversion_table = Hash.new
-        @tags.each_pair do |key,value|
-          original = value[1]
-          method_name = original.dicom_methodize
-          @method_name_conversion_table[original.to_sym] = method_name.to_sym
-          @name_method_conversion_table[method_name.to_sym] = original
-        end
-      end
-    end
-
-    def as_method(value)
-      case true
-      when value.tag?
-        name, vr = get_name_vr(value)
-        @method_name_conversion_table[name.to_sym]
-      when value.dicom_name?
-        @method_name_conversion_table[value.to_sym]
-      when value.dicom_method?
-        @name_method_conversion_table.has_key?(value.to_sym) ? value.to_sym : nil
-      else
-        nil
-      end
-    end
-
-    def as_name(value)
-      case true
-      when value.tag?
-        name, vr = get_name_vr(value)
-        name
-      when value.dicom_name?
-        @method_name_conversion_table.has_key?(value.to_sym) ? value.to_s : nil
-      when value.dicom_method?
-        @name_method_conversion_table[value.to_sym]
-      else
-        nil
-      end
-    end
-
-    def as_tag(value)
-      case true
-      when value.tag?
-        name, vr = get_name_vr(value)
-        name.nil? ? nil : value
-      when value.dicom_name?
-        get_tag(value)
-      when value.dicom_method?
-        get_tag(@name_method_conversion_table[value.to_sym])
-      else
-        nil
-      end
-    end
-
-  end
-
-
   module Elements
 
     def name_as_method
-      LIBRARY.as_method(self.name)
+      LIBRARY.as_method(@name)
     end
 
   end
@@ -136,15 +22,6 @@ module DICOM
       to_hash.inspect
     end
 
-    def to_yaml
-      to_hash.to_yaml
-    end
-
-    ## doesn't inherit from
-    ## super parent so this
-    ## needs it's own implementation
-    ## which is ridiculously simple
-
     def to_hash
       value
     end
@@ -153,8 +30,8 @@ module DICOM
       to_hash.to_json
     end
 
-    def name_as_method
-      LIBRARY.as_method(@name)
+    def to_yaml
+      to_hash.to_yaml
     end
 
   end
@@ -211,6 +88,46 @@ module DICOM
 
   class SuperParent
 
+    def each(&block)
+      children.each_with_index(&block)
+    end
+
+    def each_element(&block)
+      elements.each_with_index(&block) if children?
+    end
+
+    def each_item(&block)
+      items.each_with_index(&block) if children?
+    end
+
+    def each_sequence(&block)
+      sequences.each_with_index(&block) if children?
+    end
+
+    def each_tag(&block)
+      @tags.each_key(&block)
+    end
+
+    def elements
+      children.select { |child| child.is_a?(DataElement)}
+    end
+
+    def elements?
+      elements.any?
+    end
+
+    def inspect
+      to_hash.inspect
+    end
+
+    def items
+      children.select { |child| child.is_a?(Item)}
+    end
+
+    def items?
+      items.any?
+    end
+
     def method_missing(sym, *args, &block)
       tag = LIBRARY.as_tag(sym.to_s) || LIBRARY.as_tag(sym.to_s[0..-2])
       unless tag.nil?
@@ -236,35 +153,35 @@ module DICOM
       super
     end
 
-    def inspect
-      to_hash.inspect
+    def sequences
+      children.select { |child| child.is_a?(Sequence) }
     end
 
-    def to_yaml
-      to_hash.to_yaml
+    def sequences?
+      sequences.any?
     end
 
+    # Builds and returns a nested hash containing all children of this parent.
+    # Keys are determined by the key_representation attribute, and data element values are used as values.
+    #
+    # === Notes
+    #
+    # * For private elements, the tag is used for key instead of the key representation, as private tags lacks names.
+    # * For child-less parents, the key_representation attribute is used as value.
+    #
     def to_hash
       as_hash = nil
       unless children?
-        ## this may look weird but is really
-        ## just a fix for when there is no name
-        ## corresponding to the tag - then we
-        ## want to use the tag
-        as_hash = (self.tag.private?) ? self.tag : self.send(DICOM.tag_or_name)
+        as_hash = (self.tag.private?) ? self.tag : self.send(DICOM.key_representation)
       else
         as_hash = Hash.new
         children.each do |child|
-          ## this may look weird but is really
-          ## just a fix for when there is no name
-          ## corresponding to the tag - then we
-          ## want to use the tag
           if child.tag.private?
             hash_key = child.tag
           elsif child.is_a?(Item)
             hash_key = "Item #{child.index}"
           else
-            hash_key = child.send(DICOM.tag_or_name)
+            hash_key = child.send(DICOM.key_representation)
           end
           as_hash[hash_key] = child.to_hash
         end
@@ -276,71 +193,10 @@ module DICOM
       to_hash.to_json
     end
 
-    def elements
-      children.select { |child| child.is_a?(DataElement)}
-    end
-
-    def elements?
-      elements.any?
-    end
-
-    def each_sequence(&block)
-      sequences.each_with_index(&block) if children?
-    end
-
-    def each_element(&block)
-      elements.each_with_index(&block) if children?
-    end
-
-    def each_item(&block)
-      items.each_with_index(&block) if children?
-    end
-
-    def items
-      children.select { |child| child.is_a?(Item)}
-    end
-
-    def items?
-      items.any?
-    end
-
-    def each_tag(&block)
-      @tags.each_key(&block)
-    end
-
-    def each(&block)
-      children.each_with_index(&block)
-    end
-
-    def each(&block)
-      children.each_with_index(&block)
-    end
-
-    def sequences
-      children.select { |child| child.is_a?(Sequence) }
-    end
-
-    def sequences?
-      sequences.any?
-    end
-
-    def item(index=0)
-      items[index]
+    def to_yaml
+      to_hash.to_yaml
     end
 
   end
-
-
-  class NonExistantFileException < Exception
-  end
-
-
-  ## must do this
-  ## it's only done
-  ## once when the module is loaded
-  ## so there isn't really
-  ## any large overhead
-  remove_const(:LIBRARY)
-  LIBRARY =  DICOM::DLibrary.new
 
 end

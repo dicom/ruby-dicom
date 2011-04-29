@@ -172,14 +172,5 @@ module DICOM
   PI_ARGB            = 'ARGB'
   PI_CMYK            = 'CMYK'
 
-
-  # Variables that might be redefined by the user.
-  class << self
-    attr_accessor :image_processor
-  end
-
-  # The default image processor.
-  self.image_processor = :rmagick
-
 end
 
