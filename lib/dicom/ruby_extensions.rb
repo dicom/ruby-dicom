@@ -101,21 +101,20 @@ class String
     end
   end
 
-  # Will return true for all values
-  # that LOOK like dicom names - they may not
-  # be valid
+  # Returns true for all values that LOOK like a DICOM name - they may not be valid.
+  #
   def dicom_name?
     self==self.titleize
   end
 
-  # Will return true for all values
-  # that LOOK like dicom method names - they
-  # may not be valid
+  # Returns true for all strings that LOOK like a DICOM method name - they may not be valid.
+  #
   def dicom_method?
-    self==self.underscore
+    self == self.underscore
   end
 
-  ## Will return a proper dicom method name
+  # Returns a proper DICOM method name string.
+  #
   def dicom_methodize
     self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
   end
