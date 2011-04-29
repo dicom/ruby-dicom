@@ -631,9 +631,6 @@ module DICOM
     #
     # * <tt>pixels</tt> -- An array of pixel values (integers).
     #
-    #--
-    # FIXME: Processing Palette Color is really slow, can it be improved somehow?!
-    #
     def process_colors(pixels)
       proper_rgb = false
       photometric = photometry()
@@ -653,11 +650,10 @@ module DICOM
           stream.set_string(bin)
           lookup_values << stream.decode_all(template)
         end
-        # Fill the RGB array:
+        lookup_values = lookup_values.transpose
+        # Fill the RGB array, one RGB pixel group (3 pixels) at a time:
         pixels.each_index do |i|
-          rgb[i*3] = lookup_values[0][pixels[i]]
-          rgb[(i*3)+1] = lookup_values[1][pixels[i]]
-          rgb[(i*3)+2] = lookup_values[2][pixels[i]]
+          rgb[i*3, 3] = lookup_values[pixels[i]]
         end
         # As we have now ordered the pixels in RGB order, modify planar configuration to reflect this:
         planar = 0
