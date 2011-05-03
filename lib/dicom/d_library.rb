@@ -6,10 +6,10 @@ module DICOM
   #
   class DLibrary
 
-    #
-    attr_reader :method_name_conversion_table
-    #
-    attr_reader :name_method_conversion_table
+    # A hash with element name strings as key and method name symbols as value.
+    attr_reader :methods_from_names
+    # A hash with element method name symbols as key and name strings as value.
+    attr_reader :names_from_methods
     # A hash containing tags as key and an array as value, where the array contains data element vr and name.
     attr_reader :tags
     # A hash containing UIDs as key and an array as value, where the array contains name and type.
@@ -24,37 +24,46 @@ module DICOM
       # Load UID hash (DICOM unique identifiers), where the keys are UID strings,
       # and values are two-element arrays [description, type]:
       @uid = Dictionary.load_uid
-      create_method_conversion_table
+      create_method_conversion_tables
     end
 
+    # Returns the method (symbol) corresponding to the specified string value (which may represent a element tag, name or method).
+    # Returns nil if no match is found.
+    #
     def as_method(value)
       case true
       when value.tag?
         name, vr = get_name_vr(value)
-        @method_name_conversion_table[name.to_sym]
+        @methods_from_names[name]
       when value.dicom_name?
-        @method_name_conversion_table[value.to_sym]
+        @methods_from_names[value]
       when value.dicom_method?
-        @name_method_conversion_table.has_key?(value.to_sym) ? value.to_sym : nil
+        @names_from_methods.has_key?(value.to_sym) ? value.to_sym : nil
       else
         nil
       end
     end
 
+    # Returns the name (string) corresponding to the specified string value (which may represent a element tag, name or method).
+    # Returns nil if no match is found.
+    #
     def as_name(value)
       case true
       when value.tag?
         name, vr = get_name_vr(value)
         name
       when value.dicom_name?
-        @method_name_conversion_table.has_key?(value.to_sym) ? value.to_s : nil
+        @methods_from_names.has_key?(value) ? value.to_s : nil
       when value.dicom_method?
-        @name_method_conversion_table[value.to_sym]
+        @names_from_methods[value.to_sym]
       else
         nil
       end
     end
 
+    # Returns the tag (string) corresponding to the specified string value (which may represent a element tag, name or method).
+    # Returns nil if no match is found.
+    #
     def as_tag(value)
       case true
       when value.tag?
@@ -63,7 +72,7 @@ module DICOM
       when value.dicom_name?
         get_tag(value)
       when value.dicom_method?
-        get_tag(@name_method_conversion_table[value.to_sym])
+        get_tag(@names_from_methods[value.to_sym])
       else
         nil
       end
@@ -83,19 +92,6 @@ module DICOM
         result = true if value[1] == "Transfer Syntax"
       end
       return result
-    end
-
-    def create_method_conversion_table
-      if @method_name_conversion_table.nil?
-        @method_name_conversion_table = Hash.new
-        @name_method_conversion_table = Hash.new
-        @tags.each_pair do |key,value|
-          original = value[1]
-          method_name = original.dicom_methodize
-          @method_name_conversion_table[original.to_sym] = method_name.to_sym
-          @name_method_conversion_table[method_name.to_sym] = original
-        end
-      end
     end
 
     # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,
@@ -268,6 +264,26 @@ module DICOM
           endian = false
       end
       return valid, explicit, endian
+    end
+
+
+    private
+
+
+    # Creates the instance hashes that are used for name to/from method conversion.
+    #
+    def create_method_conversion_tables
+      if @methods_from_names.nil?
+        @methods_from_names = Hash.new
+        @names_from_methods = Hash.new
+        # Fill the hashes:
+        @tags.each_pair do |key, value|
+          name = value[1]
+          method_name = name.dicom_methodize
+          @methods_from_names[name] = method_name.to_sym
+          @names_from_methods[method_name.to_sym] = name
+        end
+      end
     end
 
   end
