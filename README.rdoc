@@ -74,10 +74,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see http://www.gnu.org/licenses/ .
 
 
-== ABOUT ME
+== ABOUT THE AUTHOR
 
 * Name: Christoffer Lervåg
-* Location: Oslo, Norway
+* Location: Norway
 * Email: chris.lervag [@nospam.com] @gmail.com
 
-Please don't hesitate to email me if you have any thoughts about this project!
+Please don't hesitate to email me if you have any feedback related to this project!
+
+
+== CONTRIBUTORS
+
+* {Christoffer Lervåg}[https://github.com/dicom]
+* {John Axel Eriksson}[https://github.com/johnae]
+* {Donnie Millar}[https://github.com/dmillar]
+* Björn Albers
+* {Lars Benner}[https://github.com/Maturin]
+* {Steven Bedrick}[https://github.com/stevenbedrick]
