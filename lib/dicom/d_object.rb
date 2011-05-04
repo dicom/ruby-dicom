@@ -49,6 +49,9 @@ module DICOM
     # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
     attr_reader :write_success
 
+    alias_method :read?, :read_success
+    alias_method :written?, :write_success
+
     # Creates a DObject instance (DObject is an abbreviation for "DICOM object").
     #
     # The DObject instance holds references to the different types of objects (DataElement, Item, Sequence)
@@ -380,14 +383,15 @@ module DICOM
       DataElement.new("0002,0003", value("0008,0018"), :parent => self) unless exists?("0002,0003")
       # Transfer Syntax UID:
       DataElement.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
-      # Implementation Class UID:
-      DataElement.new("0002,0012", UID, :parent => self) unless exists?("0002,0012")
-      # Implementation Version Name:
-      DataElement.new("0002,0013", NAME, :parent => self) unless exists?("0002,0013")
+      if !exists?("0002,0012") and !exists?("0002,0013")
+        # Implementation Class UID:
+        DataElement.new("0002,0012", UID, :parent => self)
+        # Implementation Version Name:
+        DataElement.new("0002,0013", NAME, :parent => self)
+      end
       # Source Application Entity Title:
-      DataElement.new("0002,0016", SOURCE_APP_TITLE, :parent => self) unless exists?("0002,0016")
-      # Group length:
-      # Remove old group length (if it exists) before creating a new one:
+      DataElement.new("0002,0016", DICOM.source_app_title, :parent => self) unless exists?("0002,0016")
+      # Group Length: Remove the old one (if it exists) before creating a new one.
       remove("0002,0000")
       DataElement.new("0002,0000", meta_group_length, :parent => self)
     end

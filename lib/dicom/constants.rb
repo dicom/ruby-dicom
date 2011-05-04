@@ -4,12 +4,10 @@
 
 module DICOM
 
-  # Ruby DICOM's implementation UID.
+  # Ruby DICOM's Implementation UID.
   UID = "1.2.826.0.1.3680043.8.641"
   # Ruby DICOM name & version (max 16 characters).
   NAME = "RUBY_DCM_" + DICOM::VERSION
-  # Application title.
-  SOURCE_APP_TITLE = "RUBY_DICOM"
 
   # Item tag.
   ITEM_TAG = "FFFE,E000"

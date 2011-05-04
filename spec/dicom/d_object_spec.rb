@@ -28,12 +28,12 @@ module DICOM
 
     it "should set the read success attribute as nil when initializing an empty DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.read_success.should be_nil
+      obj.read?.should be_nil
     end
 
     it "should set the write success attribute as nil when initializing an empty DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.write_success.should be_nil
+      obj.written?.should be_nil
     end
 
     it "should store a Stream instance in the stream attribute" do
@@ -48,7 +48,7 @@ module DICOM
 
     it "should successfully read this DICOM file" do
       obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.read_success.should be_true
+      obj.read?.should be_true
       obj.children.length.should eql 85 # (This file is known to have 85 top level data elements)
     end
 
@@ -57,13 +57,13 @@ module DICOM
       str = file.read
       file.close
       obj = DObject.new(str, :bin => true, :verbose => false)
-      obj.read_success.should be_true
+      obj.read?.should be_true
       obj.children.length.should eql 85 # (This file is known to have 85 top level data elements)
     end
 
     it "should fail to read this DICOM file when an incorrect transfer syntax option is supplied" do
       obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
-      obj.read_success.should be_false
+      obj.read?.should be_false
     end
 
     it "should register one or more errors/messages in the errors array when failing to successfully read a DICOM file" do
@@ -73,7 +73,7 @@ module DICOM
 
     it "should return the data elements that were successfully read before a failure occured (the file meta header elements in this case)" do
       obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN, :verbose => false)
-      obj.read_success.should be_false
+      obj.read?.should be_false
       obj.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
     end
 
@@ -97,18 +97,18 @@ module DICOM
     it "should fail gracefully when a small, non-dicom file is passed as an argument" do
       File.open(TMPDIR + "small_invalid.dcm", 'wb') {|f| f.write("fail"*20) }
       obj = DObject.new(TMPDIR + "small_invalid.dcm", :verbose => false)
-      obj.read_success.should be_false
+      obj.read?.should be_false
     end
 
     it "should fail gracefully when a tiny, non-dicom file is passed as an argument" do
       File.open(TMPDIR + "tiny_invalid.dcm", 'wb') {|f| f.write("fail") }
       obj = DObject.new(TMPDIR + "tiny_invalid.dcm", :verbose => false)
-      obj.read_success.should be_false
+      obj.read?.should be_false
     end
 
     it "should fail gracefully when a directory is passed as an argument" do
       obj = DObject.new(TMPDIR, :verbose => false)
-      obj.read_success.should be_false
+      obj.read?.should be_false
     end
 
     it "should apply the specified transfer syntax to the DICOM object, when passing a syntax-less DICOM binary string" do
@@ -156,7 +156,7 @@ module DICOM
       obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       binary = obj.encode_segments(16384).join
       obj_reloaded = DObject.new(binary, :bin => true, :verbose => false)
-      obj_reloaded.read_success.should be_true
+      obj_reloaded.read?.should be_true
     end
 
   end
@@ -237,6 +237,7 @@ module DICOM
   end
 
 
+  # Writing a full DObject read from file.
   describe DObject, "#write" do
 
     before :each do
@@ -248,22 +249,96 @@ module DICOM
       expect {@obj.write(33)}.to raise_error(ArgumentError)
     end
 
-    it "should set the write_success attribute as true after successfully writing this DICOM object to file" do
+    it "should set the written? attribute as true after successfully writing this DICOM object to file" do
       @obj.write(@output)
-      @obj.write_success.should be_true
+      @obj.written?.should be_true
     end
 
     it "should be able to successfully read the written DICOM file if it was written correctly" do
       @obj.write(@output)
       obj_reloaded = DObject.new(@output, :verbose => false)
-      obj_reloaded.read_success.should be_true
+      obj_reloaded.read?.should be_true
     end
 
     it "should create non-existing directories that are part of the file path, and write the file successfully" do
       path = TMPDIR + "create/these/directories/" + "test-directory-create.dcm"
       @obj.write(path)
-      @obj.write_success.should be_true
+      @obj.written?.should be_true
       File.exists?(path).should be_true
+    end
+
+  end
+
+
+  # Writing a limited DObject created from scratch.
+  describe DObject, "#write" do
+
+    before :each do
+      @path = TMPDIR + "write.dcm"
+      @obj = DObject.new(nil, :verbose => false)
+      @obj.add(DataElement.new("0008,0016", "1.2.34567"))
+      @obj.add(DataElement.new("0008,0018", "1.2.34567.89"))
+    end
+
+    it "should succeed in writing a limited DICOM object, created from scratch" do
+      @obj.write(@path)
+      @obj.written?.should be_true
+      File.exists?(@path).should be_true
+    end
+
+    it "should add the File Meta Information Version to the File Meta Group, when it is undefined" do
+      @obj.write(@path)
+      @obj.exists?("0002,0001").should be_true
+    end
+
+    it "should use the SOP Class UID to create the Media Storage SOP Class UID of the File Meta Group when it is undefined" do
+      @obj.write(@path)
+      @obj.value("0002,0002").should eql @obj.value("0008,0016")
+    end
+
+    it "should use the SOP Instance UID to create the Media Storage SOP Instance UID of the File Meta Group when it is undefined" do
+      @obj.write(@path)
+      @obj.value("0002,0003").should eql @obj.value("0008,0018")
+    end
+
+    it "should add (the default) Transfer Syntax UID to the File Meta Group when it is undefined" do
+      @obj.write(@path)
+      @obj.value("0002,0010").should eql IMPLICIT_LITTLE_ENDIAN
+    end
+
+    it "should add the Implementation Class UID to the File Meta Group when it is undefined" do
+      @obj.write(@path)
+      @obj.value("0002,0012").should eql UID
+    end
+
+    it "should add the Implementation Version Name to the File Meta Group when it is undefined" do
+      @obj.write(@path)
+      @obj.value("0002,0013").should eql NAME
+    end
+
+    it "should add the Source Application Entity Title to the File Meta Group when it is undefined" do
+      @obj.write(@path)
+      @obj.value("0002,0016").should eql DICOM.source_app_title
+    end
+
+    it "should add a user-defined Source Application Entity Title to the File Meta Group when it is undefined (in the DObject)" do
+      original_title = DICOM.source_app_title
+      DICOM.source_app_title = "MY_TITLE"
+      @obj.write(@path)
+      @obj.value("0002,0016").should eql "MY_TITLE"
+      DICOM.source_app_title = original_title
+    end
+
+    it "should not add the Implementation Class UID to the File Meta Group, when (it is undefined and) the Implementation Version Name is defined" do
+      @obj.add(DataElement.new("0002,0013", "SomeProgram"))
+      @obj.write(@path)
+      @obj.exists?("0002,0012").should be_false
+    end
+
+    it "should not add the Implementation Version Name to the File Meta Group, when (it is undefined and) the Implementation Class UID is defined" do
+      @obj.add(DataElement.new("0002,0012", "1.2.54321"))
+      @obj.write(@path)
+      @obj.exists?("0002,0013").should be_false
     end
 
   end
