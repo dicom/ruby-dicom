@@ -120,11 +120,39 @@ module DICOM
       return stream.str_endian
     end
 
+    # Returns a string containing a human-readable hash representation of the element.
+    #
+    def inspect
+      to_hash.inspect
+    end
+
     # Checks if an element is a parent.
     # Returns false, as DataElement instance can not be parents.
     #
     def is_parent?
       return false
+    end
+
+    # Returns the value of the element (used as value in the parent's hash representation).
+    #
+    #--
+    # FIXME: I guess this should instead return a real hash, and the parent elements
+    # could then extract the value and put that in their hash.
+    #
+    def to_hash
+      value
+    end
+
+    # Returns a json string containing a human-readable representation of the element.
+    #
+    def to_json
+      to_hash.to_json
+    end
+
+    # Returns a yaml string containing a human-readable representation of the element.
+    #
+    def to_yaml
+      to_hash.to_yaml
     end
 
     # Sets the value of the DataElement instance.

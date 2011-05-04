@@ -206,6 +206,49 @@ module DICOM
       return total_count
     end
 
+    # Iterates the children of this parent, calling <tt>block</tt> for each child.
+    #
+    def each(&block)
+      children.each_with_index(&block)
+    end
+
+    # Iterates the child elements of this parent, calling <tt>block</tt> for each element.
+    #
+    def each_element(&block)
+      elements.each_with_index(&block) if children?
+    end
+
+    # Iterates the child items of this parent, calling <tt>block</tt> for each item.
+    #
+    def each_item(&block)
+      items.each_with_index(&block) if children?
+    end
+
+    # Iterates the child sequences of this parent, calling <tt>block</tt> for each sequence.
+    #
+    def each_sequence(&block)
+      sequences.each_with_index(&block) if children?
+    end
+
+    # Iterates the child tags of this parent, calling <tt>block</tt> for each tag.
+    #
+    def each_tag(&block)
+      @tags.each_key(&block)
+    end
+
+    # Returns all child elements of this parent in an array.
+    # If no child elements exists, returns an empty array.
+    #
+    def elements
+      children.select { |child| child.is_a?(DataElement)}
+    end
+
+    # A boolean which indicates whether the parent has any child elements.
+    #
+    def elements?
+      elements.any?
+    end
+
     # Re-encodes the binary data strings of all child DataElement instances.
     # This also includes all the elements contained in any possible child elements.
     #
@@ -358,11 +401,77 @@ module DICOM
       return elements.flatten, index
     end
 
+    # Returns a string containing a human-readable hash representation of the element.
+    #
+    def inspect
+      to_hash.inspect
+    end
+
     # Checks if an element is a parent.
     # Returns true for all parent elements.
     #
     def is_parent?
       return true
+    end
+
+    # Returns all child items of this parent in an array.
+    # If no child items exists, returns an empty array.
+    #
+    def items
+      children.select { |child| child.is_a?(Item)}
+    end
+
+    # A boolean which indicates whether the parent has any child items.
+    #
+    def items?
+      items.any?
+    end
+
+    # Handles missing methods, which in our case is intended to be dynamic
+    # method names matching DICOM elements in the dictionary.
+    #
+    # === Notes
+    #
+    # * When a dynamic method name is matched against a DICOM element, this method:
+    # * Returns the element if the method name suggests an element retrieval, and the element exists.
+    # * Returns nil if the method name suggests an element retrieval, but the element doesn't exist.
+    # * Returns a boolean, if the method name suggests a query (?), based on whether the matched element exists or not.
+    # * When the method name suggests assignment (=), an element is created with the supplied arguments, or if the argument is nil, the element is removed.
+    #
+    # * When a dynamic method name is not matched against a DICOM element, and the method is not defined by the parent, a NoMethodError is raised.
+    #
+    # === Parameters
+    #
+    # * <tt>sym</tt> -- Symbol. A method name.
+    #
+    def method_missing(sym, *args, &block)
+      # Try to match the method against a tag from the dictionary:
+      tag = LIBRARY.as_tag(sym.to_s) || LIBRARY.as_tag(sym.to_s[0..-2])
+      if tag
+        if sym.to_s[-1..-1] == '?'
+          # Query:
+          return self.exists?(tag)
+        elsif sym.to_s[-1..-1] == '='
+          # Assignment:
+          unless args.length==0 || args[0].nil?
+            # What kind of element to create?
+            if tag == "FFFE,E000"
+              return self.add_item
+            elsif LIBRARY.tags[tag][0][0] == "SQ"
+              return self.add(Sequence.new(tag))
+            else
+              return self.add(DataElement.new(tag, *args))
+            end
+          else
+            return self.remove(tag)
+          end
+        else
+          # Retrieval:
+          return self[tag] rescue nil
+        end
+      end
+      # Forward to Object#method_missing:
+      super
     end
 
     # Sets the length of a Sequence or Item.
@@ -549,6 +658,76 @@ module DICOM
       else
         raise "Length can not be set for a DObject instance."
       end
+    end
+
+    # Returns true if the parent responds to the given method (symbol) (method is defined).
+    # Returns false if the method is not defined.
+    #
+    # === Parameters
+    #
+    # * <tt>method</tt> -- Symbol. A method name who's response is tested.
+    # * <tt>include_private</tt> -- (Not used by ruby-dicom) Boolean. If true, private methods are included in the search.
+    #
+    def respond_to?(method, include_private=false)
+      # Check the library for a tag corresponding to the given method name symbol:
+      return true unless LIBRARY.as_tag(method.to_s).nil?
+      # In case of a query (xxx?) or assign (xxx=), remove last character and try again:
+      return true unless LIBRARY.as_tag(method.to_s[0..-2]).nil?
+      # Forward to Object#respond_to?:
+      super
+    end
+
+    # Returns all child sequences of this parent in an array.
+    # If no child sequences exists, returns an empty array.
+    #
+    def sequences
+      children.select { |child| child.is_a?(Sequence) }
+    end
+
+    # A boolean which indicates whether the parent has any child sequences.
+    #
+    def sequences?
+      sequences.any?
+    end
+
+    # Builds and returns a nested hash containing all children of this parent.
+    # Keys are determined by the key_representation attribute, and data element values are used as values.
+    #
+    # === Notes
+    #
+    # * For private elements, the tag is used for key instead of the key representation, as private tags lacks names.
+    # * For child-less parents, the key_representation attribute is used as value.
+    #
+    def to_hash
+      as_hash = nil
+      unless children?
+        as_hash = (self.tag.private?) ? self.tag : self.send(DICOM.key_representation)
+      else
+        as_hash = Hash.new
+        children.each do |child|
+          if child.tag.private?
+            hash_key = child.tag
+          elsif child.is_a?(Item)
+            hash_key = "Item #{child.index}"
+          else
+            hash_key = child.send(DICOM.key_representation)
+          end
+          as_hash[hash_key] = child.to_hash
+        end
+      end
+      return as_hash
+    end
+
+    # Returns a json string containing a human-readable representation of the element.
+    #
+    def to_json
+      to_hash.to_json
+    end
+
+    # Returns a yaml string containing a human-readable representation of the element.
+    #
+    def to_yaml
+      to_hash.to_yaml
     end
 
     # Returns the value of a specific DataElement child of this parent.

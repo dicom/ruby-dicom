@@ -22,6 +22,12 @@ module DICOM
     # The element's value representation (String).
     attr_reader :vr
 
+    # Returns the method (symbol) corresponding to the name string of this element.
+    #
+    def name_as_method
+      LIBRARY.as_method(@name)
+    end
+
     # Retrieves the entire chain of parents connected to this element.
     # The parents are returned in an array, where the first element is the
     # immediate parent and the last element is the top parent.

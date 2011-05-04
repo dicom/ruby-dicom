@@ -73,6 +73,29 @@ module DICOM
       @obj.examined_body_thickness.value.should == integer.to_s.to_f
     end
 
+    it "should create a new element with the given value, using dictionary method name matching" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.sop_instance_uid = "1.2.3.4.5"
+      obj.value("0008,0018").should eql "1.2.3.4.5"
+    end
+
+    # Using dynamic method matching for sequence creation doesn't look as natural as
+    # for element creation, but I guess we better have it for consistency.
+    it "should create a new sequence, using dictionary method name matching" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.referenced_image_sequence = true
+      obj["0008,1140"].should be_a Sequence
+    end
+
+    # Using dynamic method matching for item creation doesn't look as natural as
+    # for element creation, but I guess we better have it for consistency.
+    it "should create a new item, using dictionary method name matching" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.referenced_image_sequence = true
+      obj["0008,1140"].item = true
+      obj["0008,1140"][0].should be_an Item
+    end
+
     it "should create a hash with DICOM names as keys" do
       DICOM.key_use_names
       @obj.to_hash.key?("File Meta Information Group Length").should be_true

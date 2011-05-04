@@ -339,12 +339,29 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>file</tt> -- A path/file string.
+    # * <tt>file</tt> -- A path/file string. The string may point to a local file or a http location.
     #
     def open_file(file)
-      if File.exist?(file)
+      if file.index('http')==0
+        # Try to open the remote file using open-uri:
+        @retrials = 0
+        begin
+          @file = open(file, 'rb') # binary encoding (ASCII-8BIT)
+        rescue Exception => e
+          if @retrials>3
+            @retrials = 0
+            raise NonExistantFileException.new, "[RubyDicom] File does not exist"
+          else
+            puts "Warning: Exception in RubyDicom when loading dicom from: #{file}"
+            puts "Retrying... #{@retrials}"
+            @retrials+=1
+            retry
+          end
+        end
+      elsif File.exist?(file)
+        # Try to read the file on the local file system:
         if File.readable?(file)
-          if not File.directory?(file)
+          if !File.directory?(file)
             if File.size(file) > 8
               @file = File.new(file, "rb")
             else
