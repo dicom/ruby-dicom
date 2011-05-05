@@ -14,11 +14,10 @@
 # Core library:
 # Super classes/modules:
 require 'dicom/image_processor'
-require 'dicom/super_parent'
-require 'dicom/super_item'
-require 'dicom/elements'
+require 'dicom/parent'
+require 'dicom/image_item'
+require 'dicom/elemental'
 # Subclasses and independent classes:
-require 'dicom/data_element'
 require 'dicom/d_client'
 require 'dicom/dictionary'
 require 'dicom/d_library'
@@ -26,6 +25,7 @@ require 'dicom/d_object'
 require 'dicom/d_read'
 require 'dicom/d_server'
 require 'dicom/d_write'
+require 'dicom/element'
 require 'dicom/file_handler'
 require 'dicom/item'
 require 'dicom/link'
