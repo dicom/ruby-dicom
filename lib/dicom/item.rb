@@ -4,10 +4,15 @@ module DICOM
 
   # The Item class handles information related to items - the elements contained in sequences.
   #
-  class Item < SuperItem
+  # === Inheritance
+  #
+  # As the Item class inherits from the ImageItem class, which itself inherits from the Parent class,
+  # all ImageItem and Parent methods are also available to instances of Item.
+  #
+  class Item < ImageItem
 
-    # Include the Elements mix-in module:
-    include Elements
+    # Include the Elemental mix-in module:
+    include Elemental
 
     # The index of this Item in the group of items belonging to its parent. If the Item is without parent, index is nil.
     attr_accessor :index

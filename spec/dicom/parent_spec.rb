@@ -5,20 +5,20 @@ require 'spec_helper'
 
 module DICOM
 
-  describe SuperParent, "#[]" do
+  describe Parent, "#[]" do
 
     it "should return the data element when the argument specifies a valid child element tag" do
       obj = DObject.new(nil, :verbose => false)
       id_tag = "0010,0020"
-      name = DataElement.new("0010,0010", "John_Doe", :parent => obj)
-      id = DataElement.new(id_tag, "12345", :parent => obj)
-      birth = DataElement.new("0010,0030", "20000101", :parent => obj)
+      name = Element.new("0010,0010", "John_Doe", :parent => obj)
+      id = Element.new(id_tag, "12345", :parent => obj)
+      birth = Element.new("0010,0030", "20000101", :parent => obj)
       obj[id_tag].should eql id
     end
 
     it "should return nil when a non-present tag is specified" do
       obj = DObject.new(nil, :verbose => false)
-      name = DataElement.new("0010,0010", "John_Doe", :parent => obj)
+      name = Element.new("0010,0010", "John_Doe", :parent => obj)
       obj["0010,0020"].should be_nil
     end
 
@@ -30,12 +30,12 @@ module DICOM
   end
 
 
-  describe SuperParent, "#add" do
+  describe Parent, "#add" do
 
-    it "should add a DataElement to the DICOM object" do
+    it "should add a Element to the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
       name_tag = "0010,0010"
-      name = DataElement.new(name_tag, "John_Doe")
+      name = Element.new(name_tag, "John_Doe")
       obj.add(name)
       obj[name_tag].should eql name
     end
@@ -48,18 +48,18 @@ module DICOM
       obj[seq_tag].should eql seq
     end
 
-    it "should have two children, when adding a DataElement and a Sequence to the empty DICOM object" do
+    it "should have two children, when adding a Element and a Sequence to the empty DICOM object" do
       obj = DObject.new(nil, :verbose => false)
       seq = Sequence.new("0008,1140")
       obj.add(seq)
-      name = DataElement.new("0010,0010", "John_Doe")
+      name = Element.new("0010,0010", "John_Doe")
       obj.add(name)
       obj.count.should eql 2
     end
 
-    it "should update the parent attribute of the DataElement when it is added to a parent" do
+    it "should update the parent attribute of the Element when it is added to a parent" do
       obj = DObject.new(nil, :verbose => false)
-      name = DataElement.new("0010,0010", "John_Doe")
+      name = Element.new("0010,0010", "John_Doe")
       obj.add(name)
       name.parent.should eql obj
     end
@@ -78,14 +78,14 @@ module DICOM
 
     it "should raise an error when the it is called on a Sequence" do
       seq = Sequence.new("0008,1140")
-      name = DataElement.new("0010,0010", "John_Doe")
+      name = Element.new("0010,0010", "John_Doe")
       expect {seq.add(name)}.to raise_error
     end
 
   end
 
 
-  describe SuperParent, "#add_item" do
+  describe Parent, "#add_item" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -119,7 +119,7 @@ module DICOM
     end
 
     it "should raise an ArgumentError when it is called with a non-Item as parameter" do
-      expect {@obj["0008,1140"].add_item(DataElement.new("0010,0010", "John_Doe"))}.to raise_error(ArgumentError)
+      expect {@obj["0008,1140"].add_item(Element.new("0010,0010", "John_Doe"))}.to raise_error(ArgumentError)
     end
 
     it "should raise an error when an Item is attempted added to a DObject" do
@@ -179,7 +179,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#children" do
+  describe Parent, "#children" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -191,15 +191,15 @@ module DICOM
     end
 
     it "should return an array with length equal to the number of children connected to the parent" do
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
-      @obj.add(DataElement.new("0010,0020", "12345"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0020", "12345"))
       @obj.children.should be_an(Array)
       @obj.children.length.should eql 2
     end
 
     it "should return an array where the child elements are sorted by tag" do
-      @obj.add(DataElement.new("0010,0030", "20000101"))
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0030", "20000101"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.add(Sequence.new("0008,1140"))
       @obj.children.first.tag.should eql "0008,1140"
       @obj.children[1].tag.should eql "0010,0010"
@@ -219,7 +219,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#children?" do
+  describe Parent, "#children?" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -243,7 +243,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#count" do
+  describe Parent, "#count" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -254,8 +254,8 @@ module DICOM
     end
 
     it "should return an integer equal to the number of children added to this parent" do
-      @obj.add(DataElement.new("0010,0030", "20000101"))
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0030", "20000101"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.add(Sequence.new("0008,1140"))
       @obj["0008,1140"].add_item # (this should not be counted as it is not a direct parent of obj)
       @obj.count.should eql 3
@@ -264,7 +264,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#count_all" do
+  describe Parent, "#count_all" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -275,8 +275,8 @@ module DICOM
     end
 
     it "should return an integer equal to the total number of children added to this parent and its child parents" do
-      @obj.add(DataElement.new("0010,0030", "20000101"))
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0030", "20000101"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.add(Sequence.new("0008,1140"))
       @obj["0008,1140"].add_item # (this should be counted as we are now counting all sub-children)
       @obj.count_all.should eql 4
@@ -285,7 +285,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#exists?" do
+  describe Parent, "#exists?" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -296,14 +296,14 @@ module DICOM
     end
 
     it "should return true when the parent contains the queried element" do
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.exists?("0010,0010").should be_true
     end
 
   end
 
 
-  describe SuperParent, "#group" do
+  describe Parent, "#group" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -318,14 +318,14 @@ module DICOM
     end
 
     it "should return an empty array when the parent contains only elements of other groups" do
-      @obj.add(DataElement.new("0010,0030", "20000101"))
+      @obj.add(Element.new("0010,0030", "20000101"))
       @obj.add(Sequence.new("0008,1140"))
       @obj.group("0020").should eql Array.new
     end
 
     it "should return the elements that match the specified group" do
-      match1 = DataElement.new("0010,0030", "20000101")
-      match2 = DataElement.new("0010,0010", "John_Doe")
+      match1 = Element.new("0010,0030", "20000101")
+      match2 = Element.new("0010,0010", "John_Doe")
       @obj.add(Sequence.new("0008,1140"))
       @obj.add(match1)
       @obj.add(match2)
@@ -337,7 +337,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#is_parent?" do
+  describe Parent, "#is_parent?" do
 
     it "should return true when called on a DObject" do
       DObject.new(nil, :verbose => false).is_parent?.should be_true
@@ -351,14 +351,14 @@ module DICOM
       Item.new.is_parent?.should be_true
     end
 
-    it "should return false when called on a DataElement" do
-      DataElement.new("0010,0010", "John_Doe").is_parent?.should be_false
+    it "should return false when called on a Element" do
+      Element.new("0010,0010", "John_Doe").is_parent?.should be_false
     end
 
   end
 
 
-  describe SuperParent, "#length=()" do
+  describe Parent, "#length=()" do
 
     it "should raise an error when called on a DObject" do
       expect {DObject.new(nil, :verbose => false).length = 42}.to raise_error
@@ -381,7 +381,7 @@ module DICOM
 
   # FIXME? Currently there is no specification for the format of the element printout: alignment, tree-visualization, content, etc.
   #
-  describe SuperParent, "#print" do
+  describe Parent, "#print" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -393,21 +393,21 @@ module DICOM
     end
 
     it "should print element information to the screen" do
-      @obj.add(DataElement.new("0010,0030", "20000101"))
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0030", "20000101"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.add(Sequence.new("0008,1140"))
       @obj.expects(:puts).at_least_once
       @obj.print
     end
 
     it "should not print to the screen when the :file parameter is used" do
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.expects(:puts).never
       @obj.print(:file => "#{TMPDIR}print.txt")
     end
 
     it "should create a file and fill it with the tag information when the :file parameter is used" do
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       file = "#{TMPDIR}print.txt"
       @obj.print(:file => file)
       File.exist?(file).should be_true
@@ -417,8 +417,8 @@ module DICOM
       f.close
     end
 
-    it "should cut off long DataElement values when the :value_max option is used" do
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+    it "should cut off long Element values when the :value_max option is used" do
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       file = "#{TMPDIR}print.txt"
       @obj.print(:file => file, :value_max => 4)
       f = File.new(file, "rb")
@@ -438,8 +438,8 @@ module DICOM
     end
 
     it "should return an array of length equal to the number of children of the parent" do
-      @obj.add(DataElement.new("0010,0030", "20000101"))
-      @obj.add(DataElement.new("0010,0010", "John_Doe"))
+      @obj.add(Element.new("0010,0030", "20000101"))
+      @obj.add(Element.new("0010,0010", "John_Doe"))
       @obj.add(Sequence.new("0008,1140"))
       @obj["0008,1140"].add_item
       @obj.expects(:puts).at_least_once
@@ -449,11 +449,11 @@ module DICOM
   end
 
 
-  describe SuperParent, "#remove" do
+  describe Parent, "#remove" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
-      @d = DataElement.new("0010,0030", "20000101")
+      @d = Element.new("0010,0030", "20000101")
       @s = Sequence.new("0008,1140")
       @i = Item.new
       @obj.add(@d)
@@ -479,7 +479,7 @@ module DICOM
       @obj.children.length.should eql @number_of_elements_before
     end
 
-    it "should remove the DataElement when the tag is part of the parent's children" do
+    it "should remove the Element when the tag is part of the parent's children" do
       @obj.remove("0010,0030")
       @obj.exists?("0010,0030").should be_false
       @obj.children.length.should eql @number_of_elements_before - 1
@@ -497,7 +497,7 @@ module DICOM
       @obj["0008,1140"].children.length.should eql 0
     end
 
-    it "should reset the parent reference from the DataElement when it is removed" do
+    it "should reset the parent reference from the Element when it is removed" do
       @obj.remove("0010,0030")
       @d.parent.should be_nil
     end
@@ -515,14 +515,14 @@ module DICOM
   end
 
 
-  describe SuperParent, "#remove_children" do
+  describe Parent, "#remove_children" do
 
     it "should remove all children from the parent element" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0010,0030", "20000101"))
-      obj.add(DataElement.new("0011,0030", "42"))
-      obj.add(DataElement.new("0010,0010", "John_Doe"))
-      obj.add(DataElement.new("0010,0020", "12345"))
+      obj.add(Element.new("0010,0030", "20000101"))
+      obj.add(Element.new("0011,0030", "42"))
+      obj.add(Element.new("0010,0010", "John_Doe"))
+      obj.add(Element.new("0010,0020", "12345"))
       obj.add(Sequence.new("0008,1140"))
       obj["0008,1140"].add_item
       obj.remove_children
@@ -532,14 +532,14 @@ module DICOM
   end
 
 
-  describe SuperParent, "#remove_group" do
+  describe Parent, "#remove_group" do
 
     it "should remove all children from the parent element" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0010,0030", "20000101"))
-      obj.add(DataElement.new("0011,0030", "42"))
-      obj.add(DataElement.new("0010,0010", "John_Doe"))
-      obj.add(DataElement.new("0010,0020", "12345"))
+      obj.add(Element.new("0010,0030", "20000101"))
+      obj.add(Element.new("0011,0030", "42"))
+      obj.add(Element.new("0010,0010", "John_Doe"))
+      obj.add(Element.new("0010,0020", "12345"))
       obj.add(Sequence.new("0008,1140"))
       obj["0008,1140"].add_item
       obj.remove_group("0010")
@@ -549,14 +549,14 @@ module DICOM
   end
 
 
-  describe SuperParent, "#remove_private" do
+  describe Parent, "#remove_private" do
 
     it "should remove all private children from the parent element" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0010,0030", "20000101"))
-      obj.add(DataElement.new("0011,0030", "42"))
-      obj.add(DataElement.new("0013,0010", "John_Doe"))
-      obj.add(DataElement.new("0015,0020", "12345"))
+      obj.add(Element.new("0010,0030", "20000101"))
+      obj.add(Element.new("0011,0030", "42"))
+      obj.add(Element.new("0013,0010", "John_Doe"))
+      obj.add(Element.new("0015,0020", "12345"))
       obj.add(Sequence.new("0008,1140"))
       obj["0008,1140"].add_item
       obj.remove_private
@@ -566,7 +566,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#reset_length" do
+  describe Parent, "#reset_length" do
 
     before :each do
       @obj = DObject.new(nil, :verbose => false)
@@ -592,7 +592,7 @@ module DICOM
   end
 
 
-  describe SuperParent, "#value" do
+  describe Parent, "#value" do
 
     before :each do
       @obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
@@ -622,11 +622,11 @@ module DICOM
       @obj.value("1234,5678").should be_nil
     end
 
-    it "should return the expected string value from the DataElement" do
+    it "should return the expected string value from the Element" do
       @obj.value("0010,0010").should eql "Anonymized"
     end
 
-    it "should return a properly right-stripped string when the DataElement originally has had a string of odd length that has been padded" do
+    it "should return a properly right-stripped string when the Element originally has had a string of odd length that has been padded" do
       @obj.value("0018,0022").should eql "PFP"
     end
 
@@ -634,7 +634,7 @@ module DICOM
       @obj.value("0028,0010").should eql 256
     end
 
-    it "should return the numbers in a backslash separated string when the DataElement contains multiple numbers in its value field" do
+    it "should return the numbers in a backslash separated string when the Element contains multiple numbers in its value field" do
       @obj.value("0018,1310").should eql "0\\256\\208\\0"
     end
 

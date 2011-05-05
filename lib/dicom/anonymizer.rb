@@ -180,7 +180,7 @@ module DICOM
               @tags.each_index do |j|
                 if obj.exists?(@tags[j])
                   element = obj[@tags[j]]
-                  if element.is_a?(DataElement)
+                  if element.is_a?(Element)
                     if @blank
                       value = ""
                     elsif @enumeration

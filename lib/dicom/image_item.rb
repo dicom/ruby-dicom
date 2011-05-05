@@ -8,9 +8,9 @@ module DICOM
   #
   # === Inheritance
   #
-  # As the SuperItem class inherits from the SuperParent class, all SuperParent methods are also available to objects which has inherited SuperItem.
+  # As the ImageItem class inherits from the Parent class, all Parent methods are also available to objects which has inherited ImageItem.
   #
-  class SuperItem < SuperParent
+  class ImageItem < Parent
 
     include ImageProcessor
 
@@ -35,7 +35,7 @@ module DICOM
     # Returns true if it is, false if not.
     #
     def compression?
-      # If compression is used, the pixel data element is a Sequence (with encapsulated elements), instead of a DataElement:
+      # If compression is used, the pixel data element is a Sequence (with encapsulated elements), instead of a Element:
       if self[PIXEL_TAG].is_a?(Sequence)
         return true
       else
@@ -348,7 +348,7 @@ module DICOM
     def image_properties
       row_element = self["0028,0010"]
       column_element = self["0028,0011"]
-      frames = (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
+      frames = (self["0028,0008"].is_a?(Element) == true ? self["0028,0008"].value.to_i : 1)
       unless row_element and column_element
         raise "The Data Element which specifies Rows is missing. Unable to gather enough information to constuct an image." unless row_element
         raise "The Data Element which specifies Columns is missing. Unable to gather enough information to constuct an image." unless column_element
@@ -369,7 +369,7 @@ module DICOM
       # or located in several encapsulated item elements:
       pixel_element = self[PIXEL_TAG]
       strings = Array.new
-      if pixel_element.is_a?(DataElement)
+      if pixel_element.is_a?(Element)
         if split
           rows, columns, frames = image_properties
           strings = pixel_element.bin.dup.divide(frames)
@@ -426,7 +426,7 @@ module DICOM
     end
 
     def num_frames
-      (self["0028,0008"].is_a?(DataElement) == true ? self["0028,0008"].value.to_i : 1)
+      (self["0028,0008"].is_a?(Element) == true ? self["0028,0008"].value.to_i : 1)
     end
 
     def num_rows
@@ -537,7 +537,7 @@ module DICOM
     # Returns the effective bit depth of the pixel data (considers a special case for Palette colored images).
     #
     def actual_bit_depth
-      raise "The 'Bits Allocated' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
+      raise "The 'Bits Allocated' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
       if photometry == PI_PALETTE_COLOR
       # Only one channel is checked and it is assumed that all channels have the same number of bits.
         return self["0028,1101"].value.split("\\").last.to_i
@@ -547,10 +547,10 @@ module DICOM
     end
 
 
-    # Returns the value from the "Bits Allocated" DataElement.
+    # Returns the value from the "Bits Allocated" Element.
     #
     def bit_depth
-      raise "The 'Bits Allocated' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
+      raise "The 'Bits Allocated' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
       return value("0028,0100")
     end
 
@@ -615,11 +615,11 @@ module DICOM
       return pixels
     end
 
-    # Returns the value from the "Photometric Interpretation" DataElement.
+    # Returns the value from the "Photometric Interpretation" Element.
     # Raises an error if it is missing.
     #
     def photometry
-      raise "The 'Photometric Interpretation' DataElement is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
+      raise "The 'Photometric Interpretation' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
       return value("0028,0004").upcase
     end
 
@@ -635,7 +635,7 @@ module DICOM
       proper_rgb = false
       photometric = photometry()
       # (With RLE COLOR PALETTE the Planar Configuration is not set)
-      planar = self["0028,0006"].is_a?(DataElement) ? self["0028,0006"].value : 0
+      planar = self["0028,0006"].is_a?(Element) ? self["0028,0006"].value : 0
       # Step 1: Produce an array with RGB values. At this time, YBR is not supported in ruby-dicom,
       # so this leaves us with a possible conversion from PALETTE COLOR:
       if photometric.include?("COLOR")
@@ -893,10 +893,10 @@ module DICOM
     # for intercept and slope, while center and width are set to nil. No errors are raised.
     #
     def window_level_values
-      center = (self["0028,1050"].is_a?(DataElement) == true ? self["0028,1050"].value.to_i : nil)
-      width = (self["0028,1051"].is_a?(DataElement) == true ? self["0028,1051"].value.to_i : nil)
-      intercept = (self["0028,1052"].is_a?(DataElement) == true ? self["0028,1052"].value.to_i : 0)
-      slope = (self["0028,1053"].is_a?(DataElement) == true ? self["0028,1053"].value.to_i : 1)
+      center = (self["0028,1050"].is_a?(Element) == true ? self["0028,1050"].value.to_i : nil)
+      width = (self["0028,1051"].is_a?(Element) == true ? self["0028,1051"].value.to_i : nil)
+      intercept = (self["0028,1052"].is_a?(Element) == true ? self["0028,1052"].value.to_i : 0)
+      slope = (self["0028,1053"].is_a?(Element) == true ? self["0028,1053"].value.to_i : 1)
       return center, width, intercept, slope
     end
 
@@ -913,7 +913,7 @@ module DICOM
         self[PIXEL_TAG].bin = bin
       else
         # Create new Data Element:
-        pixel_element = DataElement.new(PIXEL_TAG, bin, :encoded => true, :parent => self)
+        pixel_element = Element.new(PIXEL_TAG, bin, :encoded => true, :parent => self)
       end
     end
 

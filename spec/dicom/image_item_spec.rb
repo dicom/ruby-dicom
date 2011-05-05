@@ -6,7 +6,7 @@ require 'narray'
 
 module DICOM
 
-  describe SuperItem, "#color?" do
+  describe ImageItem, "#color?" do
 
     it "should return false when the DICOM object has no pixel data" do
       obj = DObject.new(nil, :verbose => false)
@@ -31,7 +31,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#compression?" do
+  describe ImageItem, "#compression?" do
 
     it "should return false when the DICOM object has no pixel data" do
       obj = DObject.new(nil, :verbose => false)
@@ -56,7 +56,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#decode_pixels" do
+  describe ImageItem, "#decode_pixels" do
 
     it "should raise an error when the DICOM object doesn't have any of the necessary data elements needed to decode pixel data" do
       obj = DObject.new(nil, :verbose => false)
@@ -65,7 +65,7 @@ module DICOM
 
     it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to decode pixel data" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0100", 16))
+      obj.add(Element.new("0028,0100", 16))
       expect {obj.decode_pixels("0000")}.to raise_error
     end
 
@@ -84,7 +84,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#encode_pixels" do
+  describe ImageItem, "#encode_pixels" do
 
     it "should raise an error when the DICOM object doesn't have the necessary data elements needed to encode the pixel data" do
       obj = DObject.new(nil, :verbose => false)
@@ -93,7 +93,7 @@ module DICOM
 
     it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to encode the pixel data" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0100", 16))
+      obj.add(Element.new("0028,0100", 16))
       expect {obj.encode_pixels([42, 42])}.to raise_error
     end
 
@@ -112,7 +112,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#get_image" do
+  describe ImageItem, "#get_image" do
 
     it "should return nil if no pixel data is present" do
       obj = DObject.new(nil, :verbose => false)
@@ -149,15 +149,15 @@ module DICOM
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected mininum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.add(DataElement.new("0028,1052", "-72")) # intercept
-      obj.add(DataElement.new("0028,1053", "3")) # slope
+      obj.add(Element.new("0028,1052", "-72")) # intercept
+      obj.add(Element.new("0028,1053", "3")) # slope
       obj.get_image(:remap => true).min.should eql 3000
     end
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.add(DataElement.new("0028,1052", "148")) # intercept
-      obj.add(DataElement.new("0028,1053", "3")) # slope
+      obj.add(Element.new("0028,1052", "148")) # intercept
+      obj.add(Element.new("0028,1053", "3")) # slope
       obj.get_image(:remap => true).max.should eql 4000
     end
 
@@ -200,7 +200,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#get_image_narray" do
+  describe ImageItem, "#get_image_narray" do
 
     it "should return nil if no pixel data is present" do
       obj = DObject.new(nil, :verbose => false)
@@ -255,15 +255,15 @@ module DICOM
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected mininum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.add(DataElement.new("0028,1052", "-72")) # intercept
-      obj.add(DataElement.new("0028,1053", "3")) # slope
+      obj.add(Element.new("0028,1052", "-72")) # intercept
+      obj.add(Element.new("0028,1053", "3")) # slope
       obj.get_image_narray(:remap => true).min.should eql 3000
     end
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.add(DataElement.new("0028,1052", "148")) # intercept
-      obj.add(DataElement.new("0028,1053", "3")) # slope
+      obj.add(Element.new("0028,1052", "148")) # intercept
+      obj.add(Element.new("0028,1053", "3")) # slope
       obj.get_image_narray(:remap => true).max.should eql 4000
     end
 
@@ -290,7 +290,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#image_from_file" do
+  describe ImageItem, "#image_from_file" do
 
     it "should raise an ArgumentError when a non-string argument is passed" do
       obj = DObject.new(nil, :verbose => false)
@@ -307,24 +307,24 @@ module DICOM
 
   end
 
-  describe SuperItem, "#image_properties" do
+  describe ImageItem, "#image_properties" do
 
     it "should raise an error when the 'Columns' data element is missing from the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0010", 512)) # Rows
+      obj.add(Element.new("0028,0010", 512)) # Rows
       expect {obj.image_properties}.to raise_error
     end
 
     it "should raise an error when the 'Rows' data element is missing from the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0011", 512)) # Columns
+      obj.add(Element.new("0028,0011", 512)) # Columns
       expect {obj.image_properties}.to raise_error
     end
 
     it "should return rows, columns and frames (=1) when the 'Number of Frames' data element is missing from the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0010", 512)) # Rows
-      obj.add(DataElement.new("0028,0011", 512)) # Columns
+      obj.add(Element.new("0028,0010", 512)) # Rows
+      obj.add(Element.new("0028,0011", 512)) # Columns
       rows, columns, frames = obj.image_properties
       rows.should eql 512
       columns.should eql 512
@@ -333,9 +333,9 @@ module DICOM
 
     it "should return correct integer values for rows, columns and frames when all corresponding data elements are defined in the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0010", 512)) # Rows
-      obj.add(DataElement.new("0028,0011", 256)) # Columns
-      obj.add(DataElement.new("0028,0008", "8")) # Number of Frames
+      obj.add(Element.new("0028,0010", 512)) # Rows
+      obj.add(Element.new("0028,0011", 256)) # Columns
+      obj.add(Element.new("0028,0008", "8")) # Number of Frames
       rows, columns, frames = obj.image_properties
       rows.should eql 512
       columns.should eql 256
@@ -345,7 +345,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#image_to_file" do
+  describe ImageItem, "#image_to_file" do
 
     it "should raise an ArgumentError when a non-string argument is passed" do
       obj = DObject.new(nil, :verbose => false)
@@ -355,7 +355,7 @@ module DICOM
     it "should write the DICOM object's pixel data string to the specified file" do
       pixel_data = "abcdefghijkl"
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("7FE0,0010", pixel_data, :encoded => true))
+      obj.add(Element.new("7FE0,0010", pixel_data, :encoded => true))
       obj.image_to_file(TMPDIR + "string.dat")
       f = File.new(TMPDIR + "string.dat", "rb")
       f.read.should eql pixel_data
@@ -382,16 +382,16 @@ module DICOM
   end
 
 
-  describe SuperItem, "#remove_sequences" do
+  describe ImageItem, "#remove_sequences" do
 
     it "should remove all sequences from the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0010,0030", "20000101"))
+      obj.add(Element.new("0010,0030", "20000101"))
       obj.add(Sequence.new("0008,1140"))
       obj.add(Sequence.new("0009,1140"))
       obj.add(Sequence.new("0088,0200"))
       obj["0008,1140"].add_item
-      obj.add(DataElement.new("0011,0030", "42"))
+      obj.add(Element.new("0011,0030", "42"))
       obj.remove_sequences
       obj.children.length.should eql 2
       obj.exists?("0008,1140").should be_false
@@ -401,12 +401,12 @@ module DICOM
 
     it "should remove all sequences from the Item" do
       i = Item.new
-      i.add(DataElement.new("0010,0030", "20000101"))
+      i.add(Element.new("0010,0030", "20000101"))
       i.add(Sequence.new("0008,1140"))
       i.add(Sequence.new("0009,1140"))
       i.add(Sequence.new("0088,0200"))
       i["0008,1140"].add_item
-      i.add(DataElement.new("0011,0030", "42"))
+      i.add(Element.new("0011,0030", "42"))
       i.remove_sequences
       i.children.length.should eql 2
       i.exists?("0008,1140").should be_false
@@ -417,7 +417,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#set_image" do
+  describe ImageItem, "#set_image" do
 
     it "should raise an ArgumentError when a non-array argument is passed" do
       obj = DObject.new(nil, :verbose => false)
@@ -427,8 +427,8 @@ module DICOM
     it "should encode the pixel array and write it to the DICOM object's pixel data element" do
       pixel_data = [0,42,0,42]
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0100", 8)) # Bit depth
-      obj.add(DataElement.new("0028,0103", 0)) # Pixel Representation
+      obj.add(Element.new("0028,0100", 8)) # Bit depth
+      obj.add(Element.new("0028,0103", 0)) # Pixel Representation
       obj.set_image(pixel_data)
       obj["7FE0,0010"].bin.length.should eql 4
       obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
@@ -445,7 +445,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#set_image_narray" do
+  describe ImageItem, "#set_image_narray" do
 
     it "should raise an ArgumentError when a non-NArray argument is passed" do
       obj = DObject.new(nil, :verbose => false)
@@ -455,8 +455,8 @@ module DICOM
     it "should encode the pixels of the NArray and write them to the DICOM object's pixel data element" do
       pixel_data = [0,42,0,42]
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0028,0100", 8)) # Bit depth
-      obj.add(DataElement.new("0028,0103", 0)) # Pixel Representation
+      obj.add(Element.new("0028,0100", 8)) # Bit depth
+      obj.add(Element.new("0028,0103", 0)) # Pixel Representation
       obj.set_image_narray(NArray.to_na(pixel_data))
       obj["7FE0,0010"].bin.length.should eql 4
       obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data

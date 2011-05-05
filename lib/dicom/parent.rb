@@ -6,12 +6,12 @@ module DICOM
   #
   # === Inheritance
   #
-  # Since all parent elements inherit from this class, these methods are available to instances of the following classes:
+  # Since all parents inherit from this class, these methods are available to instances of the following classes:
   # * DObject
   # * Item
   # * Sequence
   #
-  class SuperParent
+  class Parent
 
     # Returns the specified child element.
     # If the requested data element isn't found, nil is returned.
@@ -35,7 +35,7 @@ module DICOM
       return @tags[tag]
     end
 
-    # Adds a DataElement or Sequence instance to self (where self can be either a DObject or an Item).
+    # Adds a Element or Sequence instance to self (where self can be either a DObject or an Item).
     #
     # === Restrictions
     #
@@ -43,7 +43,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>element</tt> -- An element (DataElement or Sequence).
+    # * <tt>element</tt> -- An element (Element or Sequence).
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
@@ -53,7 +53,7 @@ module DICOM
     # === Examples
     #
     #   # Set a new patient's name to the DICOM object:
-    #   obj.add(DataElement.new("0010,0010", "John_Doe"))
+    #   obj.add(Element.new("0010,0010", "John_Doe"))
     #   # Add a previously defined element roi_name to the first item in the following sequence:
     #   obj["3006,0020"][0].add(roi_name)
     #
@@ -61,7 +61,7 @@ module DICOM
       unless element.is_a?(Item)
         unless self.is_a?(Sequence)
           # Does the element's binary value need to be reencoded?
-          reencode = true if element.is_a?(DataElement) && element.endian != stream.str_endian
+          reencode = true if element.is_a?(Element) && element.endian != stream.str_endian
           # If we are replacing an existing Element, we need to make sure that this Element's parent value is erased before proceeding.
           self[element.tag].parent = nil if exists?(element.tag)
           # Add the element, and set its parent attribute:
@@ -240,7 +240,7 @@ module DICOM
     # If no child elements exists, returns an empty array.
     #
     def elements
-      children.select { |child| child.is_a?(DataElement)}
+      children.select { |child| child.is_a?(Element)}
     end
 
     # A boolean which indicates whether the parent has any child elements.
@@ -249,7 +249,7 @@ module DICOM
       elements.any?
     end
 
-    # Re-encodes the binary data strings of all child DataElement instances.
+    # Re-encodes the binary data strings of all child Element instances.
     # This also includes all the elements contained in any possible child elements.
     #
     # === Notes
@@ -266,7 +266,7 @@ module DICOM
       children.each do |element|
         if element.children?
           element.encode_children(old_endian)
-        elsif element.is_a?(DataElement)
+        elsif element.is_a?(Element)
           encode_child(element, old_endian)
         end
       end
@@ -358,7 +358,7 @@ module DICOM
         # Formatting: Length
         l_s = s*(max_length-element.length.to_s.length)
         # Formatting Value:
-        if element.is_a?(DataElement)
+        if element.is_a?(Element)
           value = element.value.to_s
         else
           value = ""
@@ -460,7 +460,7 @@ module DICOM
             elsif LIBRARY.tags[tag][0][0] == "SQ"
               return self.add(Sequence.new(tag))
             else
-              return self.add(DataElement.new(tag, *args))
+              return self.add(Element.new(tag, *args))
             end
           else
             return self.remove(tag)
@@ -586,7 +586,7 @@ module DICOM
     #
     # === Examples
     #
-    #   # Remove a DataElement from a DObject instance:
+    #   # Remove a Element from a DObject instance:
     #   obj.remove("0008,0090")
     #   # Remove Item 1 from a specific Sequence:
     #   obj["3006,0020"].remove(1)
@@ -730,17 +730,17 @@ module DICOM
       to_hash.to_yaml
     end
 
-    # Returns the value of a specific DataElement child of this parent.
+    # Returns the value of a specific Element child of this parent.
     # Returns nil if the child element does not exist.
     #
     # === Notes
     #
-    # * Only DataElement instances have values. Parent elements like Sequence and Item have no value themselves.
+    # * Only Element instances have values. Parent elements like Sequence and Item have no value themselves.
     #   If the specified <tt>tag</tt> is that of a parent element, <tt>value()</tt> will raise an exception.
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag string which identifies the child DataElement.
+    # * <tt>tag</tt> -- A tag string which identifies the child Element.
     #
     # === Examples
     #
@@ -758,7 +758,7 @@ module DICOM
       end
       if exists?(tag)
         if @tags[tag].is_parent?
-          raise ArgumentError, "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only DataElement tags are valid."
+          raise ArgumentError, "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only Element tags are valid."
         else
           return @tags[tag].value
         end
@@ -772,12 +772,12 @@ module DICOM
     private
 
 
-    # Re-encodes the value of a child DataElement (but only if the DataElement encoding is
+    # Re-encodes the value of a child Element (but only if the Element encoding is
     # influenced by a shift in endianness).
     #
     # === Parameters
     #
-    # * <tt>element</tt> -- The DataElement who's value will be re-encoded.
+    # * <tt>element</tt> -- The Element who's value will be re-encoded.
     # * <tt>old_endian</tt> -- The previous endianness of the element binary (used for decoding the value).
     #
     #--

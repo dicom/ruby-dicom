@@ -46,7 +46,7 @@ module DICOM
       # If a transfer syntax has been specified as an option for a DICOM object, make sure that it makes it into the object:
       if options[:syntax]
         @transfer_syntax = options[:syntax]
-        obj.add(DataElement.new("0002,0010", options[:syntax])) if obj.is_a?(DObject)
+        obj.add(Element.new("0002,0010", options[:syntax])) if obj.is_a?(DObject)
       end
       # Initiate the variables that are used during file reading:
       init_variables
@@ -222,7 +222,7 @@ module DICOM
         @current_parent = @current_parent.parent
       else
         # Create an ordinary Data Element:
-        @current_element = DataElement.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
+        @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
         raise "Error: The actual length of the binary (#{@current_element.bin.length}) does not match the specified length (#{length}) for Data Element #{@current_element.tag}." if length != @current_element.bin.length
       end

@@ -8,7 +8,7 @@ require 'RMagick'
 
 module DICOM
 
-  describe SuperItem, "#get_image_magick [using :rmagick]" do
+  describe ImageItem, "#get_image_magick [using :rmagick]" do
 
     before :each do
       DICOM.image_processor = :rmagick
@@ -88,7 +88,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#get_images_magick [using :rmagick]" do
+  describe ImageItem, "#get_images_magick [using :rmagick]" do
 
     before :each do
       DICOM.image_processor = :rmagick
@@ -154,7 +154,7 @@ module DICOM
   end
 
 
-  describe SuperItem, "#set_image_magick [using :rmagick]" do
+  describe ImageItem, "#set_image_magick [using :rmagick]" do
 
     it "should raise an ArgumentError when a non-image argument is passed" do
       obj = DObject.new(nil, :verbose => false)
@@ -165,11 +165,11 @@ module DICOM
       obj1 = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       image = obj1.get_image_magick(:level => true)
       obj2 = DObject.new(nil, :verbose => false)
-      obj2.add(DataElement.new("0028,0004", "MONOCHROME2")) # Photometric Interpretation
-      obj2.add(DataElement.new("0028,0010", 256)) # Rows
-      obj2.add(DataElement.new("0028,0011", 256)) # Columns
-      obj2.add(DataElement.new("0028,0100", 16)) # Bit depth
-      obj2.add(DataElement.new("0028,0103", 1)) # Pixel Representation
+      obj2.add(Element.new("0028,0004", "MONOCHROME2")) # Photometric Interpretation
+      obj2.add(Element.new("0028,0010", 256)) # Rows
+      obj2.add(Element.new("0028,0011", 256)) # Columns
+      obj2.add(Element.new("0028,0100", 16)) # Bit depth
+      obj2.add(Element.new("0028,0103", 1)) # Pixel Representation
       obj2.set_image_magick(image)
       obj2["7FE0,0010"].bin.length.should eql obj1["7FE0,0010"].bin.length
       # Save a set of images to disk for visual comparison:

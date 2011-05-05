@@ -4,10 +4,10 @@ module DICOM
 
   # The Sequence class handles information related to Sequence elements.
   #
-  class Sequence < SuperParent
+  class Sequence < Parent
 
-    # Include the Elements mix-in module:
-    include Elements
+    # Include the Elemental mix-in module:
+    include Elemental
 
     # Creates a Sequence instance.
     #

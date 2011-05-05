@@ -193,22 +193,22 @@ module DICOM
 
     it "should change the encoding of the data element's binary when switching endianness" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0018,1310", 500)) # This should give the binary string "\364\001"
+      obj.add(Element.new("0018,1310", 500)) # This should give the binary string "\364\001"
       obj.transfer_syntax = EXPLICIT_BIG_ENDIAN
       obj["0018,1310"].bin.should eql "\001\364"
     end
 
     it "should not change the encoding of any meta group data element's binaries when switching endianness" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0002,9999", 500, :vr => "US")) # This should give the binary string "\364\001"
-      obj.add(DataElement.new("0018,1310", 500))
+      obj.add(Element.new("0002,9999", 500, :vr => "US")) # This should give the binary string "\364\001"
+      obj.add(Element.new("0018,1310", 500))
       obj.transfer_syntax = EXPLICIT_BIG_ENDIAN
       obj["0002,9999"].bin.should eql "\364\001"
     end
 
     it "should change the encoding of pixel data binary when switching endianness" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("0018,1310", 500)) # This should give the binary string "\364\001"
+      obj.add(Element.new("0018,1310", 500)) # This should give the binary string "\364\001"
       obj.transfer_syntax = EXPLICIT_BIG_ENDIAN
       obj["0018,1310"].bin.should eql "\001\364"
     end
@@ -229,7 +229,7 @@ module DICOM
 
     it "should remove any old data elements when reading a new DICOM file into the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(DataElement.new("9999,9999", "test", :vr => "AE"))
+      obj.add(Element.new("9999,9999", "test", :vr => "AE"))
       obj.read(@file, :verbose => false)
       obj.exists?("9999,9999").should be_false
     end
@@ -276,8 +276,8 @@ module DICOM
     before :each do
       @path = TMPDIR + "write.dcm"
       @obj = DObject.new(nil, :verbose => false)
-      @obj.add(DataElement.new("0008,0016", "1.2.34567"))
-      @obj.add(DataElement.new("0008,0018", "1.2.34567.89"))
+      @obj.add(Element.new("0008,0016", "1.2.34567"))
+      @obj.add(Element.new("0008,0018", "1.2.34567.89"))
     end
 
     it "should succeed in writing a limited DICOM object, created from scratch" do
@@ -330,13 +330,13 @@ module DICOM
     end
 
     it "should not add the Implementation Class UID to the File Meta Group, when (it is undefined and) the Implementation Version Name is defined" do
-      @obj.add(DataElement.new("0002,0013", "SomeProgram"))
+      @obj.add(Element.new("0002,0013", "SomeProgram"))
       @obj.write(@path)
       @obj.exists?("0002,0012").should be_false
     end
 
     it "should not add the Implementation Version Name to the File Meta Group, when (it is undefined and) the Implementation Class UID is defined" do
-      @obj.add(DataElement.new("0002,0012", "1.2.54321"))
+      @obj.add(Element.new("0002,0012", "1.2.54321"))
       @obj.write(@path)
       @obj.exists?("0002,0013").should be_false
     end

@@ -33,10 +33,10 @@ module DICOM
   #
   # === Inheritance
   #
-  # As the DObject class inherits from the SuperItem class, which itself inherits from the SuperParent class,
-  # all SuperItem and SuperParent methods are also available to instances of DObject.
+  # As the DObject class inherits from the ImageItem class, which itself inherits from the Parent class,
+  # all ImageItem and Parent methods are also available to instances of DObject.
   #
-  class DObject < SuperItem
+  class DObject < ImageItem
 
     # An array which contain any notices/warnings/errors that have been recorded for the DObject instance.
     attr_reader :errors
@@ -54,7 +54,7 @@ module DICOM
 
     # Creates a DObject instance (DObject is an abbreviation for "DICOM object").
     #
-    # The DObject instance holds references to the different types of objects (DataElement, Item, Sequence)
+    # The DObject instance holds references to the different types of objects (Element, Item, Sequence)
     # that makes up a DICOM object. A DObject is typically buildt by reading and parsing a file or a
     # binary string, but can also be buildt from an empty state by the user.
     #
@@ -189,7 +189,7 @@ module DICOM
         frames = value("0028,0008") || "1"
         unless frames == "1" or frames == 1
           # Encapsulated or 3D pixel data:
-          if pixels.is_a?(DataElement)
+          if pixels.is_a?(Element)
             frames = frames.to_s + " (3D Pixel Data)"
           else
             frames = frames.to_s + " (Encapsulated Multiframe Image)"
@@ -229,7 +229,7 @@ module DICOM
     end
 
     # Prints information of interest related to the DICOM object.
-    # Calls the print() method of SuperParent as well as the information() method of DObject.
+    # Calls the print() method of Parent as well as the information() method of DObject.
     #
     def print_all
       puts ""
@@ -292,7 +292,7 @@ module DICOM
       return value("0002,0010") || IMPLICIT_LITTLE_ENDIAN
     end
 
-    # Changes the transfer syntax DataElement of the DObject instance, and performs re-encoding of all
+    # Changes the transfer syntax Element of the DObject instance, and performs re-encoding of all
     # numerical values if a switch of endianness is implied.
     #
     # === Restrictions
@@ -313,7 +313,7 @@ module DICOM
       if exists?("0002,0010")
         self["0002,0010"].value = new_syntax
       else
-        add(DataElement.new("0002,0010", new_syntax))
+        add(Element.new("0002,0010", new_syntax))
       end
       # Update our Stream instance with the new encoding:
       @stream.endian = new_endian
@@ -376,24 +376,24 @@ module DICOM
     #
     def insert_missing_meta
       # File Meta Information Version:
-      DataElement.new("0002,0001", [0,1], :parent => self) unless exists?("0002,0001")
+      Element.new("0002,0001", [0,1], :parent => self) unless exists?("0002,0001")
       # Media Storage SOP Class UID:
-      DataElement.new("0002,0002", value("0008,0016"), :parent => self) unless exists?("0002,0002")
+      Element.new("0002,0002", value("0008,0016"), :parent => self) unless exists?("0002,0002")
       # Media Storage SOP Instance UID:
-      DataElement.new("0002,0003", value("0008,0018"), :parent => self) unless exists?("0002,0003")
+      Element.new("0002,0003", value("0008,0018"), :parent => self) unless exists?("0002,0003")
       # Transfer Syntax UID:
-      DataElement.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
+      Element.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
       if !exists?("0002,0012") and !exists?("0002,0013")
         # Implementation Class UID:
-        DataElement.new("0002,0012", UID, :parent => self)
+        Element.new("0002,0012", UID, :parent => self)
         # Implementation Version Name:
-        DataElement.new("0002,0013", NAME, :parent => self)
+        Element.new("0002,0013", NAME, :parent => self)
       end
       # Source Application Entity Title:
-      DataElement.new("0002,0016", DICOM.source_app_title, :parent => self) unless exists?("0002,0016")
+      Element.new("0002,0016", DICOM.source_app_title, :parent => self) unless exists?("0002,0016")
       # Group Length: Remove the old one (if it exists) before creating a new one.
       remove("0002,0000")
-      DataElement.new("0002,0000", meta_group_length, :parent => self)
+      Element.new("0002,0000", meta_group_length, :parent => self)
     end
 
     # Determines and returns the length of the meta group in the DObject instance.

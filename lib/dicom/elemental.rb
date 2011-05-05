@@ -2,24 +2,24 @@
 
 module DICOM
 
-  # The Elements mix-in module contains methods that are common among the different element classes:
-  # * DataElement
+  # The Elemental mix-in module contains methods that are common among the different element classes:
+  # * Element
   # * Item
   # * Sequence
   #
-  module Elements
+  module Elemental
 
-    # The encoded, binary value of the element (String).
+    # The encoded, binary value of the elemental (String).
     attr_reader :bin
-    # The element's length (Fixnum).
+    # The elemental's length (Fixnum).
     attr_reader :length
-    # The element's name (String).
+    # The elemental's name (String).
     attr_reader :name
-    # The parent of this element (which may be an Item, Sequence or DObject).
+    # The parent of this elemental (which may be an Item, Sequence or DObject).
     attr_reader :parent
-    # The elementss tag (String).
+    # The elemental's tag (String).
     attr_reader :tag
-    # The element's value representation (String).
+    # The elemental's value representation (String).
     attr_reader :vr
 
     # Returns the method (symbol) corresponding to the name string of this element.
@@ -28,9 +28,9 @@ module DICOM
       LIBRARY.as_method(@name)
     end
 
-    # Retrieves the entire chain of parents connected to this element.
-    # The parents are returned in an array, where the first element is the
-    # immediate parent and the last element is the top parent.
+    # Retrieves the entire chain of parents connected to this elemental.
+    # The parents are returned in an array, where the first entry is the
+    # immediate parent and the last entry is the top parent.
     # Returns an empty array if no parent is defined.
     #
     def parents
@@ -43,7 +43,7 @@ module DICOM
       return all_parents
     end
 
-    # Sets a specified element as this element's parent, while taking care to remove this element from any previous parent
+    # Sets a specified parent instance as this elemental's parent, while taking care to remove this elemental from any previous parent
     # as well as adding itself to the new parent (unless new parent is nil).
     #
     # === Parameters
@@ -78,7 +78,7 @@ module DICOM
       @parent = new_parent
     end
 
-    # Sets a specified element as this element's parent, without doing any other updates, like removing the element
+    # Sets a specified parent instance as this elemental's parent, without doing any other updates, like removing the elemental
     # from any previous parent or adding itself to the new parent.
     #
     # === Parameters
@@ -105,11 +105,11 @@ module DICOM
       end
     end
 
-    # Returns the top parent of a particular element.
+    # Returns the top parent of a particular elemental.
     #
     # === Notes
     #
-    # Unless an element, or one of its parent elements, are independent, the top parent will be a DObject instance.
+    # Unless the elemental, or one of its parent instances, are independent, the top parent will be a DObject instance.
     #
     def top_parent
       # The top parent is determined recursively:

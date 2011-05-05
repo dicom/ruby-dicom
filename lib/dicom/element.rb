@@ -2,21 +2,21 @@
 
 module DICOM
 
-  # The DataElement class handles information related to ordinary (non-parent) data elements.
+  # The Element class handles information related to ordinary (non-parent) elementals (data elements).
   #
-  class DataElement
+  class Element
 
-    # Include the Elements mix-in module:
-    include Elements
+    # Include the Elemental mix-in module:
+    include Elemental
 
     # The (decoded) value of the data element.
     attr_reader :value
 
-    # Creates a DataElement instance.
+    # Creates a Element instance.
     #
     # === Notes
     #
-    # * In the case where the DataElement is given a binary instead of value, the DataElement will not have a formatted value (value = nil).
+    # * In the case where the Element is given a binary instead of value, the Element will not have a formatted value (value = nil).
     # * Private data elements will have their names listed as "Private".
     # * Non-private data elements that are not found in the dictionary will be listed as "Unknown".
     #
@@ -30,18 +30,18 @@ module DICOM
     #
     # * <tt>:bin</tt> -- String. If you already have the value pre-encoded to a binary string, the string can be supplied with this option to avoid it being encoded a second time.
     # * <tt>:encoded</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean must to be set as true.
-    # * <tt>:name</tt> - String. The name of the DataElement may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
-    # * <tt>:parent</tt> - Item or DObject instance which the DataElement instance shall belong to.
-    # * <tt>:vr</tt> -- String. If a private DataElement is created with a custom value, this must be specified to enable the encoding of the value. If it is not specified, the vr will be retrieved from the dictionary.
+    # * <tt>:name</tt> - String. The name of the Element may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
+    # * <tt>:parent</tt> - Item or DObject instance which the Element instance shall belong to.
+    # * <tt>:vr</tt> -- String. If a private Element is created with a custom value, this must be specified to enable the encoding of the value. If it is not specified, the vr will be retrieved from the dictionary.
     #
     # === Examples
     #
     #   # Create a new data element and connect it to a DObject instance:
-    #   patient_name = DataElement.new("0010,0010", "John Doe", :parent => obj)
+    #   patient_name = Element.new("0010,0010", "John Doe", :parent => obj)
     #   # Create a "Pixel Data" element and insert image data that you have already encoded elsewhere:
-    #   pixel_data = DataElement.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => obj)
+    #   pixel_data = Element.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => obj)
     #   # Create a private data element:
-    #   private_data = DataElement.new("0011,2102", some_data, :parent => obj, :vr => "LO")
+    #   private_data = Element.new("0011,2102", some_data, :parent => obj, :vr => "LO")
     #
     def initialize(tag, value, options={})
       raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
@@ -83,7 +83,7 @@ module DICOM
       end
     end
 
-    # Sets the binary string of a DataElement.
+    # Sets the binary string of a Element.
     #
     # === Notes
     #
@@ -106,8 +106,8 @@ module DICOM
       @length = @bin.length
     end
 
-    # Checks if an element actually has any child elements.
-    # Returns false, as DataElement instances can not have children.
+    # Checks if the Element actually has any child elementals.
+    # Returns false, as Element instances by definition can not have children.
     #
     def children?
       return false
@@ -120,53 +120,53 @@ module DICOM
       return stream.str_endian
     end
 
-    # Returns a string containing a human-readable hash representation of the element.
+    # Returns a string containing a human-readable hash representation of the Element.
     #
     def inspect
       to_hash.inspect
     end
 
-    # Checks if an element is a parent.
-    # Returns false, as DataElement instance can not be parents.
+    # Checks if the Element is a parent.
+    # Returns false, as Element instances by definition can not be parents.
     #
     def is_parent?
       return false
     end
 
-    # Returns the value of the element (used as value in the parent's hash representation).
+    # Returns the value of the elemental (used as value in the parent's hash representation).
     #
     #--
-    # FIXME: I guess this should instead return a real hash, and the parent elements
+    # FIXME: I guess this should instead return a real hash, and the parent instances
     # could then extract the value and put that in their hash.
     #
     def to_hash
       value
     end
 
-    # Returns a json string containing a human-readable representation of the element.
+    # Returns a json string containing a human-readable representation of the Element.
     #
     def to_json
       to_hash.to_json
     end
 
-    # Returns a yaml string containing a human-readable representation of the element.
+    # Returns a yaml string containing a human-readable representation of the Element.
     #
     def to_yaml
       to_hash.to_yaml
     end
 
-    # Sets the value of the DataElement instance.
+    # Sets the value of the Element instance.
     #
     # === Notes
     #
     # In addition to updating the value attribute, the specified value is encoded and used to
-    # update both the DataElement's binary and length attributes too.
+    # update both the Element's binary and length attributes too.
     #
-    # The specified value must be of a type that is compatible with the DataElement's value representation (vr).
+    # The specified value must be of a type that is compatible with the Element's value representation (vr).
     #
     # === Parameters
     #
-    # * <tt>new_value</tt> -- A custom value (String, Fixnum, etc..) that is assigned to the DataElement.
+    # * <tt>new_value</tt> -- A custom value (String, Fixnum, etc..) that is assigned to the Element.
     #
     def value=(new_value)
       @bin = encode(new_value)

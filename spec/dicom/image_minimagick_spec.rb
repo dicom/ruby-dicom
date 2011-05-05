@@ -4,13 +4,11 @@
 
 require 'spec_helper'
 require 'mini_magick'
-# NB! This mini_magick implementation uses some features which are not yet publicly available.
-# The situation will be resolved before the next gem release.
 
 
 module DICOM
 
-  describe SuperItem, "#get_image_magick [using :mini_magick]" do
+  describe ImageItem, "#get_image_magick [using :mini_magick]" do
 
     before :each do
       DICOM.image_processor = :mini_magick
