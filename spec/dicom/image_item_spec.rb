@@ -112,11 +112,11 @@ module DICOM
   end
 
 
-  describe ImageItem, "#get_image" do
+  describe ImageItem, "#pixels" do
 
     it "should return nil if no pixel data is present" do
       obj = DObject.new(nil, :verbose => false)
-      obj.get_image.should be_nil
+      obj.pixels.should be_nil
     end
 
     it "should return false if it is not able to decompress compressed pixel data" do
@@ -124,87 +124,87 @@ module DICOM
       obj.stubs(:exists?).returns(true)
       obj.stubs(:compression?).returns(true)
       obj.stubs(:decompress).returns(false)
-      obj.get_image.should be_false
+      obj.pixels.should be_false
     end
 
     it "should return pixel data in an array" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image.should be_an(Array)
+      obj.pixels.should be_an(Array)
     end
 
     it "should return an array of length equal to the number of pixels in the pixel data" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image.length.should eql 65536 # 256*256 pixels
+      obj.pixels.length.should eql 65536 # 256*256 pixels
     end
 
     it "should properly decode the pixel data such that the minimum pixel value for this image is 1024" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image.min.should eql 1024
+      obj.pixels.min.should eql 1024
     end
 
     it "should properly decode the pixel data such that the maximum pixel value for this image is 1024" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image.max.should eql 1284
+      obj.pixels.max.should eql 1284
     end
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected mininum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.add(Element.new("0028,1052", "-72")) # intercept
       obj.add(Element.new("0028,1053", "3")) # slope
-      obj.get_image(:remap => true).min.should eql 3000
+      obj.pixels(:remap => true).min.should eql 3000
     end
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.add(Element.new("0028,1052", "148")) # intercept
       obj.add(Element.new("0028,1053", "3")) # slope
-      obj.get_image(:remap => true).max.should eql 4000
+      obj.pixels(:remap => true).max.should eql 4000
     end
 
     it "should remap the pixel values using the default window center & width values and give the expected minimum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image(:level => true).min.should eql 1053
+      obj.pixels(:level => true).min.should eql 1053
     end
 
     it "should remap the pixel values using the default window center & width values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image(:level => true).max.should eql 1137
+      obj.pixels(:level => true).max.should eql 1137
     end
 
     it "should remap the pixel values using the requested window center & width values and give the expected minimum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image(:level => [1100, 100]).min.should eql 1050
+      obj.pixels(:level => [1100, 100]).min.should eql 1050
     end
 
     it "should remap the pixel values using the requested window center & width values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image(:level => [1100, 100]).max.should eql 1150
+      obj.pixels(:level => [1100, 100]).max.should eql 1150
     end
 
     it "should remap the pixel values using the requested window center & width values and give the expected minimum value, when using the NArray library" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image(:level => [1100, 100], :narray => true).min.should eql 1050
+      obj.pixels(:level => [1100, 100], :narray => true).min.should eql 1050
     end
 
     it "should remap the pixel values using the requested window center & width values and give the expected maximum value, when using the NArray library" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image(:level => [1100, 100], :narray => true).max.should eql 1150
+      obj.pixels(:level => [1100, 100], :narray => true).max.should eql 1150
     end
 
     it "should use NArray to process the pixel values when the :narray option is used" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.expects(:process_presentation_values_narray).once
-      obj.get_image(:level => [1100, 100],:narray => true)
+      obj.pixels(:level => [1100, 100],:narray => true)
     end
 
   end
 
 
-  describe ImageItem, "#get_image_narray" do
+  describe ImageItem, "#narray" do
 
     it "should return nil if no pixel data is present" do
       obj = DObject.new(nil, :verbose => false)
-      obj.get_image_narray.should be_nil
+      obj.narray.should be_nil
     end
 
     it "should return false if it is not able to decompress compressed pixel data" do
@@ -212,22 +212,22 @@ module DICOM
       obj.stubs(:exists?).returns(true)
       obj.stubs(:compression?).returns(true)
       obj.stubs(:decompress).returns(false)
-      obj.get_image_narray.should be_false
+      obj.narray.should be_false
     end
 
     it "should return pixel data in an NArray" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray.should be_an(NArray)
+      obj.narray.should be_an(NArray)
     end
 
     it "should return an NArray of length equal to the number of pixels in the pixel data" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray.length.should eql 65536 # 256*256 pixels
+      obj.narray.length.should eql 65536 # 256*256 pixels
     end
 
     it "should return an NArray which is sized according to the dimensions of the 2D pixel image" do
       obj = DObject.new(DCM_EXPLICIT_MR_16BIT_MONO2_NON_SQUARE_PAL_ICON, :verbose => false)
-      narr = obj.get_image_narray
+      narr = obj.narray
       narr.shape[0].should eql 1 # nr of frames
       narr.shape[1].should eql 448 # nr of columns
       narr.shape[2].should eql 268 # nr of rows
@@ -236,7 +236,7 @@ module DICOM
 
     it "should return an NArray which is sized according to the dimensions of the 3D pixel volume" do
       obj = DObject.new(DCM_EXPLICIT_RTDOSE_16BIT_MONO2_3D_VOLUME, :verbose => false)
-      narr = obj.get_image_narray
+      narr = obj.narray
       narr.shape[0].should eql 126 # nr of frames
       narr.shape[1].should eql 82 # nr of columns
       narr.shape[2].should eql 6 # nr of rows
@@ -245,46 +245,46 @@ module DICOM
 
     it "should properly decode the pixel data such that the minimum pixel value for this image is 1024" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray.min.should eql 1024
+      obj.narray.min.should eql 1024
     end
 
     it "should properly decode the pixel data such that the maximum pixel value for this image is 1024" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray.max.should eql 1284
+      obj.narray.max.should eql 1284
     end
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected mininum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.add(Element.new("0028,1052", "-72")) # intercept
       obj.add(Element.new("0028,1053", "3")) # slope
-      obj.get_image_narray(:remap => true).min.should eql 3000
+      obj.narray(:remap => true).min.should eql 3000
     end
 
     it "should remap the pixel values according to the rescale slope and intercept values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
       obj.add(Element.new("0028,1052", "148")) # intercept
       obj.add(Element.new("0028,1053", "3")) # slope
-      obj.get_image_narray(:remap => true).max.should eql 4000
+      obj.narray(:remap => true).max.should eql 4000
     end
 
     it "should remap the pixel values using the default window center & width values and give the expected minimum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray(:level => true).min.should eql 1053
+      obj.narray(:level => true).min.should eql 1053
     end
 
     it "should remap the pixel values using the default window center & width values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray(:level => true).max.should eql 1137
+      obj.narray(:level => true).max.should eql 1137
     end
 
     it "should remap the pixel values using the requested window center & width values and give the expected minimum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray(:level => [1100, 100]).min.should eql 1050
+      obj.narray(:level => [1100, 100]).min.should eql 1050
     end
 
     it "should remap the pixel values using the requested window center & width values and give the expected maximum value" do
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.get_image_narray(:level => [1100, 100]).max.should eql 1150
+      obj.narray(:level => [1100, 100]).max.should eql 1150
     end
 
   end
@@ -321,25 +321,22 @@ module DICOM
       expect {obj.image_properties}.to raise_error
     end
 
-    it "should return rows, columns and frames (=1) when the 'Number of Frames' data element is missing from the DICOM object" do
+    it "should return frames (=1) when the 'Number of Frames' data element is missing from the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(Element.new("0028,0010", 512)) # Rows
-      obj.add(Element.new("0028,0011", 512)) # Columns
-      rows, columns, frames = obj.image_properties
-      rows.should eql 512
-      columns.should eql 512
-      frames.should eql 1
+      obj.num_frames.should eql 1
     end
 
     it "should return correct integer values for rows, columns and frames when all corresponding data elements are defined in the DICOM object" do
       obj = DObject.new(nil, :verbose => false)
-      obj.add(Element.new("0028,0010", 512)) # Rows
-      obj.add(Element.new("0028,0011", 256)) # Columns
-      obj.add(Element.new("0028,0008", "8")) # Number of Frames
-      rows, columns, frames = obj.image_properties
-      rows.should eql 512
-      columns.should eql 256
-      frames.should eql 8
+      rows_used = 512
+      columns_used = 256
+      frames_used = 8
+      obj.add(Element.new("0028,0010", rows_used))
+      obj.add(Element.new("0028,0011", columns_used))
+      obj.add(Element.new("0028,0008", frames_used.to_s))
+      obj.num_rows.should eql rows_used
+      obj.num_cols.should eql columns_used
+      obj.num_frames.should eql frames_used
     end
 
   end
@@ -417,11 +414,11 @@ module DICOM
   end
 
 
-  describe ImageItem, "#set_image" do
+  describe ImageItem, "#pixels=()" do
 
     it "should raise an ArgumentError when a non-array argument is passed" do
       obj = DObject.new(nil, :verbose => false)
-      expect {obj.set_image(42)}.to raise_error(ArgumentError)
+      expect {obj.pixels = 42}.to raise_error(ArgumentError)
     end
 
     it "should encode the pixel array and write it to the DICOM object's pixel data element" do
@@ -429,7 +426,7 @@ module DICOM
       obj = DObject.new(nil, :verbose => false)
       obj.add(Element.new("0028,0100", 8)) # Bit depth
       obj.add(Element.new("0028,0103", 0)) # Pixel Representation
-      obj.set_image(pixel_data)
+      obj.pixels = pixel_data
       obj["7FE0,0010"].bin.length.should eql 4
       obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
     end
@@ -437,19 +434,9 @@ module DICOM
     it "should encode the pixel array and update the DICOM object's pixel data element" do
       pixel_data = [0,42,0,42]
       obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
-      obj.set_image(pixel_data)
+      obj.pixels = pixel_data
       obj["7FE0,0010"].bin.length.should eql 8
       obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
-    end
-
-  end
-
-
-  describe ImageItem, "#set_image_narray" do
-
-    it "should raise an ArgumentError when a non-NArray argument is passed" do
-      obj = DObject.new(nil, :verbose => false)
-      expect {obj.set_image_narray(42)}.to raise_error(ArgumentError)
     end
 
     it "should encode the pixels of the NArray and write them to the DICOM object's pixel data element" do
@@ -457,7 +444,7 @@ module DICOM
       obj = DObject.new(nil, :verbose => false)
       obj.add(Element.new("0028,0100", 8)) # Bit depth
       obj.add(Element.new("0028,0103", 0)) # Pixel Representation
-      obj.set_image_narray(NArray.to_na(pixel_data))
+      obj.pixels = NArray.to_na(pixel_data)
       obj["7FE0,0010"].bin.length.should eql 4
       obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
     end

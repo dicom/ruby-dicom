@@ -93,61 +93,6 @@ module DICOM
       return bin
     end
 
-    # Returns the image pixel values in a standard Ruby Array.
-    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
-    #
-    # === Notes
-    #
-    # * The returned array does not carry the dimensions of the pixel data: It is put in a one dimensional Array (vector).
-    #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
-    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
-    #
-    # === Examples
-    #
-    #   # Simply retrieve the pixel data:
-    #   pixels = obj.get_image
-    #   # Retrieve the pixel data remapped to presentation values according to window center/width settings:
-    #   pixels = obj.get_image(:remap => true)
-    #   # Retrieve the remapped pixel data while using numerical array (~twice as fast):
-    #   pixels = obj.get_image(:remap => true, :narray => true)
-    #
-    def get_image(options={})
-      if exists?(PIXEL_TAG)
-        # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
-        if compression?
-          pixels = decompress(image_strings.first)
-        else
-          pixels = decode_pixels(image_strings.first)
-        end
-        if pixels
-          # Remap the image from pixel values to presentation values if the user has requested this:
-          if options[:remap] or options[:level]
-            if options[:narray]
-              # Use numerical array (faster):
-              pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]).to_a
-            else
-              # Use standard Ruby array (slower):
-              pixels = process_presentation_values(pixels, -65535, 65535, options[:level])
-            end
-          end
-        else
-          add_msg("Warning: Decompressing pixel values has failed. Array can not be filled.")
-          pixels = false
-        end
-      else
-        pixels = nil
-      end
-      return pixels
-    end
-
     # Returns a single image object, created from the encoded pixel data using the image related data elements in the DICOM object.
     # If the object contains multiple image frames, the first image frame is returned, unless the :frame option is used.
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
@@ -171,14 +116,16 @@ module DICOM
     # === Examples
     #
     #   # Retrieve pixel data as an RMagick image object and display it:
-    #   image = obj.get_image_magick
+    #   image = obj.image
     #   image.display
-    #   # Retrieve frame 5 in the pixel data:
-    #   image = obj.get_image_magick(:frame => 5)
+    #   # Retrieve frame number 5 in the pixel data:
+    #   image = obj.image(:frame => 5)
     #
-    def get_image_magick(options={})
+    def image(options={})
       options[:frame] = options[:frame] || 0
-      return get_images_magick(options)
+      image = images(options).first
+      image = false if image.nil? && exists?(PIXEL_TAG)
+      return image
     end
 
     # Returns an array of image objects, created from the encoded pixel data using the image related data elements in the DICOM object.
@@ -195,7 +142,7 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:frame</tt> -- Fixnum. Returns only an image object from the specified frame.
+    # * <tt>:frame</tt> -- Fixnum. Makes the method return an array containing only the image object corresponding to the specified frame number.
     # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
     # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
@@ -203,27 +150,27 @@ module DICOM
     # === Examples
     #
     #   # Retrieve the pixel data as RMagick image objects:
-    #   images = obj.get_images_magick
+    #   images = obj.images
     #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values (but without any leveling):
-    #   images = obj.get_images_magick(:remap => true)
+    #   images = obj.images(:remap => true)
     #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values and leveled using the default center/width values in the DICOM object:
-    #   images = obj.get_images_magick(:level => true)
+    #   images = obj.images(:level => true)
     #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values, leveled with the specified center/width values and using numerical array for the rescaling (~twice as fast).
-    #   images = obj.get_images_magick(:level => [-200,1000], :narray => true)
+    #   images = obj.images(:level => [-200,1000], :narray => true)
     #
-    def get_images_magick(options={})
+    def images(options={})
+      images = Array.new
       if exists?(PIXEL_TAG)
-        # Gather the necessary image data, and extract the frame of interest if indicated:
-        rows, columns, frames = image_properties
-        strings = image_strings(true)
+        # Gather the pixel data strings, and pick a single frame if indicated by options:
+        strings = image_strings(split_to_frames=true)
         strings = [strings[options[:frame]]] if options[:frame]
         if compression?
           # Decompress, either to numbers (RLE) or to an image object (image based compressions):
           if [TXS_RLE].include?(transfer_syntax)
             pixel_frames = Array.new
-            strings.each {|string| pixel_frames << decode_rle(columns, rows, string)}
+            strings.each {|string| pixel_frames << decode_rle(num_cols, num_rows, string)}
           else
-            images = decompress(strings)
+            images = decompress(strings) || Array.new
             add_msg("Warning: Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}')") unless images
           end
         else
@@ -237,84 +184,14 @@ module DICOM
             # Pixel values and pixel order may need to be rearranged if we have color data:
             pixels = process_colors(pixels) if color?
             if pixels
-              image = read_image(pixels, columns, rows, options)
+              images << read_image(pixels, num_cols, num_rows, options)
             else
               add_msg("Warning: Processing pixel values for this particular color mode failed, unable to construct image(s).")
-              image = false
             end
-            images << image if image
           end
-        else
-          images = false unless images
         end
-      else
-        images = nil
       end
-      # Return specific frame or array with all images?
-      if options[:frame]
-        # Return image object (if success) or false/nil on failure:
-        if images
-          return images.first
-        else
-          return images
-        end
-      else
-        # Return array of image objects or an empty array if decoding images failed.
-        images = Array.new unless images
-        return images
-      end
-    end
-
-    # Returns a 3-dimensional NArray object where the array dimensions corresponds to [frames, columns, rows].
-    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
-    #
-    # === Notes
-    #
-    # * To call this method the user needs to loaded the NArray library in advance (require 'narray').
-    #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:remap</tt> -- Boolean.  If set as true, the returned pixel values are remapped to presentation values.
-    #
-    # === Examples
-    #
-    #   # Retrieve numerical pixel array:
-    #   data = obj.get_image_narray
-    #   # Retrieve numerical pixel array remapped from the original pixel values to presentation values:
-    #   data = obj.get_image_narray(:remap => true)
-    #
-    def get_image_narray(options={})
-      if exists?(PIXEL_TAG)
-        unless color?
-          # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
-          if compression?
-            pixels = decompress(image_strings.first)
-          else
-            pixels = decode_pixels(image_strings.first)
-          end
-          if pixels
-            # Decode the pixel values, then import to NArray  and give it the proper shape:
-            rows, columns, frames = image_properties
-            pixel_data = NArray.to_na(pixels).reshape!(frames, columns, rows)
-            # Remap the image from pixel values to presentation values if the user has requested this:
-            pixel_data = process_presentation_values_narray(pixel_data, -65535, 65535, options[:level]) if options[:remap] or options[:level]
-          else
-            add_msg("Warning: Decompressing pixel values has failed. Numerical array can not be filled.")
-            pixel_data = false
-          end
-        else
-          add_msg("The DICOM object contains colored pixel data, which is not supported in this method yet.")
-          pixel_data = false
-        end
-      else
-        pixel_data = nil
-      end
-      return pixel_data
+      return images
     end
 
     # Reads a binary string from a specified file and writes it to the value field of the pixel data element (7FE0,0010).
@@ -339,24 +216,6 @@ module DICOM
       end
     end
 
-    # Returns data related to the shape of the pixel data. The data is returned as three integers: rows, columns & number of frames.
-    #
-    # === Examples
-    #
-    #   rows, cols, frames = obj.image_properties
-    #
-    def image_properties
-      row_element = self["0028,0010"]
-      column_element = self["0028,0011"]
-      frames = (self["0028,0008"].is_a?(Element) == true ? self["0028,0008"].value.to_i : 1)
-      unless row_element and column_element
-        raise "The Data Element which specifies Rows is missing. Unable to gather enough information to constuct an image." unless row_element
-        raise "The Data Element which specifies Columns is missing. Unable to gather enough information to constuct an image." unless column_element
-      else
-        return row_element.value, column_element.value, frames
-      end
-    end
-
     # Returns the pixel data binary string(s) in an array.
     # If no pixel data is present, returns an empty array.
     #
@@ -371,8 +230,7 @@ module DICOM
       strings = Array.new
       if pixel_element.is_a?(Element)
         if split
-          rows, columns, frames = image_properties
-          strings = pixel_element.bin.dup.divide(frames)
+          strings = pixel_element.bin.dup.divide(num_frames)
         else
           strings << pixel_element.bin
         end
@@ -421,113 +279,169 @@ module DICOM
       end
     end
 
+    # Encodes pixel data from a (Magick) image object and writes it to the pixel data element (7FE0,0010).
+    #
+    # === Restrictions
+    #
+    # Because of pixel value issues related to image objects (images dont like signed integers), and the possible
+    # difference between presentation values and raw pixel values, the use of image=() may
+    # result in pixel data where the integer values differs somewhat from what is expected. Use with care!
+    # For precise pixel value processing, use the Array and NArray based pixel data methods instead.
+    #
+    def image=(image)
+      raise ArgumentError, "Expected one of the supported image objects (#{valid_image_objects}), got #{image.class}." unless valid_image_objects.include?(image.class)
+      # Export to pixels using the proper image processor:
+      pixels = export_pixels(image, photometry)
+      # Encode and write to the Pixel Data Element:
+      self.pixels = pixels
+    end
+
+    # Returns the number of columns in the pixel data (as an Integer).
+    # Returns nil if the value is not defined.
+    #
     def num_cols
       self["0028,0011"].value rescue nil
     end
 
+    # Returns the number of frames in the pixel data (as an Integer).
+    # Assumes and returns 1 if the value is not defined.
+    #
     def num_frames
       (self["0028,0008"].is_a?(Element) == true ? self["0028,0008"].value.to_i : 1)
     end
 
+    # Returns the number of rows in the pixel data (as an Integer).
+    # Returns nil if the value is not defined.
+    #
     def num_rows
       self["0028,0010"].value rescue nil
     end
 
-    # Removes all Sequence elements from the DObject or Item instance.
+    # Returns a 3-dimensional NArray object where the array dimensions corresponds to [frames, columns, rows].
+    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
+    #
+    # === Notes
+    #
+    # * To call this method the user needs to loaded the NArray library in advance (require 'narray').
+    #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:remap</tt> -- Boolean.  If set as true, the returned pixel values are remapped to presentation values.
+    #
+    # === Examples
+    #
+    #   # Retrieve numerical pixel array:
+    #   data = obj.narray
+    #   # Retrieve numerical pixel array remapped from the original pixel values to presentation values:
+    #   data = obj.narray(:remap => true)
+    #
+    def narray(options={})
+      pixels = nil
+      if exists?(PIXEL_TAG)
+        unless color?
+          # Decode the pixel values: For now we only support returning pixel data of the first frame (if the image is located in multiple pixel data items).
+          if compression?
+            pixels = decompress(image_strings.first)
+          else
+            pixels = decode_pixels(image_strings.first)
+          end
+          if pixels
+            # Import the pixels to NArray and give it a proper shape:
+            raise "Missing Rows and/or Columns Element. Unable to construct pixel data array." unless num_rows and num_cols
+            pixels = NArray.to_na(pixels).reshape!(num_frames, num_cols, num_rows)
+            # Remap the image from pixel values to presentation values if the user has requested this:
+            pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]) if options[:remap] or options[:level]
+          else
+            add_msg("Warning: Decompressing the Pixel Data failed. Pixel values can not be extracted.")
+          end
+        else
+          add_msg("The DICOM object contains colored pixel data. Retrieval of colored pixels is not supported by this method yet.")
+          pixels = false
+        end
+      end
+      return pixels
+    end
+
+    # Returns the Pixel Data values in a standard Ruby Array.
+    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
+    #
+    # === Notes
+    #
+    # * The returned array does not carry the dimensions of the pixel data: It is put in a one dimensional Array (vector).
+    #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
+    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
+    #
+    # === Examples
+    #
+    #   # Simply retrieve the pixel data:
+    #   pixels = obj.pixels
+    #   # Retrieve the pixel data remapped to presentation values according to window center/width settings:
+    #   pixels = obj.pixels(:remap => true)
+    #   # Retrieve the remapped pixel data while using numerical array (~twice as fast):
+    #   pixels = obj.pixels(:remap => true, :narray => true)
+    #
+    def pixels(options={})
+      pixels = nil
+      if exists?(PIXEL_TAG)
+        # For now we only support returning pixel data of the first frame, if the image is located in multiple pixel data items:
+        if compression?
+          pixels = decompress(image_strings.first)
+        else
+          pixels = decode_pixels(image_strings.first)
+        end
+        if pixels
+          # Remap the image from pixel values to presentation values if the user has requested this:
+          if options[:remap] or options[:level]
+            if options[:narray]
+              # Use numerical array (faster):
+              pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]).to_a
+            else
+              # Use standard Ruby array (slower):
+              pixels = process_presentation_values(pixels, -65535, 65535, options[:level])
+            end
+          end
+        else
+          add_msg("Warning: Decompressing the Pixel Data failed. Pixel values can not be extracted.")
+        end
+      end
+      return pixels
+    end
+
+    # Encodes pixel data from a Ruby Array or NArray, and writes it to the pixel data element (7FE0,0010).
+    #
+    # === Parameters
+    #
+    # * <tt>values</tt> -- An Array (or NArray) containing integer pixel values.
+    #
+    def pixels=(values)
+      raise ArgumentError, "Expected Array or NArray, got #{values.class}." unless [Array, NArray].include?(values.class)
+      # If NArray, convert to a standard Ruby Array:
+      values = values.to_a.flatten if values.is_a?(NArray)
+      # Encode the pixel data:
+      bin = encode_pixels(values)
+      # Write the binary data to the Pixel Data Element:
+      write_pixels(bin)
+    end
+
+    # Removes all Sequence instances from the DObject or Item instance.
     #
     def remove_sequences
       @tags.each_value do |element|
         remove(element.tag) if element.is_a?(Sequence)
       end
-    end
-
-    # Encodes pixel data from a Ruby Array and writes it to the pixel data element (7FE0,0010).
-    #
-    # === Parameters
-    #
-    # * <tt>pixels</tt> -- An array of pixel values (integers).
-    #
-    def set_image(pixels)
-      raise ArgumentError, "Expected Array, got #{pixels.class}." unless pixels.is_a?(Array)
-      # Encode the pixel data:
-      bin = encode_pixels(pixels)
-      # Write the binary data to the Pixel Data Element:
-      write_pixels(bin)
-    end
-
-    # Encodes pixel data from a (Magick) image object and writes it to the pixel data element (7FE0,0010).
-    #
-    # === Restrictions
-    #
-    # If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
-    #
-    # Because of pixel value issues related to image objects (images dont like signed integers), and the possible
-    # difference between presentation values and raw pixel values, the use of set_image_magick() may
-    # result in pixel data where the integer values differs somewhat from what is expected. Use with care!
-    # For precise pixel value processing, use the Array and NArray based pixel data methods instead.
-    #
-    # === Options
-    #
-    # * <tt>:max</tt> -- Integer. Pixel values will be rescaled using this as the new maximum value.
-    # * <tt>:min</tt> -- Integer. Pixel values will be rescaled using this as the new minimum value.
-    #
-    # === Examples
-    #
-    #   # Encode an image object while requesting that only a specific pixel value range is used:
-    #   obj.set_image_magick(my_image, :min => -2000, :max => 3000)
-    #
-    def set_image_magick(image, options={})
-      raise ArgumentError, "Expected one of the supported image objects (#{valid_image_objects}), got #{image.class}." unless valid_image_objects.include?(image.class)
-      # Export to pixels using the proper image processor:
-      pixels = export_pixels(image, photometry)
-      # Rescale pixel values?
-      if options[:min] and options[:max]
-        p_min = pixels.min
-        p_max = pixels.max
-        if p_min != options[:min] or p_max != options[:max]
-          wanted_range = options[:max] - options[:min]
-          factor = wanted_range.to_f/(pixels.max - pixels.min).to_f
-          offset = pixels.min - options[:min]
-          pixels.collect! {|x| ((x*factor)-offset).round}
-        end
-      end
-      # Encode and write to the Pixel Data Element:
-      set_image(pixels)
-    end
-
-    # Encodes pixel data from an NArray and writes it to the pixel data element (7FE0,0010).
-    #
-    # === Restrictions
-    #
-    # * If pixel value rescaling is wanted, BOTH <b>:min</b> and <b>:max</b> must be set!
-    #
-    # === Options
-    #
-    # * <tt>:max</tt> -- Fixnum. Pixel values will be rescaled using this as the new maximum value.
-    # * <tt>:min</tt> -- Fixnum. Pixel values will be rescaled using this as the new minimum value.
-    #
-    # === Examples
-    #
-    #   # Encode a numerical pixel array while requesting that only a specific pixel value range is used:
-    #   obj.set_image_narray(pixels, :min => -2000, :max => 3000)
-    #
-    def set_image_narray(narray, options={})
-      raise ArgumentError, "Expected NArray, got #{narray.class}." unless narray.is_a?(NArray)
-      # Rescale pixel values?
-      if options[:min] and options[:max]
-        n_min = narray.min
-        n_max = narray.max
-        if n_min != options[:min] or n_max != options[:max]
-          wanted_range = options[:max] - options[:min]
-          factor = wanted_range.to_f/(n_max - n_min).to_f
-          offset = n_min - options[:min]
-          narray = narray*factor-offset
-        end
-      end
-      # Export the NArray object to a standard Ruby Array:
-      pixels = narray.to_a.flatten
-      # Encode and write to the Pixel Data Element:
-      set_image(pixels)
     end
 
 
@@ -818,6 +732,10 @@ module DICOM
     # * Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
     #
     def read_image(pixel_data, columns, rows, options={})
+      raise ArgumentError, "Expected Array for pixel_data, got #{pixel_data.class}" unless pixel_data.is_a?(Array)
+      raise ArgumentError, "Expected Integer for columns, got #{columns.class}" unless columns.is_a?(Integer)
+      raise ArgumentError, "Expected Rows for columns, got #{rows.class}" unless rows.is_a?(Integer)
+      raise ArgumentError, "Size of pixel_data must be at least equal to columns*rows. Got #{columns}*#{rows}=#{columns*rows}, which is less than the array size #{pixel_data.length}" if columns * rows > pixel_data.length
       # Remap the image from pixel values to presentation values if the user has requested this:
       if options[:remap] or options[:level]
         # How to perform the remapping? NArray (fast) or Ruby Array (slow)?
