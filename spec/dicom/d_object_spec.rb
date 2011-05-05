@@ -344,20 +344,20 @@ module DICOM
   end
 
 
-    # FIXME? Currently there is no specification for the format of the information printout.
+    # FIXME? Currently there is no specification for the format of the summary printout.
     #
-  describe DObject, "#information" do
+  describe DObject, "#summary" do
 
-    it "should print information to the screen and return an array of information" do
+    it "should print the summary to the screen and return an array of information when called on a full DICOM object" do
       obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
       obj.expects(:puts).at_least_once
-      obj.information.should be_an(Array)
+      obj.summary.should be_an(Array)
     end
 
-    it "should print information to the screen and return an array of information when called on an empty DICOM object" do
+    it "should print the summary to the screen and return an array of information when called on an empty DICOM object" do
       obj = DObject.new(nil, :verbose => false)
       obj.expects(:puts).at_least_once
-      obj.information.should be_an(Array)
+      obj.summary.should be_an(Array)
     end
 
   end

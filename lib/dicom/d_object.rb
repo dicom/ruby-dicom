@@ -130,6 +130,62 @@ module DICOM
       return w.segments
     end
 
+    # Prints information of interest related to the DICOM object.
+    # Calls the print() method of Parent as well as the information() method of DObject.
+    #
+    def print_all
+      puts ""
+      print(:value_max => 30)
+      summary
+    end
+
+    # Fills a DICOM object by reading and parsing the specified DICOM file,
+    # and transfers the DICOM data to the DICOM object (self).
+    #
+    # === Notes
+    #
+    # This method is called automatically when initializing the DObject class with a file parameter.
+    # In practice this method is rarely called by the user.
+    #
+    # === Parameters
+    #
+    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
+    #
+    def read(string, options={})
+      raise ArgumentError, "Invalid argument. Expected String, got #{string.class}." unless string.is_a?(String)
+      # Clear any existing DObject tags, then read:
+      @tags = Hash.new
+      r = DRead.new(self, string, options)
+      # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
+      if !r.success and !exists?("0002,0010")
+        # Clear the existing DObject tags:
+        @tags = Hash.new
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
+        # Only extract information from this new attempt if it was successful:
+        r = r_explicit if r_explicit.success
+      end
+      # Store the data to the instance variables if the readout was a success:
+      if r.success
+        @read_success = true
+        # Update instance variables based on the properties of the DICOM object:
+        @explicit = r.explicit
+        @file_endian = r.file_endian
+        @signature = r.signature
+        @stream.endian = @file_endian
+      else
+        @read_success = false
+      end
+      # If any messages has been recorded, send these to the message handling method:
+      add_msg(r.msg) if r.msg.length > 0
+    end
+
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
     #
     # This information includes properties like encoding, byte order, modality and various image properties.
@@ -138,7 +194,7 @@ module DICOM
     # FIXME: Perhaps this method should be split up in one or two separate methods
     # which just builds the information arrays, and a third method for printing this to the screen.
     #
-    def information
+    def summary
       sys_info = Array.new
       info = Array.new
       # Version of Ruby DICOM used:
@@ -226,62 +282,6 @@ module DICOM
       puts info
       puts separator
       return info
-    end
-
-    # Prints information of interest related to the DICOM object.
-    # Calls the print() method of Parent as well as the information() method of DObject.
-    #
-    def print_all
-      puts ""
-      print(:value_max => 30)
-      information
-    end
-
-    # Fills a DICOM object by reading and parsing the specified DICOM file,
-    # and transfers the DICOM data to the DICOM object (self).
-    #
-    # === Notes
-    #
-    # This method is called automatically when initializing the DObject class with a file parameter.
-    # In practice this method is rarely called by the user.
-    #
-    # === Parameters
-    #
-    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
-    #
-    def read(string, options={})
-      raise ArgumentError, "Invalid argument. Expected String, got #{string.class}." unless string.is_a?(String)
-      # Clear any existing DObject tags, then read:
-      @tags = Hash.new
-      r = DRead.new(self, string, options)
-      # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
-      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-      if !r.success and !exists?("0002,0010")
-        # Clear the existing DObject tags:
-        @tags = Hash.new
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
-        # Only extract information from this new attempt if it was successful:
-        r = r_explicit if r_explicit.success
-      end
-      # Store the data to the instance variables if the readout was a success:
-      if r.success
-        @read_success = true
-        # Update instance variables based on the properties of the DICOM object:
-        @explicit = r.explicit
-        @file_endian = r.file_endian
-        @signature = r.signature
-        @stream.endian = @file_endian
-      else
-        @read_success = false
-      end
-      # If any messages has been recorded, send these to the message handling method:
-      add_msg(r.msg) if r.msg.length > 0
     end
 
     # Returns the transfer syntax string of the DObject.
