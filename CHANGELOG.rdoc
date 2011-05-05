@@ -29,8 +29,30 @@
 * Fixed an issue where sending DICOM files with compressed pixel data resulted in an invalid DICOM transfer.
 * Changed the specification to allow the query methods of DClient to accept any tag as a query parameter.
 * Improved the handling ofparent-child relations so these are always properly updated when adding, removing or changing parent elements.
+* Replaced ImageItem#image_properties() with num_cols(), num_rows() and num_frames().
+* Renamed the following classes/modules:
+  * SuperParent -> Parent
+  * SuperItem -> ImageItem
+  * DataElement -> Element
+  * Elements -> Elemental
+* Renamed the following ImageItem methods:
+  * get_image_magick() -> image()
+  * get_images_magick() -> images()
+  * set_image_magick() -> image=()
+  * get_image() -> pixels
+  * get_image_narray -> narray
+  * set_image -> pixels=()
+  * set_image_narray -> pixels=()
+* Added the following conversion methods to DObject, Sequence, Item & Element:
+  * inspect()
+  * to_hash()
+  * to_json()
+  * to_yaml()
+* Added the ability to use DICOM element names as methods for creating, editing and deleting elements.
+* Added alias_methods read? for read_success and written? for write_succes in DObject.
 * Added various ArgumentError exceptions to facility easier debugging.
 * Various bug fixes.
+
 
 = 0.8
 
