@@ -114,6 +114,30 @@ module DICOM
   end
 
 
+  describe Element, " (Extensions)" do
+
+    context "#to_hash" do
+
+      it "should create a one-element hash with its dictionary name as key" do
+        DICOM.key_use_names
+        e = Element.new("0018,1310", 512)
+        e.to_hash.should be_a Hash
+        e.to_hash.length.should eql 1
+        e.to_hash.key?("Acquisition Matrix").should be_true
+      end
+
+      it "should create a hash with its value as the hash value" do
+        DICOM.key_use_names
+        value = 512
+        e = Element.new("0018,1310", value)
+        e.to_hash.value?(value).should be_true
+      end
+
+    end
+
+  end
+
+
   describe DLibrary, " (Extensions)" do
 
     context LIBRARY.method(:get_tag) do

@@ -712,7 +712,11 @@ module DICOM
           else
             hash_key = child.send(DICOM.key_representation)
           end
-          as_hash[hash_key] = child.to_hash
+          if child.is_a?(Element)
+            as_hash[hash_key] = child.to_hash[hash_key]
+          else
+            as_hash[hash_key] = child.to_hash
+          end
         end
       end
       return as_hash

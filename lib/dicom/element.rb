@@ -135,12 +135,8 @@ module DICOM
 
     # Returns the value of the elemental (used as value in the parent's hash representation).
     #
-    #--
-    # FIXME: I guess this should instead return a real hash, and the parent instances
-    # could then extract the value and put that in their hash.
-    #
     def to_hash
-      value
+      return {self.send(DICOM.key_representation) => value}
     end
 
     # Returns a json string containing a human-readable representation of the Element.
