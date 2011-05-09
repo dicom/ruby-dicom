@@ -17,3 +17,6 @@ Gemfile.lock
 
 # Temporary spec generated files:
 tmp
+
+# RDoc html folder:
+html
