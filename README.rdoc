@@ -15,38 +15,65 @@ communication modalities like querying, moving, sending and receiving files.
 
 == BASIC USAGE
 
-  require "dicom"
+=== Load & Include
+
+  require 'dicom'
+  include DICOM
+
+=== Read, modify and write
+
   # Read file:
-  obj = DICOM::DObject.new("some_file.dcm")
-  # Display some key information about the file:
-  obj.information
-  # Print all data elements to screen:
-  obj.print
-  # Retrieve a data element value:
-  name = obj.value("0010,0010")
-  # Modify the data element's value:
+  obj = DObject.new("some_file.dcm")
+  # Extract the Patient's Name value:
+  obj.patients_name.value
+  # Add or modify the Patient's Name element:
+  obj.patients_name = "Anonymous"
+  # Remove a data element from the DICOM object:
+  obj.pixel_data = nil
+  # Write to file:
+  obj.write("new_file.dcm")
+
+=== Modify using tag strings instead of dictionary method names
+
+  # Extract the Patient's Name value:
+  obj.value("0010,0010")
+  # Modify the Patient's Name element:
   obj["0010,0010"].value = "Anonymous"
   # Remove a data element from the DICOM object:
   obj.remove("7FE0,0010")
+
+=== Extracting information about the DICOM object
+
+  # Display a short summary of the file's properties:
+  obj.summary
+  # Print all data elements to screen:
+  obj.print
+  # Convert the data element hierarchy to a nested hash:
+  obj.to_hash
+
+=== Handle pixel data
+
   # Retrieve the pixel data in a Ruby Array:
-  pixels = obj.get_image
+  obj.pixels
+  # Load the pixel data to an numerical array (NArray):
+  obj.narray
   # Load the pixel data to an RMagick image object and display it on the screen:
-  image = obj.get_image_magick
-  image.display
-  # Load the pixel data to an NArray object and display it on screen (using NImage):
-  pixel_data = obj.get_image_narray
-  NImage.show pixel_data[0,true,true]
+  obj.image.display
+
+=== Transmit a DICOM file
+
   # Send a local file to a server (PACS) over the network:
-  node = DICOM::DClient.new("10.1.25.200", 104)
+  node = DClient.new("10.1.25.200", 104)
   node.send("some_file.dcm")
 
-=== IRB
+=== IRB Tip
+
 When working with Ruby DICOM in irb, you may be annoyed with all the information
 that is printed to screen, regardless if you have set verbose as false. This is because
 in irb every variable loaded in the program is automatically printed to the screen.
 A useful hack to avoid this effect is to append ";0" after a command.
 Example:
-  obj = DICOM::DObject.new("some_file.dcm") ;0
+  obj = DObject.new("some_file.dcm") ;0
 
 
 == RESOURCES
