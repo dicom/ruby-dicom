@@ -349,9 +349,9 @@ module DICOM
         rescue Exception => e
           if @retrials>3
             @retrials = 0
-            raise NonExistantFileException.new, "[RubyDicom] File does not exist"
+            raise "Unable to read the file. File does not exist?"
           else
-            puts "Warning: Exception in RubyDicom when loading dicom from: #{file}"
+            puts "Warning: Exception in ruby-dicom when loading a dicom file from: #{file}"
             puts "Retrying... #{@retrials}"
             @retrials+=1
             retry
