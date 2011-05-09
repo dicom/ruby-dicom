@@ -771,10 +771,11 @@ module DICOM
           add_notice("All #{presentation_contexts.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
         end
       else
-        @request_approved = false
+        # We still consider the request 'approved' if at least one context were accepted:
+        @request_approved = true if @approved_syntaxes.length > 0
         add_error("One or more of your presentation contexts were denied by host #{@host_ae}!")
-        @approved_syntaxes.each_key {|a| add_error("APPROVED: #{LIBRARY.get_syntax_description(a)}")}
-        rejected.each_key {|r| add_error("REJECTED: #{LIBRARY.get_syntax_description(r)}")}
+        @approved_syntaxes.each_pair {|key, value| add_error("APPROVED: #{LIBRARY.get_syntax_description(key)} (#{LIBRARY.get_syntax_description(value[1])})")}
+        rejected.each_pair {|key, value| add_error("REJECTED: #{LIBRARY.get_syntax_description(key)} (#{LIBRARY.get_syntax_description(value[1])})")}
       end
     end
 
