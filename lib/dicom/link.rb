@@ -1,5 +1,3 @@
-#    Copyright 2009-2011 Christoffer Lervag
-
 module DICOM
 
   # This class handles the construction and interpretation of network packages as well as network communication.

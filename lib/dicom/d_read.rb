@@ -1,15 +1,14 @@
-#    Copyright 2008-2011 Christoffer Lervag
-#
-# === Notes
-#
-# In addition to reading files that are compliant to DICOM 3 Part 10, the philosophy of the Ruby DICOM library is to feature maximum
-# compatibility, and as such it will also successfully read many types of 'DICOM' files that deviate in some way from the standard.
-
 module DICOM
 
   # The DRead class parses the DICOM data from a binary string.
   #
   # The source of this binary string is typically either a DICOM file or a DICOM network transmission.
+  #
+  # === Notes
+  #
+  # In addition to reading files that are compliant to DICOM 3 Part 10, the philosophy of the
+  # Ruby DICOM library is to feature maximum compatibility, and as such it will also
+  # successfully read many types of 'DICOM' files that deviate in some way from the standard.
   #
   class DRead
 

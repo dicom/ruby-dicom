@@ -1,5 +1,3 @@
-#    Copyright 2009-2011 Christoffer Lervag
-
 module DICOM
 
   # This class contains code for setting up a Service Class Provider (SCP),
@@ -35,7 +33,7 @@ module DICOM
     attr_accessor :file_handler
     # The name of the server (application entity).
     attr_accessor :host_ae
-    # The maximum allowed size of network packages (in bytes). 
+    # The maximum allowed size of network packages (in bytes).
     attr_accessor :max_package_size
     # The network port to be used.
     attr_accessor :port
@@ -43,7 +41,7 @@ module DICOM
     attr_accessor :timeout
     # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
     attr_accessor :verbose
-    
+
     # A hash containing the abstract syntaxes that will be accepted.
     attr_reader :accepted_abstract_syntaxes
     # A hash containing the transfer syntaxes that will be accepted.
@@ -64,7 +62,7 @@ module DICOM
     #
     # * <tt>:file_handler</tt> -- A customized FileHandler class to use instead of the default FileHandler.
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
-    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes). 
+    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
     # * <tt>:verbose</tt> -- Boolean. If set to false, the DServer instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
@@ -107,7 +105,7 @@ module DICOM
     #
     def add_abstract_syntax(uid)
       if uid.is_a?(String)
-        name = LIBRARY.get_syntax_description(uid) || "Unknown UID" 
+        name = LIBRARY.get_syntax_description(uid) || "Unknown UID"
         @accepted_abstract_syntaxes[uid] = name
       else
         raise "Invalid type of UID. Expected String, got #{uid.class}!"
@@ -123,7 +121,7 @@ module DICOM
     #
     def add_transfer_syntax(uid)
       if uid.is_a?(String)
-        name = LIBRARY.get_syntax_description(uid) || "Unknown UID" 
+        name = LIBRARY.get_syntax_description(uid) || "Unknown UID"
         @accepted_transfer_syntaxes[uid] = name
       else
         raise "Invalid type of UID. Expected String, got #{uid.class}!"

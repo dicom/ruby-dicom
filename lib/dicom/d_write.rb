@@ -1,22 +1,20 @@
-#    Copyright 2008-2011 Christoffer Lervag
-#
-# === Notes
-#
-# The philosophy of the Ruby DICOM library is to feature maximum conformance to the DICOM standard.
-# As such, the class which writes DICOM files may manipulate the meta group, remove/change group lengths and add a header signature.
-#
-# Therefore, the file that is written may not be an exact bitwise copy of the file that was read,
-# even if no DObject manipulation has been done on the part of the user.
-#
-# Remember: If this behaviour for some reason is not wanted, it is easy to modify the source code to avoid it.
-#
-# It is important to note, that while the goal is to be fully DICOM compliant, no guarantees are given
-# that this is actually achieved. You are encouraged to thouroughly test your files for compatibility after creation.
-
 module DICOM
 
   # The DWrite class handles the encoding of a DObject instance to a valid DICOM string.
   # The String is either written to file or returned in segments to be used for network transmission.
+  #
+  # === Notes
+  #
+  # The philosophy of the Ruby DICOM library is to feature maximum conformance to the DICOM standard.
+  # As such, the class which writes DICOM files may manipulate the meta group, remove/change group lengths and add a header signature.
+  #
+  # Therefore, the file that is written may not be an exact bitwise copy of the file that was read,
+  # even if no DObject manipulation has been done on the part of the user.
+  #
+  # Remember: If this behaviour for some reason is not wanted, it is easy to modify the source code to avoid it.
+  #
+  # It is important to note, that while the goal is to be fully DICOM compliant, no guarantees are given
+  # that this is actually achieved. You are encouraged to thouroughly test your files for compatibility after creation.
   #
   class DWrite
 

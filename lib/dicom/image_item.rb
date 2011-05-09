@@ -1,5 +1,3 @@
-#    Copyright 2008-2011 Christoffer Lervag
-
 module DICOM
 
   # Super class which contains common code for both the DObject and Item classes.

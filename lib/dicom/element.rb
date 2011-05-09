@@ -1,5 +1,3 @@
-#    Copyright 2010-2011 Christoffer Lervag
-
 module DICOM
 
   # The Element class handles information related to ordinary (non-parent) elementals (data elements).

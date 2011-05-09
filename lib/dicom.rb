@@ -2,8 +2,8 @@
 #
 # The following classes are meant to be used by users of Ruby DICOM:
 # * DObject - for reading, manipulating and writing DICOM files.
-# * DataElement, Sequence, Item, SuperParent, Elements - users who wish to interact with their DICOM objects will use these classes/modules.
-# * SuperItem - Image related methods are found in this class.
+# * Element, Sequence, Item, Parent, Elemental - users who wish to interact with their DICOM objects will use these classes/modules.
+# * ImageItem - Image related methods are found in this class.
 # * DClient - for client side network communication, like querying, moving & sending DICOM files.
 # * DServer - for server side network communication: Setting up your own DICOM storage node (SCP).
 # * Anonymizer - a convenience class for anonymizing your DICOM files.

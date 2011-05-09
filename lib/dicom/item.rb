@@ -1,5 +1,3 @@
-#    Copyright 2010-2011 Christoffer Lervag
-
 module DICOM
 
   # The Item class handles information related to items - the elements contained in sequences.

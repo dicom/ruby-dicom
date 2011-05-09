@@ -1,5 +1,3 @@
-#    Copyright 2010-2011 Christoffer Lervag
-
 module DICOM
 
   # The Sequence class handles information related to Sequence elements.

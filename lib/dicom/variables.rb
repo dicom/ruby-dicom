@@ -1,6 +1,3 @@
-#    Copyright 2010-2011 Christoffer Lervag
-
-
 module DICOM
 
   class << self

@@ -1,4 +1,3 @@
-#    Copyright 2009-2011 Christoffer Lervag
 
 module DICOM
 

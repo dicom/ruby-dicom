@@ -1,5 +1,3 @@
-#    Copyright 2008-2011 Christoffer Lervag
-
 module DICOM
 
   # This class contains methods that interact with Ruby DICOM's dictionary.

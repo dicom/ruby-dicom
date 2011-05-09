@@ -1,6 +1,4 @@
 # encoding: UTF-8
-#
-#    Copyright 2008-2011 Christoffer Lervag
 
 module DICOM
 

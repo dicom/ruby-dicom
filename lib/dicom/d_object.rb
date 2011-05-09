@@ -1,3 +1,17 @@
+# === TODO:
+#
+# * The retrieve file network functionality (get_image() in DClient class) has not been tested.
+# * Make the networking code more intelligent in its handling of unexpected network communication.
+# * Full support for compressed image data.
+# * Read/Write 12 bit image data.
+# * Full color support (RGB and PALETTE COLOR with get_object_magick() already implemented).
+# * Support for extraction of multiple encapsulated pixel data frames in get_image() and get_image_narray().
+# * Image handling currently ignores DICOM tags like Pixel Aspect Ratio, Image Orientation and (to some degree) Photometric Interpretation.
+# * More robust and flexible options for reorienting extracted pixel arrays?
+# * A curious observation: Creating a DLibrary instance is exceptionally slow on Ruby 1.9.1: 0.4 seconds versus ~0.01 seconds on Ruby 1.8.7!
+# * Add these as github issues and remove this list!
+
+
 #    Copyright 2008-2011 Christoffer Lervag
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -13,19 +27,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-# === TODO:
-#
-# * The retrieve file network functionality (get_image() in DClient class) has not been tested.
-# * Make the networking code more intelligent in its handling of unexpected network communication.
-# * Full support for compressed image data.
-# * Read/Write 12 bit image data.
-# * Full color support (RGB and PALETTE COLOR with get_object_magick() already implemented).
-# * Support for extraction of multiple encapsulated pixel data frames in get_image() and get_image_narray().
-# * Image handling currently ignores DICOM tags like Pixel Aspect Ratio, Image Orientation and (to some degree) Photometric Interpretation.
-# * More robust and flexible options for reorienting extracted pixel arrays?
-# * A curious observation: Creating a DLibrary instance is exceptionally slow on Ruby 1.9.1: 0.4 seconds versus ~0.01 seconds on Ruby 1.8.7!
-
 module DICOM
 
   # The DObject class is the main class for interacting with the DICOM object.

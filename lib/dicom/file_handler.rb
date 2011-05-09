@@ -1,21 +1,21 @@
-#    Copyright 2010-2011 Christoffer Lervag
-#
-# The purpose of this file is to make it as easy as possible for users to customize the way
-# DICOM files are handled when they are received through the network.
-#
-# The default behaviour is to save the files to disk using a folder structure determined by a  few select tags of the DICOM file.
-#
-# Some suggested alternatives for user customization:
-# * Analyzing tags and/or image data to determine further actions.
-# * Modify the DICOM object before it is saved to disk.
-# * Modify the folder structure in which DICOM files are saved to disk.
-# * Store DICOM contents in a database (highly relevant if you are building a Ruby on Rails DICOM application).
-# * Retransmit the DICOM object to another network destination using the DClient class.
-# * Write information to a log file.
-
 module DICOM
 
   # This class handles DICOM files that have been received through network communication.
+  #
+  # === Notes
+  #
+  # The purpose of this class is to make it as easy as possible for users to customize the way
+  # DICOM files are handled when they are received through the network.
+  #
+  # The default behaviour is to save the files to disk using a folder structure determined by a  few select tags of the DICOM file.
+  #
+  # Some suggested alternatives for user customization:
+  # * Analyzing tags and/or image data to determine further actions.
+  # * Modify the DICOM object before it is saved to disk.
+  # * Modify the folder structure in which DICOM files are saved to disk.
+  # * Store DICOM contents in a database (highly relevant if you are building a Ruby on Rails DICOM application).
+  # * Retransmit the DICOM object to another network destination using the DClient class.
+  # * Write information to a log file.
   #
   class FileHandler
 

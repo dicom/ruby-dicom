@@ -1,6 +1,3 @@
-#    Copyright 2010-2011 Christoffer Lervag
-
-# This file contains module constants used by the Ruby DICOM library.
 
 module DICOM
 

@@ -1,5 +1,3 @@
-#    Copyright 2009-2011 Christoffer Lervag
-
 module DICOM
 
   # The Stream class handles string operations (encoding to and decoding from binary strings).

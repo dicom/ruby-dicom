@@ -1,5 +1,3 @@
-#    Copyright 2010-2011 Christoffer Lervag
-
 module DICOM
 
   # The Elemental mix-in module contains methods that are common among the different element classes:
