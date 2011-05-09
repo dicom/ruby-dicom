@@ -96,6 +96,19 @@ module DICOM
       obj["0008,1140"][0].should be_an Item
     end
 
+    it "should create an empty hash when the DICOM object is empty" do
+      obj = DObject.new(nil, :verbose => false)
+      obj.to_hash.should be_a Hash
+      obj.to_hash.length.should eql 0
+    end
+
+    it "should create value-less, one-element hash when the Sequence is child-less" do
+      s = Sequence.new("0008,1140")
+      s.to_hash.should be_a Hash
+      s.to_hash.length.should eql 1
+      s.to_hash["0008,1140"].should be_nil
+    end
+
     it "should create a hash with DICOM names as keys" do
       DICOM.key_use_names
       @obj.to_hash.key?("File Meta Information Group Length").should be_true

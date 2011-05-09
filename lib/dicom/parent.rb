@@ -697,11 +697,14 @@ module DICOM
     # * For child-less parents, the key_representation attribute is used as value.
     #
     def to_hash
-      as_hash = nil
+      as_hash = Hash.new
       unless children?
-        as_hash = (self.tag.private?) ? self.tag : self.send(DICOM.key_representation)
+        if self.is_a?(DObject)
+          as_hash = {}
+        else
+          as_hash[(self.tag.private?) ? self.tag : self.send(DICOM.key_representation)] = nil
+        end
       else
-        as_hash = Hash.new
         children.each do |child|
           if child.tag.private?
             hash_key = child.tag
