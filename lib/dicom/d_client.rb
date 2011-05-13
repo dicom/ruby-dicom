@@ -712,6 +712,8 @@ module DICOM
             # Encode our DICOM object to a binary string which is split up in pieces, sufficiently small to fit within the specified maximum pdu length:
             # Set the transfer syntax of the DICOM object equal to the one accepted by the SCP:
             obj.transfer_syntax = selected_transfer_syntax
+            # Remove the Meta group, since it doesn't belong in a DICOM file transfer:
+            obj.remove_group(META_GROUP)
             max_header_length = 14
             data_packages = obj.encode_segments(@max_pdu_length - max_header_length)
             @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
