@@ -101,14 +101,10 @@ module DICOM
       @max_size = max_size
       @segments = Array.new
       elements = @obj.children
-      # When sending a DICOM file across the network, no header or meta information is needed.
-      # We must therefore find the position of the first tag which is not a meta information tag.
-      first_pos = first_non_meta(elements)
-      selected_elements = elements[first_pos..-1]
       # Create a Stream instance to handle the encoding of content to
       # the binary string that will eventually be saved to file:
       @stream = Stream.new(nil, @file_endian)
-      write_data_elements(selected_elements)
+      write_data_elements(elements)
       # Extract the remaining string in our stream instance to our array of strings:
       @segments << @stream.export
       # Mark this write session as successful:
@@ -382,23 +378,6 @@ module DICOM
       @explicit = @rest_explicit
       @file_endian = @rest_endian
       @stream.endian = @rest_endian
-    end
-
-    # Identifies and returns the index of the first data element that does not have a meta group ("0002,xxxx") tag.
-    #
-    # === Parameters
-    #
-    # * <tt>elements</tt> -- An array of data elements.
-    #
-    def first_non_meta(elements)
-      non_meta_index = 0
-      elements.each_index do |i|
-        if elements[i].tag.group != META_GROUP
-          non_meta_index = i
-          break
-        end
-      end
-      return non_meta_index
     end
 
     # Creates various variables used when encoding the DICOM string.
