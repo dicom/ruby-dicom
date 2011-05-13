@@ -18,9 +18,9 @@ module DICOM
     #   require 'dicom'
     #   require 'my_file_handler'
     #   include DICOM
-    #   DServer.run(104, 'c:/temp/') do
-    #     timeout = 100
-    #     file_handler = MyFileHandler
+    #   DServer.run(104, 'c:/temp/') do |s|
+    #     s.timeout = 100
+    #     s.file_handler = MyFileHandler
     #   end
     #
     def self.run(port=104, path='./received/', &block)
