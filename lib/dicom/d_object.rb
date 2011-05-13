@@ -318,13 +318,8 @@ module DICOM
       end
       # Update our Stream instance with the new encoding:
       @stream.endian = new_endian
-      # Determine if re-encoding is needed:
-      if old_endian != new_endian
-        # Re-encode all Data Elements with number values:
-        encode_children(old_endian)
-      else
-        add_msg("New transfer syntax #{new_syntax} does not change encoding: No re-encoding needed.")
-      end
+      # If endianness is changed, re-encode elements (only elements depending on endianness will actually be re-encoded):
+      encode_children(old_endian) if old_endian != new_endian
     end
 
     # Passes the DObject to the DWrite class, which traverses the data element
