@@ -385,7 +385,7 @@ module DICOM
     # * <tt>msg</tt> -- Status message string.
     #
     def add_msg(msg)
-      Logging.logger.debug msg if @verbose
+      puts msg if @verbose
       @log << msg
     end
 
