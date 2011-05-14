@@ -40,6 +40,8 @@ require 'dicom/variables'
 # Image processors:
 require 'dicom/image_processor_mini_magick'
 require 'dicom/image_processor_r_magick'
+# Logging
+require 'dicom/logging'
 
 # Extensions (non-core functionality):
 require 'dicom/anonymizer'
