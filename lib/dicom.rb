@@ -37,6 +37,8 @@ require 'dicom/ruby_extensions'
 require 'dicom/version'
 require 'dicom/constants'
 require 'dicom/variables'
+# Logging
+require 'dicom/logging'
 # Image processors:
 require 'dicom/image_processor_mini_magick'
 require 'dicom/image_processor_r_magick'

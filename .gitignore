@@ -20,3 +20,6 @@ tmp
 
 # RDoc html folder:
 html
+
+#vim swap
+*.swp

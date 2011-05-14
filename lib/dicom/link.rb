@@ -1116,7 +1116,7 @@ module DICOM
     # * <tt>error</tt> -- A single error message or an array of error messages.
     #
     def add_error(error)
-      puts error if @verbose
+      Logging.logger.error error
       @errors << error
     end
 
@@ -1128,7 +1128,7 @@ module DICOM
     # * <tt>notice</tt> -- A single status message or an array of status messages.
     #
     def add_notice(notice)
-      puts notice if @verbose
+      Logging.logger.info notice
       @notices << notice
     end
 
