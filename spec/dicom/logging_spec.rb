@@ -9,7 +9,7 @@ module DICOM
     end
 
     it "should be able to log to a file" do
-      require "logger"
+      require 'logger'
       Logging.logger = Logger.new('logfile.log')
       Logging.logger.info "test"
       File.open('logfile.log').readlines.last.should =~ /INFO.*test/
