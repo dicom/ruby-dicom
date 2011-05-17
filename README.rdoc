@@ -66,6 +66,12 @@ communication modalities like querying, moving, sending and receiving files.
   node = DClient.new("10.1.25.200", 104)
   node.send("some_file.dcm")
 
+=== Start a DICOM server
+
+  # Initiate a simple storage provider which can receive DICOM files of all modalities:
+  s = DServer.new(104, :host_ae => "MY_DICOM_SERVER")
+  s.start_scp("C:/temp/")
+
 === IRB Tip
 
 When working with Ruby DICOM in irb, you may be annoyed with all the information
