@@ -1,6 +1,6 @@
 = 0.9
 
-=== (In development)
+=== 17th May, 2011
 
 * Fixed an issue where data elements added to a DObject didn't get their endianness updated.
 * Added the ability to encode/decode 32 bit pixel data.
@@ -49,7 +49,8 @@
   * to_json()
   * to_yaml()
 * Added the ability to use DICOM element names as methods for creating, editing and deleting elements.
-* Added alias_methods read? for read_success and written? for write_succes in DObject.
+* Added the ability to read a DICOM file from a http string, using open-uri (experimental).
+* Added alias_methods read? for read_success and written? for write_success in DObject.
 * Renamed DObject#information() to summary().
 * Added various ArgumentError exceptions to facility easier debugging.
 * Various bug fixes.
@@ -159,7 +160,7 @@
 
 * Complete rewrite of encoding/decoding to reduce code duplication and simplify the code.
 * General optimizations to improve speed and reduce code complexity.
-* Rewrote Dictionary to use Hash instead of Array. This has significantly improved the read spead of the library.
+* Rewrote Dictionary to use Hash instead of Array. This has significantly improved the read speed of the library.
 * Ruby DICOM now automatically strips away trailing whitespace when decoding string values.
 * Introducing basic, experimental network functionality.
 * The new DClient class enables features such as query, move and send.
@@ -245,4 +246,4 @@
 First public release.
 The library does have several known issues and lacks some features I would like it to have, but it does
 offer basic functionality and should be usable for people interested in working with DICOM files in Ruby.
-The reading algorithm has been tested succesfully with some 40 different DICOM files, so it should be fairly robust.
+The reading algorithm has been tested successfully with some 40 different DICOM files, so it should be fairly robust.
