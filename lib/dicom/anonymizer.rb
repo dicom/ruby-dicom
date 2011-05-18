@@ -30,19 +30,14 @@ module DICOM
     #
     # * <tt>options</tt> -- A hash of parameters.
     #
-    # === Options
-    #
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the Anonymizer instance will run silently and not output status updates to the screen. Defaults to true.
-    #
     # === Examples
     #
     #   a = Anonymizer.new
     #   # Create an instance in non-verbose mode:
-    #   a = Anonymizer.new(:verbose => false)
+    #   Logging.logger.level = Logger::UNKNOWN
+    #   a = Anonymizer.new
     #
     def initialize(options={})
-      # Default verbosity is true if verbosity hasn't been specified (nil):
-      @verbose = (options[:verbose] == false ? false : true)
       # Default value of accessors:
       @blank = false
       @enumeration = false
@@ -120,7 +115,7 @@ module DICOM
       if pos
         return @enumerations[pos]
       else
-        add_msg("The specified tag is not found in the list of tags to be anonymized.")
+        Logging.logger.info("The specified tag is not found in the list of tags to be anonymized.")
         return nil
       end
     end
@@ -133,39 +128,35 @@ module DICOM
     #
     # * Only top level data elements are anonymized!
     #
-    # === Parameters
-    #
-    # * <tt>verbose</tt> -- Boolean. If set as true, verbose behaviour will be set for the DObject instances that are anonymized. Defaults to false.
-    #
     #--
     # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.
     #
-    def execute(verbose=false)
+    def execute
       # Search through the folders to gather all the files to be anonymized:
-      add_msg("*******************************************************")
-      add_msg("Initiating anonymization process.")
+      Logging.logger.info("*******************************************************")
+      Logging.logger.info("Initiating anonymization process.")
       start_time = Time.now.to_f
-      add_msg("Searching for files...")
+      Logging.logger.info("Searching for files...")
       load_files
-      add_msg("Done.")
+      Logging.logger.info("Done.")
       if @files.length > 0
         if @tags.length > 0
-          add_msg(@files.length.to_s + " files have been identified in the specified folder(s).")
+          Logging.logger.info(@files.length.to_s + " files have been identified in the specified folder(s).")
           if @write_path
             # Determine the write paths, as anonymized files will be written to a separate location:
-            add_msg("Processing write paths...")
+            Logging.logger.info("Processing write paths...")
             process_write_paths
-            add_msg("Done")
+            Logging.logger.info("Done")
           else
             # Overwriting old files:
-            add_msg("Separate write folder not specified. Will overwrite existing DICOM files.")
+            Logging.logger.info("Separate write folder not specified. Will overwrite existing DICOM files.")
             @write_paths = @files
           end
           # If the user wants enumeration, we need to prepare variables for storing
           # existing information associated with each tag:
           create_enum_hash if @enumeration
           # Start the read/update/write process:
-          add_msg("Initiating read/update/write process (This may take some time)...")
+          Logging.logger.info("Initiating read/update/write process (This may take some time)...")
           # Monitor whether every file read/write was successful:
           all_read = true
           all_write = true
@@ -173,7 +164,7 @@ module DICOM
           files_failed_read = 0
           @files.each_index do |i|
             # Read existing file to DICOM object:
-            obj = DICOM::DObject.new(@files[i], :verbose => verbose)
+            obj = DICOM::DObject.new(@files[i])
             if obj.read_success
               # Anonymize the desired tags:
               @tags.each_index do |j|
@@ -214,32 +205,32 @@ module DICOM
           end
           # Finished anonymizing files. Print elapsed time and status of anonymization:
           end_time = Time.now.to_f
-          add_msg("Anonymization process completed!")
+          Logging.logger.info("Anonymization process completed!")
           if all_read
-            add_msg("All files in specified folder(s) were SUCCESSFULLY read to DICOM objects.")
+            Logging.logger.info("All files in specified folder(s) were SUCCESSFULLY read to DICOM objects.")
           else
-            add_msg("Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason.")
+            Logging.logger.info("Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason.")
           end
           if all_write
-            add_msg("All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files).")
+            Logging.logger.info("All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files).")
           else
-            add_msg("Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written).")
+            Logging.logger.info("Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written).")
           end
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
           if @enumeration and @identity_file
-            add_msg("Writing identity file.")
+            Logging.logger.info("Writing identity file.")
             write_identity_file
-            add_msg("Done")
+            Logging.logger.info("Done")
           end
           elapsed = (end_time-start_time).to_s
-          add_msg("Elapsed time: " + elapsed[0..elapsed.index(".")+1] + " seconds")
+          Logging.logger.info("Elapsed time: " + elapsed[0..elapsed.index(".")+1] + " seconds")
         else
-          add_msg("No tags have been selected for anonymization. Aborting.")
+          Logging.logger.info("No tags have been selected for anonymization. Aborting.")
         end
       else
-        add_msg("No files were found in specified folders. Aborting.")
+        Logging.logger.info("No files were found in specified folders. Aborting.")
       end
-      add_msg("*******************************************************")
+      Logging.logger.info("*******************************************************")
     end
 
     # Prints to screen a list of which tags are currently selected for anonymization along with
@@ -367,7 +358,7 @@ module DICOM
       if pos
         return @values[pos]
       else
-        add_msg("The specified tag is not found in the list of tags to be anonymized.")
+        Logging.logger.info("The specified tag is not found in the list of tags to be anonymized.")
         return nil
       end
     end
@@ -376,18 +367,6 @@ module DICOM
     # The following methods are private:
     private
 
-
-    # Adds one or more status messages to the log instance array, and if the verbose
-    # instance variable is true, the status message is printed to the screen as well.
-    #
-    # === Parameters
-    #
-    # * <tt>msg</tt> -- Status message string.
-    #
-    def add_msg(msg)
-      puts msg if @verbose
-      @log << msg
-    end
 
     # Finds the common path (if any) in the instance file path array, by performing a recursive search
     # on the folders that make up the path of one such file.
