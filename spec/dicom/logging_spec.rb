@@ -5,10 +5,6 @@ module DICOM
 
   describe "Logging capabilities with logger" do
 
-    it "should be able to reach Logger instance" do
-      Logging.logger.class.should == Logger
-    end
-
     it "should be able to log to a file" do
       Logging.logger = Logger.new('logfile.log')
       Logging.logger.info "test"
