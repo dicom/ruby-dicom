@@ -113,12 +113,13 @@ module DICOM
     # === Parameters
     #
     # * <tt>max_size</tt> -- An integer (Fixnum) which specifies the maximum allowed size of the binary data strings which will be encoded.
+    # * <tt>transfer_syntax</tt> -- The transfer syntax string to be used when encoding the DICOM object to string segments. When this method is used for making network packets, the transfer_syntax is not part of the object, and thus needs to be specified. Defaults to the DObject's transfer syntax/Implicit little endian.
     #
     # === Examples
     #
     #  encoded_strings = obj.encode_segments(16384)
     #
-    def encode_segments(max_size)
+    def encode_segments(max_size, transfer_syntax=transfer_syntax)
       raise ArgumentError, "Invalid argument. Expected an Integer, got #{max_size.class}." unless max_size.is_a?(Integer)
       raise ArgumentError, "Argument too low (#{max_size}), please specify a bigger Integer." unless max_size > 16
       raise "Can not encode binary segments for an empty DICOM object." if children.length == 0
@@ -318,13 +319,8 @@ module DICOM
       end
       # Update our Stream instance with the new encoding:
       @stream.endian = new_endian
-      # Determine if re-encoding is needed:
-      if old_endian != new_endian
-        # Re-encode all Data Elements with number values:
-        encode_children(old_endian)
-      else
-        add_msg("New transfer syntax #{new_syntax} does not change encoding: No re-encoding needed.")
-      end
+      # If endianness is changed, re-encode elements (only elements depending on endianness will actually be re-encoded):
+      encode_children(old_endian) if old_endian != new_endian
     end
 
     # Passes the DObject to the DWrite class, which traverses the data element

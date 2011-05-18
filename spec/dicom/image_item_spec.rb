@@ -228,6 +228,14 @@ module DICOM
     it "should return an NArray which is sized according to the dimensions of the 2D pixel image" do
       obj = DObject.new(DCM_EXPLICIT_MR_16BIT_MONO2_NON_SQUARE_PAL_ICON, :verbose => false)
       narr = obj.narray
+      narr.shape[0].should eql 448 # nr of columns
+      narr.shape[1].should eql 268 # nr of rows
+      narr.shape.length.should eql 2
+    end
+
+    it "should return a volumetric NArray when using the :volume option on a 2D pixel image" do
+      obj = DObject.new(DCM_EXPLICIT_MR_16BIT_MONO2_NON_SQUARE_PAL_ICON, :verbose => false)
+      narr = obj.narray(:volume => true)
       narr.shape[0].should eql 1 # nr of frames
       narr.shape[1].should eql 448 # nr of columns
       narr.shape[2].should eql 268 # nr of rows

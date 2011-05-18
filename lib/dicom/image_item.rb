@@ -315,12 +315,14 @@ module DICOM
       self["0028,0010"].value rescue nil
     end
 
-    # Returns a 3-dimensional NArray object where the array dimensions corresponds to [frames, columns, rows].
+    # Returns an NArray containing the pixel data. If the pixel data is an image (single frame), a 2-dimensional
+    # NArray is returned [columns, rows]. If a the pixel data is 3-dimensional (more than one frame),
+    # a 3-dimensional NArray is returned [frames, columns, rows].
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     #
     # === Notes
     #
-    # * To call this method the user needs to loaded the NArray library in advance (require 'narray').
+    # * To call this method you need to have loaded the NArray library in advance (require 'narray').
     #
     # === Parameters
     #
@@ -330,6 +332,7 @@ module DICOM
     #
     # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
     # * <tt>:remap</tt> -- Boolean.  If set as true, the returned pixel values are remapped to presentation values.
+    # * <tt>:volume</tt> -- Boolean.  If set as true, the returned array will always be 3-dimensional, even if the pixel data only has one frame.
     #
     # === Examples
     #
@@ -351,7 +354,11 @@ module DICOM
           if pixels
             # Import the pixels to NArray and give it a proper shape:
             raise "Missing Rows and/or Columns Element. Unable to construct pixel data array." unless num_rows and num_cols
-            pixels = NArray.to_na(pixels).reshape!(num_frames, num_cols, num_rows)
+            if num_frames > 1 or options[:volume]
+              pixels = NArray.to_na(pixels).reshape!(num_frames, num_cols, num_rows)
+            else
+              pixels = NArray.to_na(pixels).reshape!(num_cols, num_rows)
+            end
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]) if options[:remap] or options[:level]
           else
