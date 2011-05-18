@@ -39,8 +39,6 @@ module DICOM
   #
   class DObject < ImageItem
 
-    # An array which contain any notices/warnings/errors that have been recorded for the DObject instance.
-    attr_reader :errors
     # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
     attr_reader :parent
     # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
@@ -68,7 +66,6 @@ module DICOM
     #
     # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DObject instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
     #
@@ -77,17 +74,13 @@ module DICOM
     #   obj = DICOM::DObject.new("test.dcm")
     #   # Read a DICOM file that has already been loaded into memory in a binary string (with a known transfer syntax):
     #   obj = DICOM::DObject.new(binary_string, :bin => true, :syntax => string_transfer_syntax)
-    #   # Create an empty DICOM object & choose non-verbose behaviour:
-    #   obj = DICOM::DObject.new(nil, :verbose => false)
+    #   # Create an empty DICOM object
+    #   obj = DICOM::DObject.new(nil)
     #
     def initialize(string=nil, options={})
       # Process option values, setting defaults for the ones that are not specified:
-      # Default verbosity is true if verbosity hasn't been specified (nil):
-      @verbose = (options[:verbose] == false ? false : true)
       # Initialization of variables that DObject share with other parent elements:
       initialize_parent
-      # Messages (errors, warnings or notices) will be accumulated in an array:
-      @errors = Array.new
       # Structural information (default values):
       @explicit = true
       @file_endian = false
@@ -128,7 +121,7 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.length > 0
+      Logging.logger.info(w.msg) if w.msg.length > 0
       return w.segments
     end
 
@@ -185,7 +178,7 @@ module DICOM
         @read_success = false
       end
       # If any messages has been recorded, send these to the message handling method:
-      add_msg(r.msg) if r.msg.length > 0
+      Logging.logger.info(r.msg) if r.msg.length > 0
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
@@ -347,26 +340,13 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      add_msg(w.msg) if w.msg.length > 0
+      Logging.logger.info(w.msg) if w.msg.length > 0
     end
 
 
     # Following methods are private:
     private
 
-
-    # Adds one or more status messages to the instance array holding messages, and if the verbose instance variable
-    # is true, the status message(s) are printed to the screen as well.
-    #
-    # === Parameters
-    #
-    # * <tt>msg</tt> -- Status message string, or an array containing one or more status message strings.
-    #
-    def add_msg(msg)
-      puts msg if @verbose
-      @errors << msg
-      @errors.flatten!
-    end
 
     # Adds any missing meta group (0002,xxxx) data elements to the DICOM object,
     # to ensure that a valid DICOM object will be written to file.

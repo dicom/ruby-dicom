@@ -39,8 +39,6 @@ module DICOM
     attr_accessor :port
     # The maximum period the server will wait on an answer from a client before aborting the communication.
     attr_accessor :timeout
-    # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
-    attr_accessor :verbose
 
     # A hash containing the abstract syntaxes that will be accepted.
     attr_reader :accepted_abstract_syntaxes
@@ -60,7 +58,6 @@ module DICOM
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DServer instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
     #
@@ -80,8 +77,6 @@ module DICOM
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
       @min_length = 12 # minimum number of bytes to expect in an incoming transmission
-      @verbose = options[:verbose]
-      @verbose = true if @verbose == nil # Default verbosity is 'on'.
       # Variables used for monitoring state of transmission:
       @connection = nil # TCP connection status
       @association = nil # DICOM Association status
@@ -213,7 +208,7 @@ module DICOM
         loop do
           Thread.start(@scp.accept) do |session|
             # Initialize the network package handler for this session:
-            link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose, :file_handler => @file_handler)
+            link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :file_handler => @file_handler)
             link.set_session(session)
             # Note who has contacted us:
             Logging.logger.info("Connection established with:  #{session.peeraddr[2]}  (IP: #{session.peeraddr[3]})")

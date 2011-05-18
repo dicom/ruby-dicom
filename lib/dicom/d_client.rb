@@ -23,8 +23,6 @@ module DICOM
     attr_accessor :port
     # The maximum period the client will wait on an answer from a server before aborting the communication.
     attr_accessor :timeout
-    # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
-    attr_accessor :verbose
     # An array, where each index contains a hash with the data elements received in a command response (with tags as keys).
     attr_reader :command_results
     # An array, where each index contains a hash with the data elements received in a data response (with tags as keys).
@@ -44,7 +42,6 @@ module DICOM
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DClient instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
     #
@@ -62,8 +59,6 @@ module DICOM
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
       @min_length = 12 # minimum number of bytes to expect in an incoming transmission
-      @verbose = options[:verbose]
-      @verbose = true if @verbose == nil # Default verbosity is 'on'.
       # Variables used for monitoring state of transmission:
       @association = nil # DICOM Association status
       @request_approved = nil # Status of our DICOM request
@@ -514,7 +509,7 @@ module DICOM
       files = [files] unless files.is_a?(Array)
       files.each do |file|
         if file.is_a?(String)
-          obj = DObject.new(file, :verbose => false)
+          obj = DObject.new(file)
           if obj.read_success
             # Load the DICOM object:
             objects << obj
