@@ -29,10 +29,6 @@ module DICOM
     attr_reader :command_results
     # An array, where each index contains a hash with the data elements received in a data response (with tags as keys).
     attr_reader :data_results
-    # An array containing any error messages recorded.
-    attr_reader :errors
-    # An array containing any status messages recorded.
-    attr_reader :notices
 
     # Creates a DClient instance.
     #
@@ -68,9 +64,6 @@ module DICOM
       @min_length = 12 # minimum number of bytes to expect in an incoming transmission
       @verbose = options[:verbose]
       @verbose = true if @verbose == nil # Default verbosity is 'on'.
-      # Other instance variables:
-      @errors = Array.new # errors and warnings are put in this array
-      @notices = Array.new # information on successful transmissions are put in this array
       # Variables used for monitoring state of transmission:
       @association = nil # DICOM Association status
       @request_approved = nil # Status of our DICOM request
@@ -396,14 +389,14 @@ module DICOM
         establish_release
       else
         # Failed when loading the specified parameter as DICOM file(s). Will not transmit.
-        add_error(message)
+        Logging.logger.error(message)
       end
     end
 
     # Tests the connection to the server in a very simple way  by negotiating an association and then releasing it.
     #
     def test
-      add_notice("TESTING CONNECTION...")
+      Logging.logger.info("TESTING CONNECTION...")
       success = false
       # Verification SOP Class:
       set_default_presentation_context(VERIFICATION_SOP)
@@ -417,9 +410,9 @@ module DICOM
         establish_release
       end
       if success
-        add_notice("TEST SUCCSESFUL!")
+        Logging.logger.info("TEST SUCCSESFUL!")
       else
-        add_error("TEST FAILED!")
+        Logging.logger.error("TEST FAILED!")
       end
       return success
     end
@@ -428,30 +421,6 @@ module DICOM
     # Following methods are private:
     private
 
-
-    # Adds a warning or error message to the instance array holding messages,
-    # and prints the information to the screen if verbose is set.
-    #
-    # === Parameters
-    #
-    # * <tt>error</tt> -- A single error message or an array of error messages.
-    #
-    def add_error(error)
-      Logging.logger.error error
-      @errors << error
-    end
-
-    # Adds a notice (information regarding progress or successful communications) to the instance array,
-    # and prints the information to the screen if verbose is set.
-    #
-    # === Parameters
-    #
-    # * <tt>notice</tt> -- A single status message or an array of status messages.
-    #
-    def add_notice(notice)
-      Logging.logger.info notice
-      @notices << notice
-    end
 
     # Returns an array of supported transfer syntaxes for the specified transfer syntax.
     # For compressed transfer syntaxes, we currently do not support reencoding these to other syntaxes.
@@ -486,11 +455,11 @@ module DICOM
           # Values of importance are extracted and put into instance variables:
           @association = true
           @max_pdu_length = info[:max_pdu_length]
-          add_notice("Association successfully negotiated with host #{@host_ae} (#{@host_ip}).")
+          Logging.logger.info("Association successfully negotiated with host #{@host_ae} (#{@host_ip}).")
           # Check if all our presentation contexts was accepted by the host:
           process_presentation_context_response(info[:pc])
         else
-          add_error("Association was denied from host #{@host_ae} (#{@host_ip})!")
+          Logging.logger.error("Association was denied from host #{@host_ae} (#{@host_ip})!")
         end
       end
     end
@@ -501,7 +470,7 @@ module DICOM
       @release = false
       if @abort
         @link.stop_session
-        add_notice("Association has been closed. (#{@host_ae}, #{@host_ip})")
+        Logging.logger.info("Association has been closed. (#{@host_ae}, #{@host_ip})")
       else
         unless @link.session.closed?
           @link.build_release_request
@@ -509,12 +478,12 @@ module DICOM
           info = @link.receive_single_transmission.first
           @link.stop_session
           if info[:pdu] == PDU_RELEASE_RESPONSE
-            add_notice("Association released properly from host #{@host_ae}.")
+            Logging.logger.info("Association released properly from host #{@host_ae}.")
           else
-            add_error("Association released from host #{@host_ae}, but a release response was not registered.")
+            Logging.logger.error("Association released from host #{@host_ae}, but a release response was not registered.")
           end
         else
-          add_error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
+          Logging.logger.error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
         end
       end
       @abort = false
@@ -732,7 +701,7 @@ module DICOM
             process_returned_data(segments)
           end
         else
-          add_error("Error: Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
+          Logging.logger.error("Error: Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
         end
       end
     end
@@ -767,16 +736,27 @@ module DICOM
       if rejected.length == 0
         @request_approved = true
         if @approved_syntaxes.length == 1 and presentation_contexts.length == 1
-          add_notice("The presentation context was accepted by host #{@host_ae}.")
+          Logging.logger.info("The presentation context was accepted by host #{@host_ae}.")
         else
-          add_notice("All #{presentation_contexts.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
+          Logging.logger.info("All #{presentation_contexts.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
         end
       else
         # We still consider the request 'approved' if at least one context were accepted:
         @request_approved = true if @approved_syntaxes.length > 0
-        add_error("One or more of your presentation contexts were denied by host #{@host_ae}!")
-        @approved_syntaxes.each_pair {|key, value| add_error("APPROVED: #{LIBRARY.get_syntax_description(key)} (#{LIBRARY.get_syntax_description(value[1])})")}
-        rejected.each_pair {|key, value| add_error("REJECTED: #{LIBRARY.get_syntax_description(key)} (#{LIBRARY.get_syntax_description(value[1])})")}
+
+        Logging.logger.error("One or more of your presentation contexts were denied by host #{@host_ae}!")
+
+        @approved_syntaxes.each_pair do |key, value|
+          sntx_k = LIBRARY.get_syntax_description(key)
+          sntx_v = LIBRARY.get_syntax_description(value[1])
+          Logging.logger.error("APPROVED: #{sntx_k} (#{sntx_v})")
+        end
+
+        rejected.each_pair do |key, value|
+          sntx_k = LIBRARY.get_syntax_description(key)
+          sntx_v = LIBRARY.get_syntax_description(value[1])
+          Logging.logger.error("REJECTED: #{sntx_k} (#{sntx_v})")
+        end
       end
     end
 
