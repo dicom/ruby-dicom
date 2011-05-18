@@ -5,14 +5,19 @@ module DICOM
   module Logging
     require "logger"
 
-    @logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
+    def self.logger
+      @logger ||= if defined?(Rails) 
+                    Rails.logger 
+                  else
+                    logger = Logger.new(STDOUT)
+                    logger.level = Logger::WARN
+                    logger
+                  end
+    end
 
     def self.logger=(obj)
       @logger = obj
     end
-
-    def self.logger
-      @logger
-    end
   end
+
 end
