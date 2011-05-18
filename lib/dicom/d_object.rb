@@ -178,7 +178,7 @@ module DICOM
         @read_success = false
       end
       # If any messages has been recorded, send these to the message handling method:
-      Logging.logger.info(r.msg) if r.msg.length > 0
+      r.msg.each { |m| Logging.logger.info(m) }
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
