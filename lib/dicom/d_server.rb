@@ -23,6 +23,9 @@ module DICOM
     #     s.file_handler = MyFileHandler
     #   end
     #
+    # To make changes in logging functionality please take a look at
+    # Logging module.
+    #
     def self.run(port=104, path='./received/', &block)
       server = DServer.new(port)
       server.instance_eval(&block)
@@ -66,6 +69,9 @@ module DICOM
     #   # Create a server and specify a host name as well as a custom buildt file handler:
     #   require 'MyFileHandler'
     #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
+    #
+    # To make changes in logging functionality please take a look at
+    # Logging module.
     #
     def initialize(port=104, options={})
       require 'socket'

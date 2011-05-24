@@ -37,6 +37,10 @@ module DICOM
     #   Logging.logger.level = Logger::UNKNOWN
     #   a = Anonymizer.new
     #
+    #
+    # To make changes in logging functionality please take a look at
+    # Logging module.
+    #
     def initialize(options={})
       # Default value of accessors:
       @blank = false

@@ -48,6 +48,10 @@ module DICOM
     #   # Create a client instance using default settings:
     #   node = DICOM::DClient.new("10.1.25.200", 104)
     #
+    #
+    # To make changes in logging functionality please take a look at
+    # Logging module.
+    #
     def initialize(host_ip, port, options={})
       require 'socket'
       # Required parameters:
