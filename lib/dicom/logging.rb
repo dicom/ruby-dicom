@@ -44,9 +44,9 @@ module DICOM
       @logger ||= if defined?(Rails) 
                     Rails.logger 
                   else
-                    logger = Logger.new(STDOUT)
-                    logger.level = Logger::INFO
-                    logger
+                    l = Logger.new(STDOUT)
+                    l.level = Logger::INFO
+                    l
                   end
     end
 
