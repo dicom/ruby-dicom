@@ -1,3 +1,9 @@
+= 0.9.1
+
+=== 27th May, 2011
+
+* Fixed a regression in 0.9 where ruby-dicom would cause a Rails application to crash.
+
 = 0.9
 
 === 17th May, 2011
