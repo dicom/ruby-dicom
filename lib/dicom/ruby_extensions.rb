@@ -12,6 +12,39 @@ class String
   #
   alias __original_unpack__ unpack
 
+  # Returns true for all values that LOOK like a DICOM name - they may not be valid.
+  #
+  def dicom_name?
+    self==self.dicom_titleize
+  end
+
+  # Returns true for all strings that LOOK like a DICOM method name - they may not be valid.
+  #
+  def dicom_method?
+    self == self.dicom_underscore
+  end
+
+  # Returns a proper DICOM method name string.
+  #
+  def dicom_methodize
+    self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
+  end
+
+  # Capitalizes all the words and replaces some characters in the string to make a nicer looking title.
+  #
+  def dicom_titleize
+    self.dicom_underscore.gsub(/_/, " ").gsub(/\b('?[a-z])/) { $1.capitalize }
+  end
+
+  # Makes an underscored, lowercase form from the string expression.
+  #
+  def dicom_underscore
+    word = self.dup
+    word.tr!("-", "_")
+    word.downcase!
+    word
+  end
+
   # Divides a string into a number of sub-strings of exactly equal length, and returns these in an array.
   # The length of self must be a multiple of parts, or an error will be raised.
   #
@@ -99,39 +132,6 @@ class String
         # Call the original method for all other (normal) cases:
         self.__original_unpack__(string)
     end
-  end
-
-  # Returns true for all values that LOOK like a DICOM name - they may not be valid.
-  #
-  def dicom_name?
-    self==self.titleize
-  end
-
-  # Returns true for all strings that LOOK like a DICOM method name - they may not be valid.
-  #
-  def dicom_method?
-    self == self.underscore
-  end
-
-  # Returns a proper DICOM method name string.
-  #
-  def dicom_methodize
-    self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
-  end
-
-  # Capitalizes all the words and replaces some characters in the string to make a nicer looking title.
-  #
-  def titleize
-    self.underscore.gsub(/_/, " ").gsub(/\b('?[a-z])/) { $1.capitalize }
-  end
-
-  # Makes an underscored, lowercase form from the string expression.
-  #
-  def underscore
-    word = self.dup
-    word.tr!("-", "_")
-    word.downcase!
-    word
   end
 
 end
