@@ -23,4 +23,5 @@ html
 
 #vim swap
 *.swp
+*.swo
 tags
