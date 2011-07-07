@@ -11,11 +11,11 @@ module DICOM
   #   require 'logger'
   #
   #   # logging to STDOUT with DEBUG level
-  #   Logging.logger = Logger.new(STDOUT)
-  #   Logging.level = Logger::DEBUG
+  #   DICOM.logger = Logger.new(STDOUT)
+  #   DICOM.logger.level = Logger::DEBUG
   #
   #   # logging to file
-  #   Logging.logger = Logger.new('my_logfile.log')
+  #   DICOM.logger = Logger.new('my_logfile.log')
   #
   #   # Examples from Logger doc:
   #
@@ -23,66 +23,79 @@ module DICOM
   #   # size. Leave 10 "old log files" and each file is about 1,024,000
   #   # bytes.
   #   #
-  #   Logging.logger = Logger.new('foo.log', 10, 1024000)
+  #   DICOM.logger = Logger.new('foo.log', 10, 1024000)
   #
   #   #  Create a logger which ages logfile daily/weekly/monthly.
   #   #
-  #   Logging.logger = Logger.new('foo.log', 'daily')
-  #   Logging.logger = Logger.new('foo.log', 'weekly')
-  #   Logging.logger = Logger.new('foo.log', 'monthly')
+  #   DICOM.logger = Logger.new('foo.log', 'daily')
+  #   DICOM.logger = Logger.new('foo.log', 'weekly')
+  #   DICOM.logger = Logger.new('foo.log', 'monthly')
   #
   #
   #   For more information please read the Logger documentation.
   #
+
   module Logging
     require "logger"
 
-    # logger object setter
-    #
-    # === Example
-    #
-    # Logging.logger = Logger.new(STDOUT)
-    #
-    def self.logger=(obj)
-      @logger = obj
+    def self.included(base)
+      base.extend(ClassMethods)
     end
 
-    # logger object getter
-    #
-    # === Example
-    #
-    # Logging.logger.class # => Logger
-    #
-    def self.logger
-      @logger ||= if defined?(Rails)
-                    Rails.logger
-                  else
-                    logger = Logger.new(STDOUT)
-                    logger.level = Logger::INFO
-                    logger.progname = "DICOM"
-                    logger
-                  end
+    module ClassMethods
+
+      # logger class instance
+      #
+      @@logger = nil
+
+      # logger object setter
+      #
+      # === Example
+      #
+      # # inside a class with "include Logging"
+      # logger.info "message"
+      #
+      # # outside
+      # DICOM.logger.info "message"
+      #
+      def logger=(l)
+        @@logger = l
+      end
+
+      # logger object getter
+      #
+      # === Example
+      #
+      # # inside a class with "include Logging"
+      # logger # => Logger instance
+      #
+      # # outside
+      # DICOM.logger # => Logger instance
+      #
+      def logger
+        @@logger ||= lambda {
+          if defined?(Rails)
+            Rails.logger
+          else
+            logger = Logger.new(STDOUT)
+            logger.level = Logger::INFO
+            logger.progname = "DICOM"
+            logger
+          end
+        }.call
+      end
     end
 
-    # logging level getter
-    #
-    # === Example
-    #
-    # Logging.level # => Logger::INFO
-    #
-    def self.level
-      @logger.level
+    def logger
+      self.class.logger
     end
 
-    # logging level setter
-    #
-    # === Example
-    #
-    # Logging.level = Logger::INFO
-    #
-    def self.level=(obj)
-      @logger.level = obj
+    def logger=(l)
+      self.class.logger = l
     end
+
   end
 
+  # so we can use DICOM.logger
+  include Logging
 end

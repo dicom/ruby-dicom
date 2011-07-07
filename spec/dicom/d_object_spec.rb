@@ -7,13 +7,6 @@ module DICOM
 
   describe DObject, "#new" do
 
-    before :each do
-      Logging.logger = mock
-      Logging.logger.stubs(:info)
-      Logging.logger.stubs(:warn)
-      Logging.logger.stubs(:error)
-    end
-
     it "should raise ArgumentError when creation is attempted with an argument that is not a string (or nil)" do
       expect {DObject.new(42)}.to raise_error(ArgumentError)
     end
@@ -68,8 +61,8 @@ module DICOM
     end
 
     it "should register one or more errors/messages in the errors array when failing to successfully read a DICOM file" do
-      Logging.logger = mock("Logger")
-      Logging.logger.expects(:info).at_least_once
+      DICOM.logger = mock("Logger")
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN)
     end
 
@@ -80,13 +73,13 @@ module DICOM
     end
 
     it "should register an error when an invalid file is supplied" do
-      Logging.logger.expects(:info).at_least_once
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new("foo", :verbose => false)
     end
 
     it "should print the error/warning message(s) to $stdout in verbose (default) mode" do
       obj = DObject.new(nil)
-      Logging.logger.expects(:info).at_least_once
+      obj.logger.expects(:info).at_least_once
       obj.read("foo")
     end
 

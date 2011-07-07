@@ -11,6 +11,7 @@ module DICOM
   class ImageItem < Parent
 
     include ImageProcessor
+    include Logging
 
     # Checks if colored pixel data is present.
     # Returns true if it is, false if not.
@@ -169,7 +170,7 @@ module DICOM
             strings.each {|string| pixel_frames << decode_rle(num_cols, num_rows, string)}
           else
             images = decompress(strings) || Array.new
-            Logging.logger.info("Warning: Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}')") unless images
+            logger.info("Warning: Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}')") unless images
           end
         else
           # Uncompressed: Decode to numbers.
@@ -184,7 +185,7 @@ module DICOM
             if pixels
               images << read_image(pixels, num_cols, num_rows, options)
             else
-              Logging.logger.warn("Warning: Processing pixel values for this particular color mode failed, unable to construct image(s).")
+              logger.warn("Warning: Processing pixel values for this particular color mode failed, unable to construct image(s).")
             end
           end
         end
@@ -210,7 +211,7 @@ module DICOM
         # Write the binary data to the Pixel Data Element:
         write_pixels(bin)
       else
-        Logging.logger.info("Notice: The specified file (#{file}) is empty. Nothing to transfer.")
+        logger.info("Notice: The specified file (#{file}) is empty. Nothing to transfer.")
       end
     end
 
@@ -362,10 +363,10 @@ module DICOM
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]) if options[:remap] or options[:level]
           else
-            Logging.logger.warn("Warning: Decompressing the Pixel Data failed. Pixel values can not be extracted.")
+            logger.warn("Warning: Decompressing the Pixel Data failed. Pixel values can not be extracted.")
           end
         else
-          Logging.logger.info("The DICOM object contains colored pixel data. Retrieval of colored pixels is not supported by this method yet.")
+          logger.info("The DICOM object contains colored pixel data. Retrieval of colored pixels is not supported by this method yet.")
           pixels = false
         end
       end
@@ -419,7 +420,7 @@ module DICOM
             end
           end
         else
-          Logging.logger.warn("Warning: Decompressing the Pixel Data failed. Pixel values can not be extracted.")
+          logger.warn("Warning: Decompressing the Pixel Data failed. Pixel values can not be extracted.")
         end
       end
       return pixels

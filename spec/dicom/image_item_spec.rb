@@ -114,6 +114,10 @@ module DICOM
 
   describe ImageItem, "#pixels" do
 
+    before :each do
+      DICOM.logger = stub_everything("Logger")
+    end
+
     it "should return nil if no pixel data is present" do
       obj = DObject.new(nil, :verbose => false)
       obj.pixels.should be_nil

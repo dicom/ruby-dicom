@@ -10,6 +10,7 @@ module DICOM
   # FIXME: The code which waits for incoming network packets seems to be very CPU intensive. Perhaps there is a more elegant way to wait for incoming messages?
   #
   class DClient
+    include Logging
 
     # The name of this client (application entity).
     attr_accessor :ae
@@ -388,14 +389,14 @@ module DICOM
         establish_release
       else
         # Failed when loading the specified parameter as DICOM file(s). Will not transmit.
-        Logging.logger.error(message)
+        logger.error(message)
       end
     end
 
     # Tests the connection to the server in a very simple way  by negotiating an association and then releasing it.
     #
     def test
-      Logging.logger.info("TESTING CONNECTION...")
+      logger.info("TESTING CONNECTION...")
       success = false
       # Verification SOP Class:
       set_default_presentation_context(VERIFICATION_SOP)
@@ -409,9 +410,9 @@ module DICOM
         establish_release
       end
       if success
-        Logging.logger.info("TEST SUCCSESFUL!")
+        logger.info("TEST SUCCSESFUL!")
       else
-        Logging.logger.error("TEST FAILED!")
+        logger.error("TEST FAILED!")
       end
       return success
     end
@@ -454,11 +455,11 @@ module DICOM
           # Values of importance are extracted and put into instance variables:
           @association = true
           @max_pdu_length = info[:max_pdu_length]
-          Logging.logger.info("Association successfully negotiated with host #{@host_ae} (#{@host_ip}).")
+          logger.info("Association successfully negotiated with host #{@host_ae} (#{@host_ip}).")
           # Check if all our presentation contexts was accepted by the host:
           process_presentation_context_response(info[:pc])
         else
-          Logging.logger.error("Association was denied from host #{@host_ae} (#{@host_ip})!")
+          logger.error("Association was denied from host #{@host_ae} (#{@host_ip})!")
         end
       end
     end
@@ -469,7 +470,7 @@ module DICOM
       @release = false
       if @abort
         @link.stop_session
-        Logging.logger.info("Association has been closed. (#{@host_ae}, #{@host_ip})")
+        logger.info("Association has been closed. (#{@host_ae}, #{@host_ip})")
       else
         unless @link.session.closed?
           @link.build_release_request
@@ -477,12 +478,12 @@ module DICOM
           info = @link.receive_single_transmission.first
           @link.stop_session
           if info[:pdu] == PDU_RELEASE_RESPONSE
-            Logging.logger.info("Association released properly from host #{@host_ae}.")
+            logger.info("Association released properly from host #{@host_ae}.")
           else
-            Logging.logger.error("Association released from host #{@host_ae}, but a release response was not registered.")
+            logger.error("Association released from host #{@host_ae}, but a release response was not registered.")
           end
         else
-          Logging.logger.error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
+          logger.error("Connection was closed by the host (for some unknown reason) before the association could be released properly.")
         end
       end
       @abort = false
@@ -700,7 +701,7 @@ module DICOM
             process_returned_data(segments)
           end
         else
-          Logging.logger.error("Error: Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
+          logger.error("Error: Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
         end
       end
     end
@@ -735,26 +736,26 @@ module DICOM
       if rejected.length == 0
         @request_approved = true
         if @approved_syntaxes.length == 1 and presentation_contexts.length == 1
-          Logging.logger.info("The presentation context was accepted by host #{@host_ae}.")
+          logger.info("The presentation context was accepted by host #{@host_ae}.")
         else
-          Logging.logger.info("All #{presentation_contexts.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
+          logger.info("All #{presentation_contexts.length} presentation contexts were accepted by host #{@host_ae} (#{@host_ip}).")
         end
       else
         # We still consider the request 'approved' if at least one context were accepted:
         @request_approved = true if @approved_syntaxes.length > 0
 
-        Logging.logger.error("One or more of your presentation contexts were denied by host #{@host_ae}!")
+        logger.error("One or more of your presentation contexts were denied by host #{@host_ae}!")
 
         @approved_syntaxes.each_pair do |key, value|
           sntx_k = LIBRARY.get_syntax_description(key)
           sntx_v = LIBRARY.get_syntax_description(value[1])
-          Logging.logger.error("APPROVED: #{sntx_k} (#{sntx_v})")
+          logger.error("APPROVED: #{sntx_k} (#{sntx_v})")
         end
 
         rejected.each_pair do |key, value|
           sntx_k = LIBRARY.get_syntax_description(key)
           sntx_v = LIBRARY.get_syntax_description(value[1])
-          Logging.logger.error("REJECTED: #{sntx_k} (#{sntx_v})")
+          logger.error("REJECTED: #{sntx_k} (#{sntx_v})")
         end
       end
     end

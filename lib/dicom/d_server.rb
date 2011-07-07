@@ -3,7 +3,9 @@ module DICOM
   # This class contains code for setting up a Service Class Provider (SCP),
   # which will act as a simple storage node (a DICOM server that receives images).
   #
+  
   class DServer
+    include Logging
 
     # Runs the server and takes a block for initializing.
     #
@@ -206,8 +208,8 @@ module DICOM
     #
     def start_scp(path='./received/')
       if @accepted_abstract_syntaxes.size > 0 and @accepted_transfer_syntaxes.size > 0
-        Logging.logger.info("Starting DICOM SCP server...")
-        Logging.logger.info("*********************************")
+        logger.info("Starting DICOM SCP server...")
+        logger.info("*********************************")
         # Initiate server:
         @scp = TCPServer.new(@port)
         # Use a loop to listen for incoming messages:
@@ -217,7 +219,7 @@ module DICOM
             link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :file_handler => @file_handler)
             link.set_session(session)
             # Note who has contacted us:
-            Logging.logger.info("Connection established with:  #{session.peeraddr[2]}  (IP: #{session.peeraddr[3]})")
+            logger.info("Connection established with:  #{session.peeraddr[2]}  (IP: #{session.peeraddr[3]})")
             # Receive an incoming message:
             segments = link.receive_multiple_transmissions
             info = segments.first
@@ -229,28 +231,28 @@ module DICOM
                 link.handle_association_accept(info)
                 if approved > 0
                   if approved == 1
-                    Logging.logger.info("Accepted the association request with context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.info("Accepted the association request with context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
                   else
                     if rejected == 0
-                      Logging.logger.info("Accepted all #{approved} proposed contexts in the association request.")
+                      logger.info("Accepted all #{approved} proposed contexts in the association request.")
                     else
-                      Logging.logger.info("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
+                      logger.info("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
                     end
                   end
                   # Process the incoming data. This method will also take care of releasing the association:
                   success, messages = link.handle_incoming_data(path)
                   if success
-                    Logging.logger.info(messages) if messages.first
+                    logger.info(messages) if messages.first
                   else
                     # Something has gone wrong:
-                    Logging.logger.error(messages) if messages.first
+                    logger.error(messages) if messages.first
                   end
                 else
                   # No abstract syntaxes in the incoming request were accepted:
                   if rejected == 1
-                    Logging.logger.info("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.info("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
                   else
-                    Logging.logger.info("Rejected all #{rejected} proposed contexts in the association request.")
+                    logger.info("Rejected all #{rejected} proposed contexts in the association request.")
                   end
                   # Since the requested abstract syntax was not accepted, the association must be released.
                   link.await_release
@@ -265,7 +267,7 @@ module DICOM
             end
             # Terminate the connection:
             link.stop_session
-            Logging.logger.info("*********************************")
+            logger.info("*********************************")
           end
         end
       else
@@ -294,7 +296,7 @@ module DICOM
     def check_association_request(info)
       unless info[:application_context] == APPLICATION_CONTEXT
         error = 2 # (application context name not supported)
-        Logging.logger.error("Error: The application context in the incoming association request was not recognized: (#{info[:application_context]})")
+        logger.error("Error: The application context in the incoming association request was not recognized: (#{info[:application_context]})")
       else
         error = nil
       end

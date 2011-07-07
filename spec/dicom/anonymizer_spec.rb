@@ -33,10 +33,7 @@ module DICOM
       @skip2 = @skip_s + File.basename(DCM_EXPLICIT_MR_RLE_MONO2)
       @w1 = @wpath_s + File.basename(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       @w2 = @wpath_s + File.basename(DCM_EXPLICIT_MR_RLE_MONO2)
-      Logging.logger = mock
-      Logging.logger.stubs(:warn)
-      Logging.logger.stubs(:error)
-      Logging.logger.stubs(:info)
+      DICOM.logger = stub_everything("Logger")
     end
 
 
@@ -199,7 +196,7 @@ module DICOM
       it "should print information to the screen when verbose has not been set as false" do
         a = Anonymizer.new
         a.add_folder(@anon_other)
-        Logging.logger.expects(:info).at_least_once
+        a.logger.expects(:info).at_least_once
         a.execute
       end
 
@@ -231,7 +228,7 @@ module DICOM
       it "should fill the log with information" do
         a = Anonymizer.new(:verbose => false)
         a.add_folder(@anon_other)
-        Logging.logger.expects(:info).at_least_once
+        a.logger.expects(:info).at_least_once
         a.execute
       end
 

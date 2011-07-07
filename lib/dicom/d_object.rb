@@ -38,6 +38,7 @@ module DICOM
   # all ImageItem and Parent methods are also available to instances of DObject.
   #
   class DObject < ImageItem
+    include Logging
 
     # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
     attr_reader :parent
@@ -121,7 +122,7 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      Logging.logger.info(w.msg) if w.msg.length > 0
+      logger.info(w.msg) if w.msg.length > 0
       return w.segments
     end
 
@@ -178,7 +179,7 @@ module DICOM
         @read_success = false
       end
       # If any messages has been recorded, send these to the message handling method:
-      r.msg.each { |m| Logging.logger.info(m) }
+      r.msg.each { |m| logger.info(m) }
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
@@ -340,7 +341,7 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       # If any messages has been recorded, send these to the message handling method:
-      Logging.logger.info(w.msg) if w.msg.length > 0
+      logger.info(w.msg) if w.msg.length > 0
     end
 
 
