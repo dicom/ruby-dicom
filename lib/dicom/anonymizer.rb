@@ -456,10 +456,9 @@ module DICOM
        seriesDescripElement = obj["0008,103E"]
        return if not seriesDescripElement
        seriesDescrip = seriesDescripElement.value
-       if seriesDescrip.upcase.strip == "PATIENT PROTOCOL"
+       if not seriesDescrip.nil? and seriesDescrip.upcase.strip == "PATIENT PROTOCOL"
          suspect = true
          add_msg("File: " + filename + " has series description of 'Patient Protocol'. It will be moved for manual review.")
-         break
        end
        return suspect
     end
