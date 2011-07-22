@@ -17,5 +17,5 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = ">= 1.3.4"
   s.add_dependency("ruby-progressbar", ">=0.0.10")
   s.add_dependency("sqlite3-ruby", ">=1.3.3")
-  spec.bindir = 'scripts'
+  s.bindir = 'scripts'
 end
