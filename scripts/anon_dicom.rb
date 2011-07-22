@@ -23,7 +23,7 @@ optparse = OptionParser.new do|opts|
   end
   
   options[:root] = false
-  opts.on('-r','--dicomroot', 'Enter your organization\'s DICOM org root. Used for study uid anonymization') do |root|
+  opts.on('-r','--dicomroot ROOT', 'Enter your organization\'s DICOM org root. Used for study uid anonymization') do |root|
     options[:root] = root
   end
 
