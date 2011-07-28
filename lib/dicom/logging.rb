@@ -102,7 +102,6 @@ module DICOM
           else
             l = Logger.new(STDOUT)
             l.level = Logger::INFO
-            l.progname = "DICOM"
             ProxyLogger.new l
           end
         }.call
