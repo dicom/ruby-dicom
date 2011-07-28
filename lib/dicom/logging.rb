@@ -34,7 +34,15 @@ module DICOM
   #   DICOM.logger = Logger.new('foo.log', 'monthly')
   #
   #
-  #   If you want to have your
+  #   # Combine external logger with DICOM
+  #   #
+  #   logger = Logger.new(STDOUT)
+  #   logger.progname = "MY_APP"
+  #   DICOM.logger = logger
+  #   # now you can call
+  #   DICOM.logger.info "Message"            # => "DICOM: Message"
+  #   DICOM.logger.info("MY_MODULE)"Message" # => "MY_MODULE: Message"
+  #   logger.info "Message"                  # => "MY_APP: Message"
   #
   #   For more information please read the Logger documentation.
   #
