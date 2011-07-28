@@ -67,7 +67,7 @@ module DICOM
             if block_given?
               @target.send(method_name, *args) { yield }
             else
-              @target.send(method_name, "DICOM") { args }
+              @target.send(method_name, "DICOM") { args.first }
             end
           else
             @target.send(method_name, *args, &block)
