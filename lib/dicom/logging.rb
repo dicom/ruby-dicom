@@ -3,12 +3,14 @@ module DICOM
   # This module handles logging functionality
   #
   # Logging functionality uses standard library's Logger.
+  # To prevent change on progname which inside of DICOM module is simply "DICOM"
+  # we use proxy class.
+  #
   #
   # === Examples
   #
   #   require 'dicom'
   #   include DICOM
-  #   require 'logger'
   #
   #   # logging to STDOUT with DEBUG level
   #   DICOM.logger = Logger.new(STDOUT)
@@ -32,6 +34,8 @@ module DICOM
   #   DICOM.logger = Logger.new('foo.log', 'monthly')
   #
   #
+  #   If you want to have your
+  #
   #   For more information please read the Logger documentation.
   #
 
@@ -42,9 +46,28 @@ module DICOM
       base.extend(ClassMethods)
     end
 
+
     module ClassMethods
 
-      # logger class instance
+      class ProxyLogger
+        def initialize(target_object)
+          @target = target_object
+        end
+
+        def method_missing(method_name, *args, &block)
+          if method_name.to_s =~ /(log|info|fatal|error|debug)/
+            if block_given?
+              @target.send(method_name, *args) { yield }
+            else
+              @target.send(method_name, "DICOM") { args }
+            end
+          else
+            @target.send(method_name, *args, &block)
+          end
+        end
+      end
+
+      # logger class instance (covered by proxy)
       #
       @@logger = nil
 
@@ -59,7 +82,7 @@ module DICOM
       # DICOM.logger.info "message"
       #
       def logger=(l)
-        @@logger = l
+        @@logger = ProxyLogger.new(l)
       end
 
       # logger object getter
@@ -75,12 +98,12 @@ module DICOM
       def logger
         @@logger ||= lambda {
           if defined?(Rails)
-            Rails.logger
+            ProxyLogger.new Rails.logger
           else
-            logger = Logger.new(STDOUT)
-            logger.level = Logger::INFO
-            logger.progname = "DICOM"
-            logger
+            l = Logger.new(STDOUT)
+            l.level = Logger::INFO
+            l.progname = "DICOM"
+            ProxyLogger.new l
           end
         }.call
       end

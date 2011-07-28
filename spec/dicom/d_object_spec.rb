@@ -67,6 +67,7 @@ module DICOM
     end
 
     it "should return the data elements that were successfully read before a failure occured (the file meta header elements in this case)" do
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :syntax => IMPLICIT_LITTLE_ENDIAN)
       obj.read?.should be_false
       obj.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
@@ -74,7 +75,7 @@ module DICOM
 
     it "should register an error when an invalid file is supplied" do
       DICOM.logger.expects(:info).at_least_once
-      obj = DObject.new("foo", :verbose => false)
+      obj = DObject.new("foo")
     end
 
     it "should print the error/warning message(s) to $stdout in verbose (default) mode" do
@@ -84,7 +85,9 @@ module DICOM
     end
 
     it "should not print the error/warning message(s) to $stdout when non-verbose mode has been set" do
-      obj = DObject.new(nil, :verbose => false)
+      DICOM.logger = mock("Logger")
+      DICOM.logger.expects(:info).at_least_once
+      obj = DObject.new(nil)
       obj.expects(:puts).never
       obj.read("foo")
     end
@@ -97,17 +100,20 @@ module DICOM
 
     it "should fail gracefully when a tiny, non-dicom file is passed as an argument" do
       File.open(TMPDIR + "tiny_invalid.dcm", 'wb') {|f| f.write("fail") }
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new(TMPDIR + "tiny_invalid.dcm")
       obj.read?.should be_false
     end
 
     it "should fail gracefully when a directory is passed as an argument" do
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new(TMPDIR)
       obj.read?.should be_false
     end
 
     it "should apply the specified transfer syntax to the DICOM object, when passing a syntax-less DICOM binary string" do
       obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
+      DICOM.logger.expects(:info).at_least_once
       syntax = obj.transfer_syntax
       obj.remove_group("0002")
       parts = obj.encode_segments(16384)
@@ -136,6 +142,7 @@ module DICOM
     end
 
     it "should encode exactly the same binary string regardless of the max segment length chosen" do
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
       binaries = Array.new
       binaries << obj.encode_segments(32768).join
@@ -148,6 +155,7 @@ module DICOM
     end
 
     it "should should have its rejoined, segmented binary be successfully read to a DICOM object" do
+      DICOM.logger.expects(:info).at_least_once
       obj = DObject.new(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
       binary = obj.encode_segments(16384).join
       obj_reloaded = DObject.new(binary, :bin => true)
