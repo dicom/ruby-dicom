@@ -3,7 +3,9 @@ module DICOM
   # This class contains code for setting up a Service Class Provider (SCP),
   # which will act as a simple storage node (a DICOM server that receives images).
   #
+  
   class DServer
+    include Logging
 
     # Runs the server and takes a block for initializing.
     #
@@ -23,6 +25,9 @@ module DICOM
     #     s.file_handler = MyFileHandler
     #   end
     #
+    # To make changes in logging functionality please take a look at
+    # Logging module.
+    #
     def self.run(port=104, path='./received/', &block)
       server = DServer.new(port)
       server.instance_eval(&block)
@@ -39,17 +44,11 @@ module DICOM
     attr_accessor :port
     # The maximum period the server will wait on an answer from a client before aborting the communication.
     attr_accessor :timeout
-    # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
-    attr_accessor :verbose
 
     # A hash containing the abstract syntaxes that will be accepted.
     attr_reader :accepted_abstract_syntaxes
     # A hash containing the transfer syntaxes that will be accepted.
     attr_reader :accepted_transfer_syntaxes
-    # An array containing any error messages recorded.
-    attr_reader :errors
-    # An array containing any status messages recorded.
-    attr_reader :notices
 
     # Creates a DServer instance.
     #
@@ -64,7 +63,6 @@ module DICOM
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DServer instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     # === Examples
     #
@@ -73,6 +71,9 @@ module DICOM
     #   # Create a server and specify a host name as well as a custom buildt file handler:
     #   require 'MyFileHandler'
     #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
+    #
+    # To make changes in logging functionality please take a look at
+    # Logging module.
     #
     def initialize(port=104, options={})
       require 'socket'
@@ -84,11 +85,6 @@ module DICOM
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
       @min_length = 12 # minimum number of bytes to expect in an incoming transmission
-      @verbose = options[:verbose]
-      @verbose = true if @verbose == nil # Default verbosity is 'on'.
-      # Other instance variables:
-      @errors = Array.new # errors and warnings are put in this array
-      @notices = Array.new # information on successful transmissions are put in this array
       # Variables used for monitoring state of transmission:
       @connection = nil # TCP connection status
       @association = nil # DICOM Association status
@@ -212,19 +208,18 @@ module DICOM
     #
     def start_scp(path='./received/')
       if @accepted_abstract_syntaxes.size > 0 and @accepted_transfer_syntaxes.size > 0
-        add_notice("Starting DICOM SCP server...")
-        add_notice("*********************************")
+        logger.info("Starting DICOM SCP server...")
+        logger.info("*********************************")
         # Initiate server:
         @scp = TCPServer.new(@port)
         # Use a loop to listen for incoming messages:
         loop do
           Thread.start(@scp.accept) do |session|
             # Initialize the network package handler for this session:
-            link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :verbose => @verbose, :file_handler => @file_handler)
+            link = Link.new(:host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout, :file_handler => @file_handler)
             link.set_session(session)
-            # Note the time of reception as well as who has contacted us:
-            add_notice(Time.now.strftime("%Y-%m-%d  %H:%M:%S"))
-            add_notice("Connection established with:  #{session.peeraddr[2]}  (IP: #{session.peeraddr[3]})")
+            # Note who has contacted us:
+            logger.info("Connection established with:  #{session.peeraddr[2]}  (IP: #{session.peeraddr[3]})")
             # Receive an incoming message:
             segments = link.receive_multiple_transmissions
             info = segments.first
@@ -236,28 +231,28 @@ module DICOM
                 link.handle_association_accept(info)
                 if approved > 0
                   if approved == 1
-                    add_notice("Accepted the association request with context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.info("Accepted the association request with context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
                   else
                     if rejected == 0
-                      add_notice("Accepted all #{approved} proposed contexts in the association request.")
+                      logger.info("Accepted all #{approved} proposed contexts in the association request.")
                     else
-                      add_notice("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
+                      logger.info("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
                     end
                   end
                   # Process the incoming data. This method will also take care of releasing the association:
                   success, messages = link.handle_incoming_data(path)
                   if success
-                    add_notice(messages) if messages.first
+                    logger.info(messages) if messages.first
                   else
                     # Something has gone wrong:
-                    add_error(messages) if messages.first
+                    logger.error(messages) if messages.first
                   end
                 else
                   # No abstract syntaxes in the incoming request were accepted:
                   if rejected == 1
-                    add_notice("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.info("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
                   else
-                    add_notice("Rejected all #{rejected} proposed contexts in the association request.")
+                    logger.info("Rejected all #{rejected} proposed contexts in the association request.")
                   end
                   # Since the requested abstract syntax was not accepted, the association must be released.
                   link.await_release
@@ -272,7 +267,7 @@ module DICOM
             end
             # Terminate the connection:
             link.stop_session
-            add_notice("*********************************")
+            logger.info("*********************************")
           end
         end
       else
@@ -284,35 +279,6 @@ module DICOM
 
     # Following methods are private:
     private
-
-
-    # Adds a warning or error message to the instance array holding messages,
-    # and prints the information to the screen if verbose is set.
-    #
-    # === Parameters
-    #
-    # * <tt>error</tt> -- A single error message or an array of error messages.
-    #
-    def add_error(error)
-      if @verbose
-        puts error
-      end
-      @errors << error
-    end
-
-    # Adds a notice (information regarding progress or successful communications) to the instance array,
-    # and prints the information to the screen if verbose is set.
-    #
-    # === Parameters
-    #
-    # * <tt>notice</tt> -- A single status message or an array of status messages.
-    #
-    def add_notice(notice)
-      if @verbose
-        puts notice
-      end
-      @notices << notice
-    end
 
     # Checks if the association request is formally correct, by matching against an exact application context UID.
     # Returns nil if valid, and an error code if it is not approved.
@@ -330,7 +296,7 @@ module DICOM
     def check_association_request(info)
       unless info[:application_context] == APPLICATION_CONTEXT
         error = 2 # (application context name not supported)
-        add_error("Error: The application context in the incoming association request was not recognized: (#{info[:application_context]})")
+        logger.error("Error: The application context in the incoming association request was not recognized: (#{info[:application_context]})")
       else
         error = nil
       end

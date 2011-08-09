@@ -211,7 +211,7 @@ module DICOM
         if length > 0 and not @enc_image
           child_reader = DRead.new(@current_element, bin, :bin => true, :syntax => @transfer_syntax)
           @current_parent = @current_parent.parent
-          @msg << child_reader.msg
+          @msg += child_reader.msg unless child_reader.msg.empty? 
           @success = child_reader.success
           return false unless @success
         end
