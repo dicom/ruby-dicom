@@ -64,7 +64,11 @@ module DICOM
 
         def method_missing(method_name, *args, &block)
           if method_name.to_s =~ /(log|info|fatal|error|debug)/
-            if block_given?
+            # rails use their own buffered logger which does not
+            # works with progname + block as the std logger does
+            if defined?(Rails)
+              @target.send(method_name, "DICOM: " + args.first)
+            elsif block_given?
               @target.send(method_name, *args) { yield }
             else
               @target.send(method_name, "DICOM") { args.first }
