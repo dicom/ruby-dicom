@@ -3,6 +3,7 @@ module DICOM
   # This class handles the construction and interpretation of network packages as well as network communication.
   #
   class Link
+    include Logging
 
     # A customized FileHandler class to use instead of the default FileHandler included with Ruby DICOM.
     attr_accessor :file_handler
@@ -10,12 +11,6 @@ module DICOM
     attr_accessor :max_package_size
     # A hash which keeps track of the relationship between context ID and chosen transfer syntax.
     attr_accessor :presentation_contexts
-    # A boolean which defines if notices/warnings/errors will be printed to the screen (true) or not (false).
-    attr_accessor :verbose
-    # An array containing any error messages recorded.
-    attr_reader :errors
-    # An array containing any status messages recorded.
-    attr_reader :notices
     # A TCP network session where the DICOM communication is done with a remote host or client.
     attr_reader :session
 
@@ -32,7 +27,6 @@ module DICOM
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period to wait for an answer before aborting the communication.
-    # * <tt>:verbose</tt> -- Boolean. If set to false, the DLink instance will run silently and not output warnings and error messages to the screen. Defaults to true.
     #
     def initialize(options={})
       require 'socket'
@@ -44,11 +38,6 @@ module DICOM
       @max_receive_size = @max_package_size
       @timeout = options[:timeout] || 10 # seconds
       @min_length = 10 # minimum number of bytes to expect in an incoming transmission
-      @verbose = options[:verbose]
-      @verbose = true if @verbose == nil # Default verbosity is 'on'.
-      # Other instance variables:
-      @errors = Array.new # errors and warnings are put in this array
-      @notices = Array.new # information on successful transmissions are put in this array
       # Variables used for monitoring state of transmission:
       @session = nil # TCP connection
       @association = nil # DICOM Association status
@@ -70,10 +59,10 @@ module DICOM
       if info[:pdu] != PDU_RELEASE_REQUEST
         # For some reason we didnt get our expected release request. Determine why:
         if info[:valid]
-          add_error("Unexpected message type received (PDU: #{info[:pdu]}). Expected a release request. Closing the connection.")
+          logger.error("Unexpected message type received (PDU: #{info[:pdu]}). Expected a release request. Closing the connection.")
           handle_abort(false)
         else
-          add_error("Timed out while waiting for a release request. Closing the connection.")
+          logger.error("Timed out while waiting for a release request. Closing the connection.")
         end
         stop_session
       else
@@ -368,7 +357,7 @@ module DICOM
           info = interpret_abort(message)
         else
           info = {:valid => false}
-          add_error("An unknown PDU type was received in the incoming transmission. Can not decode this message. (PDU: #{pdu})")
+          logger.error("An unknown PDU type was received in the incoming transmission. Can not decode this message. (PDU: #{pdu})")
       end
       return info
     end
@@ -380,7 +369,7 @@ module DICOM
     # * <tt>default_message</tt> -- A boolean which unless set as nil/false will make the method print the default status message.
     #
     def handle_abort(default_message=true)
-      add_notice("An unregonizable (non-DICOM) message was received.") if default_message
+      logger.info("An unregonizable (non-DICOM) message was received.") if default_message
       build_association_abort
       transmit
     end
@@ -453,7 +442,7 @@ module DICOM
     # Handles the rejection message (The response used to an association request when its formalities are not correct).
     #
     def handle_rejection
-      add_notice("An incoming association request was rejected. Error code: #{association_error}")
+      logger.info("An incoming association request was rejected. Error code: #{association_error}")
       # Insert the error code in the info hash:
       info[:reason] = association_error
       # Send an association rejection:
@@ -465,7 +454,7 @@ module DICOM
     #
     def handle_release
       stop_receiving
-      add_notice("Received a release request. Releasing association.")
+      logger.info("Received a release request. Releasing association.")
       build_release_response
       transmit
       stop_session
@@ -557,7 +546,7 @@ module DICOM
           end
         else
           # Length of the message is less than what is specified in the message. Need to listen for more. This is hopefully handled properly now.
-          #add_error("Error. The length of the received message (#{msg.rest_length}) is smaller than what it claims (#{specified_length}). Aborting.")
+          #logger.error("Error. The length of the received message (#{msg.rest_length}) is smaller than what it claims (#{specified_length}). Aborting.")
           @first_part = msg.string
         end
       else
@@ -707,7 +696,7 @@ module DICOM
           else
             # Value (variable length)
             value = msg.decode(item_length, "STR")
-            add_error("Unknown user info item type received. Please update source code or contact author. (item type: #{item_type})")
+            logger.error("Unknown user info item type received. Please update source code or contact author. (item type: #{item_type})")
         end
       end
       stop_receiving
@@ -733,7 +722,7 @@ module DICOM
       info[:source] = msg.decode(1, "BY")
       # Reason (1 byte)
       info[:reason] = msg.decode(1, "BY")
-      add_error("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM PS3.8: Table 9-21 for details.)")
+      logger.warn("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM PS3.8: Table 9-21 for details.)")
       stop_receiving
       info[:valid] = true
       return info
@@ -877,7 +866,7 @@ module DICOM
             # Unknown item type:
             # Value (variable length)
             value = msg.decode(item_length, "STR")
-            add_error("Notice: Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
+            logger.error("Notice: Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
       stop_receiving
@@ -923,7 +912,7 @@ module DICOM
           # Length (2 bytes)
           length = msg.decode(2, "US")
           if length > msg.rest_length
-            add_error("Error: Specified length of command element value exceeds remaining length of the received message! Something is wrong.")
+            logger.error("Error: Specified length of command element value exceeds remaining length of the received message! Something is wrong.")
           end
           # Reserved (2 bytes)
           msg.skip(2)
@@ -948,7 +937,7 @@ module DICOM
         end
         # Special case: Handle a possible C-ECHO-RQ:
         if info[:results]["0000,0100"] == C_ECHO_RQ
-          add_notice("Received an Echo request. Returning an Echo response.")
+          logger.info("Received an Echo request. Returning an Echo response.")
           handle_response
         end
       elsif info[:presentation_context_flag] == DATA_MORE_FRAGMENTS or info[:presentation_context_flag] == DATA_LAST_FRAGMENT
@@ -977,7 +966,7 @@ module DICOM
               length = msg.decode(4, "UL")
             end
             if length > msg.rest_length
-              add_error("Error: Specified length of data element value exceeds remaining length of the received message! Something is wrong.")
+              logger.error("Error: Specified length of data element value exceeds remaining length of the received message! Something is wrong.")
             end
             # Fetch the name (& type if not defined already) for this data element:
             result = LIBRARY.get_name_vr(tag)
@@ -993,7 +982,7 @@ module DICOM
         end
       else
         # Unknown.
-        add_error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
+        logger.error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
         stop_receiving
       end
       # If only parts of the string was read, return the rest:
@@ -1107,30 +1096,6 @@ module DICOM
     # Following methods are private:
     private
 
-
-    # Adds a warning or error message to the instance array holding messages,
-    # and prints the information to the screen if verbose is set.
-    #
-    # === Parameters
-    #
-    # * <tt>error</tt> -- A single error message or an array of error messages.
-    #
-    def add_error(error)
-      puts error if @verbose
-      @errors << error
-    end
-
-    # Adds a notice (information regarding progress or successful communications) to the instance array,
-    # and prints the information to the screen if verbose is set.
-    #
-    # === Parameters
-    #
-    # * <tt>notice</tt> -- A single status message or an array of status messages.
-    #
-    def add_notice(notice)
-      puts notice if @verbose
-      @notices << notice
-    end
 
     # Builds the application context (which is part of the association request/response).
     #
@@ -1299,7 +1264,7 @@ module DICOM
         when C_ECHO_RQ
           return C_ECHO_RSP
         else
-          add_error("Unknown or unsupported request (#{request}) encountered.")
+          logger.error("Unknown or unsupported request (#{request}) encountered.")
           return C_CANCEL_RQ
       end
     end
@@ -1313,19 +1278,19 @@ module DICOM
     def process_reason(reason)
       case reason
         when "00"
-          add_error("Reason specified for abort: Reason not specified")
+          logger.error("Reason specified for abort: Reason not specified")
         when "01"
-          add_error("Reason specified for abort: Unrecognized PDU")
+          logger.error("Reason specified for abort: Unrecognized PDU")
         when "02"
-          add_error("Reason specified for abort: Unexpected PDU")
+          logger.error("Reason specified for abort: Unexpected PDU")
         when "04"
-          add_error("Reason specified for abort: Unrecognized PDU parameter")
+          logger.error("Reason specified for abort: Unrecognized PDU parameter")
         when "05"
-          add_error("Reason specified for abort: Unexpected PDU parameter")
+          logger.error("Reason specified for abort: Unexpected PDU parameter")
         when "06"
-          add_error("Reason specified for abort: Invalid PDU parameter value")
+          logger.error("Reason specified for abort: Invalid PDU parameter value")
         else
-          add_error("Reason specified for abort: Unknown reason (Error code: #{reason})")
+          logger.error("Reason specified for abort: Unknown reason (Error code: #{reason})")
       end
     end
 
@@ -1345,15 +1310,15 @@ module DICOM
         # Analyse the result and report what is wrong:
         case result
           when 1
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'User-rejection'")
+            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'User-rejection'")
           when 2
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
+            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
           when 3
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
+            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
           when 4
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
+            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
           else
-            add_error("Warning: DICOM Request was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
+            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
         end
       end
     end
@@ -1366,11 +1331,11 @@ module DICOM
     #
     def process_source(source)
       if source == "00"
-        add_error("Warning: Connection has been aborted by the service provider because of an error by the service user (client side).")
+        logger.warn("Warning: Connection has been aborted by the service provider because of an error by the service user (client side).")
       elsif source == "02"
-        add_error("Warning: Connection has been aborted by the service provider because of an error by the service provider (server side).")
+        logger.warn("Warning: Connection has been aborted by the service provider because of an error by the service provider (server side).")
       else
-        add_error("Warning: Connection has been aborted by the service provider, with an unknown cause of the problems. (error code: #{source})")
+        logger.warn("Warning: Connection has been aborted by the service provider, with an unknown cause of the problems. (error code: #{source})")
       end
     end
 
@@ -1391,26 +1356,26 @@ module DICOM
       case status
         when 0 # "0000"
           # Last fragment (Break the while loop that listens continuously for incoming packets):
-          add_notice("Receipt for successful execution of the desired operation has been received.")
+          logger.info("Receipt for successful execution of the desired operation has been received.")
           stop_receiving
         when 42752 # "a700"
           # Failure: Out of resources. Related fields: 0000,0902
-          add_error("Failure! SCP has given the following reason: 'Out of Resources'.")
+          logger.error("Failure! SCP has given the following reason: 'Out of Resources'.")
         when 43264 # "a900"
           # Failure: Identifier Does Not Match SOP Class. Related fields: 0000,0901, 0000,0902
-          add_error("Failure! SCP has given the following reason: 'Identifier Does Not Match SOP Class'.")
+          logger.error("Failure! SCP has given the following reason: 'Identifier Does Not Match SOP Class'.")
         when 49152 # "c000"
           # Failure: Unable to process. Related fields: 0000,0901, 0000,0902
-          add_error("Failure! SCP has given the following reason: 'Unable to process'.")
+          logger.error("Failure! SCP has given the following reason: 'Unable to process'.")
         when 49408 # "c100"
           # Failure: More than one match found. Related fields: 0000,0901, 0000,0902
-          add_error("Failure! SCP has given the following reason: 'More than one match found'.")
+          logger.error("Failure! SCP has given the following reason: 'More than one match found'.")
         when 49664 # "c200"
           # Failure: Unable to support requested template. Related fields: 0000,0901, 0000,0902
-          add_error("Failure! SCP has given the following reason: 'Unable to support requested template'.")
+          logger.error("Failure! SCP has given the following reason: 'Unable to support requested template'.")
         when 65024 # "fe00"
           # Cancel: Matching terminated due to Cancel request.
-          add_notice("Cancel! SCP has given the following reason: 'Matching terminated due to Cancel request'.")
+          logger.info("Cancel! SCP has given the following reason: 'Matching terminated due to Cancel request'.")
         when 65280 # "ff00"
           # Sub-operations are continuing.
           # (No particular action taken, the program will listen for and receive the coming fragments)
@@ -1418,7 +1383,7 @@ module DICOM
           # More command/data fragments to follow.
           # (No particular action taken, the program will listen for and receive the coming fragments)
         else
-          add_error("Error! Something was NOT successful regarding the desired operation. SCP responded with error code: #{status} (tag: 0000,0900). See DICOM PS3.7, Annex C for details.")
+          logger.error("Error! Something was NOT successful regarding the desired operation. SCP responded with error code: #{status} (tag: 0000,0900). See DICOM PS3.7, Annex C for details.")
       end
     end
 
@@ -1465,7 +1430,7 @@ module DICOM
       while @receive
         if (Time.now.to_f - t1) > @timeout
           Thread.kill(thr)
-          add_error("No answer was received within the specified timeout period. Aborting.")
+          logger.error("No answer was received within the specified timeout period. Aborting.")
           stop_receiving
         end
       end
@@ -1497,7 +1462,7 @@ module DICOM
       # Query the library with our particular transfer syntax string:
       valid_syntax, @explicit, @data_endian = LIBRARY.process_transfer_syntax(syntax)
       unless valid_syntax
-        add_error("Warning: Invalid/unknown transfer syntax encountered! Will try to continue, but errors may occur.")
+        logger.warn("Warning: Invalid/unknown transfer syntax encountered! Will try to continue, but errors may occur.")
       end
     end
 
