@@ -77,7 +77,7 @@ communication modalities like querying, moving, sending and receiving files.
   # Setting up a simple file log:
   l = Logger.new('my_logfile.log')
   DICOM.logger = l
-  #  Create a logger which ages logfile daily/monthly:
+  # Create a logger which ages logfile daily/monthly:
   DICOM.logger = Logger.new('foo.log', 'daily')
   DICOM.logger = Logger.new('foo.log', 'monthly')
 
