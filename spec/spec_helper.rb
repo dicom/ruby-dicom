@@ -33,9 +33,11 @@ suppress_warnings do
   DICOM::DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME = 'samples/implicit_us_jpeg2k-lossless-mono2-multiframe.dcm'
   # Directory for writing temporary files:
   DICOM::TMPDIR = "tmp/"
+  DICOM::LOGDIR = DICOM::TMPDIR + "logs/"
 end
 
 # Create a directory for temporary files (and delete the directory if it already exists):
 require 'fileutils'
 FileUtils.rmtree(DICOM::TMPDIR) if File.directory?(DICOM::TMPDIR)
 FileUtils.mkdir(DICOM::TMPDIR)
+FileUtils.mkdir(DICOM::LOGDIR)
