@@ -38,7 +38,7 @@ module DICOM
       # Set common parent variables:
       initialize_parent
       # Set instance variables:
-      @tag = tag
+      @tag = tag.upcase
       @value = nil
       @bin = nil
       # We may beed to retrieve name and vr from the library:

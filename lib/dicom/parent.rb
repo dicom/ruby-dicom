@@ -20,7 +20,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag string which identifies the data element to be returned (Exception: In the case where an Item is wanted, an index (Fixnum) is used instead).
+    # * <tt>tag_or_index</tt> -- A tag string which identifies the data element to be returned (Exception: In the case where an Item is wanted, an index (Fixnum) is used instead).
     #
     # === Examples
     #
@@ -29,8 +29,9 @@ module DICOM
     #   # Extract the first Item from a Sequence:
     #   first_item = obj["3006,0020"][1]
     #
-    def [](tag)
-      return @tags[tag]
+    def [](tag_or_index)
+      formatted = tag_or_index.is_a?(String) ? tag_or_index.upcase : tag_or_index
+      return @tags[formatted]
     end
 
     # Adds a Element or Sequence instance to self (where self can be either a DObject or an Item).
@@ -282,7 +283,7 @@ module DICOM
     #   process_name(obj["0010,0010"]) if obj.exists?("0010,0010")
     #
     def exists?(tag)
-      if @tags[tag]
+      if self[tag]
         return true
       else
         return false
@@ -300,7 +301,7 @@ module DICOM
       raise ArgumentError, "Expected String, got #{group_string.class}." unless group_string.is_a?(String)
       found = Array.new
       children.each do |child|
-        found << child if child.tag.group == group_string
+        found << child if child.tag.group == group_string.upcase
       end
       return found
     end
@@ -597,7 +598,7 @@ module DICOM
         raise ArgumentError, "Expected String or Integer, got #{tag.class}."
       end
       # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
-      element = @tags[tag]
+      element = self[tag]
       if element
         element.parent = nil unless options[:no_follow]
         @tags.delete(tag)
@@ -762,10 +763,10 @@ module DICOM
         raise ArgumentError, "Expected String or Integer, got #{tag.class}."
       end
       if exists?(tag)
-        if @tags[tag].is_parent?
+        if self[tag].is_parent?
           raise ArgumentError, "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only Element tags are valid."
         else
-          return @tags[tag].value
+          return self[tag].value
         end
       else
         return nil

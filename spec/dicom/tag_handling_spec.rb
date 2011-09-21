@@ -117,5 +117,138 @@ module DICOM
     end
 
   end
+  
+  
+  describe "When specifying or querying data elements using tags" do
+    
+    context Element, "#new" do
+      
+      it "should always save tags using upper case letters (but accept tags specified with lower case letters)" do
+        obj = DObject.new(nil, :verbose => false)
+        obj.add(e = Element.new("0020,000d", "1.234.567"))
+        e.tag.should eql "0020,000D"
+        obj.exists?("0020,000D").should eql true
+      end
+      
+    end
+   
+   
+    context Sequence, "#new" do
+      
+      it "should always save tags using upper case letters (but accept tags specified with lower case letters)" do
+        obj = DObject.new(nil, :verbose => false)
+        obj.add(s = Sequence.new("300a,0040"))
+        s.tag.should eql "300A,0040"
+        obj.exists?("300A,0040").should eql true
+      end
+      
+    end
+     
+    
+    context Parent do
+      
+      context "#[]" do
+      
+        it "should accept upper cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("0020,000D", "1.234.567"))
+          obj["0020,000D"].should be_an Element
+        end
+      
+        it "should accept lower cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("0020,000D", "1.234.567"))
+          obj["0020,000d"].should be_an Element
+        end
+      
+      end
+      
+      context "#exists?" do
+      
+        it "should accept upper cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("0020,000D", "1.234.567"))
+          obj.exists?("0020,000D").should eql true
+        end
+      
+        it "should accept lower cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("0020,000D", "1.234.567"))
+          obj.exists?("0020,000d").should eql true
+        end
+      
+      end
+      
+      context "#group" do
+      
+        it "should accept upper cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.group("300A").length.should eql 1
+        end
+      
+        it "should accept lower cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.group("300a").length.should eql 1
+        end
+      
+      end
+      
+      context "#remove" do
+      
+        it "should accept upper cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.remove("300A,000A")
+          obj.exists?("300A,000A").should be_false
+        end
+      
+        it "should accept lower cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.remove("300a,000a")
+          obj.exists?("300A,000A").should be_false
+        end
+      
+      end
+      
+      context "#remove_group" do
+      
+        it "should accept upper cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.remove_group("300A")
+          obj.exists?("300A,000A").should be_false
+        end
+      
+        it "should accept lower cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.remove_group("300a")
+          obj.exists?("300A,000A").should be_false
+        end
+      
+      end
+      
+      context "#value" do
+      
+        it "should accept upper cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.value("300A,000A").should be_a String
+        end
+      
+        it "should accept lower cased tag letters" do
+          obj = DObject.new(nil, :verbose => false)
+          obj.add(Element.new("300A,000A", "Palliative"))
+          obj.value("300a,000a").should be_a String
+        end
+      
+      end
+      
+    end
+    
+  end
 
 end
