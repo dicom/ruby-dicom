@@ -177,6 +177,12 @@ module DICOM
       obj.transfer_syntax.should eql EXPLICIT_BIG_ENDIAN
     end
 
+    it "should set the determined transfer syntax (Explicit Little Endian) when loading a DICOM file (lacking transfer syntax) using two passes" do
+      DICOM.logger.expects(:info).at_least_once
+      obj = DObject.new(DCM_EXPLICIT_NO_HEADER)
+      obj.transfer_syntax.should eql EXPLICIT_LITTLE_ENDIAN
+    end
+
   end
 
 

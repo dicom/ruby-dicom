@@ -87,5 +87,12 @@ module DICOM
       obj.count_all.should eql 64
     end
 
+    it "should parse this DICOM file and build a valid DICOM object" do
+      obj = DObject.new(DCM_EXPLICIT_NO_HEADER)
+      obj.read?.should be_true
+      obj.count.should eql 90
+      obj.count_all.should eql 116
+    end
+
   end
 end

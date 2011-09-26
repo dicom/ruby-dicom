@@ -31,6 +31,8 @@ suppress_warnings do
   DICOM::DCM_EXPLICIT_MR_RLE_MONO2 = 'samples/explicit_mr_rle_mono2.dcm'
   DICOM::DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2 = 'samples/explicit_ct_jpeg-lossless-nh_mono2.dcm'
   DICOM::DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME = 'samples/implicit_us_jpeg2k-lossless-mono2-multiframe.dcm'
+  # Requiring two passes for a successful read:
+  DICOM::DCM_EXPLICIT_NO_HEADER = 'samples/no-header_explicit(two-pass).dcm'
   # Directory for writing temporary files:
   DICOM::TMPDIR = "tmp/"
   DICOM::LOGDIR = DICOM::TMPDIR + "logs/"
