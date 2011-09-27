@@ -1,8 +1,20 @@
+= 0.9.2
+
+=== (Not released yet)
+
+* Enabled the use of lower case tag letters in methods which previously required the use of upper case letters.
+* Introduced proper logging capabilities which replaced the simple message printouts to STDOUT:
+  * Based on the Logger class of the Ruby Standard Library.
+  * Automatically integrates with the Rails logger in a Rails application.
+  * Supports information levels, logging to file, and more as available in the Ruby Logger.
+
+
 = 0.9.1
 
 === 27th May, 2011
 
 * Fixed a regression in 0.9 where ruby-dicom would cause a Rails application to crash.
+
 
 = 0.9
 
