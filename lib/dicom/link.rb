@@ -369,7 +369,7 @@ module DICOM
     # * <tt>default_message</tt> -- A boolean which unless set as nil/false will make the method print the default status message.
     #
     def handle_abort(default_message=true)
-      logger.info("An unregonizable (non-DICOM) message was received.") if default_message
+      logger.warn("An unregonizable (non-DICOM) message was received.") if default_message
       build_association_abort
       transmit
     end
@@ -442,7 +442,7 @@ module DICOM
     # Handles the rejection message (The response used to an association request when its formalities are not correct).
     #
     def handle_rejection
-      logger.info("An incoming association request was rejected. Error code: #{association_error}")
+      logger.warn("An incoming association request was rejected. Error code: #{association_error}")
       # Insert the error code in the info hash:
       info[:reason] = association_error
       # Send an association rejection:
@@ -696,7 +696,7 @@ module DICOM
           else
             # Value (variable length)
             value = msg.decode(item_length, "STR")
-            logger.error("Unknown user info item type received. Please update source code or contact author. (item type: #{item_type})")
+            logger.warn("Unknown user info item type received. Please update source code or contact author. (item type: #{item_type})")
         end
       end
       stop_receiving
@@ -722,7 +722,7 @@ module DICOM
       info[:source] = msg.decode(1, "BY")
       # Reason (1 byte)
       info[:reason] = msg.decode(1, "BY")
-      logger.warn("Warning: ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM PS3.8: Table 9-21 for details.)")
+      logger.warn("ASSOCIATE Request was rejected by the host. Error codes: Result: #{info[:result]}, Source: #{info[:source]}, Reason: #{info[:reason]} (See DICOM PS3.8: Table 9-21 for details.)")
       stop_receiving
       info[:valid] = true
       return info
@@ -866,7 +866,7 @@ module DICOM
             # Unknown item type:
             # Value (variable length)
             value = msg.decode(item_length, "STR")
-            logger.error("Notice: Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
+            logger.warn("Unknown user info item type received. Please update source code or contact author. (item type: " + item_type + ")")
         end
       end
       stop_receiving
@@ -912,7 +912,7 @@ module DICOM
           # Length (2 bytes)
           length = msg.decode(2, "US")
           if length > msg.rest_length
-            logger.error("Error: Specified length of command element value exceeds remaining length of the received message! Something is wrong.")
+            logger.error("Specified length of command element value exceeds remaining length of the received message! Something is wrong.")
           end
           # Reserved (2 bytes)
           msg.skip(2)
@@ -966,7 +966,7 @@ module DICOM
               length = msg.decode(4, "UL")
             end
             if length > msg.rest_length
-              logger.error("Error: Specified length of data element value exceeds remaining length of the received message! Something is wrong.")
+              logger.error("The specified length of the data element value exceeds the remaining length of the received message!")
             end
             # Fetch the name (& type if not defined already) for this data element:
             result = LIBRARY.get_name_vr(tag)
@@ -982,7 +982,7 @@ module DICOM
         end
       else
         # Unknown.
-        logger.error("Error: Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
+        logger.error("Unknown presentation context flag received in the query/command response. (#{info[:presentation_context_flag]})")
         stop_receiving
       end
       # If only parts of the string was read, return the rest:
@@ -1310,15 +1310,15 @@ module DICOM
         # Analyse the result and report what is wrong:
         case result
           when 1
-            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'User-rejection'")
+            logger.warn("DICOM Request was rejected by the host, reason: 'User-rejection'")
           when 2
-            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
+            logger.warn("DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
           when 3
-            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
+            logger.warn("DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
           when 4
-            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
+            logger.warn("DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
           else
-            logger.warn("Warning: DICOM Request was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
+            logger.warn("DICOM Request was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
         end
       end
     end
@@ -1331,11 +1331,11 @@ module DICOM
     #
     def process_source(source)
       if source == "00"
-        logger.warn("Warning: Connection has been aborted by the service provider because of an error by the service user (client side).")
+        logger.warn("Connection has been aborted by the service provider because of an error by the service user (client side).")
       elsif source == "02"
-        logger.warn("Warning: Connection has been aborted by the service provider because of an error by the service provider (server side).")
+        logger.warn("Connection has been aborted by the service provider because of an error by the service provider (server side).")
       else
-        logger.warn("Warning: Connection has been aborted by the service provider, with an unknown cause of the problems. (error code: #{source})")
+        logger.warn("Connection has been aborted by the service provider, with an unknown cause of the problems. (error code: #{source})")
       end
     end
 
@@ -1383,7 +1383,7 @@ module DICOM
           # More command/data fragments to follow.
           # (No particular action taken, the program will listen for and receive the coming fragments)
         else
-          logger.error("Error! Something was NOT successful regarding the desired operation. SCP responded with error code: #{status} (tag: 0000,0900). See DICOM PS3.7, Annex C for details.")
+          logger.error("Something was NOT successful regarding the desired operation. SCP responded with error code: #{status} (tag: 0000,0900). See DICOM PS3.7, Annex C for details.")
       end
     end
 
@@ -1462,7 +1462,7 @@ module DICOM
       # Query the library with our particular transfer syntax string:
       valid_syntax, @explicit, @data_endian = LIBRARY.process_transfer_syntax(syntax)
       unless valid_syntax
-        logger.warn("Warning: Invalid/unknown transfer syntax encountered! Will try to continue, but errors may occur.")
+        logger.warn("Invalid (unknown) transfer syntax encountered! Will try to continue, but errors may occur.")
       end
     end
 

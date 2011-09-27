@@ -30,7 +30,7 @@ module DICOM
   #   For more information, please read the Standard library Logger documentation.
   #
   module Logging
-    
+
     require 'logger'
 
     # Inclusion hook to make the ClassMethods available to whatever
@@ -48,7 +48,7 @@ module DICOM
       # a custom progname to be used when the logger is called outside the DICOM module.
       #
       class ProxyLogger
-        
+
         # Creating the ProxyLogger instance.
         #
         # === Parameters
@@ -76,7 +76,7 @@ module DICOM
         #   DICOM.logger.info "message"
         #
         def method_missing(method_name, *args, &block)
-          if method_name.to_s =~ /(log|info|fatal|error|debug)/
+          if method_name.to_s =~ /(log|debug|info|warn|error|fatal)/
             # Rails uses it's own buffered logger which does not
             # work with progname + block as the standard logger does:
             if defined?(Rails)
@@ -90,7 +90,7 @@ module DICOM
             @target.send(method_name, *args, &block)
           end
         end
-        
+
       end
 
       # The logger class variable (must be initialized
@@ -100,7 +100,7 @@ module DICOM
 
       # The logger object setter.
       # This method is used to replace the default logger instance with
-      # a custom logger of your own. 
+      # a custom logger of your own.
       #
       # === Parameters
       #
@@ -140,7 +140,7 @@ module DICOM
           end
         }.call
       end
-      
+
     end
 
     # A logger object getter.
@@ -154,5 +154,5 @@ module DICOM
 
   # Include the Logging module so we can use DICOM.logger.
   include Logging
-  
+
 end

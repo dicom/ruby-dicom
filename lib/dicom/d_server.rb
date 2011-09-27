@@ -3,7 +3,7 @@ module DICOM
   # This class contains code for setting up a Service Class Provider (SCP),
   # which will act as a simple storage node (a DICOM server that receives images).
   #
-  
+
   class DServer
     include Logging
 
@@ -236,7 +236,7 @@ module DICOM
                     if rejected == 0
                       logger.info("Accepted all #{approved} proposed contexts in the association request.")
                     else
-                      logger.info("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
+                      logger.warn("Accepted only #{approved} of #{approved+rejected} of the proposed contexts in the association request.")
                     end
                   end
                   # Process the incoming data. This method will also take care of releasing the association:
@@ -250,9 +250,9 @@ module DICOM
                 else
                   # No abstract syntaxes in the incoming request were accepted:
                   if rejected == 1
-                    logger.info("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.warn("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
                   else
-                    logger.info("Rejected all #{rejected} proposed contexts in the association request.")
+                    logger.warn("Rejected all #{rejected} proposed contexts in the association request.")
                   end
                   # Since the requested abstract syntax was not accepted, the association must be released.
                   link.await_release
@@ -296,7 +296,7 @@ module DICOM
     def check_association_request(info)
       unless info[:application_context] == APPLICATION_CONTEXT
         error = 2 # (application context name not supported)
-        logger.error("Error: The application context in the incoming association request was not recognized: (#{info[:application_context]})")
+        logger.error("The application context in the incoming association request was not recognized: (#{info[:application_context]})")
       else
         error = nil
       end

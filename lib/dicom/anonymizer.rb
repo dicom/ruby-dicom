@@ -120,7 +120,7 @@ module DICOM
       if pos
         return @enumerations[pos]
       else
-        logger.info("The specified tag is not found in the list of tags to be anonymized.")
+        logger.warn("The specified tag (#{tag}) was not found in the list of tags to be anonymized.")
         return nil
       end
     end
@@ -138,7 +138,6 @@ module DICOM
     #
     def execute
       # Search through the folders to gather all the files to be anonymized:
-      logger.info("*******************************************************")
       logger.info("Initiating anonymization process.")
       start_time = Time.now.to_f
       logger.info("Searching for files...")
@@ -154,14 +153,14 @@ module DICOM
             logger.info("Done")
           else
             # Overwriting old files:
-            logger.info("Separate write folder not specified. Will overwrite existing DICOM files.")
+            logger.warn("Separate write folder not specified. Existing DICOM files will be overwritten.")
             @write_paths = @files
           end
           # If the user wants enumeration, we need to prepare variables for storing
           # existing information associated with each tag:
           create_enum_hash if @enumeration
           # Start the read/update/write process:
-          logger.info("Initiating read/update/write process (This may take some time)...")
+          logger.info("Initiating read/update/write process. This may take some time...")
           # Monitor whether every file read/write was successful:
           all_read = true
           all_write = true
@@ -212,14 +211,14 @@ module DICOM
           end_time = Time.now.to_f
           logger.info("Anonymization process completed!")
           if all_read
-            logger.info("All files in specified folder(s) were SUCCESSFULLY read to DICOM objects.")
+            logger.info("All files in the specified folder(s) were SUCCESSFULLY read to DICOM objects.")
           else
-            logger.info("Some files were NOT successfully read (#{files_failed_read} files). If folder(s) contain non-DICOM files, this is probably the reason.")
+            logger.warn("Some files were NOT successfully read (#{files_failed_read} files). If some folder(s) contain non-DICOM files, this is expected.")
           end
           if all_write
             logger.info("All DICOM objects were SUCCESSFULLY written as DICOM files (#{files_written} files).")
           else
-            logger.info("Some DICOM objects were NOT succesfully written to file. You are advised to have a closer look (#{files_written} files succesfully written).")
+            logger.warn("Some DICOM objects were NOT succesfully written to file. You are advised to investigate the result (#{files_written} files succesfully written).")
           end
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
           if @enumeration and @identity_file
@@ -228,14 +227,13 @@ module DICOM
             logger.info("Done")
           end
           elapsed = (end_time-start_time).to_s
-          logger.info("Elapsed time: " + elapsed[0..elapsed.index(".")+1] + " seconds")
+          logger.info("Elapsed time: #{elapsed[0..elapsed.index(".")+1]} seconds")
         else
-          logger.info("No tags have been selected for anonymization. Aborting.")
+          logger.warn("No tags were selected for anonymization. Aborting.")
         end
       else
-        logger.info("No files were found in specified folders. Aborting.")
+        logger.warn("No files were found in specified folders. Aborting.")
       end
-      logger.info("*******************************************************")
     end
 
     # Prints to screen a list of which tags are currently selected for anonymization along with
@@ -363,7 +361,7 @@ module DICOM
       if pos
         return @values[pos]
       else
-        logger.info("The specified tag is not found in the list of tags to be anonymized.")
+        logger.warn("The specified tag (#{tag}) was not found in the list of tags to be anonymized.")
         return nil
       end
     end

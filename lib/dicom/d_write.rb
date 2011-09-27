@@ -17,9 +17,8 @@ module DICOM
   # that this is actually achieved. You are encouraged to thouroughly test your files for compatibility after creation.
   #
   class DWrite
+    include Logging
 
-    # An array which records any status messages that are generated while encoding/writing the DICOM string.
-    attr_reader :msg
     # An array of partial DICOM strings.
     attr_reader :segments
     # A boolean which reports whether the DICOM string was encoded/written successfully (true) or not (false).
@@ -48,8 +47,6 @@ module DICOM
       @file_name = file_name
       # As default, signature will be written and meta header added:
       @signature = (options[:signature] == false ? false : true)
-      # Array for storing error/warning messages:
-      @msg = Array.new
     end
 
     # Handles the encoding of DICOM information to string as well as writing it to file.
@@ -329,7 +326,7 @@ module DICOM
           @file = File.new(file, "wb")
         else
           # Existing file is not writable:
-          @msg << "Error! The program does not have permission or resources to create the file you specified: (#{file})"
+          logger.error("The program does not have permission or resources to create this file: #{file}")
         end
       else
         # File does not exist.
@@ -370,7 +367,7 @@ module DICOM
       # The information from the Transfer syntax element (if present), needs to be processed:
       valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
       unless valid_syntax
-        @msg << "Warning: Invalid/unknown transfer syntax! Will still write the file, but you should give this a closer look."
+        logger.warn("Invalid (unknown) transfer syntax! Will complete encoding the file, but an investigation of the result is recommended.")
       end
       # We only plan to run this method once:
       @switched = true

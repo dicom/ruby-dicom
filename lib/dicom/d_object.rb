@@ -121,8 +121,6 @@ module DICOM
       w.encode_segments(max_size)
       # Write process succesful?
       @write_success = w.success
-      # If any messages has been recorded, send these to the message handling method:
-      logger.info(w.msg) if w.msg.length > 0
       return w.segments
     end
 
@@ -154,21 +152,25 @@ module DICOM
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
     #
     def read(string, options={})
-      raise ArgumentError, "Invalid argument. Expected String, got #{string.class}." unless string.is_a?(String)
+      raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
       # Clear any existing DObject tags, then read:
       @tags = Hash.new
       r = DRead.new(self, string, options)
       # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
       # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
       if !r.success and !exists?("0002,0010")
+        logger.debug("First attempt at parsing the file failed.\nAttempting a second pass (assuming Explicit Little Endian transfer syntax).")
         # Clear the existing DObject tags:
         @tags = Hash.new
         r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
         # Only extract information from this new attempt if it was successful:
         r = r_explicit if r_explicit.success
       end
+      # Pass along any messages that has been recorded:
+      r.msg.each { |m| logger.public_send(m.first, m.last) }
       # Store the data to the instance variables if the readout was a success:
       if r.success
+        logger.info("The DICOM file has been successfully parsed.")
         @read_success = true
         # Update instance variables based on the properties of the DICOM object:
         @explicit = r.explicit
@@ -176,10 +178,9 @@ module DICOM
         @signature = r.signature
         @stream.endian = @file_endian
       else
+        logger.warn("Parsing the DICOM file has failed.")
         @read_success = false
       end
-      # If any messages has been recorded, send these to the message handling method:
-      r.msg.each { |m| logger.info(m) }
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
@@ -340,8 +341,6 @@ module DICOM
       w.write
       # Write process succesful?
       @write_success = w.success
-      # If any messages has been recorded, send these to the message handling method:
-      logger.info(w.msg) if w.msg.length > 0
     end
 
 

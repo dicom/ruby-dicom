@@ -412,7 +412,7 @@ module DICOM
       if success
         logger.info("TEST SUCCSESFUL!")
       else
-        logger.error("TEST FAILED!")
+        logger.warn("TEST FAILED!")
       end
       return success
     end
@@ -701,7 +701,7 @@ module DICOM
             process_returned_data(segments)
           end
         else
-          logger.error("Error: Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
+          logger.error("Unable to extract SOP Class UID and/or SOP Instance UID for this DICOM object. File will not be sent to its destination.")
         end
       end
     end
@@ -749,7 +749,7 @@ module DICOM
         @approved_syntaxes.each_pair do |key, value|
           sntx_k = LIBRARY.get_syntax_description(key)
           sntx_v = LIBRARY.get_syntax_description(value[1])
-          logger.error("APPROVED: #{sntx_k} (#{sntx_v})")
+          logger.info("APPROVED: #{sntx_k} (#{sntx_v})")
         end
 
         rejected.each_pair do |key, value|

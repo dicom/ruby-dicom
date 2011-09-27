@@ -92,8 +92,8 @@ module DICOM
           data_element = process_data_element
         rescue Exception => msg
           # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-          @msg << msg
-          @msg << "Error: Failed to parse Data Elements. This was probably an invalid/corrupt DICOM file."
+          @msg << [:error, msg]
+          @msg << [:warn, "Parsing a Data Element has failed. This was probably caused by an invalidly encoded (or corrupted) DICOM file."]
           @success = false
           data_element = false
         end
@@ -123,7 +123,7 @@ module DICOM
         @header_length += 132
         if identifier != "DICM" then
           # Header signature is not valid (we will still try to read it is a DICOM file though):
-          @msg << "Warning: The specified file does not contain the official DICOM header. Will try to read the file anyway, as some sources are known to skip this header."
+          @msg << [:warn, "This file does not contain the expected DICOM header. Will try to parse the file anyway (assuming a missing header)."]
           # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
           # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
           @explicit = false
@@ -211,7 +211,7 @@ module DICOM
         if length > 0 and not @enc_image
           child_reader = DRead.new(@current_element, bin, :bin => true, :syntax => @transfer_syntax)
           @current_parent = @current_parent.parent
-          @msg += child_reader.msg unless child_reader.msg.empty? 
+          @msg += child_reader.msg unless child_reader.msg.empty?
           @success = child_reader.success
           return false unless @success
         end
@@ -223,7 +223,7 @@ module DICOM
         # Create an ordinary Data Element:
         @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
-        raise "Error: The actual length of the binary (#{@current_element.bin.length}) does not match the specified length (#{length}) for Data Element #{@current_element.tag}." if length != @current_element.bin.length
+        raise "The actual length of the value (#{@current_element.bin.length}) does not match the specified length (#{length}) for Data Element #{@current_element.tag}" if length != @current_element.bin.length
       end
       # Return true to indicate success:
       return true
@@ -291,7 +291,7 @@ module DICOM
         length = @stream.decode(bytes, "SL") # (4)
       end
       # Check that length is valid (according to the DICOM standard, it must be even):
-      raise "Error: Encountered a Data Element (#{tag}) with an invalid (odd) value length." if length%2 == 1 and length > 0
+      raise "Encountered a Data Element (#{tag}) with an invalid (odd) value length." if length%2 == 1 and length > 0
       return vr, length
     end
 
@@ -351,8 +351,8 @@ module DICOM
             @retrials = 0
             raise "Unable to read the file. File does not exist?"
           else
-            puts "Warning: Exception in ruby-dicom when loading a dicom file from: #{file}"
-            puts "Retrying... #{@retrials}"
+            @msg << [:warn, "Exception in ruby-dicom when loading a dicom file from: #{file}"]
+            @msg << [:debug, "Retrying... #{@retrials}"]
             @retrials+=1
             retry
           end
@@ -364,16 +364,16 @@ module DICOM
             if File.size(file) > 8
               @file = File.new(file, "rb")
             else
-              @msg << "Error! File is too small to contain DICOM information (#{file})."
+              @msg << [:error, "This file is too small to contain valid DICOM information: #{file}."]
             end
           else
-            @msg << "Error! File is a directory (#{file})."
+            @msg << [:error, "Expected a file, got a directory: #{file}"]
           end
         else
-          @msg << "Error! File exists but I don't have permission to read it (#{file})."
+          @msg << [:error, "File exists but I don't have permission to read it: #{file}"]
         end
       else
-        @msg << "Error! The file you have supplied does not exist (#{file})."
+        @msg << [:error, "Invalid (non-existing) file: #{file}"]
       end
     end
 
@@ -407,7 +407,10 @@ module DICOM
     # Creates various instance variables that are used when parsing the DICOM string.
     #
     def init_variables
-      # Array that will holde any messages generated while reading the DICOM file:
+      # Array for storing any messages that is generated while reading the DICOM file.
+      # The messages shall be of the format: [:type, "message"]
+      # (Because of the possibility of multi-pass file reading, the DRead instance does not access
+      # the Logging module directly; it lets the DObject instance pass along the messages instead)
       @msg = Array.new
       # Presence of the official DICOM signature:
       @signature = false
