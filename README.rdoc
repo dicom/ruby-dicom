@@ -72,8 +72,10 @@ communication modalities like querying, moving, sending and receiving files.
   s = DServer.new(104, :host_ae => "MY_DICOM_SERVER")
   s.start_scp("C:/temp/")
 
-=== Logging to file
+=== Log settings
 
+  # Change the log level so that only error messages are displayed:
+  DICOM.logger.level = Logger::ERROR
   # Setting up a simple file log:
   l = Logger.new('my_logfile.log')
   DICOM.logger = l
