@@ -223,7 +223,7 @@ module DICOM
         # Create an ordinary Data Element:
         @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
         # Check that the data stream didnt end abruptly:
-        raise "The actual length of the value (#{@current_element.bin.length}) does not match the specified length (#{length}) for Data Element #{@current_element.tag}" if length != @current_element.bin.length
+        raise "The actual length of the value (#{@current_element.bin.length}) does not match its specified length (#{length}) for Data Element #{@current_element.tag}" if length != @current_element.bin.length
       end
       # Return true to indicate success:
       return true
