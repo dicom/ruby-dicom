@@ -40,10 +40,114 @@ module DICOM
   class DObject < ImageItem
     include Logging
 
+    # Creates a DObject instance by downloading a DICOM file
+    # specified by a hyperlink, and parsing the retrieved file.
+    #
+    # === Restrictions
+    #
+    # * Highly experimental and un-tested!
+    # * Designed for HTTP protocol only.
+    # * Whether this method should be included or removed from ruby-dicom is up for debate.
+    #
+    # === Parameters
+    #
+    # * <tt>link</tt> -- A hyperlink string which specifies remote location of the DICOM file to be loaded.
+    #
+    def self.get(link)
+      raise ArgumentError, "Invalid argument 'link'. Expected String, got #{link.class}." unless link.is_a?(String)
+      raise ArgumentError, "Invalid argument 'link'. Expected a string starting with 'http', got #{link}." unless link.index('http') == 0
+      require 'open-uri'
+      bin = nil
+      file = nil
+      # Try to open the remote file using open-uri:
+      retrials = 0
+      begin
+        file = open(link, 'rb') # binary encoding (ASCII-8BIT)
+      rescue Exception => e
+        if retrials > 3
+          retrials = 0
+          raise "Unable to retrieve the file. File does not exist?"
+        else
+          logger.warn("Exception in ruby-dicom when loading a dicom file from: #{file}")
+          logger.debug("Retrying... #{retrials}")
+          retrials += 1
+          retry
+        end
+      end
+      bin = File.open(file, "rb") { |f| f.read }
+      # Parse the file contents and create the DICOM object:
+      if bin
+        obj = self.parse(bin)
+      else
+        obj = self.new
+        obj.read_success = false
+      end
+      return obj
+    end
+
+    # Creates a DObject instance by parsing an encoded binary DICOM string.
+    #
+    # === Parameters
+    #
+    # * <tt>string</tt> -- An encoded binary string containing DICOM information.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:no_header</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string.
+    #
+    def self.parse(string, options={})
+      syntax = options[:syntax]
+      no_header = options[:no_header]
+      raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
+      raise ArgumentError, "Invalid option :syntax. Expected String, got #{syntax.class}." if syntax && !syntax.is_a?(String)
+      obj = self.new
+      obj.read(string, :bin => true, :no_header => no_header, :syntax => syntax)
+      return obj
+    end
+
+    # Creates a DObject instance by reading and parsing a DICOM file.
+    #
+    # === Parameters
+    #
+    # * <tt>file</tt> -- A string which specifies the path of the DICOM file to be loaded.
+    #
+    def self.read(file)
+      raise ArgumentError, "Invalid argument 'file'. Expected String, got #{file.class}." unless file.is_a?(String)
+      # Read the file content:
+      bin = nil
+      unless File.exist?(file)
+        logger.error("Invalid (non-existing) file: #{file}")
+      else
+        unless File.readable?(file)
+          logger.error("File exists but I don't have permission to read it: #{file}")
+        else
+          if File.directory?(file)
+            logger.error("Expected a file, got a directory: #{file}")
+          else
+            if File.size(file) < 8
+              logger.error("This file is too small to contain any DICOM information: #{file}.")
+            else
+              bin = File.open(file, "rb") { |f| f.read }
+            end
+          end
+        end
+      end
+      # Parse the file contents and create the DICOM object:
+      if bin
+        obj = self.parse(bin)
+      else
+        obj = self.new
+        obj.read_success = false
+      end
+      return obj
+    end
+
     # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
     attr_reader :parent
     # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
-    attr_reader :read_success
+    attr_accessor :read_success
     # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
     attr_reader :stream
     # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
@@ -66,7 +170,7 @@ module DICOM
     # === Options
     #
     # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
     #
     # === Examples
     #
@@ -138,8 +242,8 @@ module DICOM
     #
     # === Notes
     #
-    # This method is called automatically when initializing the DObject class with a file parameter.
-    # In practice this method is rarely called by the user.
+    # * This method is called automatically when initializing the DObject class with a file parameter.
+    # * In practice this method is rarely called by the user, and in fact it may be removed entirely at some stage.
     #
     # === Parameters
     #
@@ -149,7 +253,8 @@ module DICOM
     # === Options
     #
     # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the DRead class will be forced to use this transfer syntax when decoding the file/binary string.
+    # * <tt>:no_header</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
     #
     def read(string, options={})
       raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
@@ -162,7 +267,7 @@ module DICOM
         logger.debug("First attempt at parsing the file failed.\nAttempting a second pass (assuming Explicit Little Endian transfer syntax).")
         # Clear the existing DObject tags:
         @tags = Hash.new
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :syntax => EXPLICIT_LITTLE_ENDIAN)
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :no_header => options[:no_header], :syntax => EXPLICIT_LITTLE_ENDIAN)
         # Only extract information from this new attempt if it was successful:
         r = r_explicit if r_explicit.success
       end

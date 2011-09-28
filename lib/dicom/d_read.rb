@@ -36,8 +36,9 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
     # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
+    # * <tt>:no_header</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
     #
     def initialize(obj, string=nil, options={})
       # Set the DICOM object as an instance variable:
@@ -69,8 +70,8 @@ module DICOM
       end
       # Create a Stream instance to handle the decoding of content from this binary string:
       @stream = Stream.new(@str, @file_endian)
-      # Do not check for header information when supplied a (network) binary string:
-      unless options[:bin]
+      # Do not check for header information if we've been told there is none (typically for (network) binary strings):
+      unless options[:no_header]
         # Read and verify the DICOM header:
         header = check_header
         # If the file didnt have the expected header, we will attempt to read
@@ -209,7 +210,7 @@ module DICOM
         # If length is specified (no delimitation items), load a new DRead instance to read these child elements
         # and load them into the current sequence. The exception is when we have a pixel data item.
         if length > 0 and not @enc_image
-          child_reader = DRead.new(@current_element, bin, :bin => true, :syntax => @transfer_syntax)
+          child_reader = DRead.new(@current_element, bin, :bin => true, :no_header => true, :syntax => @transfer_syntax)
           @current_parent = @current_parent.parent
           @msg += child_reader.msg unless child_reader.msg.empty?
           @success = child_reader.success
