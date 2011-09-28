@@ -84,7 +84,7 @@ module DICOM
     end
 
     it "should return a 3-element array with the chain of parents, where the top parent is the last element, and immediate parent is the first" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       s1 = Sequence.new("3006,0039", :parent => obj)
       i = Item.new(:parent => s1)
       s2 = Sequence.new("3006,0040", :parent => i)
@@ -99,7 +99,7 @@ module DICOM
     end
 
     it "should return the top parent in the chain of parents when the top_parent method is called on an element with multiple parents" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       s1 = Sequence.new("3006,0039", :parent => obj)
       i = Item.new(:parent => s1)
       s2 = Sequence.new("3006,0040", :parent => i)

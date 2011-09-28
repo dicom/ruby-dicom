@@ -15,12 +15,12 @@ module DICOM
     end
 
     it "should return nil if no pixel data is present" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       obj.image.should be_nil
     end
 
     it "should return false if it is not able to decompress compressed pixel data" do
-      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       obj["0002,0010"].value = rand(10**10).to_s
       obj.stubs(:compression?).returns(true)
       obj.stubs(:decompress).returns(false)
@@ -28,49 +28,49 @@ module DICOM
     end
 
     it "should raise an ArgumentError when an unsupported bit depth is used" do
-      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2)
       obj["0028,0100"].value = 42
       expect {obj.image}.to raise_error(ArgumentError)
     end
 
     it "should raise an error when an invalid Pixel Representation is set" do
-      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2)
       obj["0028,0103"].value = 42
       expect {obj.image}.to raise_error
     end
 
     it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return an image object" do
-      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       image = obj.image
       image.should be_a(Magick::Image)
     end
 
     it "should decompress the RLE encoded pixel data of this DICOM file and return an image object" do
-      obj = DObject.new(DCM_EXPLICIT_MR_RLE_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_RLE_MONO2)
       image = obj.image
       image.should be_a(Magick::Image)
     end
 
     it "should return false when not suceeding in decompressing the pixel data of this DICOM file" do
-      obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
       image = obj.image
       image.should eql false
     end
 
     it "should read the pixel data of this DICOM file and return an image object" do
-      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2)
       image = obj.image
       image.should be_a(Magick::Image)
     end
 
     it "should process the pixel data according to the :level parameter and return an image object" do
-      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2)
       image = obj.image(:level => true)
       image.should be_a(Magick::Image)
     end
 
     it "should read the RGP colored pixel data of this DICOM file and return an image object" do
-      obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
       image = obj.image
       image.should be_a(Magick::Image)
       # Visual test:
@@ -78,7 +78,7 @@ module DICOM
     end
 
     it "should read the palette colored pixel data of this DICOM file and return an image object" do
-      obj = DObject.new(DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL)
       image = obj.image
       image.should be_a(Magick::Image)
       # Visual test:
@@ -95,14 +95,14 @@ module DICOM
     end
 
     it "should return an emtpy array if no pixel data is present" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       images = obj.images
       images.should be_an(Array)
       images.length.should eql 0
     end
 
     it "should return an empty array if it is not able to decompress compressed pixel data" do
-      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       obj["0002,0010"].value = rand(10**10).to_s
       obj.stubs(:compression?).returns(true)
       obj.stubs(:decompress).returns(false)
@@ -112,14 +112,14 @@ module DICOM
     end
 
     it "should return an empty array when not suceeding in decompressing the pixel data of this DICOM file" do
-      obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
       images = obj.images
       images.should be_an(Array)
       images.length.should eql 0
     end
 
     it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return the image object in an array" do
-      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       images = obj.images
       images.should be_a(Array)
       images.length.should eql 1
@@ -127,7 +127,7 @@ module DICOM
     end
 
     it "should decompress the RLE encoded pixel data of this DICOM file and return the image object in an array" do
-      obj = DObject.new(DCM_EXPLICIT_MR_RLE_MONO2, :verbose => false)
+      obj = DObject.new(DCM_EXPLICIT_MR_RLE_MONO2)
       images = obj.images
       images.should be_a(Array)
       images.length.should eql 1
@@ -135,7 +135,7 @@ module DICOM
     end
 
     it "should decompress the JPEG2K encoded multiframe pixel data of this DICOM file and return the image objects in an array" do
-      obj = DObject.new(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME)
       images = obj.images
       images.should be_a(Array)
       images.length.should eql 8
@@ -144,7 +144,7 @@ module DICOM
     end
 
     it "should read the pixel data of this DICOM file and return the image object in an array" do
-      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2)
       images = obj.images
       images.should be_a(Array)
       images.length.should eql 1
@@ -157,14 +157,14 @@ module DICOM
   describe ImageItem, "#image=() [using :rmagick]" do
 
     it "should raise an ArgumentError when a non-image argument is passed" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       expect {obj.image = 42}.to raise_error(ArgumentError)
     end
 
     it "should export the pixels of an image object and write them to the DICOM object's pixel data element" do
-      obj1 = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2, :verbose => false)
+      obj1 = DObject.new(DCM_IMPLICIT_MR_16BIT_MONO2)
       image = obj1.image(:level => true)
-      obj2 = DObject.new(nil, :verbose => false)
+      obj2 = DObject.new(nil)
       obj2.add(Element.new("0028,0004", "MONOCHROME2")) # Photometric Interpretation
       obj2.add(Element.new("0028,0010", 256)) # Rows
       obj2.add(Element.new("0028,0011", 256)) # Columns

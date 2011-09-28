@@ -8,7 +8,7 @@ module DICOM
   describe Parent, "#[]" do
 
     it "should return the data element when the argument specifies a valid child element tag" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       id_tag = "0010,0020"
       name = Element.new("0010,0010", "John_Doe", :parent => obj)
       id = Element.new(id_tag, "12345", :parent => obj)
@@ -17,13 +17,13 @@ module DICOM
     end
 
     it "should return nil when a non-present tag is specified" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       name = Element.new("0010,0010", "John_Doe", :parent => obj)
       obj["0010,0020"].should be_nil
     end
 
     it "should return nil when called on an empty object" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       obj["0010,0020"].should be_nil
     end
 
@@ -33,7 +33,7 @@ module DICOM
   describe Parent, "#add" do
 
     it "should add a Element to the DICOM object" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       name_tag = "0010,0010"
       name = Element.new(name_tag, "John_Doe")
       obj.add(name)
@@ -41,7 +41,7 @@ module DICOM
     end
 
     it "should add a Sequence to the DICOM object" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       seq_tag = "0008,1140"
       seq = Sequence.new(seq_tag)
       obj.add(seq)
@@ -49,7 +49,7 @@ module DICOM
     end
 
     it "should have two children, when adding a Element and a Sequence to the empty DICOM object" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       seq = Sequence.new("0008,1140")
       obj.add(seq)
       name = Element.new("0010,0010", "John_Doe")
@@ -58,21 +58,21 @@ module DICOM
     end
 
     it "should update the parent attribute of the Element when it is added to a parent" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       name = Element.new("0010,0010", "John_Doe")
       obj.add(name)
       name.parent.should eql obj
     end
 
     it "should update the parent attribute of the Sequence when it is added to a parent" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       seq = Sequence.new("0008,1140")
       obj.add(seq)
       seq.parent.should eql obj
     end
 
     it "should raise ArgumentError when it is called with an Item" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       expect {obj.add(Item.new)}.to raise_error(ArgumentError)
     end
 
@@ -88,7 +88,7 @@ module DICOM
   describe Parent, "#add_item" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
       @obj.add(Sequence.new("0008,1140"))
     end
 
@@ -182,7 +182,7 @@ module DICOM
   describe Parent, "#children" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should return an empty array when called on a parent with no children" do
@@ -222,7 +222,7 @@ module DICOM
   describe Parent, "#children?" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should return true when the parent has child elements" do
@@ -246,7 +246,7 @@ module DICOM
   describe Parent, "#count" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should return zero when the parent has no children" do
@@ -267,7 +267,7 @@ module DICOM
   describe Parent, "#count_all" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should return zero when the parent has no children" do
@@ -288,7 +288,7 @@ module DICOM
   describe Parent, "#exists?" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should return false when the parent does not contain the queried element" do
@@ -306,7 +306,7 @@ module DICOM
   describe Parent, "#group" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should raise ArgumentError when a non-string argument is used" do
@@ -340,7 +340,7 @@ module DICOM
   describe Parent, "#is_parent?" do
 
     it "should return true when called on a DObject" do
-      DObject.new(nil, :verbose => false).is_parent?.should be_true
+      DObject.new(nil).is_parent?.should be_true
     end
 
     it "should return true when called on a Sequence" do
@@ -361,7 +361,7 @@ module DICOM
   describe Parent, "#length=()" do
 
     it "should raise an error when called on a DObject" do
-      expect {DObject.new(nil, :verbose => false).length = 42}.to raise_error
+      expect {DObject.new(nil).length = 42}.to raise_error
     end
 
     it "should change the length attribute of the Sequence to the specified value" do
@@ -384,7 +384,7 @@ module DICOM
   describe Parent, "#print" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
     end
 
     it "should print a notice to the screen when run on an empty parent" do
@@ -452,7 +452,7 @@ module DICOM
   describe Parent, "#remove" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
       @d = Element.new("0010,0030", "20000101")
       @s = Sequence.new("0008,1140")
       @i = Item.new
@@ -518,7 +518,7 @@ module DICOM
   describe Parent, "#remove_children" do
 
     it "should remove all children from the parent element" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       obj.add(Element.new("0010,0030", "20000101"))
       obj.add(Element.new("0011,0030", "42"))
       obj.add(Element.new("0010,0010", "John_Doe"))
@@ -535,7 +535,7 @@ module DICOM
   describe Parent, "#remove_group" do
 
     it "should remove all children from the parent element" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       obj.add(Element.new("0010,0030", "20000101"))
       obj.add(Element.new("0011,0030", "42"))
       obj.add(Element.new("0010,0010", "John_Doe"))
@@ -552,7 +552,7 @@ module DICOM
   describe Parent, "#remove_private" do
 
     it "should remove all private children from the parent element" do
-      obj = DObject.new(nil, :verbose => false)
+      obj = DObject.new(nil)
       obj.add(Element.new("0010,0030", "20000101"))
       obj.add(Element.new("0011,0030", "42"))
       obj.add(Element.new("0013,0010", "John_Doe"))
@@ -569,7 +569,7 @@ module DICOM
   describe Parent, "#reset_length" do
 
     before :each do
-      @obj = DObject.new(nil, :verbose => false)
+      @obj = DObject.new(nil)
       @s = Sequence.new("0008,1140", :parent => @obj)
       @i = Item.new(:parent => @s)
       @s.length, @i.length = 42, 42
@@ -595,7 +595,7 @@ module DICOM
   describe Parent, "#value" do
 
     before :each do
-      @obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, :verbose => false)
+      @obj = DObject.new(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
     end
 
     it "should raise ArgumentError when the argument is not a string or integer" do

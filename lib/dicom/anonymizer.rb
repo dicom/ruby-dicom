@@ -166,6 +166,9 @@ module DICOM
           all_write = true
           files_written = 0
           files_failed_read = 0
+          # To avoid a spam of messages from DObject, temporarily change the logging level:
+          anonymizer_level = logger.level
+          logger.level = Logger::FATAL
           @files.each_index do |i|
             # Read existing file to DICOM object:
             obj = DICOM::DObject.new(@files[i])
@@ -207,7 +210,9 @@ module DICOM
               files_failed_read += 1
             end
           end
-          # Finished anonymizing files. Print elapsed time and status of anonymization:
+          # Finished anonymizing files. Reset the logging level:
+          logger.level = anonymizer_level
+          # Print elapsed time and status of anonymization:
           end_time = Time.now.to_f
           logger.info("Anonymization process completed!")
           if all_read
