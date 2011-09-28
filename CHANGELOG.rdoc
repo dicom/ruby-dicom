@@ -3,6 +3,11 @@
 === (Not released yet)
 
 * Enabled the use of lower case tag letters in methods which previously required the use of upper case letters.
+* Added new DObject class methods to offload DObject#new:
+  * DObject#read is the new preferred method for reading a DICOM file.
+  * DObject#parse is the new preferred method for parsing an encoded DICOM string.
+  * The experimental feature of retrieving a DICOM file through http was moved to DObject#get.
+  * Calling DObject with a string argument was deprecated. 
 * Introduced proper logging capabilities which replaced the simple message printouts to STDOUT:
   * Based on the Logger class of the Ruby Standard Library.
   * Automatically integrates with the Rails logger in a Rails application.
