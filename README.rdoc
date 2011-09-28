@@ -23,7 +23,7 @@ communication modalities like querying, moving, sending and receiving files.
 === Read, modify and write
 
   # Read file:
-  obj = DObject.new("some_file.dcm")
+  obj = DObject.read("some_file.dcm")
   # Extract the Patient's Name value:
   obj.patients_name.value
   # Add or modify the Patient's Name element:
