@@ -165,7 +165,7 @@ module DICOM
           logger.level = Logger::FATAL
           @files.each_index do |i|
             # Read existing file to DICOM object:
-            obj = DICOM::DObject.new(@files[i])
+            obj = DICOM::DObject.read(@files[i])
             if obj.read_success
               # Anonymize the desired tags:
               @tags.each_index do |j|
