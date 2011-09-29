@@ -86,10 +86,10 @@ module DICOM
         a.add_exception(@skip_s)
         a.add_folder(@anon_s)
         a.execute
-        a1 = DObject.new(@anon1)
-        a2 = DObject.new(@anon2)
-        s1 = DObject.new(@skip1)
-        s2 = DObject.new(@skip2)
+        a1 = DObject.read(@anon1)
+        a2 = DObject.read(@anon2)
+        s1 = DObject.read(@skip1)
+        s2 = DObject.read(@skip2)
         a1.value("0010,0010").should eql a.value("0010,0010")
         a2.value("0010,0010").should eql a.value("0010,0010")
         s1.value("0010,0010").should_not eql a.value("0010,0010")
@@ -101,10 +101,10 @@ module DICOM
         a.add_folder(@anon)
         a.add_exception(@skip)
         a.execute
-        a1 = DObject.new(@anon1)
-        a2 = DObject.new(@anon2)
-        s1 = DObject.new(@skip1)
-        s2 = DObject.new(@skip2)
+        a1 = DObject.read(@anon1)
+        a2 = DObject.read(@anon2)
+        s1 = DObject.read(@skip1)
+        s2 = DObject.read(@skip2)
         a1.value("0010,0010").should eql a.value("0010,0010")
         a2.value("0010,0010").should eql a.value("0010,0010")
         s1.value("0010,0010").should_not eql a.value("0010,0010")
@@ -125,10 +125,10 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon_s)
         a.execute
-        a1 = DObject.new(@anon1)
-        a2 = DObject.new(@anon2)
-        s1 = DObject.new(@skip1)
-        s2 = DObject.new(@skip2)
+        a1 = DObject.read(@anon1)
+        a2 = DObject.read(@anon2)
+        s1 = DObject.read(@skip1)
+        s2 = DObject.read(@skip2)
         a1.value("0010,0010").should eql a.value("0010,0010")
         a2.value("0010,0010").should eql a.value("0010,0010")
         s1.value("0010,0010").should eql a.value("0010,0010")
@@ -139,10 +139,10 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon)
         a.execute
-        a1 = DObject.new(@anon1)
-        a2 = DObject.new(@anon2)
-        s1 = DObject.new(@skip1)
-        s2 = DObject.new(@skip2)
+        a1 = DObject.read(@anon1)
+        a2 = DObject.read(@anon2)
+        s1 = DObject.read(@skip1)
+        s2 = DObject.read(@skip2)
         a1.value("0010,0010").should eql a.value("0010,0010")
         a2.value("0010,0010").should eql a.value("0010,0010")
         s1.value("0010,0010").should eql a.value("0010,0010")
@@ -154,10 +154,10 @@ module DICOM
         a.add_folder(@anon)
         a.add_folder(@anon_other)
         a.execute
-        a1 = DObject.new(@anon1)
-        a2 = DObject.new(@anon2)
-        a3 = DObject.new(@anon3)
-        a4 = DObject.new(@anon4)
+        a1 = DObject.read(@anon1)
+        a2 = DObject.read(@anon2)
+        a3 = DObject.read(@anon3)
+        a4 = DObject.read(@anon4)
         a1.value("0010,0010").should eql a.value("0010,0010")
         a2.value("0010,0010").should eql a.value("0010,0010")
         a3.value("0010,0010").should eql a.value("0010,0010")
@@ -216,7 +216,7 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon_other)
         a.execute
-        obj = DObject.new(@anon3)
+        obj = DObject.read(@anon3)
         obj.value("0010,0010").should eql a.value("0010,0010")
         obj.value("0008,0020").should eql a.value("0008,0020")
       end
@@ -225,7 +225,7 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon_other)
         a.execute
-        obj = DObject.new(@anon3) # the tag we are testing is not originally present in this file
+        obj = DObject.read(@anon3) # the tag we are testing is not originally present in this file
         a.value("0008,0012").should be_true # make sure the tag we are testing is defined
         obj.exists?("0008,0012").should be_false
       end
@@ -242,7 +242,7 @@ module DICOM
         a.add_folder(@anon_other)
         a.blank = true
         a.execute
-        obj = DObject.new(@anon3)
+        obj = DObject.read(@anon3)
         obj.value("0010,0010").should_not eql a.value("0010,0010")
         obj.value("0010,0010").to_s.length.should eql 0
       end
@@ -252,10 +252,10 @@ module DICOM
         a.add_folder(@anon)
         a.enumeration = true
         a.execute
-        a1 = DObject.new(@anon1)
-        a2 = DObject.new(@anon2)
-        s1 = DObject.new(@skip1)
-        s2 = DObject.new(@skip2)
+        a1 = DObject.read(@anon1)
+        a2 = DObject.read(@anon2)
+        s1 = DObject.read(@skip1)
+        s2 = DObject.read(@skip2)
         a1.value("0010,0010").should_not eql a.value("0010,0010")
         a1.value("0010,0010").should eql s1.value("0010,0010")
         a2.value("0010,0010").should eql s2.value("0010,0010")
@@ -269,13 +269,13 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon_other)
         a.write_path = @wpath
-        obj = DObject.new(@anon3)
+        obj = DObject.read(@anon3)
         old_value = obj.value("0010,0010")
         a.execute
-        obj = DObject.new(@anon3)
+        obj = DObject.read(@anon3)
         after_value = obj.value("0010,0010")
         after_value.should eql old_value
-        w = DObject.new(@w1)
+        w = DObject.read(@w1)
         w.value("0010,0010").should eql a.value("0010,0010")
       end
 
@@ -284,7 +284,7 @@ module DICOM
         a.add_folder(@anon_other)
         a.write_path = @wpath_s
         a.execute
-        w = DObject.new(@w1)
+        w = DObject.read(@w1)
         w.value("0010,0010").should eql a.value("0010,0010")
       end
 
