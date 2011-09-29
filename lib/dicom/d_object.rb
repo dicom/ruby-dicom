@@ -94,16 +94,16 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:no_header</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string.
     #
     def self.parse(string, options={})
       syntax = options[:syntax]
-      no_header = options[:no_header]
+      no_header = options[:no_meta]
       raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
       raise ArgumentError, "Invalid option :syntax. Expected String, got #{syntax.class}." if syntax && !syntax.is_a?(String)
       obj = self.new
-      obj.read(string, :bin => true, :no_header => no_header, :syntax => syntax)
+      obj.read(string, :bin => true, :no_meta => no_header, :syntax => syntax)
       return obj
     end
 
@@ -158,32 +158,42 @@ module DICOM
 
     # Creates a DObject instance (DObject is an abbreviation for "DICOM object").
     #
+    # === Notes
+    #
     # The DObject instance holds references to the different types of objects (Element, Item, Sequence)
     # that makes up a DICOM object. A DObject is typically buildt by reading and parsing a file or a
     # binary string, but can also be buildt from an empty state by the user.
     #
+    # To customize logging behaviour, refer to the Logging module documentation.
+    #
     # === Parameters
     #
-    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed. The parameter defaults to nil, in which case an empty DObject instance is created.
+    # * <tt>string</tt> -- (Deprecated) A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed. The parameter defaults to nil, in which case an empty DObject instance is created.
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
+    # * <tt>:bin</tt> -- (Deprecated) Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
+    # * <tt>:syntax</tt> -- (Deprecated) String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
     #
     # === Examples
     #
-    #   # Load a DICOM file:
+    #   # Load a DICOM file (Deprecated: please use DObject.read() instead):
     #   require 'dicom'
     #   obj = DICOM::DObject.new("test.dcm")
     #   # Read a DICOM file that has already been loaded into memory in a binary string (with a known transfer syntax):
+    #   # (Deprecated: please use DObject.parse() instead)
     #   obj = DICOM::DObject.new(binary_string, :bin => true, :syntax => string_transfer_syntax)
     #   # Create an empty DICOM object
-    #   obj = DICOM::DObject.new(nil)
+    #   obj = DICOM::DObject.new
+    #   # Increasing the log message threshold (default level is INFO):
+    #   DICOM.logger.level = Logger::WARN
     #
     def initialize(string=nil, options={})
-      # Process option values, setting defaults for the ones that are not specified:
+      # Deprecation warning:
+      logger.warn("Calling DOBject#new with a string argument is deprecated. Please use DObject#read (for reading files) or DObject#parse (for parsing strings) instead. Support for DObject#new with a string argument will be removed in a future version.") if string
+      # Removal warning:
+      logger.warn("The option :verbose no longer has any meaning. Please specify logger levels instead, e.g. DICOM.logger.level = Logger::WARN (refer to the documentation for more details).") if options[:verbose] == false
       # Initialization of variables that DObject share with other parent elements:
       initialize_parent
       # Structural information (default values):
@@ -253,7 +263,7 @@ module DICOM
     # === Options
     #
     # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:no_header</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
     #
     def read(string, options={})
@@ -267,7 +277,7 @@ module DICOM
         logger.debug("First attempt at parsing the file failed.\nAttempting a second pass (assuming Explicit Little Endian transfer syntax).")
         # Clear the existing DObject tags:
         @tags = Hash.new
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :no_header => options[:no_header], :syntax => EXPLICIT_LITTLE_ENDIAN)
+        r_explicit = DRead.new(self, string, :bin => options[:bin], :no_meta => options[:no_meta], :syntax => EXPLICIT_LITTLE_ENDIAN)
         # Only extract information from this new attempt if it was successful:
         r = r_explicit if r_explicit.success
       end

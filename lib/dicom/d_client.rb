@@ -31,6 +31,10 @@ module DICOM
 
     # Creates a DClient instance.
     #
+    # === Notes
+    #
+    # * To customize logging behaviour, refer to the Logging module documentation.
+    #
     # === Parameters
     #
     # * <tt>host_ip</tt> -- String. The IP adress of the server which you are going to communicate with.
@@ -48,10 +52,6 @@ module DICOM
     #
     #   # Create a client instance using default settings:
     #   node = DICOM::DClient.new("10.1.25.200", 104)
-    #
-    #
-    # To make changes in logging functionality please take a look at
-    # Logging module.
     #
     def initialize(host_ip, port, options={})
       require 'socket'
@@ -502,33 +502,38 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>files</tt> -- A single file path or an array of paths, or a DObject or an array of DObject instances.
+    # * <tt>files_or_objects</tt> -- A single file path or an array of paths, or a DObject or an array of DObject instances.
     #
-    def load_files(files)
+    def load_files(files_or_objects)
+      files_or_objects = [files_or_objects] unless files_or_objects.is_a?(Array)
       status = true
       message = ""
       objects = Array.new
       abstracts = Array.new
       id = 1
       @presentation_contexts = Hash.new
-      files = [files] unless files.is_a?(Array)
-      files.each do |file|
-        if file.is_a?(String)
-          obj = DObject.new(file)
+      files_or_objects.each do |file_or_object|
+        if file_or_object.is_a?(String)
+          # Temporarily increase the log threshold to suppress messages from the DObject class:
+          client_level = logger.level
+          logger.level = Logger::FATAL
+          obj = DObject.read(file_or_object)
+          # Reset the logg threshold:
+          logger.level = client_level
           if obj.read_success
             # Load the DICOM object:
             objects << obj
           else
             status = false
-            message = "Failed to successfully parse a DObject for the following string: #{file}"
+            message = "Failed to read a DObject from this file: #{file_or_object}"
           end
-        elsif file.is_a?(DObject)
+        elsif file_or_object.is_a?(DObject)
           # Load the DICOM object and its abstract syntax:
-          abstracts << file.value("0008,0016")
-          objects << file
+          abstracts << file_or_object.value("0008,0016")
+          objects << file_or_object
         else
           status = false
-          message = "Array contains invalid object #{file}."
+          message = "Array contains invalid object: #{file_or_object.class}."
         end
       end
       # Extract available transfer syntaxes for the various sop classes found amongst these objects

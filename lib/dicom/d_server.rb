@@ -25,9 +25,6 @@ module DICOM
     #     s.file_handler = MyFileHandler
     #   end
     #
-    # To make changes in logging functionality please take a look at
-    # Logging module.
-    #
     def self.run(port=104, path='./received/', &block)
       server = DServer.new(port)
       server.instance_eval(&block)
@@ -52,6 +49,10 @@ module DICOM
 
     # Creates a DServer instance.
     #
+    # === Notes
+    #
+    # * To customize logging behaviour, refer to the Logging module documentation.
+    #
     # === Parameters
     #
     # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
@@ -71,9 +72,6 @@ module DICOM
     #   # Create a server and specify a host name as well as a custom buildt file handler:
     #   require 'MyFileHandler'
     #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
-    #
-    # To make changes in logging functionality please take a look at
-    # Logging module.
     #
     def initialize(port=104, options={})
       require 'socket'
@@ -208,8 +206,8 @@ module DICOM
     #
     def start_scp(path='./received/')
       if @accepted_abstract_syntaxes.size > 0 and @accepted_transfer_syntaxes.size > 0
-        logger.info("Starting DICOM SCP server...")
-        logger.info("*********************************")
+        logger.info("Started DICOM SCP server on port #{@port}.")
+        logger.info("Waiting for incoming transmissions...\n\n")
         # Initiate server:
         @scp = TCPServer.new(@port)
         # Use a loop to listen for incoming messages:
@@ -241,12 +239,8 @@ module DICOM
                   end
                   # Process the incoming data. This method will also take care of releasing the association:
                   success, messages = link.handle_incoming_data(path)
-                  if success
-                    logger.info(messages) if messages.first
-                  else
-                    # Something has gone wrong:
-                    logger.error(messages) if messages.first
-                  end
+                  # Pass along any messages that has been recorded:
+                  messages.each { |m| logger.public_send(m.first, m.last) } if messages.first
                 else
                   # No abstract syntaxes in the incoming request were accepted:
                   if rejected == 1
@@ -267,7 +261,7 @@ module DICOM
             end
             # Terminate the connection:
             link.stop_session
-            logger.info("*********************************")
+            logger.info("Connection closed.\n\n")
           end
         end
       else

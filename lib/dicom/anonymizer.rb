@@ -1,4 +1,3 @@
-
 module DICOM
 
   # This is a convenience class for handling anonymization of DICOM files.
@@ -27,22 +26,17 @@ module DICOM
 
     # Creates an Anonymizer instance.
     #
-    # === Parameters
+    # === Notes
     #
-    # * <tt>options</tt> -- A hash of parameters.
+    # * To customize logging behaviour, refer to the Logging module documentation.
     #
     # === Examples
     #
+    #   # Create an Anonymizer instance and restrict the log output:
     #   a = Anonymizer.new
-    #   # Create an instance in non-verbose mode:
-    #   a = Anonymizer.new
-    #   a.logger.level = Logger::UNKNOWN
+    #   a.logger.level = Logger::ERROR
     #
-    #
-    # To make changes in logging functionality please take a look at
-    # Logging module.
-    #
-    def initialize(options={})
+    def initialize
       # Default value of accessors:
       @blank = false
       @enumeration = false
@@ -166,7 +160,7 @@ module DICOM
           all_write = true
           files_written = 0
           files_failed_read = 0
-          # To avoid a spam of messages from DObject, temporarily change the logging level:
+          # Temporarily increase the log threshold to suppress messages from the DObject class:
           anonymizer_level = logger.level
           logger.level = Logger::FATAL
           @files.each_index do |i|
@@ -210,7 +204,7 @@ module DICOM
               files_failed_read += 1
             end
           end
-          # Finished anonymizing files. Reset the logging level:
+          # Finished anonymizing files. Reset the logg threshold:
           logger.level = anonymizer_level
           # Print elapsed time and status of anonymization:
           end_time = Time.now.to_f

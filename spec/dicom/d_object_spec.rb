@@ -62,7 +62,7 @@ module DICOM
         syntax = obj.transfer_syntax
         obj.remove_group("0002")
         parts = obj.encode_segments(16384)
-        obj_from_bin = DObject.parse(parts.join, :bin => true, :no_header => true, :syntax => syntax)
+        obj_from_bin = DObject.parse(parts.join, :bin => true, :no_meta => true, :syntax => syntax)
         obj_from_bin.transfer_syntax.should eql syntax
       end
 

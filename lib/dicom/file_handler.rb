@@ -47,7 +47,7 @@ module DICOM
       full_path = path_prefix + local_path + extension
       # Save the DICOM object to disk:
       obj.write(full_path, :transfer_syntax => transfer_syntax)
-      message = "DICOM file saved to: #{full_path}"
+      message = [:info, "DICOM file saved to: #{full_path}"]
       return message
     end
 
@@ -74,8 +74,13 @@ module DICOM
       # Process each DICOM object:
       objects.each_index do |i|
         if objects[i].length > 8
-          # Parse the received data stream and load it as a DICOM object:
-          obj = DObject.new(objects[i], :bin => true, :syntax => transfer_syntaxes[i])
+          # Temporarily increase the log threshold to suppress messages from the DObject class:
+          server_level = DICOM.logger.level
+          DICOM.logger.level = Logger::FATAL
+          # Parse the received data string and load it to a DICOM object:
+          obj = DObject.parse(objects[i], :no_meta => true, :syntax => transfer_syntaxes[i])
+          # Reset the logg threshold:
+          DICOM.logger.level = server_level
           if obj.read_success
             begin
               message = self.save_file(path, obj, transfer_syntaxes[i])
@@ -83,28 +88,28 @@ module DICOM
             rescue
               handle_fail += 1
               all_success = false
-              messages << "Error: Saving file failed!"
+              messages << [:error, "Saving file failed!"]
             end
           else
             parse_fail += 1
             all_success = false
-            messages << "Error: Invalid DICOM data encountered: The DICOM data string could not be parsed successfully."
+            messages << [:error, "Invalid DICOM data encountered: The received string was not parsed successfully."]
           end
         else
           too_short += 1
           all_success = false
-          messages << "Error: Invalid data encountered: The data was too small to be a valid DICOM file."
+          messages << [:error, "Invalid data encountered: The received string was too small to contain any DICOM data."]
         end
       end
       # Create a summary status message, when multiple files have been received:
       if total > 1
         if successful == total
-          messages << "All #{total} DICOM files received successfully."
+          messages << [:info, "All #{total} DICOM files received successfully."]
         else
           if successful == 0
-            messages << "All #{total} received DICOM files failed!"
+            messages << [:warn, "All #{total} received DICOM files failed!"]
           else
-            messages << "Only #{successful} of #{total} DICOM files received successfully!"
+            messages << [:warn, "Only #{successful} of #{total} DICOM files received successfully!"]
           end
         end
       else
