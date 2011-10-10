@@ -1,6 +1,6 @@
 = 0.9.2
 
-=== (Not released yet)
+=== 10th Oct, 2011
 
 * Enabled the use of lower case tag letters in methods which previously required the use of upper case letters.
 * Added new DObject class methods to offload DObject#new:
