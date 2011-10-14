@@ -800,7 +800,7 @@ module DICOM
         # Additional Attributes as recommended by Digital Imaging and Communications in Medicine (DICOM)
         # Supplement 55: Attribute Level Confidentiality (including De-identification)
         "0008,0014", # Instance Creator UID
-        "0008,1030", # Study description 
+        # "0008,1030", # Study description 
         "0008,1040", # Institutional Name
         "0008,1080", # Admitting Diagnoses Description
         "0008,2111", # Derivation Description 
