@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 require 'dicom'
 require 'optparse'
+require 'yaml'
 
 options = {}
  
@@ -27,6 +28,11 @@ optparse = OptionParser.new do|opts|
     options[:root] = root
   end
 
+  options[:vocab] = false
+  opts.on('-v','--vocab FILE', 'Limited vocab file. YAML dictionary format, dicomattr->[List of allowed values].') do |vocab|
+    options[:vocab] = File.open(vocab){ |yf| YAML::load(yf)}
+  end
+  
   # This displays the help screen, all programs are
   # assumed to have this option.
   opts.on( '-h', '--help', 'Display this screen' ) do

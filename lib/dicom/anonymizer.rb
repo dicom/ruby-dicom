@@ -79,7 +79,8 @@ module DICOM
       end
       # Set sqlite database file if it exists
       @db = options[:db]
-     
+      # Set limited vocabulary dictionary
+      @vocab = options[:vocab]
       # Set the default data elements to be anonymized:
       set_defaults
     end
@@ -223,7 +224,7 @@ module DICOM
               @tags.each_index do |j|
                 if obj.exists?(@tags[j])
                   element = obj[@tags[j]]
-                  # Aanonymizing StudyUID?
+                  # Anonymizing StudyUID?
                   if @tags[j].upcase == "0020,000D"
                     clean_uids(@files[i], obj, element, @values[j], studyDate) if element
                   elsif element.is_a?(DataElement)
@@ -243,6 +244,16 @@ module DICOM
                     end
                     element.value = value
                   end
+                end
+              end
+              # Limited vocabulary
+              if @vocab
+                vocab_keys = @vocab.keys()
+                vocab_keys.each do |attr|
+                    if obj.exists?(attr.upcase)
+                        element = obj[attr.upcase]
+                        element.value = "" unless @vocab[attr].include?(element.value)
+                    end
                 end
               end
               # Remove private tags?
