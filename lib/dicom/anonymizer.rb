@@ -250,9 +250,9 @@ module DICOM
               if @vocab
                 vocab_keys = @vocab.keys()
                 vocab_keys.each do |attr|
-                    if obj.exists?(attr.upcase)
+                    if obj.exists?(attr.upcase) and not obj[attr.upcase].value.nil?
                         element = obj[attr.upcase]
-                        element.value = "" unless @vocab[attr].include?(element.value)
+                        element.value = "" unless @vocab[attr].include?(element.value.strip)
                     end
                 end
               end
