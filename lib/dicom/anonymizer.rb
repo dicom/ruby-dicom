@@ -465,12 +465,25 @@ module DICOM
        # If the series description is patient protocol, this is typically a single series with
        # white text on black containing at least the study date
        seriesDescripElement = obj["0008,103E"]
-       return if not seriesDescripElement
-       seriesDescrip = seriesDescripElement.value
+       seriesDescrip = nil
+       seriesDescrip = seriesDescripElement.value if seriesDescripElement
        if not seriesDescrip.nil? and seriesDescrip.upcase.strip == "PATIENT PROTOCOL"
          suspect = true
          add_msg("File: " + filename + " has series description of 'Patient Protocol'. It will be moved for manual review.")
        end
+       if not seriesDescrip.nil? and seriesDescrip.upcase.strip.include?("COLOR")
+         suspect = true
+         add_msg("File: " + filename + " has series description that includes the word 'color'. It will be moved for manual review.")
+       end
+
+       studyDescripElement = obj["0008,1030"]
+       studyDescrip = nil
+       studyDescrip = studyDescripElement.value if studyDescripElement
+       if not studyDescrip.nil? and (studyDescrip.upcase.strip.include?("3D") or studyDescrip.upcase.strip.include?("3-D"))
+         suspect = true
+         add_msg("File: " + filename + " has study description that contains the text '3d'. It will be moved for manual review.")
+       end
+
        return suspect
     end
     
@@ -768,11 +781,14 @@ module DICOM
         "0010,21C0", # Pregnancy Status
         "0010,21D0", # Last Menstrual Date
         "0010,21F0", # Religious Pref
+        "0018,1200", # Date of Last Calibration
+        "0018,1201", # Time of Last Calibration 
         "0020,0052", # Frame of reference UID
         "0032,0012", # Study ID Issuer RET
         "0032,1032", # Requesting Physician
         "0032,1064", # Requested Procedure Sequence
         "0040,0275", # Requested Attributes Sequence
+        "0040,1001", # Requested Procedure ID
         "0040,1010", # Names of intended recipient of results
         "0040,1011", # ID sequence recipient of results
         "0040,0006", # Scheduled Performing Physician's Name
@@ -800,7 +816,6 @@ module DICOM
         # Additional Attributes as recommended by Digital Imaging and Communications in Medicine (DICOM)
         # Supplement 55: Attribute Level Confidentiality (including De-identification)
         "0008,0014", # Instance Creator UID
-        # "0008,1030", # Study description 
         "0008,1040", # Institutional Name
         "0008,1080", # Admitting Diagnoses Description
         "0008,2111", # Derivation Description 
