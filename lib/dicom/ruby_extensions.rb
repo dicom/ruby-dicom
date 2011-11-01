@@ -96,8 +96,7 @@ class String
   # Returns true if it is, false if not.
   #
   def private?
-    #return ((self.upcase =~ /\A\h{3}[1,3,5,7,9,B,D,F],\h{4}\z/) == nil ? false : true) # (incompatible with ruby 1.8)
-    return ((self.upcase =~ /\A[a-fA-F\d]{3}[1,3,5,7,9,B,D,F],[a-fA-F\d]{4}\z/) == nil ? false : true)
+    return ((self.upcase =~ /\A\h{3}[1,3,5,7,9,B,D,F],\h{4}\z/) == nil ? false : true)
   end
 
   # Checks if the string is a valid tag (as defined by Ruby DICOM: "GGGG,EEEE").
@@ -105,8 +104,7 @@ class String
   #
   def tag?
     # Test that the string is composed of exactly 4 HEX characters, followed by a comma, then 4 more HEX characters:
-    #return ((self.upcase =~ /\A\h{4},\h{4}\z/) == nil ? false : true) # (It turns out the hex reference '\h' isnt compatible with ruby 1.8)
-    return ((self.upcase =~ /\A[a-fA-F\d]{4},[a-fA-F\d]{4}\z/) == nil ? false : true)
+    return ((self.upcase =~ /\A\h{4},\h{4}\z/) == nil ? false : true)
   end
 
   # Redefines the old unpack method, adding the ability to decode signed integers in big endian.
@@ -154,6 +152,10 @@ class Array
   # * <tt>string</tt> -- A template string which decides the encoding scheme to use.
   #
   def pack(string)
+    # FIXME: At some time in the future, when Ruby 1.9.3 can be set as required ruby version,
+    # this custom pack (as well as unpack) method can be discarded, and the desired endian
+    # encodings can probably be achieved with the new template strings introduced in 1.9.3.
+    #
     # Check for some custom pack strings that we've invented:
     case string
       when "k*" # SS
