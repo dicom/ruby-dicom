@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.files = Dir["{lib}/**/*", "[A-Z]*"]
   s.rubyforge_project = 'dicom'
 
-  s.required_ruby_version = '>= 1.8.6'
+  s.required_ruby_version = '>= 1.9.2'
   s.required_rubygems_version = '>= 1.3.6'
 
   s.add_development_dependency('bundler', '>= 1.0.0')
