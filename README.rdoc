@@ -13,6 +13,11 @@ communication modalities like querying, moving, sending and receiving files.
   gem install dicom
 
 
+== REQUIREMENTS
+
+* Ruby 1.9.2 (if you are still on Ruby 1.8, gem version 0.9.1 should be used)
+
+
 == BASIC USAGE
 
 === Load & Include
