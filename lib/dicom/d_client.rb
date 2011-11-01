@@ -728,7 +728,7 @@ module DICOM
       presentation_contexts.each do |pc|
         # Determine what abstract syntax this particular presentation context's id corresponds to:
         id = pc[:presentation_context_id]
-        raise "Error! Even presentation context ID received in the association response. This is not allowed according to the DICOM standard!" if id[0] == 0 # If even number.
+        raise "Error! Even presentation context ID received in the association response. This is not allowed according to the DICOM standard!" if id.even?
         abstract_syntax = find_abstract_syntax(id)
         if pc[:result] == 0
           accepted_pc += 1

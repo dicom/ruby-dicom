@@ -292,7 +292,7 @@ module DICOM
         length = @stream.decode(bytes, "SL") # (4)
       end
       # Check that length is valid (according to the DICOM standard, it must be even):
-      raise "Encountered a Data Element (#{tag}) with an invalid (odd) value length." if length%2 == 1 and length > 0
+      raise "Encountered a Data Element (#{tag}) with an invalid (odd) value length." if length.odd? and length > 0
       return vr, length
     end
 

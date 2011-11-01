@@ -233,7 +233,7 @@ module DICOM
         # Encode:
         bin = value.pack(type)
         # Add an empty byte if the resulting binary has an odd length:
-        bin = bin + @pad_byte[vr] if bin.length[0] == 1
+        bin = bin + @pad_byte[vr] if bin.length.odd?
       end
       return bin
     end

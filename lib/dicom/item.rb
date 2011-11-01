@@ -76,7 +76,7 @@ module DICOM
     def bin=(new_bin)
       raise ArgumentError, "Invalid parameter type. String was expected, got #{new_bin.class}." unless new_bin.is_a?(String)
       # Add an empty byte at the end if the length of the binary is odd:
-      if new_bin.length[0] == 1
+      if new_bin.length.odd?
         @bin = new_bin + "\x00"
       else
         @bin = new_bin

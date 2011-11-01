@@ -95,7 +95,7 @@ module DICOM
     def bin=(new_bin)
       raise ArgumentError, "Expected String, got #{new_bin.class}." unless new_bin.is_a?(String)
       # Add a zero byte at the end if the length of the binary is odd:
-      if new_bin.length[0] == 1
+      if new_bin.length.odd?
         @bin = new_bin + stream.pad_byte[@vr]
       else
         @bin = new_bin
