@@ -38,7 +38,7 @@ module DICOM
     end
 
 
-    describe "#new" do
+    describe "::new" do
 
       it "should set the blank attribute as false" do
         a = Anonymizer.new

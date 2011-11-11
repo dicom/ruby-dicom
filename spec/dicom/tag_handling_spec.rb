@@ -26,7 +26,7 @@ module DICOM
 
     end
 
-    context Element, "#new" do
+    context Element, "::new" do
 
       it "should properly encode its value as a binary tag in, using default (little endian) encoding" do
         element = Element.new("0020,5000", "10B0,C0A0")
@@ -68,7 +68,7 @@ module DICOM
 
   describe "When handling Data Element tags," do
 
-    context DObject, "#read" do
+    context DObject, "::read" do
 
       it "should have properly decoded this File Meta Header tag (from a DICOM file with big endian TS), using little endian byte order" do
         obj = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
@@ -121,7 +121,7 @@ module DICOM
 
   describe "When specifying or querying data elements using tags" do
 
-    context Element, "#new" do
+    context Element, "::new" do
 
       it "should always save tags using upper case letters (but accept tags specified with lower case letters)" do
         obj = DObject.new
@@ -133,7 +133,7 @@ module DICOM
     end
 
 
-    context Sequence, "#new" do
+    context Sequence, "::new" do
 
       it "should always save tags using upper case letters (but accept tags specified with lower case letters)" do
         obj = DObject.new

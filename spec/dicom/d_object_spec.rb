@@ -12,7 +12,7 @@ module DICOM
       DICOM.logger.level = Logger::FATAL
     end
 
-    context "#new" do
+    context "::new" do
 
       it "should create an empty DICOM object" do
         obj = DObject.new
@@ -48,7 +48,7 @@ module DICOM
     end
 
 
-    context "#parse" do
+    context "::parse" do
 
       it "should successfully parse the encoded DICOM string" do
         str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, "rb") { |f| f.read }
@@ -90,7 +90,7 @@ module DICOM
     end
 
 
-    context "#read" do
+    context "::read" do
 
       it "should successfully read this DICOM file" do
         obj = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)

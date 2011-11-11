@@ -4,7 +4,7 @@ require 'spec_helper'
 
 module DICOM
 
-  describe DServer, '#run' do
+  describe DServer, '::run' do
 
     it "should set the attribute timeout equal to the parameter in the block" do
       server = mock("DServer instance")
@@ -28,7 +28,7 @@ module DICOM
 
   end
 
-  describe DServer, '#new' do
+  describe DServer, '::new' do
 
     it "should by default set the timeout to 10 seconds" do
       s = DServer.new

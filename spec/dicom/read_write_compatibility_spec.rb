@@ -15,7 +15,7 @@ module DICOM
       DICOM.logger.level = Logger::FATAL
     end
 
-    describe "#read" do
+    describe "::read" do
 
       it "should parse this DICOM file and build a valid DICOM object" do
         obj = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)

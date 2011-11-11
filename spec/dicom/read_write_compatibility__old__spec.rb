@@ -17,7 +17,7 @@ module DICOM
       DICOM.logger.level = Logger::FATAL
     end
 
-    describe "#new(nil)" do
+    describe "::new(nil)" do
 
       it "should create an empty DICOM object" do
         obj = DObject.new(nil)
@@ -28,7 +28,7 @@ module DICOM
     end
 
 
-    describe "#new(bin)" do
+    describe "::new(bin)" do
 
       it "should successfully read this DICOM file, when it is supplied as a binary string instead of a file name" do
         str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, "rb") { |f| f.read }
@@ -49,7 +49,7 @@ module DICOM
     end
 
 
-    describe "#new(file)" do
+    describe "::new(file)" do
 
       it "should raise ArgumentError when creation is attempted with an argument that is not a string (or nil)" do
         expect {DObject.new(42)}.to raise_error(ArgumentError)
