@@ -3,11 +3,16 @@
 require 'spec_helper'
 
 
+# FIXME: Since the extensions have been merged into the master branch,
+# these tests should be distributed to their respective class files.
+#
 module DICOM
 
   describe DObject, " (Extensions)" do
 
-    before(:each) { @obj = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2) }
+    before(:each) do
+      @obj = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
+    end
 
     it "should have an elements Array" do
       @obj.elements.should be_an Array
