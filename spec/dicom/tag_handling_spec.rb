@@ -11,7 +11,7 @@ module DICOM
 
       it "should return the proper tag string" do
         obj = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
-        obj.value("0020,5000").should eql "0010,0010"
+        obj.value("0020,5000").should be nil
       end
 
     end

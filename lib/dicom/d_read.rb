@@ -321,7 +321,7 @@ module DICOM
     # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
     #
     def read_value(vr, length)
-      unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
+      unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN" or vr == "AT"
         # Since the binary string has already been extracted for this data element, we must first "rewind":
         @stream.skip(-length)
         # Decode data:
