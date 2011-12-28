@@ -96,7 +96,7 @@ that is printed to screen, regardless if you have set verbose as false. This is 
 in irb every variable loaded in the program is automatically printed to the screen.
 A useful hack to avoid this effect is to append ";0" after a command.
 Example:
-  obj = DObject.new("some_file.dcm") ;0
+  obj = DObject.read("some_file.dcm") ;0
 
 
 == RESOURCES
