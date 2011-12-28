@@ -101,6 +101,20 @@ module DICOM
         obj.count_all.should eql 116
       end
 
+      it "should parse this DICOM file and build a valid DICOM object" do
+        obj = DObject.read(DCM_AT_NO_VALUE)
+        obj.read?.should be_true
+        obj.count.should eql 42
+        obj.count_all.should eql 42
+      end
+
+      it "should parse this DICOM file and build a valid DICOM object" do
+        obj = DObject.read(DCM_AT_INVALID)
+        obj.read?.should be_true
+        obj.count.should eql 42
+        obj.count_all.should eql 42
+      end
+
     end
 
   end

@@ -80,7 +80,14 @@ module DICOM
         value = nil
       else
         if type == "AT"
-          value = decode_tag
+          # We need to guard ourselves against the case where a string contains an invalid 'AT' value:
+          if length == 4
+            value = decode_tag
+          else
+            # Invalid. Just return nil.
+            skip(length)
+            value = nil
+          end
         else
           # Decode the binary string and return value:
           value = @string.slice(@index, length).unpack(vr_to_str(type))

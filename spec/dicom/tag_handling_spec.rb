@@ -7,6 +7,22 @@ module DICOM
 
   describe "When handling Data Elements with tags as value (VR = 'AT')," do
 
+    context DObject, "::read" do
+
+      it "should be able to read a file containing a blank 'AT' tag, and set its value as nil" do
+        obj = DObject.read(DCM_AT_NO_VALUE)
+        at_element = obj["0028,0009"]
+        at_element.value.should be_nil
+      end
+
+      it "should be able to read a file containing an invalid 'AT' tag, handling the deviation by setting its value as nil" do
+        obj = DObject.read(DCM_AT_INVALID)
+        at_element = obj["0028,0009"]
+        at_element.value.should be_nil
+      end
+
+    end
+
     context DObject, "#value" do
 
       it "should return the proper tag string" do
@@ -31,6 +47,18 @@ module DICOM
       it "should properly encode its value as a binary tag in, using default (little endian) encoding" do
         element = Element.new("0020,5000", "10B0,C0A0")
         element.bin.should eql "\260\020\240\300"
+      end
+
+      it "should accept the creation of an empty (nil-valued) AT element" do
+        element = Element.new("0020,5000", nil)
+        element.bin.should eql ''
+        element.value.should be_nil
+      end
+      
+      it "should accept the creation of an empty-stringed AT element" do
+        element = Element.new("0020,5000", '')
+        element.bin.should eql ''
+        element.value.should eql ''
       end
 
     end
