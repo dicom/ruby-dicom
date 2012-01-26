@@ -57,7 +57,7 @@ module DICOM
       segments = receive_single_transmission
       info = segments.first
       if info[:pdu] != PDU_RELEASE_REQUEST
-        # For some reason we didnt get our expected release request. Determine why:
+        # For some reason we didn't get our expected release request. Determine why:
         if info[:valid]
           logger.error("Unexpected message type received (PDU: #{info[:pdu]}). Expected a release request. Closing the connection.")
           handle_abort(false)

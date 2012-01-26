@@ -11,6 +11,7 @@ module DICOM
     #
     # === Parameters
     #
+    # * <tt>host</tt> -- String the server binding address. Under Windows 7 (at least) it necessary to bind, otherwise per default it runs on an IPV6 address/port)
     # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
     # * <tt>path</tt> -- String. The path where incoming DICOM files will be stored. Defaults to "./received/".
     # * <tt>&block</tt> -- A block of code that will be run on the DServer instance, between creation and the launch of the SCP itself.
@@ -25,8 +26,8 @@ module DICOM
     #     s.file_handler = MyFileHandler
     #   end
     #
-    def self.run(port=104, path='./received/', &block)
-      server = DServer.new(port)
+    def self.run(host="127.0.0.1", port=104, path='./received/', &block)
+      server = DServer.new(host, port)
       server.instance_eval(&block)
       server.start_scp(path)
     end
@@ -55,6 +56,7 @@ module DICOM
     #
     # === Parameters
     #
+    # * <tt>host</tt> -- String the server binding address. Under Windows 7 (at least) it necessary to bind, otherwise per default it runs on an IPV6 address/port)
     # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
     # * <tt>options</tt> -- A hash of parameters.
     #
@@ -73,10 +75,11 @@ module DICOM
     #   require 'MyFileHandler'
     #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
     #
-    def initialize(port=104, options={})
+    def initialize(host="127.0.0.1", port=104, options={})
       require 'socket'
       # Required parameters:
       @port = port
+      @host = host
       # Optional parameters (and default values):
       @file_handler = options[:file_handler] || FileHandler
       @host_ae =  options[:host_ae]  || "RUBY_DICOM"
@@ -91,7 +94,7 @@ module DICOM
       set_default_accepted_syntaxes
     end
 
-    # Adds an abstract syntax to the list of abstract syntaxes that the server will accept.
+    # Adds an abstract syntax to the list of abstract syntax's that the server will accept.
     #
     # === Parameters
     #
@@ -106,7 +109,7 @@ module DICOM
       end
     end
 
-    # Adds a transfer syntax to the list of transfer syntaxes that the server will accept.
+    # Adds a transfer syntax to the list of transfer syntax's that the server will accept.
     #
     #
     # === Parameters
@@ -122,7 +125,7 @@ module DICOM
       end
     end
 
-    # Prints the list of accepted abstract syntaxes to the screen.
+    # Prints the list of accepted abstract syntax's to the screen.
     #
     def print_abstract_syntaxes
       # Determine length of longest key to ensure pretty print:
@@ -133,7 +136,7 @@ module DICOM
       end
     end
 
-    # Prints the list of accepted transfer syntaxes to the screen.
+    # Prints the list of accepted transfer syntax's to the screen.
     #
     def print_transfer_syntaxes
       # Determine length of longest key to ensure pretty print:
@@ -144,7 +147,7 @@ module DICOM
       end
     end
 
-    # Removes a specific abstract syntax from the list of abstract syntaxes that the server will accept.
+    # Removes a specific abstract syntax from the list of abstract syntax's that the server will accept.
     #
     #
     # === Parameters
@@ -159,7 +162,7 @@ module DICOM
       end
     end
 
-    # Removes a specific transfer syntax from the list of transfer syntaxes that the server will accept.
+    # Removes a specific transfer syntax from the list of transfer syntax's that the server will accept.
     #
     # === Parameters
     #
@@ -173,11 +176,11 @@ module DICOM
       end
     end
 
-    # Completely clears the list of abstract syntaxes that the server will accept.
+    # Completely clears the list of abstract syntax's that the server will accept.
     #
     # === Notes
     #
-    # * Following such a removal, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server.
+    # * Following such a removal, the user must ensure to add the specific abstract syntax's that are to be accepted by the server.
     #
     def remove_all_abstract_syntaxes
       @accepted_abstract_syntaxes = Hash.new
@@ -187,7 +190,7 @@ module DICOM
     #
     # === Notes
     #
-    # * Following such a removal, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server.
+    # * Following such a removal, the user must ensure to add the specific transfer syntax's that are to be accepted by the server.
     #
     def remove_all_transfer_syntaxes
       @accepted_transfer_syntaxes = Hash.new
@@ -209,7 +212,7 @@ module DICOM
         logger.info("Started DICOM SCP server on port #{@port}.")
         logger.info("Waiting for incoming transmissions...\n\n")
         # Initiate server:
-        @scp = TCPServer.new(@port)
+        @scp = TCPServer.new(@host, @port)
         # Use a loop to listen for incoming messages:
         loop do
           Thread.start(@scp.accept) do |session|
@@ -279,7 +282,7 @@ module DICOM
     #
     # === Notes
     #
-    # Other things can potentionally be checked here too, if we want to make the server more strict with regards to what information is received:
+    # Other things can potentially be checked here too, if we want to make the server more strict with regards to what information is received:
     # * Application context name, calling AE title, called AE title
     # * Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.4 (Table 9-21).
     #
@@ -318,7 +321,7 @@ module DICOM
         if @accepted_abstract_syntaxes[pc[:abstract_syntax]]
           # Abstract syntax accepted. Proceed to check its transfer syntax(es):
           proposed_transfer_syntaxes = pc[:ts].collect{|t| t[:transfer_syntax]}.sort
-          # Choose the first proposed transfer syntax that exists in our list of accepted transfer syntaxes:
+          # Choose the first proposed transfer syntax that exists in our list of accepted transfer syntax's:
           accepted_transfer_syntax = nil
           proposed_transfer_syntaxes.each do |proposed_ts|
             if @accepted_transfer_syntaxes.include?(proposed_ts)
@@ -345,7 +348,7 @@ module DICOM
       return info, approved, rejected
     end
 
-    # Sets the default accepted abstract syntaxes and transfer syntaxes for this SCP.
+    # Sets the default accepted abstract syntax's and transfer syntax's for this SCP.
     #
     def set_default_accepted_syntaxes
       @accepted_transfer_syntaxes, @accepted_abstract_syntaxes = LIBRARY.extract_transfer_syntaxes_and_sop_classes
