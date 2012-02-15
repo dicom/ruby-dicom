@@ -279,7 +279,7 @@ module DICOM
     #
     # === Notes
     #
-    # Other things can potentionally be checked here too, if we want to make the server more strict with regards to what information is received:
+    # Other things can potentially be checked here too, if we want to make the server more strict with regards to what information is received:
     # * Application context name, calling AE title, called AE title
     # * Description of error codes are given in the DICOM Standard, PS 3.8, Chapter 9.3.4 (Table 9-21).
     #
