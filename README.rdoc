@@ -141,4 +141,5 @@ Please don't hesitate to email me if you have any feedback related to this proje
 * {Donnie Millar}[https://github.com/dmillar]
 * {Björn Albers}[https://github.com/bjoernalbers]
 * {Lars Benner}[https://github.com/Maturin]
+* {Felix Petriconi}[https://github.com/FelixPetriconi]
 * {Steven Bedrick}[https://github.com/stevenbedrick]
