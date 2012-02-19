@@ -103,6 +103,8 @@ Example:
 
 * {Official home page}[http://dicom.rubyforge.org/]
 * {Discussion forum}[http://groups.google.com/group/ruby-dicom]
+* {Documentation}[http://rubydoc.info/gems/dicom/frames]
+* {Tutorials}[http://dicom.rubyforge.org/tutorials.html]
 * {Source code repository}[https://github.com/dicom/ruby-dicom]
 
 
