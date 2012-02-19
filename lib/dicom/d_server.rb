@@ -33,6 +33,8 @@ module DICOM
 
     # A customized FileHandler class to use instead of the default FileHandler included with Ruby DICOM.
     attr_accessor :file_handler
+    # The hostname that the TCPServer binds to.
+    attr_accessor :host
     # The name of the server (application entity).
     attr_accessor :host_ae
     # The maximum allowed size of network packages (in bytes).
@@ -61,6 +63,7 @@ module DICOM
     # === Options
     #
     # * <tt>:file_handler</tt> -- A customized FileHandler class to use instead of the default FileHandler.
+    # * <tt>:host</tt> -- String. The hostname that the TCPServer binds to. Defaults to '127.0.0.1'.
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
     # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
     # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
@@ -79,6 +82,7 @@ module DICOM
       @port = port
       # Optional parameters (and default values):
       @file_handler = options[:file_handler] || FileHandler
+      @host = options[:host] || '127.0.0.1'
       @host_ae =  options[:host_ae]  || "RUBY_DICOM"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
@@ -209,7 +213,7 @@ module DICOM
         logger.info("Started DICOM SCP server on port #{@port}.")
         logger.info("Waiting for incoming transmissions...\n\n")
         # Initiate server:
-        @scp = TCPServer.new(@port)
+        @scp = TCPServer.new(@host, @port)
         # Use a loop to listen for incoming messages:
         loop do
           Thread.start(@scp.accept) do |session|
