@@ -475,6 +475,10 @@ module DICOM
          suspect = true
          add_msg("File: " + filename + " has series description that includes the word 'color'. It will be moved for manual review.")
        end
+       if not seriesDescrip.nil? and (seriesDescrip.upcase.strip.include?("3D") or seriesDescrip.upcase.strip.include?("3 D")) 
+         suspect = true
+         add_msg("File: " + filename + " has series description that includes the word '3d'. It will be moved for manual review.")
+       end
 
        studyDescripElement = obj["0008,1030"]
        studyDescrip = nil
