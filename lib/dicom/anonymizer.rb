@@ -184,9 +184,10 @@ module DICOM
                 if obj.exists?(@tags[j])
                   element = obj[@tags[j]]
                   # Anonymizing StudyUID?
-                  if @tags[j].upcase == "0020,000D"
-                    clean_uids(@files[i], obj, element, @values[j], studyDate) if element
-                  elsif element.is_a?(DataElement)
+                  if element.is_a?(Element)
+                    if @tags[j].upcase == "0020,000D"
+                      clean_uids(@files[i], obj, element, @values[j]) if element
+                    end
                     if @blank
                       value = ""
                     elsif @enumeration
@@ -588,7 +589,7 @@ module DICOM
       end
     end
     
-    def clean_uids(filename, obj, element, value, studyDate)
+    def clean_uids(filename, obj, element, value)
       # UID anonymization is a more complex case, it requires the preservation of relationships
       # While technically we could just generate a new value for each study,instance,object
       # It would destroy the relationships between files
@@ -603,7 +604,7 @@ module DICOM
           studyUID = new_value
         else
           studyUID = generate_uid
-          @audit.add_tag_record(value, old_value, studyUID, studyDate)
+          @audit.add_tag_record(value, old_value, studyUID)
         end
       else                  
         previous_old_study = @enum_old_hash["0020,000D"]
@@ -630,7 +631,7 @@ module DICOM
       else
         seriesUID = studyUID + ".2"
         seriesUIDElement.value = seriesUID
-        add_msg("DICOM file " + filename + " did not have a series number, this can cause issues.")
+        logger.info("DICOM file " + filename + " did not have a series number, this can cause issues.")
       end
       
       if instanceUIDElement and instanceNumberElement and instanceNumberElement.value
@@ -639,7 +640,7 @@ module DICOM
       else
         instanceUID = seriesUID + ".3"
         instanceUIDElement.value = instanceUID
-        add_msg("DICOM file " + filename + " did not have an instance number, this can cause issues.")
+        logger.info("DICOM file " + filename + " did not have an instance number, this can cause issues.")
       end
       
       element.value = studyUID
