@@ -1,4 +1,3 @@
-require 'progressbar'
 module DICOM
 
   # This is a convenience class for handling anonymization of DICOM files.
@@ -145,7 +144,6 @@ module DICOM
       logger.info("Searching for files...")
       load_files
       logger.info("Done.")
-      initialize_db if @db
       if @files.length > 0
         if @tags.length > 0
           logger.info(@files.length.to_s + " files have been identified in the specified folder(s).")
@@ -169,13 +167,17 @@ module DICOM
           all_write = true
           files_written = 0
           files_failed_read = 0
-          # Setup progressbar
-          pbar = ProgressBar.new("Anonymizing", @files.length)
+          begin
+            require 'progressbar'
+            pbar = ProgressBar.new("Anonymizing", @files.length)
+          rescue LoadError
+            pbar = nil
+          end
           # Temporarily increase the log threshold to suppress messages from the DObject class:
           anonymizer_level = logger.level
           logger.level = Logger::FATAL
           @files.each_index do |i|
-            pbar.inc
+            pbar.inc if !!pbar
             # Read existing file to DICOM object:
             obj = DICOM::DObject.read(@files[i])
             if obj.read_success
@@ -220,7 +222,7 @@ module DICOM
               files_failed_read += 1
             end
           end
-          pbar.finish
+          pbar.finish if !!pbar
           # Finished anonymizing files. Reset the logg threshold:
           logger.level = anonymizer_level
           # Print elapsed time and status of anonymization:
