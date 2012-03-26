@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 require 'dicom'
 require 'optparse'
 
@@ -17,13 +17,13 @@ optparse = OptionParser.new do|opts|
     options[:identity] = file
   end
   
-  options[:db] = false
-  opts.on('-d','--db', 'Use sqlite db to store identity info. Looks for identity.db in pwd') do 
-    options[:db] = true
+  options[:at] = false
+  opts.on('-a','--audittrail', 'Use the audittrail feature. Defaults to looking for audittrail.json in pwd.') do 
+    options[:at] = true
   end
   
   options[:root] = false
-  opts.on('-r','--dicomroot', 'Enter your organization\'s DICOM org root. Used for study uid anonymization') do |root|
+  opts.on('-r','--dicomroot ROOT', 'Enter your organization\'s DICOM org root. Used for study uid anonymization') do |root|
     options[:root] = root
   end
 
