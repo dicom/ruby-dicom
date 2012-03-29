@@ -26,4 +26,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency('narray', '>= 0.6.0.0')
   s.add_development_dependency('rmagick', '>= 2.12.0')
   s.add_development_dependency('mini_magick', '>= 3.2.1')
+
+  s.bindir = 'scripts'
 end
