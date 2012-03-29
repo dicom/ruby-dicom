@@ -33,6 +33,8 @@ suppress_warnings do
   DICOM::DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME = 'samples/implicit_us_jpeg2k-lossless-mono2-multiframe.dcm'
   # Requiring two passes for a successful read:
   DICOM::DCM_EXPLICIT_NO_HEADER = 'samples/no-header_explicit(two-pass).dcm'
+  # Invalid pixel data:
+  DICOM::DCM_INVALID_COMPRESSION = 'samples/invalid_compression.dcm'
   # No pixel data:
   DICOM::DCM_AT_NO_VALUE = 'samples/at_no_value.dcm'
   DICOM::DCM_AT_INVALID = 'samples/at_invalid.dcm'

@@ -7,7 +7,7 @@ require 'RMagick'
 
 
 module DICOM
-  
+
   describe ImageItem do
 
     describe "#image [using :rmagick]" do
@@ -21,11 +21,14 @@ module DICOM
         obj.image.should be_nil
       end
 
-      it "should return false if it is not able to decompress compressed pixel data" do
-        obj = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
-        obj["0002,0010"].value = rand(10**10).to_s
-        obj.stubs(:compression?).returns(true)
-        obj.stubs(:decompress).returns(false)
+      it "should log a warning when it fails to decompress compressed pixel data" do
+        obj = DObject.read(DCM_INVALID_COMPRESSION)
+        DICOM.logger.expects(:warn)
+        obj.image
+      end
+
+      it "should return false when it fails to decompress compressed pixel data" do
+        obj = DObject.read(DCM_INVALID_COMPRESSION)
         obj.image.should be_false
       end
 
@@ -185,7 +188,7 @@ module DICOM
       end
 
     end
-    
+
   end
 
 end

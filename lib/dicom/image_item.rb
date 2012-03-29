@@ -170,7 +170,7 @@ module DICOM
             strings.each {|string| pixel_frames << decode_rle(num_cols, num_rows, string)}
           else
             images = decompress(strings) || Array.new
-            logger.warn("Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}')") unless images
+            logger.warn("Decompressing pixel values has failed (unsupported transfer syntax: '#{transfer_syntax}' - #{LIBRARY.get_syntax_description(transfer_syntax)})") unless images.length > 0
           end
         else
           # Uncompressed: Decode to numbers.
