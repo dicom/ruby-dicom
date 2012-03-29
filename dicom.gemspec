@@ -17,11 +17,12 @@ Gem::Specification.new do |s|
   s.rubyforge_project = 'dicom'
 
   s.required_ruby_version = '>= 1.9.2'
-  s.required_rubygems_version = '>= 1.3.6'
+  s.required_rubygems_version = '>= 1.8.6'
 
   s.add_development_dependency('bundler', '>= 1.0.0')
-  s.add_development_dependency('rspec', '>= 2.5.0')
-  s.add_development_dependency('mocha', '>= 0.9.12')
+  s.add_development_dependency('rake', '>= 0.9.2.2')
+  s.add_development_dependency('rspec', '>= 2.9.0')
+  s.add_development_dependency('mocha', '>= 0.10.5')
   s.add_development_dependency('narray', '>= 0.6.0.0')
   s.add_development_dependency('rmagick', '>= 2.12.0')
   s.add_development_dependency('mini_magick', '>= 3.2.1')

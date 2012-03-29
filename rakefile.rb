@@ -1,19 +1,19 @@
-# For developers:
-# Test the specification:
-#   rake spec
-# Build gem from source:
-#   rake package
+# Available commands:
+# Testing the specification:
+#   bundle exec rake spec
+# Building a gem package from source:
+#   bundle exec rake package
 # Create documentation files (html):
-#   rake rdoc
+#   bundle exec rake rdoc
 
 require 'rubygems'
-require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rubygems/package_task'
+require 'rdoc/task'
 require 'rspec/core/rake_task'
 
 # Build gem:
 gem_spec = eval(File.read('dicom.gemspec'))
-Rake::GemPackageTask.new(gem_spec) do |pkg|
+Gem::PackageTask.new(gem_spec) do |pkg|
   pkg.gem_spec = gem_spec
   pkg.need_tar = true
 end
@@ -25,7 +25,7 @@ RSpec::Core::RakeTask.new do |t|
 end
 
 # Build documentation:
-Rake::RDocTask.new do |rd|
+RDoc::Task.new do |rd|
   rd.main = "README.rdoc"
   rd.rdoc_files.include("README.rdoc", "lib/**/*.rb")
 end
