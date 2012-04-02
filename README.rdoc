@@ -140,6 +140,7 @@ Please don't hesitate to email me if you have any feedback related to this proje
 * {Christoffer Lervåg}[https://github.com/dicom]
 * {John Axel Eriksson}[https://github.com/johnae]
 * {Kamil Bujniewicz}[https://github.com/icdark]
+* {Jeff Miller}[https://github.com/jeffmax]
 * {Donnie Millar}[https://github.com/dmillar]
 * {Björn Albers}[https://github.com/bjoernalbers]
 * {Lars Benner}[https://github.com/Maturin]
