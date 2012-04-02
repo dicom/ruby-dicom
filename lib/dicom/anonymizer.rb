@@ -36,7 +36,7 @@ module DICOM
     #   a = Anonymizer.new
     #   a.logger.level = Logger::ERROR
     #
-    def initialize
+    def initialize(options={})
       # Default value of accessors:
       @blank = false
       @enumeration = false
@@ -62,6 +62,10 @@ module DICOM
       @write_paths = Array.new
       # Keep track of status messages:
       @log = Array.new
+      # Set the org_root to be used when anonymizing study_uid series_uid and sop_instance_uid
+      @org_root = options[:root] ? options[:root] : UID
+      # Setup audit trail if requested
+      @audit_trail = options[:audit_trail] ? AuditTrail.new : nil
       # Set the default data elements to be anonymized:
       set_defaults
     end
@@ -160,10 +164,17 @@ module DICOM
           all_write = true
           files_written = 0
           files_failed_read = 0
+          begin
+            require 'progressbar'
+            pbar = ProgressBar.new("Anonymizing", @files.length)
+          rescue LoadError
+            pbar = nil
+          end
           # Temporarily increase the log threshold to suppress messages from the DObject class:
           anonymizer_level = logger.level
           logger.level = Logger::FATAL
           @files.each_index do |i|
+            pbar.inc if !!pbar
             # Read existing file to DICOM object:
             obj = DICOM::DObject.read(@files[i])
             if obj.read_success
@@ -172,6 +183,9 @@ module DICOM
                 if obj.exists?(@tags[j])
                   element = obj[@tags[j]]
                   if element.is_a?(Element)
+                    if @tags[j].upcase == "0020,000D"
+                      clean_uids(@files[i], obj, element, @values[j]) if element
+                    end
                     if @blank
                       value = ""
                     elsif @enumeration
@@ -204,7 +218,8 @@ module DICOM
               files_failed_read += 1
             end
           end
-          # Finished anonymizing files. Reset the logg threshold:
+          pbar.finish if !!pbar
+          # Finished anonymizing files. Reset the log threshold:
           logger.level = anonymizer_level
           # Print elapsed time and status of anonymization:
           end_time = Time.now.to_f
@@ -219,8 +234,9 @@ module DICOM
           else
             logger.warn("Some DICOM objects were NOT succesfully written to file. You are advised to investigate the result (#{files_written} files succesfully written).")
           end
+          @audit_trail.serialize if !!@audit_trail
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
-          if @enumeration and @identity_file
+          if @enumeration and @identity_file and !!@audit_trail
             logger.info("Writing identity file.")
             write_identity_file
             logger.info("Done")
@@ -419,21 +435,38 @@ module DICOM
     def get_enumeration_value(current, j)
       # Is enumeration requested for this tag?
       if @enumerations[j]
-        # Retrieve earlier used anonymization values:
-        previous_old = @enum_old_hash[@tags[j]]
-        previous_new = @enum_new_hash[@tags[j]]
-        p_index = previous_old.length
-        if previous_old.index(current) == nil
-          # Current value has not been encountered before:
-          value = @values[j]+(p_index + 1).to_s
-          # Store value in array (and hash):
-          previous_old << current
-          previous_new << value
-          @enum_old_hash[@tags[j]] = previous_old
-          @enum_new_hash[@tags[j]] = previous_new
+        if @audit_trail
+          new_value = @audit_trail.get_clean_tag(@values[j],current)
+          if new_value != nil
+            value = new_value
+          else
+            index = @audit_trail.previous_values(@values[j])
+            # This should really check to see if the type of the tag is an int, but for now, the only 
+            # one this is a proble for is assession so
+            if @tags[j] == "0008,0050"
+                value = index.to_s
+            else
+                value = @values[j] + index.to_s
+            end
+            @audit_trail.add_tag_record(@values[j], current, value)
+          end
         else
-          # Current value has been observed before:
-          value = previous_new[previous_old.index(current)]
+          # Retrieve earlier used anonymization values:
+          previous_old = @enum_old_hash[@tags[j]]
+          previous_new = @enum_new_hash[@tags[j]]
+          p_index = previous_old.length
+          if previous_old.index(current) == nil
+            # Current value has not been encountered before:
+            value = @values[j]+(p_index + 1).to_s
+            # Store value in array (and hash):
+            previous_old << current
+            previous_new << value
+            @enum_old_hash[@tags[j]] = previous_old
+            @enum_new_hash[@tags[j]] = previous_new
+          else
+            # Current value has been observed before:
+            value = previous_new[previous_old.index(current)]
+          end
         end
       else
         value = @values[j]
@@ -552,6 +585,79 @@ module DICOM
         end
       end
     end
-
+    
+    def clean_uids(filename, obj, element, value)
+      # UID anonymization is a more complex case, it requires the preservation of relationships
+      # While technically we could just generate a new value for each study,instance,object
+      # It would destroy the relationships between files
+      previous_old_study = nil
+      previous_new_study = nil
+      study_uid = nil
+      series_uid = nil
+      old_value = element.value
+      if !!@audit_trail
+        new_value = @audit_trail.get_clean_tag(value, old_value)
+        if new_value != nil
+          study_uid = new_value
+        else
+          study_uid = generate_uid
+          @audit_trail.add_tag_record(value, old_value, study_uid)
+        end
+      else                  
+        previous_old_study = @enum_old_hash["0020,000D"]
+        previous_new_study = @enum_new_hash["0020,000D"]
+        study_uid = nil
+        if previous_old_study.index(old_value) == nil
+          study_uid = generate_uid
+          previous_old_study << old_value
+          previous_new_study << study_uid
+        else
+          study_uid = previous_new_study[previous_old_study.index(old_value)]
+        end
+      end
+      
+      series_number_element = obj["0020,0011"]
+      instance_number_element = obj["0020,0013"]
+      instance_uid_element = obj["0008,0018"]
+      series_uid_element = obj["0020,000E"]
+      
+      # I have seen instances when there was no instance or series number, I am not sure what to do here.
+      if series_uid_element and series_number_element and series_number_element.value
+        series_uid = study_uid + ".2." + series_number_element.value.strip.to_i.to_s # easy way to remove spaces and leading 0's
+        series_uid_element.value = series_uid
+      else
+        series_uid = study_uid + ".2"
+        series_uid_element.value = series_uid
+        logger.info("DICOM file " + filename + " did not have a series number, this can cause issues.")
+      end
+      
+      if instance_uid_element and instance_number_element and instance_number_element.value
+        instance_uid = series_uid + ".3." + instance_number_element.value.strip.to_i.to_s
+        instance_uid_element.value = instance_uid
+      else
+        instance_uid = series_uid + ".3"
+        instance_uid_element.value = instance_uid
+        logger.info("DICOM file " + filename + " did not have an instance number, this can cause issues.")
+      end
+      
+      element.value = study_uid
+      
+      # We also need to change (0002,0003) Media Storage SOP Instance UID because this is equal to the SOP Instance UID
+      # DCM4CHEE will not accept these if they don't match
+      media_sop_uid_element = obj["0002,0003"]
+      if media_sop_uid_element
+         media_sop_uid_element.value = instance_uid
+      end
+    end
+    
+    def generate_uid
+      new_guid = ""
+      begin
+          current_time = Time.new
+          new_guid =  @org_root  + "." + current_time.year.to_s +  current_time.month.to_s + current_time.day.to_s + current_time.min.to_s + current_time.sec.to_s + "." + current_time.usec.to_s + ".1"
+      end until new_guid != @last_guid
+      @last_guid = new_guid
+      return new_guid
+    end
   end
 end
