@@ -298,6 +298,22 @@ module DICOM
         File.exists?(TMPDIR + "identification.txt").should be_true
       end
 
+      context " [:audit_trail]" do
+
+        it "should write an audit trail file" do
+          audit_file = TMPDIR + "anonymization1.json"
+          a = Anonymizer.new(:audit_trail => audit_file)
+          a.add_folder(@anon_other)
+          a.write_path = @wpath_s
+          a.enumeration = true
+          a.execute
+          File.exists?(audit_file).should be_true
+          at = AuditTrail.read(audit_file)
+          at.should be_a AuditTrail
+        end
+
+      end
+
     end
 
 

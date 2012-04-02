@@ -1,0 +1,26 @@
+{
+  "0008,0080": {
+    "Salt Lake Clinic": "Institution1",
+    "Chicago Hope": "Institution2"
+  },
+  "0008,0090": {
+    "Dr. Smith": "Physician1",
+    "Dr. Feelgood": "Physician2",
+    "Dr.Evil": "Physician3"
+  },
+  "0008,1010": {
+    "E-Scan": "Station1"
+  },
+  "0010,0010": {
+    "John Doe": "Patient1",
+    "Ruby^Rocket": "Patient2",
+    "Donny Dicom": "Patient3",
+    "Carl Catscan": "Patient4"
+  },
+  "0010,0020": {
+    "12345": "ID1",
+    "67890": "ID2",
+    "010101": "ID3",
+    "111111": "ID4"
+  }
+}

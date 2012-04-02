@@ -11,6 +11,8 @@ module DICOM
   class Anonymizer
     include Logging
 
+    # An AuditTrail instance used for this anonymization (if specified).
+    attr_reader :audit_trail
     # A boolean that if set as true will cause all anonymized tags to be blank instead of get some generic value.
     attr_accessor :blank
     # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
@@ -30,11 +32,26 @@ module DICOM
     #
     # * To customize logging behaviour, refer to the Logging module documentation.
     #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:audit_trail</tt> -- String. A file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
+    # * <tt>:uid_root</tt> -- String. An organization (or custom) UID root to use when replacing UIDs.
+    #
     # === Examples
     #
     #   # Create an Anonymizer instance and restrict the log output:
     #   a = Anonymizer.new
     #   a.logger.level = Logger::ERROR
+    #   # Carry out anonymization using the audit trail feature:
+    #   a = Anonymizer.new(:audit_trail => "trail.json")
+    #   a.enumeration = true
+    #   a.folder = "//dicom/today/"
+    #   a.write_path = "//anonymized/"
+    #   a.execute
     #
     def initialize(options={})
       # Default value of accessors:
@@ -62,10 +79,19 @@ module DICOM
       @write_paths = Array.new
       # Keep track of status messages:
       @log = Array.new
-      # Set the org_root to be used when anonymizing study_uid series_uid and sop_instance_uid
-      @org_root = options[:root] ? options[:root] : UID
-      # Setup audit trail if requested
-      @audit_trail = options[:audit_trail] ? AuditTrail.new : nil
+      # Set the uid_root to be used when anonymizing study_uid series_uid and sop_instance_uid
+      @uid_root = options[:uid_root] ? options[:uid_root] : UID
+      # Setup audit trail if requested:
+      if options[:audit_trail]
+        @audit_trail_file = options[:audit_trail]
+        if File.exists?(@audit_trail_file) && File.size(@audit_trail_file) > 2
+          # Load the pre-existing audit trail from file:
+          @audit_trail = AuditTrail.read(@audit_trail_file)
+        else
+          # Start from scratch with an empty audit trail:
+          @audit_trail = AuditTrail.new
+        end
+      end
       # Set the default data elements to be anonymized:
       set_defaults
     end
@@ -174,7 +200,7 @@ module DICOM
           anonymizer_level = logger.level
           logger.level = Logger::FATAL
           @files.each_index do |i|
-            pbar.inc if !!pbar
+            pbar.inc if pbar
             # Read existing file to DICOM object:
             obj = DICOM::DObject.read(@files[i])
             if obj.read_success
@@ -218,7 +244,7 @@ module DICOM
               files_failed_read += 1
             end
           end
-          pbar.finish if !!pbar
+          pbar.finish if pbar
           # Finished anonymizing files. Reset the log threshold:
           logger.level = anonymizer_level
           # Print elapsed time and status of anonymization:
@@ -234,9 +260,9 @@ module DICOM
           else
             logger.warn("Some DICOM objects were NOT succesfully written to file. You are advised to investigate the result (#{files_written} files succesfully written).")
           end
-          @audit_trail.serialize if !!@audit_trail
+          @audit_trail.write(@audit_trail_file) if @audit_trail
           # Has user requested enumeration and specified an identity file in which to store the anonymized values?
-          if @enumeration and @identity_file and !!@audit_trail
+          if @enumeration and @identity_file and !@audit_trail
             logger.info("Writing identity file.")
             write_identity_file
             logger.info("Done")
@@ -436,19 +462,19 @@ module DICOM
       # Is enumeration requested for this tag?
       if @enumerations[j]
         if @audit_trail
-          new_value = @audit_trail.get_clean_tag(@values[j],current)
-          if new_value != nil
+          new_value = @audit_trail.replacement(@tags[j],current)
+          if new_value
             value = new_value
           else
-            index = @audit_trail.previous_values(@values[j])
-            # This should really check to see if the type of the tag is an int, but for now, the only 
+            index = @audit_trail.records(@tags[j]).length + 1
+            # This should really check to see if the type of the tag is an int, but for now, the only
             # one this is a proble for is assession so
             if @tags[j] == "0008,0050"
-                value = index.to_s
+              value = index.to_s
             else
-                value = @values[j] + index.to_s
+              value = @values[j] + index.to_s
             end
-            @audit_trail.add_tag_record(@values[j], current, value)
+            @audit_trail.add_record(@tags[j], current, value)
           end
         else
           # Retrieve earlier used anonymization values:
@@ -585,7 +611,7 @@ module DICOM
         end
       end
     end
-    
+
     def clean_uids(filename, obj, element, value)
       # UID anonymization is a more complex case, it requires the preservation of relationships
       # While technically we could just generate a new value for each study,instance,object
@@ -595,32 +621,32 @@ module DICOM
       study_uid = nil
       series_uid = nil
       old_value = element.value
-      if !!@audit_trail
-        new_value = @audit_trail.get_clean_tag(value, old_value)
+      if @audit_trail
+        new_value = @audit_trail.replacement(value, old_value)
         if new_value != nil
           study_uid = new_value
         else
-          study_uid = generate_uid
-          @audit_trail.add_tag_record(value, old_value, study_uid)
+          study_uid = DICOM.generate_uid(@uid_root, prefix=1)
+          @audit_trail.add_record(value, old_value, study_uid)
         end
-      else                  
+      else
         previous_old_study = @enum_old_hash["0020,000D"]
         previous_new_study = @enum_new_hash["0020,000D"]
         study_uid = nil
         if previous_old_study.index(old_value) == nil
-          study_uid = generate_uid
+          study_uid = DICOM.generate_uid(@uid_root, prefix=1)
           previous_old_study << old_value
           previous_new_study << study_uid
         else
           study_uid = previous_new_study[previous_old_study.index(old_value)]
         end
       end
-      
+
       series_number_element = obj["0020,0011"]
       instance_number_element = obj["0020,0013"]
       instance_uid_element = obj["0008,0018"]
       series_uid_element = obj["0020,000E"]
-      
+
       # I have seen instances when there was no instance or series number, I am not sure what to do here.
       if series_uid_element and series_number_element and series_number_element.value
         series_uid = study_uid + ".2." + series_number_element.value.strip.to_i.to_s # easy way to remove spaces and leading 0's
@@ -630,7 +656,7 @@ module DICOM
         series_uid_element.value = series_uid
         logger.info("DICOM file " + filename + " did not have a series number, this can cause issues.")
       end
-      
+
       if instance_uid_element and instance_number_element and instance_number_element.value
         instance_uid = series_uid + ".3." + instance_number_element.value.strip.to_i.to_s
         instance_uid_element.value = instance_uid
@@ -639,9 +665,9 @@ module DICOM
         instance_uid_element.value = instance_uid
         logger.info("DICOM file " + filename + " did not have an instance number, this can cause issues.")
       end
-      
+
       element.value = study_uid
-      
+
       # We also need to change (0002,0003) Media Storage SOP Instance UID because this is equal to the SOP Instance UID
       # DCM4CHEE will not accept these if they don't match
       media_sop_uid_element = obj["0002,0003"]
@@ -649,15 +675,6 @@ module DICOM
          media_sop_uid_element.value = instance_uid
       end
     end
-    
-    def generate_uid
-      new_guid = ""
-      begin
-          current_time = Time.new
-          new_guid =  @org_root  + "." + current_time.year.to_s +  current_time.month.to_s + current_time.day.to_s + current_time.min.to_s + current_time.sec.to_s + "." + current_time.usec.to_s + ".1"
-      end until new_guid != @last_guid
-      @last_guid = new_guid
-      return new_guid
-    end
+
   end
 end
