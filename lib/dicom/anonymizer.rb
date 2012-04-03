@@ -13,18 +13,24 @@ module DICOM
 
     # An AuditTrail instance used for this anonymization (if specified).
     attr_reader :audit_trail
+    # The file name used for the AuditTrail serialization (if specified).
+    attr_reader :audit_trail_file
     # A boolean that if set as true will cause all anonymized tags to be blank instead of get some generic value.
     attr_accessor :blank
     # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
     attr_accessor :enumeration
-    # A string, which if set (and enumeration has been set as well), will make the Anonymizer produce an identity file that provides a relationship between the original and enumerated, anonymized values.
-    attr_accessor :identity_file
-    # An array containing status messages accumulated for the Anonymization instance.
-    attr_accessor :log
+    # The identity file attribute.
+    attr_reader :identity_file
     # A boolean that if set as true, will make the anonymization remove all private tags.
     attr_accessor :remove_private
     # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
     attr_accessor :write_path
+    # A boolean indicating whether or not UIDs shall be replaced when executing the anonymization.
+    attr_accessor :uid
+    # The DICOM UID root to use when generating new UIDs.
+    attr_accessor :uid_root
+    # An array of UID tags that will be anonymized if the uid option is used.
+    attr_accessor :uids
 
     # Creates an Anonymizer instance.
     #
@@ -39,6 +45,7 @@ module DICOM
     # === Options
     #
     # * <tt>:audit_trail</tt> -- String. A file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
+    # * <tt>:uid</tt> -- Boolean. If true, all (top level) UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
     # * <tt>:uid_root</tt> -- String. An organization (or custom) UID root to use when replacing UIDs.
     #
     # === Examples
@@ -57,9 +64,7 @@ module DICOM
       # Default value of accessors:
       @blank = false
       @enumeration = false
-      @identity_file = nil
       @remove_private = false
-      @write_path = nil
       # Array of folders to be processed for anonymization:
       @folders = Array.new
       # Folders that will be skipped:
@@ -77,8 +82,8 @@ module DICOM
       @files = Array.new
       # Write paths will be determined later and put in this array:
       @write_paths = Array.new
-      # Keep track of status messages:
-      @log = Array.new
+      # Register the uid anonymization option:
+      @uid = options[:uid]
       # Set the uid_root to be used when anonymizing study_uid series_uid and sop_instance_uid
       @uid_root = options[:uid_root] ? options[:uid_root] : UID
       # Setup audit trail if requested:
@@ -202,23 +207,20 @@ module DICOM
           @files.each_index do |i|
             pbar.inc if pbar
             # Read existing file to DICOM object:
-            obj = DICOM::DObject.read(@files[i])
-            if obj.read_success
+            obj = DObject.read(@files[i])
+            if obj.read?
               # Anonymize the desired tags:
               @tags.each_index do |j|
                 if obj.exists?(@tags[j])
                   element = obj[@tags[j]]
                   if element.is_a?(Element)
-                    if @tags[j].upcase == "0020,000D"
-                      clean_uids(@files[i], obj, element, @values[j]) if element
-                    end
                     if @blank
                       value = ""
                     elsif @enumeration
                       old_value = element.value
                       # Only launch enumeration logic if there is an actual value to the data element:
                       if old_value
-                        value = get_enumeration_value(old_value, j)
+                        value = enumerated_value(old_value, j)
                       else
                         value = ""
                       end
@@ -230,11 +232,13 @@ module DICOM
                   end
                 end
               end
+              # Handle UIDs if requested:
+              replace_uids(obj) if @uid
               # Remove private tags?
               obj.remove_private if @remove_private
               # Write DICOM file:
               obj.write(@write_paths[i])
-              if obj.write_success
+              if obj.written?
                 files_written += 1
               else
                 all_write = false
@@ -275,6 +279,16 @@ module DICOM
       else
         logger.warn("No files were found in specified folders. Aborting.")
       end
+    end
+
+    # Setter method for the identity file.
+    # NB! The identity file feature is deprecated!
+    # Please use the AuditTrail feature instead.
+    #
+    def identity_file=(file_name)
+      # Deprecation warning:
+      logger.warn("The identity_file feature of the Anonymization class has been deprecated! Please use the AuditTrail feature instead.")
+      @identity_file = file_name
     end
 
     # Prints to screen a list of which tags are currently selected for anonymization along with
@@ -448,56 +462,53 @@ module DICOM
       end
     end
 
-    # Handles the enumeration for the current data element tag.
-    # If its value has been encountered before, its corresponding enumerated value is retrieved,
-    # and if a new value is encountered, a new enumerated value is found by increasing an index by 1.
-    # Returns the value which will be used for the anonymization of this tag.
+    # Handles the enumeration for the given data element tag.
+    # If its value has been encountered before, its corresponding enumerated
+    # replacement value is retrieved, and if a new original value is encountered,
+    # a new enumerated replacement value is found by increasing an index by 1.
+    # Returns the replacement value which is used for the anonymization of the tag.
     #
     # === Parameters
     #
-    # * <tt>current</tt> -- The original value of the tag that are about to be anonymized.
+    # * <tt>original</tt> -- The original value of the tag that to be anonymized.
     # * <tt>j</tt> -- Fixnum. The index of this tag in the tag-related instance arrays.
     #
-    def get_enumeration_value(current, j)
+    def enumerated_value(original, j)
       # Is enumeration requested for this tag?
       if @enumerations[j]
         if @audit_trail
-          new_value = @audit_trail.replacement(@tags[j],current)
-          if new_value
-            value = new_value
-          else
+          # Check if the UID has been encountered already:
+          replacement = @audit_trail.replacement(@tags[j], original)
+          unless replacement
+            # This original value has not been encountered yet. Determine the index to use.
             index = @audit_trail.records(@tags[j]).length + 1
-            # This should really check to see if the type of the tag is an int, but for now, the only
-            # one this is a proble for is assession so
-            if @tags[j] == "0008,0050"
-              value = index.to_s
-            else
-              value = @values[j] + index.to_s
-            end
-            @audit_trail.add_record(@tags[j], current, value)
+            # Create the replacement value:
+            replacement = @values[j] + index.to_s
+            # Add this tag record to the audit trail:
+            @audit_trail.add_record(@tags[j], original, replacement)
           end
         else
           # Retrieve earlier used anonymization values:
           previous_old = @enum_old_hash[@tags[j]]
           previous_new = @enum_new_hash[@tags[j]]
           p_index = previous_old.length
-          if previous_old.index(current) == nil
+          if previous_old.index(original) == nil
             # Current value has not been encountered before:
-            value = @values[j]+(p_index + 1).to_s
+            replacement = @values[j]+(p_index + 1).to_s
             # Store value in array (and hash):
-            previous_old << current
-            previous_new << value
+            previous_old << original
+            previous_new << replacement
             @enum_old_hash[@tags[j]] = previous_old
             @enum_new_hash[@tags[j]] = previous_new
           else
             # Current value has been observed before:
-            value = previous_new[previous_old.index(current)]
+            replacement = previous_new[previous_old.index(original)]
           end
         end
       else
-        value = @values[j]
+        replacement = @values[j]
       end
-      return value
+      return replacement
     end
 
     # Discovers all the files contained in the specified directory (all its sub-directories),
@@ -561,10 +572,54 @@ module DICOM
       end
     end
 
-    # Sets up the default tags that will be anonymized, along with default replacement values and enumeration settings.
-    # The data is stored in 3 separate instance arrays for tags, values and enumeration.
+    # Replaces the UIDs of the given DICOM object.
+    #
+    # === Notes
+    #
+    # Empty UIDs are ignored (we don't generate new UIDs for these).
+    # If AuditTrail is set, the relationship between old and new UIDs
+    # are preserved, and the relations between files in a study/series
+    # should remain valid.
+    #
+    #
+    def replace_uids(obj)
+      @uids.each_pair do |tag, prefix|
+        original = obj.value(tag)
+        if original && original.length > 0
+          # We have a UID value, go ahead and replace it:
+          if @audit_trail
+            # Check if the UID has been encountered already:
+            replacement = @audit_trail.replacement(tag, original)
+            unless replacement
+              # The UID has not been stored previously. Generate a new one:
+              replacement = DICOM.generate_uid(@uid_root, prefix)
+              # Add this tag record to the audit trail:
+              @audit_trail.add_record(tag, original, replacement)
+            end
+            # Replace the UID in the DICOM object:
+            obj[tag].value = replacement
+            # NB! The SOP Instance UID must also be written to the Media Storage SOP Instance UID tag:
+            obj["0002,0003"].value = replacement if tag == "0008,0018" && obj.exists?("0002,0003")
+          else
+            # We don't care about preserving UID relations. Just insert a custom UID:
+            obj[tag].value = DICOM.generate_uid(@uid_root, prefix)
+          end
+        end
+      end
+    end
+
+    # Sets up some default information variables that are used by the Anonymizer.
     #
     def set_defaults
+      # A hash of UID tags to be replaced (if requested) and prefixes to use for each tag:
+      @uids = {
+        "0008,0018" => 3, # SOP Instance UID
+        "0020,000D" => 1, # Study Instance UID
+        "0020,000E" => 2, # Series Instance UID
+        "0020,0052" => 9 # Frame of Reference UID
+      }
+      # Sets up default tags that will be anonymized, along with default replacement values and enumeration settings.
+      # This data is stored in 3 separate instance arrays for tags, values and enumeration.
       data = [
       ["0008,0012", "20000101", false], # Instance Creation Date
       ["0008,0013", "000000.00", false], # Instance Creation Time
@@ -572,6 +627,7 @@ module DICOM
       ["0008,0023", "20000101", false], # Image Date
       ["0008,0030", "000000.00", false], # Study Time
       ["0008,0033", "000000.00", false], # Image Time
+      ["0008,0050", "", true], # Accession Number
       ["0008,0080", "Institution", true], # Institution name
       ["0008,0090", "Physician", true], # Referring Physician's name
       ["0008,1010", "Station", true], # Station name
@@ -609,70 +665,6 @@ module DICOM
             output.print "\n"
           end
         end
-      end
-    end
-
-    def clean_uids(filename, obj, element, value)
-      # UID anonymization is a more complex case, it requires the preservation of relationships
-      # While technically we could just generate a new value for each study,instance,object
-      # It would destroy the relationships between files
-      previous_old_study = nil
-      previous_new_study = nil
-      study_uid = nil
-      series_uid = nil
-      old_value = element.value
-      if @audit_trail
-        new_value = @audit_trail.replacement(value, old_value)
-        if new_value != nil
-          study_uid = new_value
-        else
-          study_uid = DICOM.generate_uid(@uid_root, prefix=1)
-          @audit_trail.add_record(value, old_value, study_uid)
-        end
-      else
-        previous_old_study = @enum_old_hash["0020,000D"]
-        previous_new_study = @enum_new_hash["0020,000D"]
-        study_uid = nil
-        if previous_old_study.index(old_value) == nil
-          study_uid = DICOM.generate_uid(@uid_root, prefix=1)
-          previous_old_study << old_value
-          previous_new_study << study_uid
-        else
-          study_uid = previous_new_study[previous_old_study.index(old_value)]
-        end
-      end
-
-      series_number_element = obj["0020,0011"]
-      instance_number_element = obj["0020,0013"]
-      instance_uid_element = obj["0008,0018"]
-      series_uid_element = obj["0020,000E"]
-
-      # I have seen instances when there was no instance or series number, I am not sure what to do here.
-      if series_uid_element and series_number_element and series_number_element.value
-        series_uid = study_uid + ".2." + series_number_element.value.strip.to_i.to_s # easy way to remove spaces and leading 0's
-        series_uid_element.value = series_uid
-      else
-        series_uid = study_uid + ".2"
-        series_uid_element.value = series_uid
-        logger.info("DICOM file " + filename + " did not have a series number, this can cause issues.")
-      end
-
-      if instance_uid_element and instance_number_element and instance_number_element.value
-        instance_uid = series_uid + ".3." + instance_number_element.value.strip.to_i.to_s
-        instance_uid_element.value = instance_uid
-      else
-        instance_uid = series_uid + ".3"
-        instance_uid_element.value = instance_uid
-        logger.info("DICOM file " + filename + " did not have an instance number, this can cause issues.")
-      end
-
-      element.value = study_uid
-
-      # We also need to change (0002,0003) Media Storage SOP Instance UID because this is equal to the SOP Instance UID
-      # DCM4CHEE will not accept these if they don't match
-      media_sop_uid_element = obj["0002,0003"]
-      if media_sop_uid_element
-         media_sop_uid_element.value = instance_uid
       end
     end
 

@@ -1,4 +1,3 @@
-require 'json'
 module DICOM
 
   # The AuditTrail class handles key/value storage for the Anonymizer.
@@ -30,6 +29,8 @@ module DICOM
     # Creates a new AuditTrail instance.
     #
     def initialize
+      # The AuditTrail requires JSON for serialization:
+      require 'json'
       # Define the key/value hash used for tag records:
       @dictionary = Hash.new
     end

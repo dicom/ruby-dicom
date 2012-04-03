@@ -35,40 +35,69 @@ module DICOM
       @w2 = @wpath_s + File.basename(DCM_EXPLICIT_MR_RLE_MONO2)
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
+      @a = Anonymizer.new
     end
 
 
     describe "::new" do
 
-      it "should set the blank attribute as false" do
-        a = Anonymizer.new
-        a.blank.should be_false
+      it "should by default set the audit_trail attribute as nil" do
+        @a.audit_trail.should be_nil
       end
 
-      it "should set the enumeration attribute as false" do
-        a = Anonymizer.new
-        a.enumeration.should be_false
+      it "should by default set the audit_trail_file attribute as nil" do
+        @a.audit_trail_file.should be_nil
       end
 
-      it "should set the identity_file attribute as nil" do
-        a = Anonymizer.new
-        a.identity_file.should be_nil
+      it "should by default set the blank attribute as false" do
+        @a.blank.should be_false
       end
 
-      it "should set the log attribute as an empty array" do
-        a = Anonymizer.new
-        a.log.should be_an(Array)
-        a.log.length.should eql 0
+      it "should by default set the enumeration attribute as false" do
+        @a.enumeration.should be_false
       end
 
-      it "should set the remove_private attribute as false" do
-        a = Anonymizer.new
-        a.remove_private.should be_false
+      it "should by default set the identity_file attribute as nil" do
+        @a.identity_file.should be_nil
       end
 
-      it "should set the write_path attribute as nil" do
-        a = Anonymizer.new
-        a.write_path.should be_nil
+      it "should by default set the remove_private attribute as false" do
+        @a.remove_private.should be_false
+      end
+
+      it "should by default set the write_path attribute as nil" do
+        @a.write_path.should be_nil
+      end
+
+      it "should by default set the uid attribute as nil" do
+        @a.uid.should be_nil
+      end
+
+      it "should by default set the uid_root attribute as the DICOM module's UID constant" do
+        @a.uid_root.should eql UID
+      end
+
+      it "should pass the :uid option to the uid attribute" do
+        a = Anonymizer.new(:uid => true)
+        a.uid.should be_true
+      end
+
+      it "should pass the :uid_root option to the uid_root attribute" do
+        custom_uid = "1.999.5"
+        a = Anonymizer.new(:uid_root => custom_uid)
+        a.uid_root.should eql custom_uid
+      end
+
+      it "should pass the :audit_trail option to the audit_trail_file attribute" do
+        trail_file = "my_audit_file.json"
+        a = Anonymizer.new(:audit_trail => trail_file)
+        a.audit_trail_file.should eql trail_file
+      end
+
+      it "should load an AuditTrail instance to the audit_trail attribute when the :audit_trail option is used" do
+        trail_file = "my_audit_file.json"
+        a = Anonymizer.new(:audit_trail => trail_file)
+        a.audit_trail.should be_an AuditTrail
       end
 
     end
