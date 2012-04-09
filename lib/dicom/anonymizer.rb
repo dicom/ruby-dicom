@@ -236,6 +236,12 @@ module DICOM
               replace_uids(obj) if @uid
               # Remove private tags?
               obj.remove_private if @remove_private
+              
+              # Remove Tags marked for removal
+              @delete_tags.each_index do |j|
+                obj.remove(@delete_tags[j]) if obj.exists?(@delete_tags[j])
+              end
+              
               # Write DICOM file:
               obj.write(@write_paths[i])
               if obj.written?
@@ -365,6 +371,22 @@ module DICOM
         @values.delete_at(pos)
         @enumerations.delete_at(pos)
       end
+    end
+    
+    # Compeletely deletes a tag from the file
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- String. A data element tag.
+    #
+    # === Examples
+    #
+    #   a.delete_tag("0010,0010")
+    #
+    def delete_tag(tag)
+      raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
+      raise ArgumentError, "Expected a valid tag of format 'GGGG,EEEE', got #{tag}." unless tag.tag?
+      @delete_tags.push(tag) if not @delete_tags.include?(tag)
     end
 
     # Sets the anonymization settings for the specified tag. If the tag is already present in the list
@@ -641,6 +663,10 @@ module DICOM
       @tags = data[0]
       @values = data[1]
       @enumerations = data[2]
+      
+      # Tags to be removed completely during anonymization
+      @delete_tags = [
+      ]
     end
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
@@ -667,6 +693,5 @@ module DICOM
         end
       end
     end
-
   end
 end
