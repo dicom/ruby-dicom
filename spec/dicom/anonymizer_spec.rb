@@ -379,6 +379,31 @@ module DICOM
       end
 
     end
+    
+    describe "#delete_tag" do
+
+      it "should raise an ArgumentError when a non-string is passed as an argument" do
+        a = Anonymizer.new
+        expect {a.delete_tag(42)}.to raise_error(ArgumentError)
+      end
+
+      it "should raise an ArgumentError when a non-tag string is passed as an argument" do
+        a = Anonymizer.new
+        expect {a.delete_tag("asdf,asdf")}.to raise_error(ArgumentError)
+      end
+
+      it "should remove tag marked for deletion during anonymization" do
+        a = Anonymizer.new
+        obj = DObject.read(@anon3)
+        obj.exists?("0010,0010").should be_true
+        a.add_folder(@anon_other)
+        a.delete_tag("0010,0010")
+        a.execute
+        obj = DObject.read(@anon3)
+        obj.exists?("0010,0010").should be_false
+      end
+
+    end
 
 
     describe "#set_tag" do
