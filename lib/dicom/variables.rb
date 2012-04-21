@@ -17,19 +17,18 @@ module DICOM
     # Module methods:
     #++
 
-    # Generates one or several random UID strings.
-    # The UIDs are based on the RTKIT dicom_root attribute, a type prefix, a datetime part,
-    # a random number part, and an index part (when multiple UIDs are requested,
-    # e.g. for a SOP Instances in a Series).
-    # Returns the UIDs in a string array.
+    # Generates a random (unique) UID string.
+    # The UID is composed of a DICOM root UID, a type prefix,
+    # a datetime part and a random number part.
+    # Returns the UID string.
     #
     # === Parameters
     #
     # * <tt>root</tt> -- String. The DICOM root UID to be used for generating the UID string, e.g. '1.2.840.999'.
-    # * <tt>prefix</tt> -- String. A (numerical) string which is placed between the dicom root and the time/random part of the UID.
+    # * <tt>prefix</tt> -- String. An integer string which is placed between the dicom root and the time/random part of the UID.
     #
     def generate_uid(root=UID, prefix=1)
-      # NB! For UIDs, leading zeroes after a dot is not allowed, and must be removed:
+      # NB! For UIDs, leading zeroes immediately after a dot is not allowed.
       date = Time.now.strftime("%Y%m%d").to_i.to_s
       time = Time.now.strftime("%H%M%S").to_i.to_s
       random = rand(99999) + 1 # (Minimum 1, max. 99999)
