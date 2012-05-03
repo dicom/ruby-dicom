@@ -259,6 +259,78 @@ module DICOM
       end
     
     end
+    
+    
+    describe "#==()" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0010", 512)
+        (e1 == e2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values (same tag but different values)" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0010", 510)
+        (e1 == e2).should be_false
+      end
+      
+      it "should be false when comparing two instances having different attribute values (different tag but same value/vr)" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0011", 512)
+        (e1 == e2).should be_false
+      end
+
+      it "should be false when comparing against an instance of incompatible type" do
+        e = Element.new("0028,0010", 512)
+        (e == 42).should be_false
+      end
+
+    end
+    
+    
+    describe "#eql?" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0010", 512)
+        e1.eql?(e2).should be_true
+      end
+      
+      it "should be false when comparing two instances having different attribute values" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0010", 510)
+        e1.eql?(e2).should be_false
+      end
+
+    end
+    
+    
+    describe "#hash" do
+
+      it "should return the same Fixnum for two instances having the same attribute values" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0010", 512)
+        e1.hash.should eql e2.hash
+      end
+      
+      it "should return a different Fixnum for two instances having different attribute values" do
+        e1 = Element.new("0028,0010", 512)
+        e2 = Element.new("0028,0010", 510)
+        e1.hash.should_not eql e2.hash
+      end
+
+    end
+    
+    
+    describe "#to_element" do
+
+      it "should return itself" do
+        e = Element.new("0028,0010", 512)
+        e.to_element.equal?(e).should be_true
+      end
+
+    end
 
   end
 

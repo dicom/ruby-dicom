@@ -85,6 +85,16 @@ module DICOM
       end
     end
 
+    # Returns true if the argument is an instance with attributes equal to self.
+    #
+    def ==(other)
+      if other.respond_to?(:to_element)
+        other.send(:state) == state
+      end
+    end
+
+    alias_method :eql?, :==
+
     # Sets the binary string of a Element.
     #
     # === Notes
@@ -122,6 +132,12 @@ module DICOM
       return stream.str_endian
     end
 
+    # Generates a Fixnum hash value for this instance.
+    #
+    def hash
+      state.hash
+    end
+
     # Returns a string containing a human-readable hash representation of the Element.
     #
     def inspect
@@ -139,6 +155,12 @@ module DICOM
     #
     def to_hash
       return {self.send(DICOM.key_representation) => value}
+    end
+    
+    # Returns self.
+    #
+    def to_element
+      self
     end
 
     # Returns a json string containing a human-readable representation of the Element.
@@ -185,6 +207,12 @@ module DICOM
     #
     def encode(formatted_value)
       return stream.encode_value(formatted_value, @vr)
+    end
+    
+    # Returns the attributes of this instance in an array (for comparison purposes).
+    #
+    def state
+      [@tag, @vr, @value, @bin]
     end
 
   end
