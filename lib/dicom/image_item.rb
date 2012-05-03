@@ -62,8 +62,8 @@ module DICOM
         template = template_string(bit_depth_element.value.to_i)
         pixels = stream.decode_all(template) if template
       else
-        raise "The Data Element which specifies Bit Depth is missing. Unable to decode pixel data." unless bit_depth_element
-        raise "The Data Element which specifies Pixel Representation is missing. Unable to decode pixel data." unless pixel_representation_element
+        raise "The Element specifying Bit Depth (0028,0100) is missing. Unable to decode pixel data." unless bit_depth_element
+        raise "The Element specifying Pixel Representation (0028,0103) is missing. Unable to decode pixel data." unless pixel_representation_element
       end
       return pixels
     end
@@ -86,8 +86,8 @@ module DICOM
         template = template_string(bit_depth_element.value.to_i)
         bin = stream.encode(pixels, template) if template
       else
-        raise "The Data Element which specifies Bit Depth is missing. Unable to encode pixel data." unless bit_depth_element
-        raise "The Data Element which specifies Pixel Representation is missing. Unable to encode pixel data." unless pixel_representation_element
+        raise "The Element specifying Bit Depth (0028,0100) is missing. Unable to encode the pixel data." unless bit_depth_element
+        raise "The Element specifying Pixel Representation (0028,0103) is missing. Unable to encode the pixel data." unless pixel_representation_element
       end
       return bin
     end
@@ -356,7 +356,12 @@ module DICOM
             # Import the pixels to NArray and give it a proper shape:
             raise "Missing Rows and/or Columns Element. Unable to construct pixel data array." unless num_rows and num_cols
             if num_frames > 1 or options[:volume]
-              pixels = NArray.to_na(pixels).reshape!(num_frames, num_cols, num_rows)
+              # Create an empty 3D NArray. fill it with pixels frame by frame, then reassign the pixels variable to it:
+              narr = NArray.int(num_frames, num_cols, num_rows)
+              num_frames.times do |i|
+                narr[i, true, true] = NArray.to_na(pixels[(i * num_cols * num_rows)..((i + 1) * num_cols * num_rows - 1)]).reshape!(num_cols, num_rows)
+              end
+              pixels = narr
             else
               pixels = NArray.to_na(pixels).reshape!(num_cols, num_rows)
             end
@@ -434,10 +439,21 @@ module DICOM
     #
     def pixels=(values)
       raise ArgumentError, "Expected Array or NArray, got #{values.class}." unless [Array, NArray].include?(values.class)
-      # If NArray, convert to a standard Ruby Array:
-      values = values.to_a.flatten if values.is_a?(NArray)
+      if values.is_a?(NArray)
+        # When NArray, convert to a Ruby Array:
+        if values.shape.length > 2
+          # We need to take care when reshaping this 3D array so that the pixel values falls properly into place:
+          narr = NArray.int(values.shape[1] * values.shape[2], values.shape[0])
+          values.shape[0].times do |i|
+            narr[true, i] = values[i, true, true].reshape(values.shape[1] * values.shape[2])
+          end
+          values = narr.to_a
+        else
+          values = values.to_a
+        end
+      end
       # Encode the pixel data:
-      bin = encode_pixels(values)
+      bin = encode_pixels(values.flatten)
       # Write the binary data to the Pixel Data Element:
       write_pixels(bin)
     end

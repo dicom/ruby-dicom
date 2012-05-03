@@ -205,6 +205,21 @@ module DICOM
         obj.pixels(:level => [1100, 100],:narray => true)
       end
 
+      it "should return the pixel values properly placed in the expected indices on a 3D Pixel Data volume" do
+        obj = DObject.new
+        Element.new("0002,0010", EXPLICIT_LITTLE_ENDIAN, :parent => obj) # TS
+        Element.new("0028,0008", "2", :parent => obj) # Frames
+        Element.new("0028,0010", 4, :parent => obj) # Rows
+        Element.new("0028,0011", 3, :parent => obj) # Columns
+        Element.new("0028,0100", 16, :parent => obj) # Bit Depth
+        Element.new("0028,0103", 0, :parent => obj) # Pixel Rep.
+        pixels = Array.new(24) {|i| i}
+        obj.pixels = pixels
+        pixels = obj.pixels
+        pixels.length.should eql 24
+        pixels.should eql Array.new(24) {|i| i}
+      end
+
     end
 
 
@@ -250,15 +265,6 @@ module DICOM
         narr.shape.length.should eql 3
       end
 
-      it "should return an NArray which is sized according to the dimensions of the 3D pixel volume" do
-        obj = DObject.read(DCM_EXPLICIT_RTDOSE_16BIT_MONO2_3D_VOLUME)
-        narr = obj.narray
-        narr.shape[0].should eql 126 # nr of frames
-        narr.shape[1].should eql 82 # nr of columns
-        narr.shape[2].should eql 6 # nr of rows
-        narr.shape.length.should eql 3
-      end
-
       it "should properly decode the pixel data such that the minimum pixel value for this image is 1024" do
         obj = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
         obj.narray.min.should eql 1024
@@ -301,6 +307,44 @@ module DICOM
       it "should remap the pixel values using the requested window center & width values and give the expected maximum value" do
         obj = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
         obj.narray(:level => [1100, 100]).max.should eql 1150
+      end
+
+      context "[on a 3D pixel volume]" do
+
+        before :each do
+          obj = DObject.new
+          Element.new("0002,0010", EXPLICIT_LITTLE_ENDIAN, :parent => obj) # TS
+          Element.new("0028,0008", "2", :parent => obj) # Frames
+          Element.new("0028,0010", 4, :parent => obj) # Rows
+          Element.new("0028,0011", 3, :parent => obj) # Columns
+          Element.new("0028,0100", 16, :parent => obj) # Bit Depth
+          Element.new("0028,0103", 0, :parent => obj) # Pixel Rep.
+          pixels = Array.new(24) {|i| i}
+          obj.pixels = pixels
+          @narr = obj.narray
+        end
+
+        it "should return a 3D NArray with the expected number of frames" do
+          @narr.shape[0].should eql 2
+        end
+
+        it "should return a 3D NArray with the expected number of columns" do
+          @narr.shape[1].should eql 3
+        end
+
+        it "should return a 3D NArray with the expected number of rows" do
+          @narr.shape[2].should eql 4
+        end
+
+        it "should return an NArray with exactly 3 dimensions" do
+          @narr.shape.length.should eql 3
+        end
+
+        it "should return an NArray with the pixel values properly placed in the expected indices for each frame" do
+          (@narr[0, true, true] == NArray.int(3, 4).indgen).should be_true
+          (@narr[1, true, true] == NArray.int(3, 4).indgen + 12).should be_true
+        end
+
       end
 
     end
@@ -464,6 +508,33 @@ module DICOM
         obj.pixels = NArray.to_na(pixel_data)
         obj["7FE0,0010"].bin.length.should eql 4
         obj.decode_pixels(obj["7FE0,0010"].bin).should eql pixel_data
+      end
+
+      context "[on a 3D pixel volume]" do
+
+        before :each do
+          @obj = DObject.new
+          Element.new("0002,0010", EXPLICIT_LITTLE_ENDIAN, :parent => @obj) # TS
+          Element.new("0028,0008", "2", :parent => @obj) # Frames
+          Element.new("0028,0010", 4, :parent => @obj) # Rows
+          Element.new("0028,0011", 3, :parent => @obj) # Columns
+          Element.new("0028,0100", 16, :parent => @obj) # Bit Depth
+          Element.new("0028,0103", 0, :parent => @obj) # Pixel Rep.
+        end
+
+        it "should encode the pixels of the NArray such that the pixel values are properly placed in the expected indices for each frame" do
+          narr = NArray.int(2, 3, 4)
+          narr[0, true, true] = NArray.int(3, 4).indgen
+          narr[1, true, true] = NArray.int(3, 4).indgen + 12
+          @obj.pixels = narr
+          @obj.pixels.should eql Array.new(24) {|i| i}
+        end
+        
+        it "should encode the pixels of the (flat) Array such that the pixel values are properly placed in expected indices" do
+          @obj.pixels = Array.new(24) {|i| i}
+          @obj.pixels.should eql Array.new(24) {|i| i}
+        end
+
       end
 
     end
