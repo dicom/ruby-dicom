@@ -214,6 +214,16 @@ module DICOM
       end
     end
 
+    # Returns true if the argument is an instance with attributes equal to self.
+    #
+    def ==(other)
+      if other.respond_to?(:to_dcm)
+        other.send(:state) == state
+      end
+    end
+
+    alias_method :eql?, :==
+
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
     #
     # Returns the encoded binary strings in an array.
@@ -236,6 +246,12 @@ module DICOM
       # Write process succesful?
       @write_success = w.success
       return w.segments
+    end
+
+    # Generates a Fixnum hash value for this instance.
+    #
+    def hash
+      state.hash
     end
 
     # Prints information of interest related to the DICOM object.
@@ -396,6 +412,12 @@ module DICOM
       return info
     end
 
+    # Returns self.
+    #
+    def to_dcm
+      self
+    end
+
     # Returns the transfer syntax string of the DObject.
     #
     # If a transfer syntax has not been defined in the DObject, a default tansfer syntax is assumed and returned.
@@ -505,6 +527,12 @@ module DICOM
         group_length += tag + vr + length + element.bin.length
       end
       return group_length
+    end
+
+    # Returns the attributes (children) of this instance (for comparison purposes).
+    #
+    def state
+      @tags
     end
 
   end

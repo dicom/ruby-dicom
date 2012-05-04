@@ -6,7 +6,7 @@ require 'spec_helper'
 module DICOM
 
   describe Sequence do
-    
+
     context "::new" do
 
       it "should raise ArgumentError when creation is attempted with an invalid tag string" do
@@ -144,7 +144,82 @@ module DICOM
       end
 
     end
-    
+
+
+    describe "#==()" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("0008,0006")
+        (s1 == s2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values (same tag but different children)" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("0008,0006")
+        s2.add_item
+        (s1 == s2).should be_false
+      end
+
+      it "should be false when comparing two instances having different attribute values (different tag but both no children)" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("3006,0040")
+        (s1 == s2).should be_false
+      end
+
+      it "should be false when comparing against an instance of incompatible type" do
+        s = Sequence.new("0008,0006")
+        (s == 42).should be_false
+      end
+
+    end
+
+
+    describe "#eql?" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("0008,0006")
+        s1.eql?(s2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("0008,0006")
+        s2.add_item
+        s1.eql?(s2).should be_false
+      end
+
+    end
+
+
+    describe "#hash" do
+
+      it "should return the same Fixnum for two instances having the same attribute values" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("0008,0006")
+        s1.hash.should eql s2.hash
+      end
+
+      it "should return a different Fixnum for two instances having different attribute values" do
+        s1 = Sequence.new("0008,0006")
+        s2 = Sequence.new("0008,0006")
+        s2.add_item
+        s1.hash.should_not eql s2.hash
+      end
+
+    end
+
+
+    describe "#to_sequence" do
+
+      it "should return itself" do
+        s = Sequence.new("0008,0006")
+        s.to_sequence.equal?(s).should be_true
+      end
+
+    end
+
   end
 
 end

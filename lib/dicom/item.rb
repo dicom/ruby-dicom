@@ -62,6 +62,16 @@ module DICOM
       end
     end
 
+    # Returns true if the argument is an instance with attributes equal to self.
+    #
+    def ==(other)
+      if other.respond_to?(:to_item)
+        other.send(:state) == state
+      end
+    end
+
+    alias_method :eql?, :==
+
     # Sets the binary string that the Item will contain.
     #
     # === Parameters
@@ -83,6 +93,28 @@ module DICOM
       end
       @value = nil
       @length = @bin.length
+    end
+
+    # Generates a Fixnum hash value for this instance.
+    #
+    def hash
+      state.hash
+    end
+
+    # Returns self.
+    #
+    def to_item
+      self
+    end
+
+
+    private
+
+
+    # Returns the attributes of this instance in an array (for comparison purposes).
+    #
+    def state
+      [@vr, @name, @tags]
     end
 
   end

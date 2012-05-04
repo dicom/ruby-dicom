@@ -6,7 +6,7 @@ require 'spec_helper'
 module DICOM
 
   describe Item do
-    
+
     context "::new" do
 
       it "should set its name attribute as 'Item'" do
@@ -192,7 +192,82 @@ module DICOM
       end
 
     end
-    
+
+
+    describe "#==()" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        i1 = Item.new
+        i2 = Item.new
+        (i1 == i2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values (different children)" do
+        i1 = Item.new
+        i2 = Item.new
+        i2.add(Sequence.new("0008,0006"))
+        (i1 == i2).should be_false
+      end
+
+      it "should be false when comparing two instances having different attribute values (different vr but both no children)" do
+        i1 = Item.new
+        i2 = Item.new(:vr => "OB")
+        (i1 == i2).should be_false
+      end
+
+      it "should be false when comparing against an instance of incompatible type" do
+        i = Item.new
+        (i == 42).should be_false
+      end
+
+    end
+
+
+    describe "#eql?" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        i1 = Item.new
+        i2 = Item.new
+        i1.eql?(i2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values" do
+        i1 = Item.new
+        i2 = Item.new
+        i2.add(Sequence.new("0008,0006"))
+        i1.eql?(i2).should be_false
+      end
+
+    end
+
+
+    describe "#hash" do
+
+      it "should return the same Fixnum for two instances having the same attribute values" do
+        i1 = Item.new
+        i2 = Item.new
+        i1.hash.should eql i2.hash
+      end
+
+      it "should return a different Fixnum for two instances having different attribute values" do
+        i1 = Item.new
+        i2 = Item.new
+        i2.add(Sequence.new("0008,0006"))
+        i1.hash.should_not eql i2.hash
+      end
+
+    end
+
+
+    describe "#to_item" do
+
+      it "should return itself" do
+        i = Item.new
+        i.to_item.equal?(i).should be_true
+      end
+
+    end
+
   end
 
 end

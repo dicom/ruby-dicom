@@ -123,6 +123,47 @@ module DICOM
     end
 
 
+    describe "#==()" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        dcm1 = DObject.new
+        dcm2 = DObject.new
+        (dcm1 == dcm2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values (different children)" do
+        dcm1 = DObject.new
+        dcm2 = DObject.new
+        dcm2.add(Sequence.new("0008,0006"))
+        (dcm1 == dcm2).should be_false
+      end
+
+      it "should be false when comparing against an instance of incompatible type" do
+        dcm = DObject.new
+        (dcm == 42).should be_false
+      end
+
+    end
+
+
+    describe "#eql?" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        dcm1 = DObject.new
+        dcm2 = DObject.new
+        dcm1.eql?(dcm2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values" do
+        dcm1 = DObject.new
+        dcm2 = DObject.new
+        dcm2.add(Sequence.new("0008,0006"))
+        dcm1.eql?(dcm2).should be_false
+      end
+
+    end
+
+
     context "#encode_segments" do
 
       it "should raise ArgumentError when a non-integer argument is used" do
@@ -158,6 +199,34 @@ module DICOM
         binary = obj.encode_segments(16384).join
         obj_reloaded = DObject.parse(binary, :bin => true)
         obj_reloaded.read?.should be_true
+      end
+
+    end
+
+
+    describe "#hash" do
+
+      it "should return the same Fixnum for two instances having the same attribute values" do
+        dcm1 = DObject.new
+        dcm2 = DObject.new
+        dcm1.hash.should eql dcm2.hash
+      end
+
+      it "should return a different Fixnum for two instances having different attribute values" do
+        dcm1 = DObject.new
+        dcm2 = DObject.new
+        dcm2.add(Sequence.new("0008,0006"))
+        dcm1.hash.should_not eql dcm2.hash
+      end
+
+    end
+
+
+    describe "#to_dcm" do
+
+      it "should return itself" do
+        dcm = DObject.new
+        dcm.to_dcm.equal?(dcm).should be_true
       end
 
     end

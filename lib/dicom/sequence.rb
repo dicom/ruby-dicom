@@ -57,5 +57,37 @@ module DICOM
       end
     end
 
+    # Returns true if the argument is an instance with attributes equal to self.
+    #
+    def ==(other)
+      if other.respond_to?(:to_sequence)
+        other.send(:state) == state
+      end
+    end
+
+    alias_method :eql?, :==
+
+    # Generates a Fixnum hash value for this instance.
+    #
+    def hash
+      state.hash
+    end
+
+    # Returns self.
+    #
+    def to_sequence
+      self
+    end
+
+
+    private
+
+
+    # Returns the attributes of this instance in an array (for comparison purposes).
+    #
+    def state
+      [@tag, @vr, @tags]
+    end
+
   end
 end
