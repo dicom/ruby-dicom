@@ -236,9 +236,9 @@ module DICOM
         @dcm.children?.should be_false
       end
 
-      it "should return false on a parent who's children have been removed" do
+      it "should return false on a parent who's children have been deleted" do
         @dcm.add(Sequence.new("0008,1140"))
-        @dcm.remove("0008,1140")
+        @dcm.delete("0008,1140")
         @dcm.children?.should be_false
       end
 
@@ -451,7 +451,7 @@ module DICOM
     end
 
 
-    describe "#remove" do
+    describe "#delete" do
 
       before :each do
         @dcm = DObject.new
@@ -465,61 +465,61 @@ module DICOM
       end
 
       it "should raise ArgumentError when the argument is not a string or integer" do
-        expect {@dcm.remove(3.55)}.to raise_error(ArgumentError)
+        expect {@dcm.delete(3.55)}.to raise_error(ArgumentError)
       end
 
       it "should raise ArgumentError when the argument is not a valid tag" do
-        expect {@dcm.remove("asdf,asdf")}.to raise_error(ArgumentError)
+        expect {@dcm.delete("asdf,asdf")}.to raise_error(ArgumentError)
       end
 
       it "should raise ArgumentError when the argument is a negative integer" do
-        expect {@dcm.remove(-1)}.to raise_error(ArgumentError)
+        expect {@dcm.delete(-1)}.to raise_error(ArgumentError)
       end
 
-      it "should not remove any elements when the specified tag is not part of the parent's children" do
-        @dcm.remove("0010,0013")
+      it "should not delete any elements when the specified tag is not part of the parent's children" do
+        @dcm.delete("0010,0013")
         @dcm.children.length.should eql @number_of_elements_before
       end
 
-      it "should remove the Element when the tag is part of the parent's children" do
-        @dcm.remove("0010,0030")
+      it "should delete the Element when the tag is part of the parent's children" do
+        @dcm.delete("0010,0030")
         @dcm.exists?("0010,0030").should be_false
         @dcm.children.length.should eql @number_of_elements_before - 1
       end
 
-      it "should remove the Sequence when the tag is part of the parent's children" do
-        @dcm.remove("0008,1140")
+      it "should delete the Sequence when the tag is part of the parent's children" do
+        @dcm.delete("0008,1140")
         @dcm.exists?("0008,1140").should be_false
         @dcm.children.length.should eql @number_of_elements_before - 1
       end
 
-      it "should remove the Item from the parent Sequence" do
-        @dcm["0008,1140"].remove(0)
+      it "should delete the Item from the parent Sequence" do
+        @dcm["0008,1140"].delete(0)
         @dcm["0008,1140"].exists?(1).should be_false
         @dcm["0008,1140"].children.length.should eql 0
       end
 
-      it "should reset the parent reference from the Element when it is removed" do
-        @dcm.remove("0010,0030")
+      it "should reset the parent reference from the Element when it is deleted" do
+        @dcm.delete("0010,0030")
         @d.parent.should be_nil
       end
 
-      it "should reset the parent reference from the Sequence when it is removed" do
-        @dcm.remove("0008,1140")
+      it "should reset the parent reference from the Sequence when it is deleted" do
+        @dcm.delete("0008,1140")
         @s.parent.should be_nil
       end
 
-      it "should reset the parent reference from the Item when it is removed" do
-        @dcm["0008,1140"].remove(0)
+      it "should reset the parent reference from the Item when it is deleted" do
+        @dcm["0008,1140"].delete(0)
         @i.parent.should be_nil
       end
 
     end
 
 
-    describe "#remove_children" do
+    describe "#delete_children" do
 
-      it "should remove all children from the parent element" do
+      it "should delete all children from the parent element" do
         dcm = DObject.new
         dcm.add(Element.new("0010,0030", "20000101"))
         dcm.add(Element.new("0011,0030", "42"))
@@ -527,16 +527,16 @@ module DICOM
         dcm.add(Element.new("0010,0020", "12345"))
         dcm.add(Sequence.new("0008,1140"))
         dcm["0008,1140"].add_item
-        dcm.remove_children
+        dcm.delete_children
         dcm.children.length.should eql 0
       end
 
     end
 
 
-    describe "#remove_group" do
+    describe "#delete_group" do
 
-      it "should remove all children from the parent element" do
+      it "should delete all children from the parent element" do
         dcm = DObject.new
         dcm.add(Element.new("0010,0030", "20000101"))
         dcm.add(Element.new("0011,0030", "42"))
@@ -544,16 +544,16 @@ module DICOM
         dcm.add(Element.new("0010,0020", "12345"))
         dcm.add(Sequence.new("0008,1140"))
         dcm["0008,1140"].add_item
-        dcm.remove_group("0010")
+        dcm.delete_group("0010")
         dcm.children.length.should eql 2
       end
 
     end
 
 
-    describe "#remove_private" do
+    describe "#delete_private" do
 
-      it "should remove all private children from the parent element" do
+      it "should delete all private children from the parent element" do
         dcm = DObject.new
         dcm.add(Element.new("0010,0030", "20000101"))
         dcm.add(Element.new("0011,0030", "42"))
@@ -561,7 +561,7 @@ module DICOM
         dcm.add(Element.new("0015,0020", "12345"))
         dcm.add(Sequence.new("0008,1140"))
         dcm["0008,1140"].add_item
-        dcm.remove_private
+        dcm.delete_private
         dcm.children.length.should eql 2
       end
 

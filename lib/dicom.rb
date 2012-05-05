@@ -43,6 +43,8 @@ require_relative 'dicom/variables'
 # Image processors:
 require_relative 'dicom/image_processor_mini_magick'
 require_relative 'dicom/image_processor_r_magick'
+# Deprecated methods:
+require_relative 'dicom/deprecated'
 
 # Extensions (non-core functionality):
 require_relative 'dicom/anonymizer'

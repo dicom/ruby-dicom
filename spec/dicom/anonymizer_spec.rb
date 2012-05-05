@@ -61,8 +61,8 @@ module DICOM
         @a.identity_file.should be_nil
       end
 
-      it "should by default set the remove_private attribute as false" do
-        @a.remove_private.should be_false
+      it "should by default set the delete_private attribute as false" do
+        @a.delete_private.should be_false
       end
 
       it "should by default set the write_path attribute as nil" do
@@ -392,7 +392,7 @@ module DICOM
         expect {a.delete_tag("asdf,asdf")}.to raise_error(ArgumentError)
       end
 
-      it "should remove tag marked for deletion during anonymization" do
+      it "should delete tag marked for deletion during anonymization" do
         a = Anonymizer.new
         dcm = DObject.read(@anon3)
         dcm.exists?("0010,0010").should be_true

@@ -458,11 +458,11 @@ module DICOM
       write_pixels(bin)
     end
 
-    # Removes all Sequence instances from the DObject or Item instance.
+    # Delete all Sequence instances from the DObject or Item instance.
     #
-    def remove_sequences
+    def delete_sequences
       @tags.each_value do |element|
-        remove(element.tag) if element.is_a?(Sequence)
+        delete(element.tag) if element.is_a?(Sequence)
       end
     end
 

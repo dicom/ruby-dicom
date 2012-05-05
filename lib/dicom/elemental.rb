@@ -41,7 +41,7 @@ module DICOM
       return all_parents
     end
 
-    # Sets a specified parent instance as this elemental's parent, while taking care to remove this elemental from any previous parent
+    # Sets a specified parent instance as this elemental's parent, while taking care to delete this elemental from any previous parent
     # as well as adding itself to the new parent (unless new parent is nil).
     #
     # === Parameters
@@ -59,9 +59,9 @@ module DICOM
       if self.parent
         # Remove ourselves from the previous parent:
         if self.is_a?(Item)
-          self.parent.remove(self.index, :no_follow => true)
+          self.parent.delete(self.index, :no_follow => true)
         else
-          self.parent.remove(self.tag, :no_follow => true)
+          self.parent.delete(self.tag, :no_follow => true)
         end
       end
       if new_parent

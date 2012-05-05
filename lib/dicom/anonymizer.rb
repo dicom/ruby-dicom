@@ -21,8 +21,8 @@ module DICOM
     attr_accessor :enumeration
     # The identity file attribute.
     attr_reader :identity_file
-    # A boolean that if set as true, will make the anonymization remove all private tags.
-    attr_accessor :remove_private
+    # A boolean that if set as true, will make the anonymization delete all private tags.
+    attr_accessor :delete_private
     # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
     attr_accessor :write_path
     # A boolean indicating whether or not UIDs shall be replaced when executing the anonymization.
@@ -64,7 +64,7 @@ module DICOM
       # Default value of accessors:
       @blank = false
       @enumeration = false
-      @remove_private = false
+      @delete_private = false
       # Array of folders to be processed for anonymization:
       @folders = Array.new
       # Folders that will be skipped:
@@ -234,14 +234,12 @@ module DICOM
               end
               # Handle UIDs if requested:
               replace_uids(dcm) if @uid
-              # Remove private tags?
-              dcm.remove_private if @remove_private
-              
-              # Remove Tags marked for removal
+              # Delete private tags?
+              dcm.delete_private if @delete_private
+              # Delete Tags marked for removal:
               @delete_tags.each_index do |j|
-                dcm.remove(@delete_tags[j]) if dcm.exists?(@delete_tags[j])
+                dcm.delete(@delete_tags[j]) if dcm.exists?(@delete_tags[j])
               end
-              
               # Write DICOM file:
               dcm.write(@write_paths[i])
               if dcm.written?
@@ -664,7 +662,7 @@ module DICOM
       @values = data[1]
       @enumerations = data[2]
       
-      # Tags to be removed completely during anonymization
+      # Tags to be deleted completely during anonymization
       @delete_tags = [
       ]
     end

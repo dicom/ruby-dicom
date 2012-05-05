@@ -440,9 +440,9 @@ module DICOM
     end
 
 
-    context "#remove_sequences" do
+    context "#delete_sequences" do
 
-      it "should remove all sequences from the DICOM object" do
+      it "should delete all sequences from the DICOM object" do
         dcm = DObject.new
         dcm.add(Element.new("0010,0030", "20000101"))
         dcm.add(Sequence.new("0008,1140"))
@@ -450,14 +450,14 @@ module DICOM
         dcm.add(Sequence.new("0088,0200"))
         dcm["0008,1140"].add_item
         dcm.add(Element.new("0011,0030", "42"))
-        dcm.remove_sequences
+        dcm.delete_sequences
         dcm.children.length.should eql 2
         dcm.exists?("0008,1140").should be_false
         dcm.exists?("0009,1140").should be_false
         dcm.exists?("0088,0200").should be_false
       end
 
-      it "should remove all sequences from the Item" do
+      it "should delete all sequences from the Item" do
         i = Item.new
         i.add(Element.new("0010,0030", "20000101"))
         i.add(Sequence.new("0008,1140"))
@@ -465,7 +465,7 @@ module DICOM
         i.add(Sequence.new("0088,0200"))
         i["0008,1140"].add_item
         i.add(Element.new("0011,0030", "42"))
-        i.remove_sequences
+        i.delete_sequences
         i.children.length.should eql 2
         i.exists?("0008,1140").should be_false
         i.exists?("0009,1140").should be_false

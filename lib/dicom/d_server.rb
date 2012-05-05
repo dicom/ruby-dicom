@@ -148,14 +148,14 @@ module DICOM
       end
     end
 
-    # Removes a specific abstract syntax from the list of abstract syntaxes that the server will accept.
+    # Deletes a specific abstract syntax from the list of abstract syntaxes that the server will accept.
     #
     #
     # === Parameters
     #
     # * <tt>uid</tt> -- An abstract syntax UID string.
     #
-    def remove_abstract_syntax(uid)
+    def delete_abstract_syntax(uid)
       if uid.is_a?(String)
         @accepted_abstract_syntaxes.delete(uid)
       else
@@ -163,13 +163,13 @@ module DICOM
       end
     end
 
-    # Removes a specific transfer syntax from the list of transfer syntaxes that the server will accept.
+    # Deletes a specific transfer syntax from the list of transfer syntaxes that the server will accept.
     #
     # === Parameters
     #
     # * <tt>uid</tt> -- A transfer syntax UID string.
     #
-    def remove_transfer_syntax(uid)
+    def delete_transfer_syntax(uid)
       if uid.is_a?(String)
         @accepted_transfer_syntaxes.delete(uid)
       else
@@ -181,9 +181,9 @@ module DICOM
     #
     # === Notes
     #
-    # * Following such a removal, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server.
+    # * Following such a clearance, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server.
     #
-    def remove_all_abstract_syntaxes
+    def clear_abstract_syntaxes
       @accepted_abstract_syntaxes = Hash.new
     end
 
@@ -191,9 +191,9 @@ module DICOM
     #
     # === Notes
     #
-    # * Following such a removal, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server.
+    # * Following such a clearance, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server.
     #
-    def remove_all_transfer_syntaxes
+    def clear_transfer_syntaxes
       @accepted_transfer_syntaxes = Hash.new
     end
 

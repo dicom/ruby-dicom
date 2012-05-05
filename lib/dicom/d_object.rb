@@ -505,8 +505,8 @@ module DICOM
       end
       # Source Application Entity Title:
       Element.new("0002,0016", DICOM.source_app_title, :parent => self) unless exists?("0002,0016")
-      # Group Length: Remove the old one (if it exists) before creating a new one.
-      remove("0002,0000")
+      # Group Length: Delete the old one (if it exists) before creating a new one.
+      delete("0002,0000")
       Element.new("0002,0000", meta_group_length, :parent => self)
     end
 

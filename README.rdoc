@@ -44,8 +44,8 @@ communication modalities like querying, moving, sending and receiving files.
   dcm.value("0010,0010")
   # Modify the Patient's Name element:
   dcm["0010,0010"].value = "Anonymous"
-  # Remove a data element from the DICOM object:
-  dcm.remove("7FE0,0010")
+  # Delete a data element from the DICOM object:
+  dcm.delete("7FE0,0010")
 
 === Extracting information about the DICOM object
 

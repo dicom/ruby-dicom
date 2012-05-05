@@ -223,37 +223,37 @@ module DICOM
 
       end
 
-      context "#remove" do
+      context "#delete" do
 
         it "should accept upper cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.remove("300A,000A")
+          dcm.delete("300A,000A")
           dcm.exists?("300A,000A").should be_false
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.remove("300a,000a")
+          dcm.delete("300a,000a")
           dcm.exists?("300A,000A").should be_false
         end
 
       end
 
-      context "#remove_group" do
+      context "#delete_group" do
 
         it "should accept upper cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.remove_group("300A")
+          dcm.delete_group("300A")
           dcm.exists?("300A,000A").should be_false
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.remove_group("300a")
+          dcm.delete_group("300a")
           dcm.exists?("300A,000A").should be_false
         end
 

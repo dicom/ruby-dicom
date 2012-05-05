@@ -435,7 +435,7 @@ module DICOM
     # * Returns the element if the method name suggests an element retrieval, and the element exists.
     # * Returns nil if the method name suggests an element retrieval, but the element doesn't exist.
     # * Returns a boolean, if the method name suggests a query (?), based on whether the matched element exists or not.
-    # * When the method name suggests assignment (=), an element is created with the supplied arguments, or if the argument is nil, the element is removed.
+    # * When the method name suggests assignment (=), an element is created with the supplied arguments, or if the argument is nil, the element is deleted.
     #
     # * When a dynamic method name is not matched against a DICOM element, and the method is not defined by the parent, a NoMethodError is raised.
     #
@@ -462,7 +462,7 @@ module DICOM
               return self.add(Element.new(tag, *args))
             end
           else
-            return self.remove(tag)
+            return self.delete(tag)
           end
         else
           # Retrieval:
@@ -572,25 +572,25 @@ module DICOM
       return max_name, max_length, max_generations
     end
 
-    # Removes the specified element from this parent.
+    # Deletes the specified element from this parent.
     #
     # === Parameters
     #
-    # * <tt>tag</tt> -- A tag string which specifies the element to be removed (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
+    # * <tt>tag</tt> -- A tag string which specifies the element to be deleted (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is removed.
+    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is deleted.
     #
     # === Examples
     #
-    #   # Remove a Element from a DObject instance:
-    #   dcm.remove("0008,0090")
-    #   # Remove Item 1 from a specific Sequence:
-    #   dcm["3006,0020"].remove(1)
+    #   # Delete an Element from a DObject instance:
+    #   dcm.delete("0008,0090")
+    #   # Delete Item 1 from a specific Sequence:
+    #   dcm["3006,0020"].delete(1)
     #
-    def remove(tag, options={})
+    def delete(tag, options={})
       if tag.is_a?(String) or tag.is_a?(Integer)
         raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
         raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
@@ -605,15 +605,15 @@ module DICOM
       end
     end
 
-    # Removes all child elements from this parent.
+    # Deletes all child elements from this parent.
     #
-    def remove_children
+    def delete_children
       @tags.each_key do |tag|
-        remove(tag)
+        delete(tag)
       end
     end
 
-    # Removes all data elements of the specified group from this parent.
+    # Deletes all data elements of the specified group from this parent.
     #
     # === Parameters
     #
@@ -621,30 +621,30 @@ module DICOM
     #
     # === Examples
     #
-    #   # Remove the File Meta Group of a DICOM object:
-    #   dcm.remove_group("0002")
+    #   # Delete the File Meta Group of a DICOM object:
+    #   dcm.delete_group("0002")
     #
-    def remove_group(group_string)
+    def delete_group(group_string)
       group_elements = group(group_string)
       group_elements.each do |element|
-        remove(element.tag)
+        delete(element.tag)
       end
     end
 
-    # Removes all private data elements from the child elements of this parent.
+    # Deletes all private data elements from the child elements of this parent.
     #
     # === Examples
     #
-    #   # Remove all private elements from a DObject instance:
-    #   dcm.remove_private
-    #   # Remove only private elements belonging to a specific Sequence:
-    #   dcm["3006,0020"].remove_private
+    #   # Delete all private elements from a DObject instance:
+    #   dcm.delete_private
+    #   # Delete only private elements belonging to a specific Sequence:
+    #   dcm["3006,0020"].delete_private
     #
-    def remove_private
-      # Iterate all children, and repeat recursively if a child itself has children, to remove all private data elements:
+    def delete_private
+      # Iterate all children, and repeat recursively if a child itself has children, to delete all private data elements:
       children.each do |element|
-        remove(element.tag) if element.tag.private?
-        element.remove_private if element.children?
+        delete(element.tag) if element.tag.private?
+        element.delete_private if element.children?
       end
     end
 

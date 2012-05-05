@@ -6,7 +6,7 @@ module DICOM
   # === Notes
   #
   # The philosophy of the Ruby DICOM library is to feature maximum conformance to the DICOM standard.
-  # As such, the class which writes DICOM files may manipulate the meta group, remove/change group lengths and add a header signature.
+  # As such, the class which writes DICOM files may manipulate the meta group, delete/change group lengths and add a header signature.
   #
   # Therefore, the file that is written may not be an exact bitwise copy of the file that was read,
   # even if no DObject manipulation has been done on the part of the user.

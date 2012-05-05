@@ -60,7 +60,7 @@ module DICOM
       it "should apply the specified transfer syntax to the DICOM object, when parsing a header-less DICOM binary string" do
         dcm = DObject.read(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
         syntax = dcm.transfer_syntax
-        dcm.remove_group("0002")
+        dcm.delete_group("0002")
         parts = dcm.encode_segments(16384)
         dcm_from_bin = DObject.parse(parts.join, :bin => true, :no_meta => true, :syntax => syntax)
         dcm_from_bin.transfer_syntax.should eql syntax
@@ -302,7 +302,7 @@ module DICOM
         expect {dcm.read(33)}.to raise_error(ArgumentError)
       end
 
-      it "should remove any old data elements when reading a new DICOM file into the DICOM object" do
+      it "should delete any old data elements when reading a new DICOM file into the DICOM object" do
         dcm = DObject.new
         dcm.add(Element.new("9999,9999", "test", :vr => "AE"))
         dcm.read(@file)

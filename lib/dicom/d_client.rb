@@ -687,7 +687,7 @@ module DICOM
             # Set the transfer syntax of the DICOM object equal to the one accepted by the SCP:
             dcm.transfer_syntax = selected_transfer_syntax
             # Remove the Meta group, since it doesn't belong in a DICOM file transfer:
-            dcm.remove_group(META_GROUP)
+            dcm.delete_group(META_GROUP)
             max_header_length = 14
             data_packages = dcm.encode_segments(@max_pdu_length - max_header_length, selected_transfer_syntax)
             @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)

@@ -40,7 +40,7 @@ module DICOM
       it "should apply the specified transfer syntax to the DICOM object, when passing a syntax-less DICOM binary string" do
         dcm = DObject.new(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
         syntax = dcm.transfer_syntax
-        dcm.remove_group("0002")
+        dcm.delete_group("0002")
         parts = dcm.encode_segments(16384)
         dcm_from_bin = DObject.new(parts.join, :bin => true, :syntax => syntax)
         dcm_from_bin.transfer_syntax.should eql syntax
