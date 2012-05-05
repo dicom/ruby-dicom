@@ -19,7 +19,7 @@ module DICOM
     # An array which records any status messages that are generated while parsing the DICOM string.
     attr_reader :msg
     # A DObject instance which the parsed data elements will be connected to.
-    attr_reader :obj
+    attr_reader :dcm
     # A boolean which records whether the DICOM string contained the proper DICOM header signature of 128 bytes + 'DICM'.
     attr_reader :signature
     # A boolean which reports whether the DICOM string was parsed successfully (true) or not (false).
@@ -30,7 +30,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>obj</tt> -- A DObject instance which the parsed data elements will be connected to.
+    # * <tt>dcm</tt> -- A DObject instance which the parsed data elements will be connected to.
     # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
     # * <tt>options</tt> -- A hash of parameters.
     #
@@ -40,13 +40,13 @@ module DICOM
     # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
     # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
     #
-    def initialize(obj, string=nil, options={})
+    def initialize(dcm, string=nil, options={})
       # Set the DICOM object as an instance variable:
-      @obj = obj
+      @dcm = dcm
       # If a transfer syntax has been specified as an option for a DICOM object, make sure that it makes it into the object:
       if options[:syntax]
         @transfer_syntax = options[:syntax]
-        obj.add(Element.new("0002,0010", options[:syntax])) if obj.is_a?(DObject)
+        dcm.add(Element.new("0002,0010", options[:syntax])) if dcm.is_a?(DObject)
       end
       # Initiate the variables that are used during file reading:
       init_variables
@@ -366,7 +366,7 @@ module DICOM
     def switch_syntax
       # Get the transfer syntax string, unless it has already been provided by keyword:
       unless @transfer_syntax
-        ts_element = @obj["0002,0010"]
+        ts_element = @dcm["0002,0010"]
         if ts_element
           @transfer_syntax = ts_element.value
         else
@@ -411,9 +411,9 @@ module DICOM
       # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
       # Keeping track of the data element parent status while parsing the DICOM string:
-      @current_parent = @obj
+      @current_parent = @dcm
       # Keeping track of what is the current data element:
-      @current_element = @obj
+      @current_element = @dcm
       # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
       @enc_image = false
       # Assume header size is zero bytes until otherwise is determined:

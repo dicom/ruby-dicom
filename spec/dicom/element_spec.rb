@@ -119,13 +119,13 @@ module DICOM
       end
 
       it "should return a 3-element array with the chain of parents, where the top parent is the last element, and immediate parent is the first" do
-        obj = DObject.new
-        s = Sequence.new("3006,0040", :parent => obj)
+        dcm = DObject.new
+        s = Sequence.new("3006,0040", :parent => dcm)
         i = Item.new(:parent => s)
         d = Element.new("3006,0084", "1", :parent => i)
         d.parents.length.should eql 3
         d.parents.first.should eql i
-        d.parents.last.should eql obj
+        d.parents.last.should eql dcm
       end
 
       it "should return itself when the top_parent method is called and no external parent has been specified" do
@@ -134,11 +134,11 @@ module DICOM
       end
 
       it "should return the top parent in the chain of parents when the top_parent method is called on an element with multiple parents" do
-        obj = DObject.new
-        s = Sequence.new("3006,0040", :parent => obj)
+        dcm = DObject.new
+        s = Sequence.new("3006,0040", :parent => dcm)
         i = Item.new(:parent => s)
         d = Element.new("3006,0084", "1", :parent => i)
-        d.top_parent.should eql obj
+        d.top_parent.should eql dcm
       end
 
       it "should return a Stream instance when the stream method is called" do

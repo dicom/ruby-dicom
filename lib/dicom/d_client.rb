@@ -517,12 +517,12 @@ module DICOM
           # Temporarily increase the log threshold to suppress messages from the DObject class:
           client_level = logger.level
           logger.level = Logger::FATAL
-          obj = DObject.read(file_or_object)
+          dcm = DObject.read(file_or_object)
           # Reset the logg threshold:
           logger.level = client_level
-          if obj.read_success
+          if dcm.read_success
             # Load the DICOM object:
-            objects << obj
+            objects << dcm
           else
             status = false
             message = "Failed to read a DObject from this file: #{file_or_object}"
@@ -538,10 +538,10 @@ module DICOM
       end
       # Extract available transfer syntaxes for the various sop classes found amongst these objects
       syntaxes = Hash.new
-      objects.each do |obj|
-        sop_class = obj.value("0008,0016")
+      objects.each do |dcm|
+        sop_class = dcm.value("0008,0016")
         if sop_class
-          transfer_syntaxes = available_transfer_syntaxes(obj.transfer_syntax)
+          transfer_syntaxes = available_transfer_syntaxes(dcm.transfer_syntax)
           if syntaxes[sop_class]
             syntaxes[sop_class] << transfer_syntaxes
           else
@@ -670,10 +670,10 @@ module DICOM
     # conveys the information from the selected DICOM file.
     #
     def perform_send(objects)
-      objects.each_with_index do |obj, index|
+      objects.each_with_index do |dcm, index|
         # Gather necessary information from the object (SOP Class & Instance UID):
-        sop_class = obj.value("0008,0016")
-        sop_instance = obj.value("0008,0018")
+        sop_class = dcm.value("0008,0016")
+        sop_instance = dcm.value("0008,0018")
         if sop_class and sop_instance
           # Only send the image if its sop_class has been accepted by the receiver:
           if @approved_syntaxes[sop_class]
@@ -685,11 +685,11 @@ module DICOM
             selected_transfer_syntax = @approved_syntaxes[sop_class][1]
             # Encode our DICOM object to a binary string which is split up in pieces, sufficiently small to fit within the specified maximum pdu length:
             # Set the transfer syntax of the DICOM object equal to the one accepted by the SCP:
-            obj.transfer_syntax = selected_transfer_syntax
+            dcm.transfer_syntax = selected_transfer_syntax
             # Remove the Meta group, since it doesn't belong in a DICOM file transfer:
-            obj.remove_group(META_GROUP)
+            dcm.remove_group(META_GROUP)
             max_header_length = 14
-            data_packages = obj.encode_segments(@max_pdu_length - max_header_length, selected_transfer_syntax)
+            data_packages = dcm.encode_segments(@max_pdu_length - max_header_length, selected_transfer_syntax)
             @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
             @link.transmit
             # Transmit all but the last data strings:

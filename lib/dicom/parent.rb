@@ -25,9 +25,9 @@ module DICOM
     # === Examples
     #
     #   # Extract the "Pixel Data" data element from the DObject instance:
-    #   pixel_data_element = obj["7FE0,0010"]
+    #   pixel_data_element = dcm["7FE0,0010"]
     #   # Extract the first Item from a Sequence:
-    #   first_item = obj["3006,0020"][1]
+    #   first_item = dcm["3006,0020"][1]
     #
     def [](tag_or_index)
       formatted = tag_or_index.is_a?(String) ? tag_or_index.upcase : tag_or_index
@@ -52,9 +52,9 @@ module DICOM
     # === Examples
     #
     #   # Set a new patient's name to the DICOM object:
-    #   obj.add(Element.new("0010,0010", "John_Doe"))
+    #   dcm.add(Element.new("0010,0010", "John_Doe"))
     #   # Add a previously defined element roi_name to the first item in the following sequence:
-    #   obj["3006,0020"][0].add(roi_name)
+    #   dcm["3006,0020"][0].add(roi_name)
     #
     def add(element, options={})
       unless element.is_a?(Item)
@@ -96,9 +96,9 @@ module DICOM
     # === Examples
     #
     #   # Add an empty Item to a specific Sequence:
-    #   obj["3006,0020"].add_item
+    #   dcm["3006,0020"].add_item
     #   # Add an existing Item at the 2nd item position/index in the specific Sequence:
-    #   obj["3006,0020"].add_item(my_item, :index => 2)
+    #   dcm["3006,0020"].add_item(my_item, :index => 2)
     #
     def add_item(item=nil, options={})
       unless self.is_a?(DObject)
@@ -160,7 +160,7 @@ module DICOM
     # === Examples
     #
     #   # Retrieve all top level data elements in a DICOM object:
-    #   top_level_elements = obj.children
+    #   top_level_elements = dcm.children
     #
     def children
       return @tags.sort.transpose[1] || Array.new
@@ -280,7 +280,7 @@ module DICOM
     #
     # === Examples
     #
-    #   process_name(obj["0010,0010"]) if obj.exists?("0010,0010")
+    #   process_name(dcm["0010,0010"]) if dcm.exists?("0010,0010")
     #
     def exists?(tag)
       if self[tag]
@@ -510,11 +510,11 @@ module DICOM
     # === Examples
     #
     #   # Print a DObject instance to screen
-    #   obj.print
-    #   # Print the obj to the screen, but specify a 25 character value cutoff to produce better-looking results:
-    #   obj.print(:value_max => 25)
+    #   dcm.print
+    #   # Print the DObject to the screen, but specify a 25 character value cutoff to produce better-looking results:
+    #   dcm.print(:value_max => 25)
     #   # Print to a text file the elements that belong to a specific Sequence:
-    #   obj["3006,0020"].print(:file => "dicom.txt")
+    #   dcm["3006,0020"].print(:file => "dicom.txt")
     #
     #--
     # FIXME: Perhaps a :children => false option would be a good idea (to avoid lengthy printouts in cases where this would be desirable)?
@@ -586,9 +586,9 @@ module DICOM
     # === Examples
     #
     #   # Remove a Element from a DObject instance:
-    #   obj.remove("0008,0090")
+    #   dcm.remove("0008,0090")
     #   # Remove Item 1 from a specific Sequence:
-    #   obj["3006,0020"].remove(1)
+    #   dcm["3006,0020"].remove(1)
     #
     def remove(tag, options={})
       if tag.is_a?(String) or tag.is_a?(Integer)
@@ -622,7 +622,7 @@ module DICOM
     # === Examples
     #
     #   # Remove the File Meta Group of a DICOM object:
-    #   obj.remove_group("0002")
+    #   dcm.remove_group("0002")
     #
     def remove_group(group_string)
       group_elements = group(group_string)
@@ -636,9 +636,9 @@ module DICOM
     # === Examples
     #
     #   # Remove all private elements from a DObject instance:
-    #   obj.remove_private
+    #   dcm.remove_private
     #   # Remove only private elements belonging to a specific Sequence:
-    #   obj["3006,0020"].remove_private
+    #   dcm["3006,0020"].remove_private
     #
     def remove_private
       # Iterate all children, and repeat recursively if a child itself has children, to remove all private data elements:
@@ -751,9 +751,9 @@ module DICOM
     # === Examples
     #
     #   # Get the patient's name value:
-    #   name = obj.value("0010,0010")
+    #   name = dcm.value("0010,0010")
     #   # Get the Frame of Reference UID from the first item in the Referenced Frame of Reference Sequence:
-    #   uid = obj["3006,0010"][0].value("0020,0052")
+    #   uid = dcm["3006,0010"][0].value("0020,0052")
     #
     def value(tag)
       if tag.is_a?(String) or tag.is_a?(Integer)

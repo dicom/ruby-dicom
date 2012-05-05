@@ -207,12 +207,12 @@ module DICOM
           @files.each_index do |i|
             pbar.inc if pbar
             # Read existing file to DICOM object:
-            obj = DObject.read(@files[i])
-            if obj.read?
+            dcm = DObject.read(@files[i])
+            if dcm.read?
               # Anonymize the desired tags:
               @tags.each_index do |j|
-                if obj.exists?(@tags[j])
-                  element = obj[@tags[j]]
+                if dcm.exists?(@tags[j])
+                  element = dcm[@tags[j]]
                   if element.is_a?(Element)
                     if @blank
                       value = ""
@@ -233,18 +233,18 @@ module DICOM
                 end
               end
               # Handle UIDs if requested:
-              replace_uids(obj) if @uid
+              replace_uids(dcm) if @uid
               # Remove private tags?
-              obj.remove_private if @remove_private
+              dcm.remove_private if @remove_private
               
               # Remove Tags marked for removal
               @delete_tags.each_index do |j|
-                obj.remove(@delete_tags[j]) if obj.exists?(@delete_tags[j])
+                dcm.remove(@delete_tags[j]) if dcm.exists?(@delete_tags[j])
               end
               
               # Write DICOM file:
-              obj.write(@write_paths[i])
-              if obj.written?
+              dcm.write(@write_paths[i])
+              if dcm.written?
                 files_written += 1
               else
                 all_write = false
@@ -604,9 +604,9 @@ module DICOM
     # should remain valid.
     #
     #
-    def replace_uids(obj)
+    def replace_uids(dcm)
       @uids.each_pair do |tag, prefix|
-        original = obj.value(tag)
+        original = dcm.value(tag)
         if original && original.length > 0
           # We have a UID value, go ahead and replace it:
           if @audit_trail
@@ -619,12 +619,12 @@ module DICOM
               @audit_trail.add_record(tag, original, replacement)
             end
             # Replace the UID in the DICOM object:
-            obj[tag].value = replacement
+            dcm[tag].value = replacement
             # NB! The SOP Instance UID must also be written to the Media Storage SOP Instance UID tag:
-            obj["0002,0003"].value = replacement if tag == "0008,0018" && obj.exists?("0002,0003")
+            dcm["0002,0003"].value = replacement if tag == "0008,0018" && dcm.exists?("0002,0003")
           else
             # We don't care about preserving UID relations. Just insert a custom UID:
-            obj[tag].value = DICOM.generate_uid(@uid_root, prefix)
+            dcm[tag].value = DICOM.generate_uid(@uid_root, prefix)
           end
         end
       end

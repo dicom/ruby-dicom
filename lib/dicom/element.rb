@@ -35,11 +35,11 @@ module DICOM
     # === Examples
     #
     #   # Create a new data element and connect it to a DObject instance:
-    #   patient_name = Element.new("0010,0010", "John Doe", :parent => obj)
+    #   patient_name = Element.new("0010,0010", "John Doe", :parent => dcm)
     #   # Create a "Pixel Data" element and insert image data that you have already encoded elsewhere:
-    #   pixel_data = Element.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => obj)
+    #   pixel_data = Element.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => dcm)
     #   # Create a private data element:
-    #   private_data = Element.new("0011,2102", some_data, :parent => obj, :vr => "LO")
+    #   private_data = Element.new("0011,2102", some_data, :parent => dcm, :vr => "LO")
     #
     def initialize(tag, value, options={})
       raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?

@@ -1,11 +1,11 @@
 # === TODO:
 #
-# * The retrieve file network functionality (get_image() in DClient class) has not been tested.
+# * The retrieve file network functionality (#get_image in DClient class) has not been tested.
 # * Make the networking code more intelligent in its handling of unexpected network communication.
 # * Full support for compressed image data.
 # * Read/Write 12 bit image data.
-# * Full color support (RGB and PALETTE COLOR with get_object_magick() already implemented).
-# * Support for extraction of multiple encapsulated pixel data frames in get_image() and get_image_narray().
+# * Full color support (RGB and PALETTE COLOR with #image already implemented).
+# * Support for extraction of multiple encapsulated pixel data frames in #pixels and #narray.
 # * Image handling currently ignores DICOM tags like Pixel Aspect Ratio, Image Orientation and (to some degree) Photometric Interpretation.
 # * More robust and flexible options for reorienting extracted pixel arrays?
 # * A curious observation: Creating a DLibrary instance is exceptionally slow on Ruby 1.9.1: 0.4 seconds versus ~0.01 seconds on Ruby 1.8.7!
@@ -77,12 +77,12 @@ module DICOM
       bin = File.open(file, "rb") { |f| f.read }
       # Parse the file contents and create the DICOM object:
       if bin
-        obj = self.parse(bin)
+        dcm = self.parse(bin)
       else
-        obj = self.new
-        obj.read_success = false
+        dcm = self.new
+        dcm.read_success = false
       end
-      return obj
+      return dcm
     end
 
     # Creates a DObject instance by parsing an encoded binary DICOM string.
@@ -102,9 +102,9 @@ module DICOM
       no_header = options[:no_meta]
       raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
       raise ArgumentError, "Invalid option :syntax. Expected String, got #{syntax.class}." if syntax && !syntax.is_a?(String)
-      obj = self.new
-      obj.read(string, :bin => true, :no_meta => no_header, :syntax => syntax)
-      return obj
+      dcm = self.new
+      dcm.read(string, :bin => true, :no_meta => no_header, :syntax => syntax)
+      return dcm
     end
 
     # Creates a DObject instance by reading and parsing a DICOM file.
@@ -136,12 +136,12 @@ module DICOM
       end
       # Parse the file contents and create the DICOM object:
       if bin
-        obj = self.parse(bin)
+        dcm = self.parse(bin)
       else
-        obj = self.new
-        obj.read_success = false
+        dcm = self.new
+        dcm.read_success = false
       end
-      return obj
+      return dcm
     end
 
     # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
@@ -180,12 +180,12 @@ module DICOM
     #
     #   # Load a DICOM file (Deprecated: please use DObject.read() instead):
     #   require 'dicom'
-    #   obj = DICOM::DObject.new("test.dcm")
+    #   dcm = DICOM::DObject.new("test.dcm")
     #   # Read a DICOM file that has already been loaded into memory in a binary string (with a known transfer syntax):
     #   # (Deprecated: please use DObject.parse() instead)
-    #   obj = DICOM::DObject.new(binary_string, :bin => true, :syntax => string_transfer_syntax)
+    #   dcm = DICOM::DObject.new(binary_string, :bin => true, :syntax => string_transfer_syntax)
     #   # Create an empty DICOM object
-    #   obj = DICOM::DObject.new
+    #   dcm = DICOM::DObject.new
     #   # Increasing the log message threshold (default level is INFO):
     #   DICOM.logger.level = Logger::WARN
     #
@@ -235,7 +235,7 @@ module DICOM
     #
     # === Examples
     #
-    #  encoded_strings = obj.encode_segments(16384)
+    #  encoded_strings = dcm.encode_segments(16384)
     #
     def encode_segments(max_size, transfer_syntax=transfer_syntax)
       raise ArgumentError, "Invalid argument. Expected an Integer, got #{max_size.class}." unless max_size.is_a?(Integer)
@@ -469,7 +469,7 @@ module DICOM
     #
     # === Examples
     #
-    #   obj.write(path + "test.dcm")
+    #   dcm.write(path + "test.dcm")
     #
     def write(file_name, options={})
       raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}." unless file_name.is_a?(String)

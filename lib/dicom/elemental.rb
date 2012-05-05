@@ -52,7 +52,7 @@ module DICOM
     #
     #   # Create a new Sequence and connect it to a DObject instance:
     #   structure_set_roi = Sequence.new("3006,0020")
-    #   structure_set_roi.parent = obj
+    #   structure_set_roi.parent = dcm
     #
     def parent=(new_parent)
       # First take care of 'dependencies':

@@ -38,9 +38,9 @@ module DICOM
     # === Examples
     #
     #   # Create an empty Item and connect it to the "Structure Set ROI Sequence":
-    #   item = Item.new(:parent => obj["3006,0020"])
+    #   item = Item.new(:parent => dcm["3006,0020"])
     #   # Create a "Pixel Data Item" which carries an encapsulated image frame (a pre-encoded binary):
-    #   pixel_item = Item.new(:bin => processed_pixel_data, :parent => obj["7FE0,0010"][1])
+    #   pixel_item = Item.new(:bin => processed_pixel_data, :parent => dcm["7FE0,0010"][1])
     #
     def initialize(options={})
       # Set common parent variables:
@@ -81,7 +81,7 @@ module DICOM
     # === Examples
     #
     #   # Insert a custom jpeg in the (encapsulated) pixel data element, in it's first pixel data item:
-    #   obj["7FE0,0010"][1].children.first.bin = jpeg_binary_string
+    #   dcm["7FE0,0010"][1].children.first.bin = jpeg_binary_string
     #
     def bin=(new_bin)
       raise ArgumentError, "Invalid parameter type. String was expected, got #{new_bin.class}." unless new_bin.is_a?(String)

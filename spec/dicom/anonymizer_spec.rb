@@ -245,18 +245,18 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon_other)
         a.execute
-        obj = DObject.read(@anon3)
-        obj.value("0010,0010").should eql a.value("0010,0010")
-        obj.value("0008,0020").should eql a.value("0008,0020")
+        dcm = DObject.read(@anon3)
+        dcm.value("0010,0010").should eql a.value("0010,0010")
+        dcm.value("0008,0020").should eql a.value("0008,0020")
       end
 
       it "should not create data elements which are present on the 'list to be anonymized' but not in the target file" do
         a = Anonymizer.new
         a.add_folder(@anon_other)
         a.execute
-        obj = DObject.read(@anon3) # the tag we are testing is not originally present in this file
+        dcm = DObject.read(@anon3) # the tag we are testing is not originally present in this file
         a.value("0008,0012").should be_true # make sure the tag we are testing is defined
-        obj.exists?("0008,0012").should be_false
+        dcm.exists?("0008,0012").should be_false
       end
 
       it "should fill the log with information" do
@@ -271,9 +271,9 @@ module DICOM
         a.add_folder(@anon_other)
         a.blank = true
         a.execute
-        obj = DObject.read(@anon3)
-        obj.value("0010,0010").should_not eql a.value("0010,0010")
-        obj.value("0010,0010").to_s.length.should eql 0
+        dcm = DObject.read(@anon3)
+        dcm.value("0010,0010").should_not eql a.value("0010,0010")
+        dcm.value("0010,0010").to_s.length.should eql 0
       end
 
       it "should use enumerated strings for anonymization when we have set the enumeration attribute as true" do
@@ -298,11 +298,11 @@ module DICOM
         a = Anonymizer.new
         a.add_folder(@anon_other)
         a.write_path = @wpath
-        obj = DObject.read(@anon3)
-        old_value = obj.value("0010,0010")
+        dcm = DObject.read(@anon3)
+        old_value = dcm.value("0010,0010")
         a.execute
-        obj = DObject.read(@anon3)
-        after_value = obj.value("0010,0010")
+        dcm = DObject.read(@anon3)
+        after_value = dcm.value("0010,0010")
         after_value.should eql old_value
         w = DObject.read(@w1)
         w.value("0010,0010").should eql a.value("0010,0010")
@@ -394,13 +394,13 @@ module DICOM
 
       it "should remove tag marked for deletion during anonymization" do
         a = Anonymizer.new
-        obj = DObject.read(@anon3)
-        obj.exists?("0010,0010").should be_true
+        dcm = DObject.read(@anon3)
+        dcm.exists?("0010,0010").should be_true
         a.add_folder(@anon_other)
         a.delete_tag("0010,0010")
         a.execute
-        obj = DObject.read(@anon3)
-        obj.exists?("0010,0010").should be_false
+        dcm = DObject.read(@anon3)
+        dcm.exists?("0010,0010").should be_false
       end
 
     end

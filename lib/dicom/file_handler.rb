@@ -32,21 +32,21 @@ module DICOM
     # === Parameters
     #
     # * <tt>path_prefix</tt> -- String. Specifies the root path of the DICOM storage.
-    # * <tt>obj</tt> -- A DObject instance which will be written to file.
+    # * <tt>dcm</tt> -- A DObject instance which will be written to file.
     # * <tt>transfer_syntax</tt> -- String. Specifies the transfer syntax that will be used to write the DICOM file.
     #
-    def self.save_file(path_prefix, obj, transfer_syntax)
+    def self.save_file(path_prefix, dcm, transfer_syntax)
       # File name is set using the SOP Instance UID:
-      file_name = obj.value("0008,0018") || "missing_SOP_UID"
+      file_name = dcm.value("0008,0018") || "missing_SOP_UID"
       extension = ".dcm"
       folders = Array.new(3)
-      folders[0] = obj.value("0010,0020") || "PatientID"
-      folders[1] = obj.value("0008,0020") || "StudyDate"
-      folders[2] = obj.value("0008,0060") || "Modality"
+      folders[0] = dcm.value("0010,0020") || "PatientID"
+      folders[1] = dcm.value("0008,0020") || "StudyDate"
+      folders[2] = dcm.value("0008,0060") || "Modality"
       local_path = folders.join(File::SEPARATOR) + File::SEPARATOR + file_name
       full_path = path_prefix + local_path + extension
       # Save the DICOM object to disk:
-      obj.write(full_path, :transfer_syntax => transfer_syntax)
+      dcm.write(full_path, :transfer_syntax => transfer_syntax)
       message = [:info, "DICOM file saved to: #{full_path}"]
       return message
     end
@@ -78,12 +78,12 @@ module DICOM
           server_level = DICOM.logger.level
           DICOM.logger.level = Logger::FATAL
           # Parse the received data string and load it to a DICOM object:
-          obj = DObject.parse(objects[i], :no_meta => true, :syntax => transfer_syntaxes[i])
+          dcm = DObject.parse(objects[i], :no_meta => true, :syntax => transfer_syntaxes[i])
           # Reset the logg threshold:
           DICOM.logger.level = server_level
-          if obj.read_success
+          if dcm.read?
             begin
-              message = self.save_file(path, obj, transfer_syntaxes[i])
+              message = self.save_file(path, dcm, transfer_syntaxes[i])
               successful += 1
             rescue
               handle_fail += 1

@@ -11,100 +11,100 @@ module DICOM
   describe DObject, " (Extensions)" do
 
     before(:each) do
-      @obj = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
+      @dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
     end
 
     it "should have an elements Array" do
-      @obj.elements.should be_an Array
+      @dcm.elements.should be_an Array
     end
 
     it "should have a #file_meta_information_group_length" do
-      @obj.file_meta_information_group_length.value.should_not be_nil
+      @dcm.file_meta_information_group_length.value.should_not be_nil
     end
 
     it "should not respond to an arbitrary method name that should not work" do
-      @obj.should_not respond_to :any_method_name_that_should_not_work
+      @dcm.should_not respond_to :any_method_name_that_should_not_work
     end
 
     it "should have a number of frames" do
-      @obj.num_frames.should be >= 1
+      @dcm.num_frames.should be >= 1
     end
 
     it "should query the DICOM object for the existence of a tag using <methodized-name>? returning true if it exists" do
-       @obj.sop_instance_uid?.should be_true
+       @dcm.sop_instance_uid?.should be_true
     end
 
     it "should query the DICOM object for the existence of a tag using <methodized-name>? returning false if it doesnt exist" do
-      @obj.sop_instance_uid = nil
-      @obj.sop_instance_uid?.should be_false
+      @dcm.sop_instance_uid = nil
+      @dcm.sop_instance_uid?.should be_false
     end
 
     it "should query the DICOM object for the existence of a tag using <methodized-name>? returning true if it exists" do
-      @obj.sop_instance_uid = "1.2.3.4.5.6"
-      @obj.sop_instance_uid?.should be_true
+      @dcm.sop_instance_uid = "1.2.3.4.5.6"
+      @dcm.sop_instance_uid?.should be_true
     end
 
     it "should set the sop_instance_uid to '1.2.3.4.5'" do
-      @obj.sop_instance_uid = "1.2.3.4.5"
-      @obj.sop_instance_uid.value.should eql "1.2.3.4.5"
+      @dcm.sop_instance_uid = "1.2.3.4.5"
+      @dcm.sop_instance_uid.value.should eql "1.2.3.4.5"
     end
 
     it "should delete the sop_instance_uid" do
-      @obj.sop_instance_uid = nil
-      @obj.sop_instance_uid?.should be_false
+      @dcm.sop_instance_uid = nil
+      @dcm.sop_instance_uid?.should be_false
     end
 
     it "should set file_meta_information_group_length from an integer value" do
       integer = 12345
-      @obj.file_meta_information_group_length = integer
-      @obj.file_meta_information_group_length.value.should == integer.to_s.to_i
+      @dcm.file_meta_information_group_length = integer
+      @dcm.file_meta_information_group_length.value.should == integer.to_s.to_i
     end
 
     it "should set sop_instance_uid from a string value" do
       string = "this is a string value"
-      @obj.sop_instance_uid = string
-      @obj.sop_instance_uid.value.should == string.to_s
+      @dcm.sop_instance_uid = string
+      @dcm.sop_instance_uid.value.should == string.to_s
     end
 
     it "should set examined_body_thickness from a float value" do
       float = 1267.38991
-      @obj.examined_body_thickness = float
-      @obj.examined_body_thickness.value.should == float.to_s.to_f
+      @dcm.examined_body_thickness = float
+      @dcm.examined_body_thickness.value.should == float.to_s.to_f
     end
 
     it "should set examined_body_thickness from an integer value" do
       integer = 12345
-      @obj.examined_body_thickness = integer
-      @obj.examined_body_thickness.value.should == integer.to_s.to_f
+      @dcm.examined_body_thickness = integer
+      @dcm.examined_body_thickness.value.should == integer.to_s.to_f
     end
 
     it "should create a new element with the given value, using dictionary method name matching" do
-      obj = DObject.new
-      obj.sop_instance_uid = "1.2.3.4.5"
-      obj.value("0008,0018").should eql "1.2.3.4.5"
+      dcm = DObject.new
+      dcm.sop_instance_uid = "1.2.3.4.5"
+      dcm.value("0008,0018").should eql "1.2.3.4.5"
     end
 
     # Using dynamic method matching for sequence creation doesn't look as natural as
     # for element creation, but I guess we better have it for consistency.
     it "should create a new sequence, using dictionary method name matching" do
-      obj = DObject.new
-      obj.referenced_image_sequence = true
-      obj["0008,1140"].should be_a Sequence
+      dcm = DObject.new
+      dcm.referenced_image_sequence = true
+      dcm["0008,1140"].should be_a Sequence
     end
 
     # Using dynamic method matching for item creation doesn't look as natural as
     # for element creation, but I guess we better have it for consistency.
     it "should create a new item, using dictionary method name matching" do
-      obj = DObject.new
-      obj.referenced_image_sequence = true
-      obj["0008,1140"].item = true
-      obj["0008,1140"][0].should be_an Item
+      dcm = DObject.new
+      dcm.referenced_image_sequence = true
+      dcm["0008,1140"].item = true
+      dcm["0008,1140"][0].should be_an Item
     end
 
     it "should create an empty hash when the DICOM object is empty" do
-      obj = DObject.new
-      obj.to_hash.should be_a Hash
-      obj.to_hash.length.should eql 0
+      dcm = DObject.new
+      dcm.to_hash.should be_a Hash
+      dcm.to_hash.length.should eql 0
     end
 
     it "should create value-less, one-element hash when the Sequence is child-less" do
@@ -116,17 +116,17 @@ module DICOM
 
     it "should create a hash with DICOM names as keys" do
       DICOM.key_use_names
-      @obj.to_hash.key?("File Meta Information Group Length").should be_true
+      @dcm.to_hash.key?("File Meta Information Group Length").should be_true
     end
 
     it "should create a hash with DICOM method symbols as keys" do
       DICOM.key_use_method_names
-      @obj.to_hash.key?(:file_meta_information_group_length).should be_true
+      @dcm.to_hash.key?(:file_meta_information_group_length).should be_true
     end
 
     it "should create a hash with DICOM tags as keys" do
       DICOM.key_use_tags
-      @obj.to_hash.key?("0002,0000").should be_true
+      @dcm.to_hash.key?("0002,0000").should be_true
     end
 
   end

@@ -32,7 +32,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>obj</tt> -- A DObject instance which will be used to encode a DICOM string.
+    # * <tt>dcm</tt> -- A DObject instance which will be used to encode a DICOM string.
     # * <tt>transfer_syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
     # * <tt>file_name</tt> -- A string, either specifying the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
     # * <tt>options</tt> -- A hash of parameters.
@@ -41,8 +41,8 @@ module DICOM
     #
     # * <tt>:signature</tt> -- Boolean. If set as false, the DICOM header signature will not be written to the DICOM file.
     #
-    def initialize(obj, transfer_syntax, file_name=nil, options={})
-      @obj = obj
+    def initialize(dcm, transfer_syntax, file_name=nil, options={})
+      @dcm = dcm
       @transfer_syntax = transfer_syntax
       @file_name = file_name
       # As default, signature will be written and meta header added:
@@ -75,7 +75,7 @@ module DICOM
         if body
           @stream.add_last(body)
         else
-          elements = @obj.children
+          elements = @dcm.children
           write_data_elements(elements)
         end
         # As file has been written successfully, it can be closed.
@@ -97,7 +97,7 @@ module DICOM
       init_variables
       @max_size = max_size
       @segments = Array.new
-      elements = @obj.children
+      elements = @dcm.children
       # Create a Stream instance to handle the encoding of content to
       # the binary string that will eventually be saved to file:
       @stream = Stream.new(nil, @file_endian)

@@ -29,9 +29,9 @@ module DICOM
     # === Examples
     #
     #   # Create a new Sequence and connect it to a DObject instance:
-    #   structure_set_roi = Sequence.new("3006,0020", :parent => obj)
+    #   structure_set_roi = Sequence.new("3006,0020", :parent => dcm)
     #   # Create an "Encapsulated Pixel Data" Sequence:
-    #   encapsulated_pixel_data = Sequence.new("7FE0,0010", :name => "Encapsulated Pixel Data", :parent => obj, :vr => "OW")
+    #   encapsulated_pixel_data = Sequence.new("7FE0,0010", :name => "Encapsulated Pixel Data", :parent => dcm, :vr => "OW")
     #
     def initialize(tag, options={})
       raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
