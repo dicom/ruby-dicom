@@ -1,20 +1,20 @@
 = 0.9.3
 
-=== Unreleased
+=== 6th May, 2012
 
 * Deprecated all #remove* methods (replaced with #delete*) to increase consistency with Ruby.
 * Changed preferred DObject variable name from obj to dcm for all examples.
 * Added comparison methods (#==, #eql? and #hash) as well as dynamic #to_* methods to DObject, Element, Item & Sequence classes.
-* Fixed incorrect handling of 3D pixel data with NArray (regression introduced in 0.8).
+* Fixed incorrect handling of 3D pixel data with NArray (regression introduced in v0.8).
 * Anonymizer can take a list of tags to be entirely deleted from the DICOM files during anonymization.
-* Implemented a proper UID anonymization with AuditTrail support and preservation of relations.
 * Added Accession Number to default list of tags that are anonymized.
 * Added a generate_uid method for creating custom (but valid) UIDs.
 * Added an Anonymizer AuditTrail feature based on JSON, which will replace the (deprecated) identity_file feature.
+* Implemented a proper UID anonymization with AuditTrail support and preservation of relations.
 * Fixed and improved logging when failing to decompress pixel data.
 * DServer defaults to bind to 127.0.0.1, with an option available for other bindings.
 * More robust handling of invalid AT Element values when parsing DICOM files.
-* Optimizations and code cleanups allowed by the Ruby 1.9 requirement.
+* Optimizations and code cleanups allowed by the introduced Ruby 1.9 requirement.
 
 
 = 0.9.2
