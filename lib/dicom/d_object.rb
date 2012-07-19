@@ -415,15 +415,17 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:add_meta</tt> -- Boolean. If set to false, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file.
+    # * <tt>:add_meta</tt> -- (Deprecated) If set to false, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file.
+    # * <tt>:ignore_meta</tt> -- Boolean. If true, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file.
     #
     # === Examples
     #
     #   dcm.write(path + "test.dcm")
     #
     def write(file_name, options={})
+      logger.warn("Option :add_meta => false is deprecated. Use option :ignore_meta => true instead.") if options[:add_meta] == false
       raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}." unless file_name.is_a?(String)
-      insert_missing_meta unless options[:add_meta] == false
+      insert_missing_meta unless options[:add_meta] == false or options[:ignore_meta]
       w = DWrite.new(self, transfer_syntax, file_name, options)
       w.write
       # Write process succesful?

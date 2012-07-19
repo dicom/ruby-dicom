@@ -396,6 +396,22 @@ module DICOM
         @dcm.exists?("0002,0013").should be_false
       end
 
+      # This option is deprecated:
+      it "should not touch the meta group when the :add_meta => false option is passed" do
+        @dcm.expects(:insert_missing_meta).never
+        @dcm.write(@path, :add_meta => false)
+      end
+
+      it "should not touch the meta group when the :ignore_meta option is passed" do
+        @dcm.expects(:insert_missing_meta).never
+        @dcm.write(@path, :ignore_meta => true)
+      end
+
+      it "should by default call the method to fix anything missing in the meta group" do
+        @dcm.expects(:insert_missing_meta).once
+        @dcm.write(@path)
+      end
+
     end
 
 
