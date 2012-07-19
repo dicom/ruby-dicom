@@ -1,121 +1,20 @@
 module DICOM
 
-  # The DRead class parses the DICOM data from a binary string.
-  #
-  # The source of this binary string is typically either a DICOM file or a DICOM network transmission.
-  #
-  # === Notes
-  #
-  # In addition to reading files that are compliant to DICOM 3 Part 10, the philosophy of the
-  # Ruby DICOM library is to feature maximum compatibility, and as such it will also
-  # successfully read many types of 'DICOM' files that deviate in some way from the standard.
-  #
-  class DRead
+  class Parent
 
-    # A boolean which reports the explicitness of the DICOM string, true if explicit and false if implicit.
-    attr_reader :explicit
-    # A boolean which reports the endianness of the post-meta group part of the DICOM string (true for big endian, false for little endian).
-    attr_reader :file_endian
-    # An array which records any status messages that are generated while parsing the DICOM string.
-    attr_reader :msg
-    # A DObject instance which the parsed data elements will be connected to.
-    attr_reader :dcm
-    # A boolean which records whether the DICOM string contained the proper DICOM header signature of 128 bytes + 'DICM'.
-    attr_reader :signature
-    # A boolean which reports whether the DICOM string was parsed successfully (true) or not (false).
-    attr_reader :success
-
-    # Creates a DRead instance.
-    # Parses the DICOM string, builds data element objects and connects these with the DObject instance.
-    #
-    # === Parameters
-    #
-    # * <tt>dcm</tt> -- A DObject instance which the parsed data elements will be connected to.
-    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
-    # * <tt>:syntax</tt> -- String. If specified, the decoding of the DICOM string will be forced to use this transfer syntax.
-    #
-    def initialize(dcm, string=nil, options={})
-      # Set the DICOM object as an instance variable:
-      @dcm = dcm
-      # If a transfer syntax has been specified as an option for a DICOM object, make sure that it makes it into the object:
-      if options[:syntax]
-        @transfer_syntax = options[:syntax]
-        dcm.add(Element.new("0002,0010", options[:syntax])) if dcm.is_a?(DObject)
-      end
-      # Initiate the variables that are used during file reading:
-      init_variables
-      # Are we going to read from a file, or read from a binary string?
-      if options[:bin]
-        # Read from the provided binary string:
-        @str = string
-      else
-        # Read from file:
-        open_file(string)
-        # Read the initial header of the file:
-        if @file == nil
-          # File is not readable, so we return:
-          @success = false
-          return
-        else
-          # Extract the content of the file to a binary string:
-          @str = @file.read
-          @file.close
-        end
-      end
-      # Create a Stream instance to handle the decoding of content from this binary string:
-      @stream = Stream.new(@str, @file_endian)
-      # Do not check for header information if we've been told there is none (typically for (network) binary strings):
-      unless options[:no_meta]
-        # Read and verify the DICOM header:
-        header = check_header
-        # If the file didnt have the expected header, we will attempt to read
-        # data elements from the very start of the file:
-        if header == false
-          @stream.skip(-132)
-        elsif header == nil
-          # Not a valid DICOM file, return:
-          @success = false
-          return
-        end
-      end
-      # Run a loop which parses Data Elements, one by one, until the end of the data string is reached:
-      data_element = true
-      while data_element do
-        # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
-        begin
-          # Extracting Data element information (nil is returned if end of file is encountered in a normal way).
-          data_element = process_data_element
-        rescue Exception => msg
-          # The parse algorithm crashed. Set data_element to false to break the loop and toggle the success boolean to indicate failure.
-          @msg << [:error, msg]
-          @msg << [:warn, "Parsing a Data Element has failed. This was probably caused by an invalidly encoded (or corrupted) DICOM file."]
-          @success = false
-          data_element = false
-        end
-      end
-    end
-
-
-    # Following methods are private:
     private
 
 
     # Checks for the official DICOM header signature.
     # Returns true if the proper signature is present, false if it is not present,
-    # and nil if thestring was shorter then the length of the DICOM signature.
+    # and nil if the string was shorter then the length of the DICOM signature.
     #
     def check_header
       # According to the official DICOM standard, a DICOM file shall contain 128 consequtive (zero) bytes,
       # followed by 4 bytes that spell the string 'DICM'. Apparently, some providers seems to skip this in their DICOM files.
-      # Check that the file is long enough to contain a valid header:
+      # Check that the string is long enough to contain a valid header:
       if @str.length < 132
-        # This does not seem to be a valid DICOM file and so we return.
+        # This does not seem to be a valid DICOM string and so we return.
         return nil
       else
         @stream.skip(128)
@@ -123,9 +22,9 @@ module DICOM
         identifier = @stream.decode(4, "STR")
         @header_length += 132
         if identifier != "DICM" then
-          # Header signature is not valid (we will still try to read it is a DICOM file though):
-          @msg << [:warn, "This file does not contain the expected DICOM header. Will try to parse the file anyway (assuming a missing header)."]
-          # As the file is not conforming to the DICOM standard, it is possible that it does not contain a
+          # Header signature is not valid (we will still try to parse it is a DICOM string though):
+          logger.warn("This string does not contain the expected DICOM header. Will try to parse the string anyway (assuming a missing header).")
+          # As the string is not conforming to the DICOM standard, it is possible that it does not contain a
           # transfer syntax element, and as such, we attempt to choose the most probable encoding values here:
           @explicit = false
           return false
@@ -137,11 +36,14 @@ module DICOM
       end
     end
 
-    # Handles the process of reading a data element from the DICOM string, and creating an element object from the parsed data.
-    # Returns nil if end of file has been reached (in an expected way), false if the element parse failed, and true if an element was parsed successfully.
+    # Handles the process of reading a data element from the DICOM string, and
+    # creating an element object from the parsed data.
+    # Returns nil if end of string has been reached (in an expected way), false if
+    # the element parse failed, and true if an element was parsed successfully.
     #
     #--
-    # FIXME: This method has grown a bit messy and isn't very easy to follow. It would be nice if it could be cleaned up somewhat.
+    # FIXME: This method has grown a bit messy and isn't very easy to follow.
+    # It would be nice if it could be cleaned up somewhat.
     #
     def process_data_element
       # STEP 1:
@@ -151,7 +53,7 @@ module DICOM
       return nil unless tag
       # STEP 2:
       # Access library to retrieve the data element name and VR from the tag we just read:
-      # (Note: VR will be overwritten in the next step if the DICOM file contains VR (explicit encoding))
+      # (Note: VR will be overwritten in the next step if the DICOM string contains VR (explicit encoding))
       name, vr = LIBRARY.get_name_vr(tag)
       # STEP 3:
       # Read VR (if it exists) and the length value:
@@ -210,11 +112,9 @@ module DICOM
         # If length is specified (no delimitation items), load a new DRead instance to read these child elements
         # and load them into the current sequence. The exception is when we have a pixel data item.
         if length > 0 and not @enc_image
-          child_reader = DRead.new(@current_element, bin, :bin => true, :no_meta => true, :syntax => @transfer_syntax)
+          @current_element.parse(bin, @transfer_syntax)
           @current_parent = @current_parent.parent
-          @msg += child_reader.msg unless child_reader.msg.empty?
-          @success = child_reader.success
-          return false unless @success
+          return false unless @read_success
         end
       elsif DELIMITER_TAGS.include?(tag)
         # We do not create an element for the delimiter items.
@@ -228,6 +128,76 @@ module DICOM
       end
       # Return true to indicate success:
       return true
+    end
+
+    # Builds a DICOM object by parsing an encoded DICOM string.
+    #
+    # === Parameters
+    #
+    # * <tt>string</tt> -- A binary DICOM string to be parsed.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the string.
+    #
+    def read(string, options={})
+      # If a transfer syntax has been specified as an option for a DICOM object,
+      # make sure that it makes it into the object:
+      if options[:syntax]
+        @transfer_syntax = options[:syntax]
+        Element.new("0002,0010", options[:syntax], :parent => self) if self.is_a?(DObject)
+      end
+      # Initiate the variables that are used when parsing the string:
+      init_variables
+      @str = string
+      @stream = Stream.new(@str, @str_endian)
+      # Do not check for header information if we've been told
+      # there is none (typically for network strings):
+      unless options[:no_meta]
+        # Read and verify the DICOM header:
+        header = check_header
+        # If the string is without the expected header, we will attempt
+        # to read data elements from the very start of the string:
+        if header == false
+          @stream.skip(-132)
+        elsif header.nil?
+          # Not a valid DICOM string, return:
+          @read_success = false
+          return
+        end
+      end
+      # Run a loop which parses Data Elements, one by one, until the end of the data string is reached:
+      data_element = true
+      while data_element do
+        # Using a rescue clause since processing Data Elements can cause errors when parsing an invalid DICOM string.
+        begin
+          # Extracting Data element information (nil is returned if end of the string is encountered in a normal way).
+          data_element = process_data_element
+        rescue Exception => msg
+          # The parse algorithm crashed. Set data_element as false to break
+          # the loop and toggle the success boolean to indicate failure.
+          @read_success = false
+          data_element = false
+          # Output the raised message as a warning:
+          logger.warn(msg.to_s)
+          # Ouput the backtrace as debug information:
+          logger.debug(msg.backtrace)
+          # Explain the failure as an error:
+          logger.error("Parsing a Data Element has failed. This is likely caused by an invalid DICOM encoding.")
+        end
+      end
+    end
+
+    # Reads and returns the data element's binary value string (varying length).
+    #
+    # === Parameters
+    #
+    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
+    #
+    def read_bin(length)
+      return @stream.extract(length)
     end
 
     # Reads and returns the data element's tag (the 4 first bytes of a data element).
@@ -249,8 +219,38 @@ module DICOM
       return tag
     end
 
-    # Reads the data element's value representation (2 bytes), as well as the data element's length (varying length: 2-6 bytes).
-    # The decoding scheme to be applied depends on explicitness, data element type and vr.
+    # Decodes and returns the data element's value (varying length).
+    #
+    # === Notes
+    #
+    # * Data elements which have multiple numbers as value, will have these numbers joined to a string, separated by the \ character.
+    # * For some value representations (OW, OB, OF, UN), a value is not processed, and nil is returned.
+    # This means that for data like pixel data, compressed data, unknown data, a value is not available in the data element,
+    # and must be processed from the data element's binary variable.
+    #
+    # === Parameters
+    #
+    # * <tt>vr</tt> -- String. The value representation of the data element which the value to be decoded belongs to.
+    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
+    #
+    def read_value(vr, length)
+      unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
+        # Since the binary string has already been extracted for this data element, we must first "rewind":
+        @stream.skip(-length)
+        # Decode data:
+        value = @stream.decode(length, vr)
+        # If the returned value is an array of multiple values, we will join these values to a string with the separator "\":
+        value = value.join("\\") if value.is_a?(Array)
+      else
+        # No decoded value:
+        value = nil
+      end
+      return value
+    end
+
+    # Reads the data element's value representation (2 bytes), as well as the
+    # data element's length (varying length: 2-6 bytes). The decoding scheme
+    # to be applied depends on explicitness, data element type and vr.
     # Returns vr and length.
     #
     # === Parameters
@@ -296,77 +296,12 @@ module DICOM
       return vr, length
     end
 
-    # Reads and returns the data element's binary value string (varying length).
-    #
-    # === Parameters
-    #
-    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
-    #
-    def read_bin(length)
-      return @stream.extract(length)
-    end
-
-    # Decodes and returns the data element's value (varying length).
-    #
-    # === Notes
-    #
-    # * Data elements which have multiple numbers as value, will have these numbers joined to a string, separated by the \ character.
-    # * For some value representations (OW, OB, OF, UN), a value is not processed, and nil is returned.
-    # This means that for data like pixel data, compressed data, unknown data, a value is not available in the data element,
-    # and must be processed from the data element's binary variable.
-    #
-    # === Parameters
-    #
-    # * <tt>vr</tt> -- String. The value representation of the data element which the value to be decoded belongs to.
-    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
-    #
-    def read_value(vr, length)
-      unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
-        # Since the binary string has already been extracted for this data element, we must first "rewind":
-        @stream.skip(-length)
-        # Decode data:
-        value = @stream.decode(length, vr)
-        # If the returned value is an array of multiple values, we will join these values to a string with the separator "\":
-        value = value.join("\\") if value.is_a?(Array)
-      else
-        # No decoded value:
-        value = nil
-      end
-      return value
-    end
-
-    # Tests if a file is readable, and if so, opens it.
-    #
-    # === Parameters
-    #
-    # * <tt>file</tt> -- A path/file string.
-    #
-    def open_file(file)
-      if File.exist?(file)
-        if File.readable?(file)
-          if !File.directory?(file)
-            if File.size(file) > 8
-              @file = File.new(file, "rb")
-            else
-              @msg << [:error, "This file is too small to contain valid DICOM information: #{file}."]
-            end
-          else
-            @msg << [:error, "Expected a file, got a directory: #{file}"]
-          end
-        else
-          @msg << [:error, "File exists but I don't have permission to read it: #{file}"]
-        end
-      else
-        @msg << [:error, "Invalid (non-existing) file: #{file}"]
-      end
-    end
-
-    # Changes encoding variables as the file reading proceeds past the initial meta group part (0002,xxxx) of the DICOM file.
+    # Changes encoding variables as the parsing proceeds past the initial meta group part (0002,xxxx) of the DICOM string.
     #
     def switch_syntax
       # Get the transfer syntax string, unless it has already been provided by keyword:
       unless @transfer_syntax
-        ts_element = @dcm["0002,0010"]
+        ts_element = self["0002,0010"]
         if ts_element
           @transfer_syntax = ts_element.value
         else
@@ -375,51 +310,43 @@ module DICOM
       end
       # Query the library with our particular transfer syntax string:
       valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
-      unless valid_syntax
-        @msg << "Warning: Invalid/unknown transfer syntax! Will try reading the file, but errors may occur."
-      end
+      logger.warn("Invalid/unknown transfer syntax: #{@transfer_syntax} Will try parsing the string, but errors may occur.") unless valid_syntax
       # We only plan to run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:
-      @switched_endian = true if @rest_endian != @file_endian
-      @file_endian = @rest_endian
+      @switched_endian = true if @rest_endian != @str_endian
+      @str_endian = @rest_endian
       @stream.endian = @rest_endian
       @explicit = @rest_explicit
     end
 
-
     # Creates various instance variables that are used when parsing the DICOM string.
     #
     def init_variables
-      # Array for storing any messages that is generated while reading the DICOM file.
-      # The messages shall be of the format: [:type, "message"]
-      # (Because of the possibility of multi-pass file reading, the DRead instance does not access
-      # the Logging module directly; it lets the DObject instance pass along the messages instead)
-      @msg = Array.new
       # Presence of the official DICOM signature:
       @signature = false
-      # Default explicitness of start of DICOM file:
+      # Default explicitness of start of DICOM string:
       @explicit = true
-      # Default endianness of start of DICOM files is little endian:
-      @file_endian = false
+      # Default endianness of start of DICOM string is little endian:
+      @str_endian = false
       # A switch of endianness may occur after the initial meta group, an this needs to be monitored:
       @switched_endian = false
       # Explicitness of the remaining groups after the initial 0002 group:
       @rest_explicit = false
       # Endianness of the remaining groups after the first group:
       @rest_endian = false
-      # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
+      # When the string switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
       # Keeping track of the data element parent status while parsing the DICOM string:
-      @current_parent = @dcm
+      @current_parent = self
       # Keeping track of what is the current data element:
-      @current_element = @dcm
+      @current_element = self
       # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
       @enc_image = false
       # Assume header size is zero bytes until otherwise is determined:
       @header_length = 0
-      # Assume file will be read successfully and toggle it later if we experience otherwise:
-      @success = true
+      # Assume string will be read successfully and toggle it later if we experience otherwise:
+      @read_success = true
     end
 
   end

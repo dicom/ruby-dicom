@@ -97,13 +97,24 @@ module DICOM
     # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string.
     #
+    # === Examples
+    #
+    #   # Parse a DICOM file that has already been loaded to a binary string:
+    #   require 'dicom'
+    #   dcm = DICOM::DObject.parse(str)
+    #   # Parse a header-less DICOM string with explicit little endian transfer syntax:
+    #   dcm = DICOM::DObject.parse(str, :syntax => '1.2.840.10008.1.2.1')
+    #
     def self.parse(string, options={})
-      syntax = options[:syntax]
-      no_header = options[:no_meta]
       raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
-      raise ArgumentError, "Invalid option :syntax. Expected String, got #{syntax.class}." if syntax && !syntax.is_a?(String)
+      raise ArgumentError, "Invalid option :syntax. Expected String, got #{options[:syntax].class}." if options[:syntax] && !options[:syntax].is_a?(String)
       dcm = self.new
-      dcm.read(string, :bin => true, :no_meta => no_header, :syntax => syntax)
+      dcm.send(:read, string, :no_meta => options[:no_meta], :syntax => options[:syntax])
+      if dcm.read?
+        logger.debug("DICOM string successfully parsed.")
+      else
+        logger.warn("Failed to parse this string as DICOM.")
+      end
       return dcm
     end
 
@@ -112,6 +123,12 @@ module DICOM
     # === Parameters
     #
     # * <tt>file</tt> -- A string which specifies the path of the DICOM file to be loaded.
+    #
+    # === Examples
+    #
+    #   # Load a DICOM file:
+    #   require 'dicom'
+    #   dcm = DICOM::DObject.read('test.dcm')
     #
     def self.read(file)
       raise ArgumentError, "Invalid argument 'file'. Expected String, got #{file.class}." unless file.is_a?(String)
@@ -137,9 +154,19 @@ module DICOM
       # Parse the file contents and create the DICOM object:
       if bin
         dcm = self.parse(bin)
+        # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
+        # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
+        if !dcm.read? and !dcm.exists?("0002,0010")
+          logger.info("Attempting a second decode pass (assuming Explicit Little Endian transfer syntax).")
+          dcm = self.parse(bin, :syntax => EXPLICIT_LITTLE_ENDIAN)
+        end
       else
         dcm = self.new
-        dcm.read_success = false
+      end
+      if dcm.read?
+        logger.info("DICOM file successfully read: #{file}")
+      else
+        logger.warn("Reading DICOM file failed: #{file}")
       end
       return dcm
     end
@@ -166,52 +193,26 @@ module DICOM
     #
     # To customize logging behaviour, refer to the Logging module documentation.
     #
-    # === Parameters
-    #
-    # * <tt>string</tt> -- (Deprecated) A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed. The parameter defaults to nil, in which case an empty DObject instance is created.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:bin</tt> -- (Deprecated) Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:syntax</tt> -- (Deprecated) String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
-    #
     # === Examples
     #
-    #   # Load a DICOM file (Deprecated: please use DObject.read() instead):
+    #   # Create an empty DICOM object:
     #   require 'dicom'
-    #   dcm = DICOM::DObject.new("test.dcm")
-    #   # Read a DICOM file that has already been loaded into memory in a binary string (with a known transfer syntax):
-    #   # (Deprecated: please use DObject.parse() instead)
-    #   dcm = DICOM::DObject.new(binary_string, :bin => true, :syntax => string_transfer_syntax)
-    #   # Create an empty DICOM object
     #   dcm = DICOM::DObject.new
     #   # Increasing the log message threshold (default level is INFO):
-    #   DICOM.logger.level = Logger::WARN
+    #   DICOM.logger.level = Logger::ERROR
     #
-    def initialize(string=nil, options={})
-      # Deprecation warning:
-      logger.warn("Calling DOBject#new with a string argument is deprecated. Please use DObject#read (for reading files) or DObject#parse (for parsing strings) instead. Support for DObject#new with a string argument will be removed in a future version.") if string
-      # Removal warning:
-      logger.warn("The option :verbose no longer has any meaning. Please specify logger levels instead, e.g. DICOM.logger.level = Logger::WARN (refer to the documentation for more details).") if options[:verbose] == false
+    def initialize
       # Initialization of variables that DObject share with other parent elements:
       initialize_parent
       # Structural information (default values):
       @explicit = true
-      @file_endian = false
+      @str_endian = false
       # Control variables:
       @read_success = nil
       # Initialize a Stream instance which is used for encoding/decoding:
-      @stream = Stream.new(nil, @file_endian)
+      @stream = Stream.new(nil, @str_endian)
       # The DObject instance is the top of the hierarchy and unlike other elements it has no parent:
       @parent = nil
-      # For convenience, call the read method if a string has been supplied:
-      if string.is_a?(String)
-        @file = string unless options[:bin]
-        read(string, options)
-      elsif string
-        raise ArgumentError, "Invalid argument. Expected String (or nil), got #{string.class}."
-      end
     end
 
     # Returns true if the argument is an instance with attributes equal to self.
@@ -263,57 +264,6 @@ module DICOM
       summary
     end
 
-    # Fills a DICOM object by reading and parsing the specified DICOM file,
-    # and transfers the DICOM data to the DICOM object (self).
-    #
-    # === Notes
-    #
-    # * This method is called automatically when initializing the DObject class with a file parameter.
-    # * In practice this method is rarely called by the user, and in fact it may be removed entirely at some stage.
-    #
-    # === Parameters
-    #
-    # * <tt>string</tt> -- A string which specifies either the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:bin</tt> -- Boolean. If true, the string parameter will be interpreted as a binary DICOM string instead of a path string.
-    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the file/binary string.
-    #
-    def read(string, options={})
-      raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
-      # Clear any existing DObject tags, then read:
-      @tags = Hash.new
-      r = DRead.new(self, string, options)
-      # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
-      # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
-      if !r.success and !exists?("0002,0010")
-        logger.debug("First attempt at parsing the file failed.\nAttempting a second pass (assuming Explicit Little Endian transfer syntax).")
-        # Clear the existing DObject tags:
-        @tags = Hash.new
-        r_explicit = DRead.new(self, string, :bin => options[:bin], :no_meta => options[:no_meta], :syntax => EXPLICIT_LITTLE_ENDIAN)
-        # Only extract information from this new attempt if it was successful:
-        r = r_explicit if r_explicit.success
-      end
-      # Pass along any messages that has been recorded:
-      r.msg.each { |m| logger.public_send(m.first, m.last) }
-      # Store the data to the instance variables if the readout was a success:
-      if r.success
-        logger.info("The DICOM file has been successfully parsed.")
-        @read_success = true
-        # Update instance variables based on the properties of the DICOM object:
-        @explicit = r.explicit
-        @file_endian = r.file_endian
-        @signature = r.signature
-        @stream.endian = @file_endian
-      else
-        logger.warn("Parsing the DICOM file has failed.")
-        @read_success = false
-      end
-    end
-
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
     #
     # This information includes properties like encoding, byte order, modality and various image properties.
@@ -352,7 +302,7 @@ module DICOM
       else
         meta = "No"
         explicitness = (@explicit == true ? "Explicit" : "Implicit")
-        encoding = (@file_endian == true ? "Big Endian" : "Little Endian")
+        encoding = (@str_endian == true ? "Big Endian" : "Little Endian")
         explicit_comment = " (Assumed)"
         encoding_comment = " (Assumed)"
       end

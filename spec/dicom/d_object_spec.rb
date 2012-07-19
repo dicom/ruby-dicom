@@ -72,9 +72,10 @@ module DICOM
         dcm.read?.should be_false
       end
 
-      it "should register one or more errors/warnings in the log when failing to successfully read a DICOM file" do
+      it "should register one or more errors/warnings/debugs in the log when failing to successfully parse a DICOM string" do
         DICOM.logger = mock("Logger")
         DICOM.logger.expects(:warn).at_least_once
+        DICOM.logger.expects(:debug).at_least_once
         DICOM.logger.expects(:error).at_least_once
         str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, "rb") { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
@@ -286,27 +287,6 @@ module DICOM
         dcm.add(Element.new("0018,1310", 500)) # This should give the binary string "\364\001"
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
         dcm["0018,1310"].bin.should eql "\001\364"
-      end
-
-    end
-
-
-    context "#read" do
-
-      before :each do
-        @file = DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2
-      end
-
-      it "should raise ArgumentError when a non-string argument is used" do
-        dcm = DObject.read(@file)
-        expect {dcm.read(33)}.to raise_error(ArgumentError)
-      end
-
-      it "should delete any old data elements when reading a new DICOM file into the DICOM object" do
-        dcm = DObject.new
-        dcm.add(Element.new("9999,9999", "test", :vr => "AE"))
-        dcm.read(@file)
-        dcm.exists?("9999,9999").should be_false
       end
 
     end
