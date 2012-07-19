@@ -40,6 +40,18 @@ module DICOM
   class DObject < ImageItem
     include Logging
 
+    # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
+    attr_reader :parent
+    # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
+    attr_accessor :read_success
+    # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
+    attr_reader :stream
+    # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
+    attr_reader :write_success
+
+    alias_method :read?, :read_success
+    alias_method :written?, :write_success
+
     # Creates a DObject instance by downloading a DICOM file
     # specified by a hyperlink, and parsing the retrieved file.
     #
@@ -170,18 +182,6 @@ module DICOM
       end
       return dcm
     end
-
-    # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
-    attr_reader :parent
-    # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
-    attr_accessor :read_success
-    # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
-    attr_reader :stream
-    # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
-    attr_reader :write_success
-
-    alias_method :read?, :read_success
-    alias_method :written?, :write_success
 
     # Creates a DObject instance (DObject is an abbreviation for "DICOM object").
     #
