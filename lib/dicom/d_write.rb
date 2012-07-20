@@ -1,87 +1,42 @@
 module DICOM
 
-  # The DWrite class handles the encoding of a DObject instance to a valid DICOM string.
-  # The String is either written to file or returned in segments to be used for network transmission.
-  #
-  # === Notes
-  #
-  # The philosophy of the Ruby DICOM library is to feature maximum conformance to the DICOM standard.
-  # As such, the class which writes DICOM files may manipulate the meta group, delete/change group lengths and add a header signature.
-  #
-  # Therefore, the file that is written may not be an exact bitwise copy of the file that was read,
-  # even if no DObject manipulation has been done on the part of the user.
-  #
-  # Remember: If this behaviour for some reason is not wanted, it is easy to modify the source code to avoid it.
-  #
-  # It is important to note, that while the goal is to be fully DICOM compliant, no guarantees are given
-  # that this is actually achieved. You are encouraged to thouroughly test your files for compatibility after creation.
-  #
-  class DWrite
-    include Logging
+  class Parent
 
-    # An array of partial DICOM strings.
-    attr_reader :segments
-    # A boolean which reports whether the DICOM string was encoded/written successfully (true) or not (false).
-    attr_reader :success
-    # A boolean which reports the endianness of the post-meta group part of the DICOM string (true for big endian, false for little endian).
-    attr_reader :rest_endian
-    # A boolean which reports the explicitness of the DICOM string, true if explicit and false if implicit.
-    attr_reader :rest_explicit
+    private
 
-    # Creates a DWrite instance.
-    #
-    # === Parameters
-    #
-    # * <tt>dcm</tt> -- A DObject instance which will be used to encode a DICOM string.
-    # * <tt>transfer_syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
-    # * <tt>file_name</tt> -- A string, either specifying the path of a DICOM file to be loaded, or a binary DICOM string to be parsed.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:signature</tt> -- Boolean. If set as false, the DICOM header signature will not be written to the DICOM file.
-    #
-    def initialize(dcm, transfer_syntax, file_name=nil, options={})
-      @dcm = dcm
-      @transfer_syntax = transfer_syntax
-      @file_name = file_name
-      # As default, signature will be written and meta header added:
-      @signature = (options[:signature] == false ? false : true)
-    end
 
     # Handles the encoding of DICOM information to string as well as writing it to file.
     #
     # === Parameters
     #
-    # * <tt>body</tt> -- A DICOM binary string which is duped to file, instead of the normal procedure of encoding element by element.
+    # * <tt>options</tt> -- A hash of parameters.
     #
-    #--
-    # FIXME: It may seem that the body argument is not used anymore, and should be considered for removal.
+    # === Options
     #
-    def write(body=nil)
+    # * <tt>:file_name</tt> -- String. The path & name of the DICOM file which is to be written to disk.
+    # * <tt>:signature</tt> -- Boolean. If true, the 128 byte preamble and 'DICM' signature is prepended to the encoded string.
+    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
+    #
+    def write_elements(options={})
+      @file_name = options[:file_name]
+      @transfer_syntax = options[:syntax]
       # Check if we are able to create given file:
       open_file(@file_name)
       # Go ahead and write if the file was opened successfully:
       if @file
         # Initiate necessary variables:
-        init_variables
+        init_variables_on_write
         # Create a Stream instance to handle the encoding of content to a binary string:
-        @stream = Stream.new(nil, @file_endian)
+        @stream = Stream.new(nil, @str_endian)
         # Tell the Stream instance which file to write to:
         @stream.set_file(@file)
         # Write the DICOM signature:
-        write_signature if @signature
-        # Write either body or data elements:
-        if body
-          @stream.add_last(body)
-        else
-          elements = @dcm.children
-          write_data_elements(elements)
-        end
+        write_signature if options[:signature]
+        write_data_elements(children)
         # As file has been written successfully, it can be closed.
         @file.close
         # Mark this write session as successful:
-        @success = true
+        @write_success = true
       end
     end
 
@@ -91,31 +46,32 @@ module DICOM
     # === Parameters
     #
     # * <tt>max_size</tt> -- Fixnum. The maximum segment string length.
+    # * <tt>options</tt> -- A hash of parameters.
     #
-    def encode_segments(max_size)
+    # === Options
+    #
+    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
+    #
+    def encode_in_segments(max_size, options={})
+      @transfer_syntax = options[:syntax]
       # Initiate necessary variables:
-      init_variables
+      init_variables_on_write
       @max_size = max_size
       @segments = Array.new
-      elements = @dcm.children
       # Create a Stream instance to handle the encoding of content to
       # the binary string that will eventually be saved to file:
-      @stream = Stream.new(nil, @file_endian)
-      write_data_elements(elements)
+      @stream = Stream.new(nil, @str_endian)
+      write_data_elements(children)
       # Extract the remaining string in our stream instance to our array of strings:
       @segments << @stream.export
       # Mark this write session as successful:
-      @success = true
+      @write_success = true
+      return @segments
     end
-
-
-    # Following methods are private:
-    private
-
 
     # Adds a binary string to (the end of) either the instance file or string.
     #
-    def add(string)
+    def add_encoded(string)
       if @file
         @stream.write(string)
       else
@@ -245,10 +201,10 @@ module DICOM
     def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
       # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
-      switch_syntax if tag.group != META_GROUP and @switched == false
+      switch_syntax_on_write if tag.group != META_GROUP and @switched == false
       # Write to binary string:
       bin_tag = @stream.encode_tag(tag)
-      add(bin_tag)
+      add_encoded(bin_tag)
     end
 
     # Encodes and writes the value representation (if it is to be written) and length value.
@@ -270,7 +226,7 @@ module DICOM
         # Step 1: Write VR (if it is to be written)
         unless ITEM_TAGS.include?(tag)
           # Write data element VR (2 bytes - since we are not dealing with an item related element):
-          add(@stream.encode(vr, "STR"))
+          add_encoded(@stream.encode(vr, "STR"))
         end
         # Step 2: Write length
         # Three possible structures for value length here, dependent on data element vr:
@@ -278,25 +234,25 @@ module DICOM
           when "OB","OW","OF","SQ","UN","UT"
             if @enc_image # (4 bytes)
               # Item under an encapsulated Pixel Data (7FE0,0010).
-              add(length4)
+              add_encoded(length4)
             else # (6 bytes total)
               # Two reserved bytes first:
-              add(@stream.encode("00"*2, "HEX"))
+              add_encoded(@stream.encode("00"*2, "HEX"))
               # Value length (4 bytes):
-              add(length4)
+              add_encoded(length4)
             end
           when ITEM_VR # (4 bytes)
             # For the item elements: "FFFE,E000", "FFFE,E00D" and "FFFE,E0DD"
-            add(length4)
+            add_encoded(length4)
           else # (2 bytes)
             # For all the other data element vr, value length is 2 bytes:
-            add(length2)
+            add_encoded(length2)
         end
       else
         # *****IMPLICIT*****:
         # No VR written.
         # Writing value length (4 bytes):
-        add(length4)
+        add_encoded(length4)
       end
     end
 
@@ -308,7 +264,7 @@ module DICOM
     #
     def write_value(bin)
       # This is pretty straightforward, just dump the binary data to the file/string:
-      add(bin) if bin
+      add_encoded(bin) if bin
     end
 
 
@@ -363,29 +319,29 @@ module DICOM
 
     # Changes encoding variables as the file writing proceeds past the initial meta group part (0002,xxxx) of the DICOM object.
     #
-    def switch_syntax
+    def switch_syntax_on_write
       # The information from the Transfer syntax element (if present), needs to be processed:
       valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
       unless valid_syntax
         logger.warn("Invalid (unknown) transfer syntax! Will complete encoding the file, but an investigation of the result is recommended.")
       end
-      # We only plan to run this method once:
+      # Make sure we only run this method once:
       @switched = true
       # Update explicitness and endianness (pack/unpack variables):
       @explicit = @rest_explicit
-      @file_endian = @rest_endian
+      @str_endian = @rest_endian
       @stream.endian = @rest_endian
     end
 
     # Creates various variables used when encoding the DICOM string.
     #
-    def init_variables
+    def init_variables_on_write
       # Until a DICOM write has completed successfully the status is 'unsuccessful':
-      @success = false
+      @write_success = false
       # Default explicitness of start of DICOM file:
       @explicit = true
       # Default endianness of start of DICOM files (little endian):
-      @file_endian = false
+      @str_endian = false
       # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
       @switched = false
       # Items contained under the Pixel Data element needs some special attention to write correctly:

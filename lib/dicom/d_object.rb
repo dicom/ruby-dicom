@@ -238,15 +238,11 @@ module DICOM
     #
     #  encoded_strings = dcm.encode_segments(16384)
     #
-    def encode_segments(max_size, transfer_syntax=transfer_syntax)
+    def encode_segments(max_size, transfer_syntax=IMPLICIT_LITTLE_ENDIAN)
       raise ArgumentError, "Invalid argument. Expected an Integer, got #{max_size.class}." unless max_size.is_a?(Integer)
       raise ArgumentError, "Argument too low (#{max_size}), please specify a bigger Integer." unless max_size > 16
       raise "Can not encode binary segments for an empty DICOM object." if children.length == 0
-      w = DWrite.new(self, transfer_syntax, file_name=nil)
-      w.encode_segments(max_size)
-      # Write process succesful?
-      @write_success = w.success
-      return w.segments
+      encode_in_segments(max_size, :syntax => transfer_syntax)
     end
 
     # Generates a Fixnum hash value for this instance.
@@ -405,12 +401,21 @@ module DICOM
       encode_children(old_endian) if old_endian != new_endian
     end
 
-    # Passes the DObject to the DWrite class, which traverses the data element
-    # structure and encodes a proper DICOM binary string, which is finally written to the specified file.
+    # Writes the DICOM object to file.
+    #
+    # === Notes
+    #
+    # The goal of the Ruby DICOM library is to yield maximum conformance with
+    # the DICOM standard when outputting DICOM files. Therefore, when encoding
+    # the DICOM file, manipulation of items such as the meta group, group lengths
+    # and header signature may occur.
+    #
+    # Therefore, the file that is written may not be an exact bitwise copy of the
+    # file that was read, even if no DObject manipulation has been done by the user.
     #
     # === Parameters
     #
-    # * <tt>file_name</tt> -- A string which identifies the path & name of the DICOM file which is to be written to disk.
+    # * <tt>file_name</tt> -- String. The path & name of the DICOM file which is to be written to disk.
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
@@ -420,20 +425,16 @@ module DICOM
     #
     # === Examples
     #
-    #   dcm.write(path + "test.dcm")
+    #   dcm.write('C:/dicom/test.dcm')
     #
     def write(file_name, options={})
       logger.warn("Option :add_meta => false is deprecated. Use option :ignore_meta => true instead.") if options[:add_meta] == false
       raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}." unless file_name.is_a?(String)
       insert_missing_meta unless options[:add_meta] == false or options[:ignore_meta]
-      w = DWrite.new(self, transfer_syntax, file_name, options)
-      w.write
-      # Write process succesful?
-      @write_success = w.success
+      write_elements(:file_name => file_name, :signature => true, :syntax => transfer_syntax)
     end
 
 
-    # Following methods are private:
     private
 
 

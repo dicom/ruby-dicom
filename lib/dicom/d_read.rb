@@ -150,7 +150,7 @@ module DICOM
         Element.new("0002,0010", options[:syntax], :parent => self) if self.is_a?(DObject)
       end
       # Initiate the variables that are used when parsing the string:
-      init_variables
+      init_variables_on_read
       @str = string
       @stream = Stream.new(@str, @str_endian)
       # Do not check for header information if we've been told
@@ -208,7 +208,7 @@ module DICOM
       if tag
         # When we shift from group 0002 to another group we need to update our endian/explicitness variables:
         if tag.group != META_GROUP and @switched == false
-          switch_syntax
+          switch_syntax_on_read
           # We may need to read our tag again if endian has switched (in which case it has been misread):
           if @switched_endian
             @stream.skip(-4)
@@ -298,7 +298,7 @@ module DICOM
 
     # Changes encoding variables as the parsing proceeds past the initial meta group part (0002,xxxx) of the DICOM string.
     #
-    def switch_syntax
+    def switch_syntax_on_read
       # Get the transfer syntax string, unless it has already been provided by keyword:
       unless @transfer_syntax
         ts_element = self["0002,0010"]
@@ -311,7 +311,7 @@ module DICOM
       # Query the library with our particular transfer syntax string:
       valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
       logger.warn("Invalid/unknown transfer syntax: #{@transfer_syntax} Will try parsing the string, but errors may occur.") unless valid_syntax
-      # We only plan to run this method once:
+      # Make sure we only run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:
       @switched_endian = true if @rest_endian != @str_endian
@@ -322,7 +322,7 @@ module DICOM
 
     # Creates various instance variables that are used when parsing the DICOM string.
     #
-    def init_variables
+    def init_variables_on_read
       # Presence of the official DICOM signature:
       @signature = false
       # Default explicitness of start of DICOM string:
