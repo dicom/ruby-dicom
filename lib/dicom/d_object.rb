@@ -106,7 +106,7 @@ module DICOM
     #
     # === Options
     #
-    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
+    # * <tt>:signature</tt> -- Boolean. If set as false, the parsing algorithm will not be looking for the DICOM header signature. Defaults to true.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string.
     #
     # === Examples
@@ -120,8 +120,9 @@ module DICOM
     def self.parse(string, options={})
       raise ArgumentError, "Invalid argument 'string'. Expected String, got #{string.class}." unless string.is_a?(String)
       raise ArgumentError, "Invalid option :syntax. Expected String, got #{options[:syntax].class}." if options[:syntax] && !options[:syntax].is_a?(String)
+      signature = options[:signature].nil? ? true : options[:signature]
       dcm = self.new
-      dcm.send(:read, string, :no_meta => options[:no_meta], :syntax => options[:syntax])
+      dcm.send(:read, string, signature, :syntax => options[:syntax])
       if dcm.read?
         logger.debug("DICOM string successfully parsed.")
       else
@@ -489,4 +490,5 @@ module DICOM
     end
 
   end
+
 end

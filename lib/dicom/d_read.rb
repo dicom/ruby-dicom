@@ -135,27 +135,50 @@ module DICOM
     # === Parameters
     #
     # * <tt>string</tt> -- A binary DICOM string to be parsed.
+    # * <tt>signature</tt> -- Boolean. If true (default), the parsing algorithm will look for the DICOM header signature.
     # * <tt>options</tt> -- A hash of parameters.
     #
     # === Options
     #
-    # * <tt>:no_meta</tt> -- Boolean. If true, the parsing algorithm is instructed that the binary DICOM string contains no meta header.
     # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the string.
     #
-    def read(string, options={})
+    def read(string, signature=true, options={})
+      # (Re)Set variables:
+      @str = string
+      # Presence of the official DICOM signature:
+      @signature = false
+      # Default explicitness of start of DICOM string:
+      @explicit = true
+      # Default endianness of start of DICOM string is little endian:
+      @str_endian = false
+      # A switch of endianness may occur after the initial meta group, an this needs to be monitored:
+      @switched_endian = false
+      # Explicitness of the remaining groups after the initial 0002 group:
+      @rest_explicit = false
+      # Endianness of the remaining groups after the first group:
+      @rest_endian = false
+      # When the string switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
+      @switched = false
+      # Keeping track of the data element parent status while parsing the DICOM string:
+      @current_parent = self
+      # Keeping track of what is the current data element:
+      @current_element = self
+      # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
+      @enc_image = false
+      # Assume header size is zero bytes until otherwise is determined:
+      @header_length = 0
+      # Assume string will be read successfully and toggle it later if we experience otherwise:
+      @read_success = true
+      # Our encoding instance:
+      @stream = Stream.new(@str, @str_endian)
       # If a transfer syntax has been specified as an option for a DICOM object,
       # make sure that it makes it into the object:
       if options[:syntax]
         @transfer_syntax = options[:syntax]
         Element.new("0002,0010", options[:syntax], :parent => self) if self.is_a?(DObject)
       end
-      # Initiate the variables that are used when parsing the string:
-      init_variables_on_read
-      @str = string
-      @stream = Stream.new(@str, @str_endian)
-      # Do not check for header information if we've been told
-      # there is none (typically for network strings):
-      unless options[:no_meta]
+      # Check for header information if indicated:
+      if signature
         # Read and verify the DICOM header:
         header = check_header
         # If the string is without the expected header, we will attempt
@@ -320,34 +343,6 @@ module DICOM
       @explicit = @rest_explicit
     end
 
-    # Creates various instance variables that are used when parsing the DICOM string.
-    #
-    def init_variables_on_read
-      # Presence of the official DICOM signature:
-      @signature = false
-      # Default explicitness of start of DICOM string:
-      @explicit = true
-      # Default endianness of start of DICOM string is little endian:
-      @str_endian = false
-      # A switch of endianness may occur after the initial meta group, an this needs to be monitored:
-      @switched_endian = false
-      # Explicitness of the remaining groups after the initial 0002 group:
-      @rest_explicit = false
-      # Endianness of the remaining groups after the first group:
-      @rest_endian = false
-      # When the string switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
-      @switched = false
-      # Keeping track of the data element parent status while parsing the DICOM string:
-      @current_parent = self
-      # Keeping track of what is the current data element:
-      @current_element = self
-      # Items contained under the pixel data element may contain data directly, so we need a variable to keep track of this:
-      @enc_image = false
-      # Assume header size is zero bytes until otherwise is determined:
-      @header_length = 0
-      # Assume string will be read successfully and toggle it later if we experience otherwise:
-      @read_success = true
-    end
-
   end
+
 end

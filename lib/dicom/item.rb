@@ -112,7 +112,7 @@ module DICOM
     def parse(bin, syntax)
       raise ArgumentError, "Invalid argument 'bin'. Expected String, got #{bin.class}." unless bin.is_a?(String)
       raise ArgumentError, "Invalid argument 'syntax'. Expected String, got #{syntax.class}." unless syntax.is_a?(String)
-      read(bin, :no_meta => true, :syntax => syntax)
+      read(bin, signature=false, :syntax => syntax)
     end
 
     # Returns self.

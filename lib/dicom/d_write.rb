@@ -18,14 +18,22 @@ module DICOM
     # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
     #
     def write_elements(options={})
-      @file_name = options[:file_name]
-      @transfer_syntax = options[:syntax]
       # Check if we are able to create given file:
-      open_file(@file_name)
+      open_file(options[:file_name])
       # Go ahead and write if the file was opened successfully:
       if @file
         # Initiate necessary variables:
-        init_variables_on_write
+        @transfer_syntax = options[:syntax]
+        # Until a DICOM write has completed successfully the status is 'unsuccessful':
+        @write_success = false
+        # Default explicitness of start of DICOM file:
+        @explicit = true
+        # Default endianness of start of DICOM files (little endian):
+        @str_endian = false
+        # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
+        @switched = false
+        # Items contained under the Pixel Data element needs some special attention to write correctly:
+        @enc_image = false
         # Create a Stream instance to handle the encoding of content to a binary string:
         @stream = Stream.new(nil, @str_endian)
         # Tell the Stream instance which file to write to:
@@ -53,14 +61,21 @@ module DICOM
     # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
     #
     def encode_in_segments(max_size, options={})
-      @transfer_syntax = options[:syntax]
-      # Initiate necessary variables:
-      init_variables_on_write
       @max_size = max_size
-      @segments = Array.new
-      # Create a Stream instance to handle the encoding of content to
-      # the binary string that will eventually be saved to file:
+      @transfer_syntax = options[:syntax]
+      # Until a DICOM write has completed successfully the status is 'unsuccessful':
+      @write_success = false
+      # Default explicitness of start of DICOM file:
+      @explicit = true
+      # Default endianness of start of DICOM files (little endian):
+      @str_endian = false
+      # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
+      @switched = false
+      # Items contained under the Pixel Data element needs some special attention to write correctly:
+      @enc_image = false
+      # Create a Stream instance to handle the encoding of content to a binary string:
       @stream = Stream.new(nil, @str_endian)
+      @segments = Array.new
       write_data_elements(children)
       # Extract the remaining string in our stream instance to our array of strings:
       @segments << @stream.export
@@ -333,20 +348,6 @@ module DICOM
       @stream.endian = @rest_endian
     end
 
-    # Creates various variables used when encoding the DICOM string.
-    #
-    def init_variables_on_write
-      # Until a DICOM write has completed successfully the status is 'unsuccessful':
-      @write_success = false
-      # Default explicitness of start of DICOM file:
-      @explicit = true
-      # Default endianness of start of DICOM files (little endian):
-      @str_endian = false
-      # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
-      @switched = false
-      # Items contained under the Pixel Data element needs some special attention to write correctly:
-      @enc_image = false
-    end
-
   end
+
 end
