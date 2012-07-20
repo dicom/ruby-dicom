@@ -5,85 +5,6 @@ module DICOM
     private
 
 
-    # Handles the encoding of DICOM information to string as well as writing it to file.
-    #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:file_name</tt> -- String. The path & name of the DICOM file which is to be written to disk.
-    # * <tt>:signature</tt> -- Boolean. If true, the 128 byte preamble and 'DICM' signature is prepended to the encoded string.
-    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
-    #
-    def write_elements(options={})
-      # Check if we are able to create given file:
-      open_file(options[:file_name])
-      # Go ahead and write if the file was opened successfully:
-      if @file
-        # Initiate necessary variables:
-        @transfer_syntax = options[:syntax]
-        # Until a DICOM write has completed successfully the status is 'unsuccessful':
-        @write_success = false
-        # Default explicitness of start of DICOM file:
-        @explicit = true
-        # Default endianness of start of DICOM files (little endian):
-        @str_endian = false
-        # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
-        @switched = false
-        # Items contained under the Pixel Data element needs some special attention to write correctly:
-        @enc_image = false
-        # Create a Stream instance to handle the encoding of content to a binary string:
-        @stream = Stream.new(nil, @str_endian)
-        # Tell the Stream instance which file to write to:
-        @stream.set_file(@file)
-        # Write the DICOM signature:
-        write_signature if options[:signature]
-        write_data_elements(children)
-        # As file has been written successfully, it can be closed.
-        @file.close
-        # Mark this write session as successful:
-        @write_success = true
-      end
-    end
-
-    # Writes DICOM content to a series of size-limited binary strings, which is returned in an array.
-    # This is typically used in preparation of transmitting DICOM objects through network connections.
-    #
-    # === Parameters
-    #
-    # * <tt>max_size</tt> -- Fixnum. The maximum segment string length.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
-    #
-    def encode_in_segments(max_size, options={})
-      @max_size = max_size
-      @transfer_syntax = options[:syntax]
-      # Until a DICOM write has completed successfully the status is 'unsuccessful':
-      @write_success = false
-      # Default explicitness of start of DICOM file:
-      @explicit = true
-      # Default endianness of start of DICOM files (little endian):
-      @str_endian = false
-      # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
-      @switched = false
-      # Items contained under the Pixel Data element needs some special attention to write correctly:
-      @enc_image = false
-      # Create a Stream instance to handle the encoding of content to a binary string:
-      @stream = Stream.new(nil, @str_endian)
-      @segments = Array.new
-      write_data_elements(children)
-      # Extract the remaining string in our stream instance to our array of strings:
-      @segments << @stream.export
-      # Mark this write session as successful:
-      @write_success = true
-      return @segments
-    end
-
     # Adds a binary string to (the end of) either the instance file or string.
     #
     def add_encoded(string)
@@ -124,16 +45,105 @@ module DICOM
       end
     end
 
-    # Writes the DICOM header signature (128 bytes + 'DICM').
+    # Toggles the status for enclosed pixel data.
     #
-    def write_signature
-      # Write the string "DICM" which along with the empty bytes that
-      # will be put before it, identifies this as a valid DICOM file:
-      identifier = @stream.encode("DICM", "STR")
-      # Fill in 128 empty bytes:
-      filler = @stream.encode("00"*128, "HEX")
-      @stream.write(filler)
-      @stream.write(identifier)
+    # === Parameters
+    #
+    # * <tt>element</tt> -- A data element (DataElement, Sequence or Item).
+    #
+    def check_encapsulated_image(element)
+      # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
+      if element.tag == PIXEL_TAG and element.parent.is_a?(DObject)
+        @enc_image = true if element.length <= 0
+      end
+    end
+
+    # Writes DICOM content to a series of size-limited binary strings, which is returned in an array.
+    # This is typically used in preparation of transmitting DICOM objects through network connections.
+    #
+    # === Parameters
+    #
+    # * <tt>max_size</tt> -- Fixnum. The maximum segment string length.
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
+    #
+    def encode_in_segments(max_size, options={})
+      @max_size = max_size
+      @transfer_syntax = options[:syntax]
+      # Until a DICOM write has completed successfully the status is 'unsuccessful':
+      @write_success = false
+      # Default explicitness of start of DICOM file:
+      @explicit = true
+      # Default endianness of start of DICOM files (little endian):
+      @str_endian = false
+      # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
+      @switched = false
+      # Items contained under the Pixel Data element needs some special attention to write correctly:
+      @enc_image = false
+      # Create a Stream instance to handle the encoding of content to a binary string:
+      @stream = Stream.new(nil, @str_endian)
+      @segments = Array.new
+      write_data_elements(children)
+      # Extract the remaining string in our stream instance to our array of strings:
+      @segments << @stream.export
+      # Mark this write session as successful:
+      @write_success = true
+      return @segments
+    end
+
+    # Tests if the path/file is writable, creates any folders if necessary, and opens the file for writing.
+    #
+    # === Parameters
+    #
+    # * <tt>file</tt> -- A path/file string.
+    #
+    def open_file(file)
+      # Check if file already exists:
+      if File.exist?(file)
+        # Is it writable?
+        if File.writable?(file)
+          @file = File.new(file, "wb")
+        else
+          # Existing file is not writable:
+          logger.error("The program does not have permission or resources to create this file: #{file}")
+        end
+      else
+        # File does not exist.
+        # Check if this file's path contains a folder that does not exist, and therefore needs to be created:
+        folders = file.split(File::SEPARATOR)
+        if folders.length > 1
+          # Remove last element (which should be the file string):
+          folders.pop
+          path = folders.join(File::SEPARATOR)
+          # Check if this path exists:
+          unless File.directory?(path)
+            # We need to create (parts of) this path:
+            require 'fileutils'
+            FileUtils.mkdir_p(path)
+          end
+        end
+        # The path to this non-existing file is verified, and we can proceed to create the file:
+        @file = File.new(file, "wb")
+      end
+    end
+
+    # Encodes and writes a single data element.
+    #
+    # === Parameters
+    #
+    # * <tt>element</tt> -- A data element (DataElement, Sequence or Item).
+    #
+    def write_data_element(element)
+      # Step 1: Write tag:
+      write_tag(element.tag)
+      # Step 2: Write [VR] and value length:
+      write_vr_length(element.tag, element.vr, element.length)
+      # Step 3: Write value (Insert the already encoded binary string):
+      write_value(element.bin)
+      check_encapsulated_image(element)
     end
 
     # Iterates through the data elements, encoding/writing one by one.
@@ -179,22 +189,6 @@ module DICOM
       end
     end
 
-    # Encodes and writes a single data element.
-    #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- A data element (DataElement, Sequence or Item).
-    #
-    def write_data_element(element)
-      # Step 1: Write tag:
-      write_tag(element.tag)
-      # Step 2: Write [VR] and value length:
-      write_vr_length(element.tag, element.vr, element.length)
-      # Step 3: Write value (Insert the already encoded binary string):
-      write_value(element.bin)
-      check_encapsulated_image(element)
-    end
-
     # Encodes and writes an Item or Sequence delimiter.
     #
     # === Parameters
@@ -205,6 +199,61 @@ module DICOM
       delimiter_tag = (element.tag == ITEM_TAG ? ITEM_DELIMITER : SEQUENCE_DELIMITER)
       write_tag(delimiter_tag)
       write_vr_length(delimiter_tag, ITEM_VR, 0)
+    end
+
+    # Handles the encoding of DICOM information to string as well as writing it to file.
+    #
+    # === Parameters
+    #
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:file_name</tt> -- String. The path & name of the DICOM file which is to be written to disk.
+    # * <tt>:signature</tt> -- Boolean. If true, the 128 byte preamble and 'DICM' signature is prepended to the encoded string.
+    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
+    #
+    def write_elements(options={})
+      # Check if we are able to create given file:
+      open_file(options[:file_name])
+      # Go ahead and write if the file was opened successfully:
+      if @file
+        # Initiate necessary variables:
+        @transfer_syntax = options[:syntax]
+        # Until a DICOM write has completed successfully the status is 'unsuccessful':
+        @write_success = false
+        # Default explicitness of start of DICOM file:
+        @explicit = true
+        # Default endianness of start of DICOM files (little endian):
+        @str_endian = false
+        # When the file switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
+        @switched = false
+        # Items contained under the Pixel Data element needs some special attention to write correctly:
+        @enc_image = false
+        # Create a Stream instance to handle the encoding of content to a binary string:
+        @stream = Stream.new(nil, @str_endian)
+        # Tell the Stream instance which file to write to:
+        @stream.set_file(@file)
+        # Write the DICOM signature:
+        write_signature if options[:signature]
+        write_data_elements(children)
+        # As file has been written successfully, it can be closed.
+        @file.close
+        # Mark this write session as successful:
+        @write_success = true
+      end
+    end
+
+    # Writes the DICOM header signature (128 bytes + 'DICM').
+    #
+    def write_signature
+      # Write the string "DICM" which along with the empty bytes that
+      # will be put before it, identifies this as a valid DICOM file:
+      identifier = @stream.encode("DICM", "STR")
+      # Fill in 128 empty bytes:
+      filler = @stream.encode("00"*128, "HEX")
+      @stream.write(filler)
+      @stream.write(identifier)
     end
 
     # Encodes and writes a tag (the first part of the data element).
@@ -220,6 +269,17 @@ module DICOM
       # Write to binary string:
       bin_tag = @stream.encode_tag(tag)
       add_encoded(bin_tag)
+    end
+
+    # Writes the data element's pre-encoded value.
+    #
+    # === Parameters
+    #
+    # * <tt>bin</tt> -- The binary string value of this data element.
+    #
+    def write_value(bin)
+      # This is pretty straightforward, just dump the binary data to the file/string:
+      add_encoded(bin) if bin
     end
 
     # Encodes and writes the value representation (if it is to be written) and length value.
@@ -268,67 +328,6 @@ module DICOM
         # No VR written.
         # Writing value length (4 bytes):
         add_encoded(length4)
-      end
-    end
-
-    # Writes the data element's pre-encoded value.
-    #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- The binary string value of this data element.
-    #
-    def write_value(bin)
-      # This is pretty straightforward, just dump the binary data to the file/string:
-      add_encoded(bin) if bin
-    end
-
-
-    # Tests if the path/file is writable, creates any folders if necessary, and opens the file for writing.
-    #
-    # === Parameters
-    #
-    # * <tt>file</tt> -- A path/file string.
-    #
-    def open_file(file)
-      # Check if file already exists:
-      if File.exist?(file)
-        # Is it writable?
-        if File.writable?(file)
-          @file = File.new(file, "wb")
-        else
-          # Existing file is not writable:
-          logger.error("The program does not have permission or resources to create this file: #{file}")
-        end
-      else
-        # File does not exist.
-        # Check if this file's path contains a folder that does not exist, and therefore needs to be created:
-        folders = file.split(File::SEPARATOR)
-        if folders.length > 1
-          # Remove last element (which should be the file string):
-          folders.pop
-          path = folders.join(File::SEPARATOR)
-          # Check if this path exists:
-          unless File.directory?(path)
-            # We need to create (parts of) this path:
-            require 'fileutils'
-            FileUtils.mkdir_p(path)
-          end
-        end
-        # The path to this non-existing file is verified, and we can proceed to create the file:
-        @file = File.new(file, "wb")
-      end
-    end
-
-    # Toggles the status for enclosed pixel data.
-    #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- A data element (DataElement, Sequence or Item).
-    #
-    def check_encapsulated_image(element)
-      # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
-      if element.tag == PIXEL_TAG and element.parent.is_a?(DObject)
-        @enc_image = true if element.length <= 0
       end
     end
 
