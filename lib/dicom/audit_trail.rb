@@ -3,7 +3,7 @@ module DICOM
   # The AuditTrail class handles key/value storage for the Anonymizer.
   # When using the advanced Anonymization options such as enumeration
   # and UID replacement, the AuditTrail class keeps track of key/value
-  # pairs and dumps this information to a text file using the json format.
+  # pairs and dumps this information to a text file using the yaml format.
   # This enables us to ensure a unique relationship between the anonymized
   # values and the original values, as well as preserving this relationship
   # for later restoration of original values.
@@ -30,7 +30,7 @@ module DICOM
     #
     def initialize
       # The AuditTrail requires JSON for serialization:
-      require 'json'
+      require 'yaml'
       # Define the key/value hash used for tag records:
       @dictionary = Hash.new
     end
@@ -55,7 +55,7 @@ module DICOM
     # * <tt>file_name</tt> -- The path to a file containing a previously stored audit trail.
     #
     def load(file_name)
-      @dictionary = JSON.load(File.new(file_name, "r"))
+      @dictionary = YAML.load(File.new(file_name, "r"))
     end
 
     # Retrieves the replacement value used for the given tag and its original value.
@@ -100,7 +100,7 @@ module DICOM
       return replacement
     end
 
-    # Dumps the key/value pairs to a json string which is written to
+    # Dumps the key/value pairs to a yaml string which is written to
     # file as specified by the @file_name attribute of this instance.
     #
     #
@@ -109,7 +109,7 @@ module DICOM
     # * <tt>file_name</tt> -- The file name string to be used for storing & retrieving key/value pairs on disk.
     #
     def write(file_name)
-      str = JSON.pretty_generate(@dictionary)
+      str = @dictionary.to_yaml
       File.open(file_name, 'w') {|f| f.write(str) }
     end
 
