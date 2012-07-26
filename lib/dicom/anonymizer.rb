@@ -370,7 +370,7 @@ module DICOM
         @enumerations.delete_at(pos)
       end
     end
-    
+
     # Compeletely deletes a tag from the file
     #
     # === Parameters
@@ -402,7 +402,7 @@ module DICOM
     #
     # === Examples
     #
-    #   a.set_tag("0010,0010, :value => "MrAnonymous", :enum => true)
+    #   a.set_tag("0010,0010", :value => "MrAnonymous", :enum => true)
     #
     def set_tag(tag, options={})
       raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
@@ -661,7 +661,7 @@ module DICOM
       @tags = data[0]
       @values = data[1]
       @enumerations = data[2]
-      
+
       # Tags to be deleted completely during anonymization
       @delete_tags = [
       ]
