@@ -7,9 +7,6 @@ module DICOM
     # Include the Elemental mix-in module:
     include Elemental
 
-    # The (decoded) value of the data element.
-    attr_reader :value
-
     # Creates a Element instance.
     #
     # === Notes
@@ -54,19 +51,26 @@ module DICOM
         @name = options[:name] || name
         @vr = (options[:vr] ? options[:vr].upcase : vr)
       end
+      # Manage the parent relation if specified:
+      if options[:parent]
+        @parent = options[:parent]
+        @parent.add(self, :no_follow => true)
+      end
       # Value may in some cases be the binary string:
       unless options[:encoded]
-        @value = value
         # The Data Element may have a value, have no value and no binary, or have no value and only binary:
         if value
           # Is binary value provided or do we need to encode it?
           if options[:bin]
+            @value = value
             @bin = options[:bin]
           else
             if value == ""
+              @value = value
               @bin = ""
             else
-              @bin = encode(value)
+              # Set the value with our custom setter method to get proper encoding:
+              self.value = value
             end
           end
         else
@@ -78,11 +82,6 @@ module DICOM
       end
       # Let the binary decide the length:
       @length = @bin.length
-      # Manage the parent relation if specified:
-      if options[:parent]
-        @parent = options[:parent]
-        @parent.add(self, :no_follow => true)
-      end
     end
 
     # Returns true if the argument is an instance with attributes equal to self.
@@ -156,7 +155,7 @@ module DICOM
     def to_hash
       return {self.send(DICOM.key_representation) => value}
     end
-    
+
     # Returns self.
     #
     def to_element
@@ -175,12 +174,42 @@ module DICOM
       to_hash.to_yaml
     end
 
+    # The (decoded) value of the data element.
+    #
+    # === Notes
+    #
+    # Returned string values are automatically converted from their originally
+    # encoding (e.g. ISO8859-1 or ASCII-8BIT) to UTF-8 for convenience reasons.
+    # If the value string is wanted in its original encoding, extract the data
+    # element's bin attribute instead.
+    #
+    # Note that according to the DICOM Standard PS 3.5 C.12.1.1.2, the Character Set only applies
+    # to values of data elements of type SH, LO, ST, PN, LT or UT. Currently in ruby-dicom, all
+    # string values are encoding converted regardless of VR, but whether this causes any problems is uknown.
+    #
+    def value
+      if @value.is_a?(String)
+        # Unless this is actually the Character Set data element,
+        # get the character set (note that it may not be available):
+        character_set = (@tag != '0008,0005' && top_parent.is_a?(DObject)) ? top_parent.value('0008,0005') : nil
+        # Convert to UTF-8 from [original encoding]:
+        # In most cases the original encoding is IS0-8859-1 (ISO_IR 100), but if
+        # it is not specified in the DICOM object, or if the specified string
+        # is not recognized, ASCII-8BIT is assumed.
+        @value.encode('UTF-8', ENCODING_NAME[character_set] || 'ASCII-8BIT')
+        # If unpleasant encoding exceptions occur, the below version may be considered:
+        #@value.encode('UTF-8', ENCODING_NAME[character_set] || 'ASCII-8BIT', :invalid => :replace, :undef => :replace)
+      else
+        @value
+      end
+    end
+
     # Sets the value of the Element instance.
     #
     # === Notes
     #
-    # In addition to updating the value attribute, the specified value is encoded and used to
-    # update both the Element's binary and length attributes too.
+    # In addition to updating the value attribute, the specified value is encoded to binary
+    # and used to update the Element's bin and length attributes too.
     #
     # The specified value must be of a type that is compatible with the Element's value representation (vr).
     #
@@ -189,8 +218,20 @@ module DICOM
     # * <tt>new_value</tt> -- A custom value (String, Fixnum, etc..) that is assigned to the Element.
     #
     def value=(new_value)
-      @bin = encode(new_value)
-      @value = new_value
+      if new_value.is_a?(String)
+        # Unless this is actually the Character Set data element,
+        # get the character set (note that it may not be available):
+        character_set = (@tag != '0008,0005' && top_parent.is_a?(DObject)) ? top_parent.value('0008,0005') : nil
+        # Convert to [DObject encoding] from [input string encoding]:
+        # In most cases the DObject encoding is IS0-8859-1 (ISO_IR 100), but if
+        # it is not specified in the DICOM object, or if the specified string
+        # is not recognized, ASCII-8BIT is assumed.
+        @value = new_value.encode(ENCODING_NAME[character_set] || 'ASCII-8BIT', new_value.encoding.name)
+        @bin = encode(@value)
+      else
+        @value = new_value
+        @bin = encode(new_value)
+      end
       @length = @bin.length
     end
 
@@ -208,7 +249,7 @@ module DICOM
     def encode(formatted_value)
       return stream.encode_value(formatted_value, @vr)
     end
-    
+
     # Returns the attributes of this instance in an array (for comparison purposes).
     #
     def state

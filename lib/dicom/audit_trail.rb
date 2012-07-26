@@ -55,7 +55,7 @@ module DICOM
     # * <tt>file_name</tt> -- The path to a file containing a previously stored audit trail.
     #
     def load(file_name)
-      @dictionary = JSON.load(File.new(file_name, "r"))
+      @dictionary = JSON.load(File.new(file_name, "r:UTF-8"))
     end
 
     # Retrieves the replacement value used for the given tag and its original value.

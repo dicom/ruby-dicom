@@ -38,6 +38,8 @@ suppress_warnings do
   # No pixel data:
   DICOM::DCM_AT_NO_VALUE = 'samples/at_no_value.dcm'
   DICOM::DCM_AT_INVALID = 'samples/at_invalid.dcm'
+  DICOM::DCM_UTF8 = 'samples/encoding_utf8.dcm'
+  DICOM::DCM_ISO8859_1 = 'samples/encoding_iso8859-1.dcm'
   # Sample JSON files:
   DICOM::JSON_AUDIT_TRAIL = 'samples/json/audit_trail.json'
   # Directory for writing temporary files:
