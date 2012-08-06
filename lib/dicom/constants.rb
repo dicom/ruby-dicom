@@ -181,24 +181,7 @@ module DICOM
     'ISO_IR 166' => 'ISO-8859-11',
     'GB18030'    => 'GB18030',
     'ISO_IR 192' => 'UTF-8'
-  }.freeze
-
-  # The relationship between Encoding name and DICOM Character Set.
-  CHARACTER_SET = {
-    'ISO-8859-1' => 'ISO_IR 100',
-    'ISO-8859-2' => 'ISO_IR 101',
-    'ISO-8859-3' => 'ISO_IR 109',
-    'ISO-8859-4' => 'ISO_IR 110',
-    'ISO-8859-5' => 'ISO_IR 144',
-    'ISO-8859-6' => 'ISO_IR 127',
-    'ISO-8859-7' => 'ISO_IR 126',
-    'ISO-8859-8' => 'ISO_IR 138',
-    'ISO-8859-9' => 'ISO_IR 148',
-    'JIS_X0201' => 'ISO_IR 13',
-    'ISO-8859-11' => 'ISO_IR 166',
-    'GB18030' => 'GB18030',
-    'UTF-8' => 'ISO_IR 192'
-  }.freeze
+  }
 
 end
 
