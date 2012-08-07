@@ -415,7 +415,7 @@ module DICOM
       else
         # Add new elements:
         @tags << tag
-        @values << (options[:value] ? options[:value] : "")
+        @values << (options[:value] ? options[:value] : default_value(tag))
         @enumerations << (options[:enum] ? options[:enum] : false)
       end
     end
@@ -482,6 +482,24 @@ module DICOM
       end
     end
 
+    # Sets a default value to use for anonymizing the given tag.
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- A tag string.
+    #
+    def default_value(tag)
+      name, vr = LIBRARY.get_name_vr(tag)
+      conversion = VALUE_CONVERSION[vr] || :to_s
+      case conversion
+      when :to_i then return 0
+      when :to_f then return 0.0
+      else
+        # Assume type is string and return an empty string:
+        return ""
+      end
+    end
+
     # Handles the enumeration for the given data element tag.
     # If its value has been encountered before, its corresponding enumerated
     # replacement value is retrieved, and if a new original value is encountered,
@@ -503,7 +521,11 @@ module DICOM
             # This original value has not been encountered yet. Determine the index to use.
             index = @audit_trail.records(@tags[j]).length + 1
             # Create the replacement value:
-            replacement = @values[j] + index.to_s
+            if @values[j].is_a?(String)
+              replacement = @values[j] + index.to_s
+            else
+              replacement = @values[j] + index
+            end
             # Add this tag record to the audit trail:
             @audit_trail.add_record(@tags[j], original, replacement)
           end

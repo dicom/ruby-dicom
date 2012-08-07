@@ -379,7 +379,7 @@ module DICOM
       end
 
     end
-    
+
     describe "#delete_tag" do
 
       it "should raise an ArgumentError when a non-string is passed as an argument" do
@@ -424,10 +424,22 @@ module DICOM
         a.value("0040,2008").should eql "none"
       end
 
-      it "should add the tag, using the default empty string as value, when no value is specified" do
+      it "should add the tag, using the default empty string as value, when no value is specified for this string type element" do
         a = Anonymizer.new
         a.set_tag("0040,2008")
         a.value("0040,2008").should eql ""
+      end
+
+      it "should add the tag, using 0 as the default value for this integer type element" do
+        a = Anonymizer.new
+        a.set_tag("0010,21C0")
+        a.value("0010,21C0").should eql 0
+      end
+
+      it "should add the tag, using 0.0 as the default value for this float type element" do
+        a = Anonymizer.new
+        a.set_tag("0010,9431")
+        a.value("0010,9431").should eql 0.0
       end
 
       it "should update the tag, with the new value, when a pre-existing tag is specified" do
