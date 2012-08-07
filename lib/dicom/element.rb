@@ -218,7 +218,8 @@ module DICOM
     # * <tt>new_value</tt> -- A custom value (String, Fixnum, etc..) that is assigned to the Element.
     #
     def value=(new_value)
-      if new_value.is_a?(String)
+      conversion = VALUE_CONVERSION[@vr] || :to_s
+      if conversion == :to_s
         # Unless this is actually the Character Set data element,
         # get the character set (note that it may not be available):
         character_set = (@tag != '0008,0005' && top_parent.is_a?(DObject)) ? top_parent.value('0008,0005') : nil
@@ -226,11 +227,18 @@ module DICOM
         # In most cases the DObject encoding is IS0-8859-1 (ISO_IR 100), but if
         # it is not specified in the DICOM object, or if the specified string
         # is not recognized, ASCII-8BIT is assumed.
-        @value = new_value.encode(ENCODING_NAME[character_set] || 'ASCII-8BIT', new_value.encoding.name)
+        @value = new_value.to_s.encode(ENCODING_NAME[character_set] || 'ASCII-8BIT', new_value.to_s.encoding.name)
         @bin = encode(@value)
       else
-        @value = new_value
-        @bin = encode(new_value)
+        # We may have an array (of numbers) which needs to be passed directly to
+        # the encode method instead of being forced into a numerical:
+        if new_value.is_a?(Array)
+          @value = new_value
+          @bin = encode(@value)
+        else
+          @value = new_value.send(conversion)
+          @bin = encode(@value)
+        end
       end
       @length = @bin.length
     end
