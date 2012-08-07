@@ -461,6 +461,7 @@ module DICOM
         "UT" => "\x20",
         # Zero byte:
         "AT" => "\x00",
+        "BY" => "\x00",
         "FL" => "\x00",
         "FD" => "\x00",
         "OB" => "\x00",
