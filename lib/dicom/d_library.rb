@@ -154,40 +154,32 @@ module DICOM
           # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
           if tag.element == GROUP_LENGTH
             # Group length:
-            name = "Group Length"
-            vr = "UL"
+            values = [["UL"], "Group Length"]
           elsif tag[0..6] == "0020,31"
             # Source Image ID's (Retired):
             values = @tags["0020,31xx"]
-            name = values[1]
-            vr = values[0][0]
           elsif tag.group == "1000" and tag.element =~ /\A\h{3}[0-5]\z/
             # Group 1000,xxx[0-5] (Retired):
-            new_tag = tag.group + "xx" + tag.element[3..3]
+            new_tag = tag.group + ",xxx" + tag.element[3..3]
             values = @tags[new_tag]
           elsif tag.group == "1010"
             # Group 1010,xxxx (Retired):
-            new_tag = tag.group + "xxxx"
+            new_tag = tag.group + ",xxxx"
             values = @tags[new_tag]
           elsif tag[0..1] == "50" or tag[0..1] == "60"
             # Group 50xx (Retired) and 60xx:
             new_tag = tag[0..1]+"xx"+tag[4..8]
             values = @tags[new_tag]
-            if values
-              name = values[1]
-              vr = values[0][0]
-            end
           elsif tag[0..1] == "7F" and tag[5..6] == "00"
             # Group 7Fxx,00[10,11,20,30,40] (Retired):
             new_tag = tag[0..1]+"xx"+tag[4..8]
             values = @tags[new_tag]
-            if values
-              name = values[1]
-              vr = values[0][0]
-            end
           end
-          # If none of the above checks yielded a result, the tag is unknown:
-          unless name
+          # Extract name/vr, or if nothing matched, mark it as unknown:
+          if values
+            name = values[1]
+            vr = values[0][0]
+          else
             name = "Unknown"
             vr = "UN"
           end

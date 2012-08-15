@@ -1,0 +1,215 @@
+# encoding: ASCII-8BIT
+
+require 'spec_helper'
+
+module DICOM
+
+  describe DLibrary do
+
+    context "#get_name_vr [Command Elements]" do
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0000,0000')
+        name.should eql 'Command Group Length'
+        vr.should eql 'UL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0000,1005')
+        name.should eql 'Attribute Identifier List'
+        vr.should eql 'AT'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0000,51b0')
+        name.should eql 'Overlays'
+        vr.should eql 'US'
+      end
+
+    end
+
+
+    context "#get_name_vr [File Meta Elements]" do
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0002,0000')
+        name.should eql 'File Meta Information Group Length'
+        vr.should eql 'UL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0002,0010')
+        name.should eql 'Transfer Syntax UID'
+        vr.should eql 'UI'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0002,0102')
+        name.should eql 'Private Information'
+        vr.should eql 'OB'
+      end
+
+    end
+
+
+    context "#get_name_vr [Directory Structuring Elements]" do
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0004,1130')
+        name.should eql 'File-set ID'
+        vr.should eql 'CS'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0004,1220')
+        name.should eql 'Directory Record Sequence'
+        vr.should eql 'SQ'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0004,1600')
+        name.should eql 'Number of References'
+        vr.should eql 'UL'
+      end
+
+    end
+
+
+    context "#get_name_vr [Data Elements]" do
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0008,0001')
+        name.should eql 'Length to End'
+        vr.should eql 'UL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0008,0018')
+        name.should eql 'SOP Instance UID'
+        vr.should eql 'UI'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0008,0034')
+        name.should eql 'Overlay Time'
+        vr.should eql 'TM'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0018,9511')
+        name.should eql 'Secondary Positioner Scan Start Angle'
+        vr.should eql 'FL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0054,0039')
+        name.should eql 'Phase Description'
+        vr.should eql 'CS'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('3002,0022')
+        name.should eql 'Radiation Machine SAD'
+        vr.should eql 'DS'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('1000,ABC0') # (1000,xxx0)
+        name.should eql 'Escape Triplet'
+        vr.should eql 'US'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('1000,DEF5') # (1000,xxx5)
+        name.should eql 'Shift Table Triplet'
+        vr.should eql 'US'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('1010,1234') # (1010,xxxx)
+        name.should eql 'Zonal Map'
+        vr.should eql 'US'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('5012,2600') # (50xx,2600)
+        name.should eql 'Curve Referenced Overlay Sequence'
+        vr.should eql 'SQ'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('60CC,0011') # (60xx,0011)
+        name.should eql 'Overlay Columns'
+        vr.should eql 'US'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('60EE,0110') # (60xx,0110)
+        name.should eql 'Overlay Format'
+        vr.should eql 'CS'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('7FAA,0020') # (7Fxx,0020)
+        name.should eql 'Variable Coefficients SDVN'
+        vr.should eql 'OW'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('7FE0,0010')
+        name.should eql 'Pixel Data'
+        vr.should eql 'OW' # (OW or OB)
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('FFFE,E000')
+        name.should eql 'Item'
+        vr.should eql '  ' # (not defined)
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('FFFE,E00D')
+        name.should eql 'Item Delimitation Item'
+        vr.should eql '  ' # (not defined)
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('FFFE,E0DD')
+        name.should eql 'Sequence Delimitation Item'
+        vr.should eql '  ' # (not defined)
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0008,0000') # (Group Length)
+        name.should eql 'Group Length'
+        vr.should eql 'UL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('7FE0,0000') # (Group Length)
+        name.should eql 'Group Length'
+        vr.should eql 'UL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('1111,0000') # (Private Group Length)
+        name.should eql 'Group Length'
+        vr.should eql 'UL'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('AAAA,FFFF') # (An undefined, but not private tag)
+        name.should eql 'Unknown'
+        vr.should eql 'UN'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('1111,2222') # (A private tag)
+        name.should eql 'Private'
+        vr.should eql 'UN'
+      end
+
+    end
+
+  end
+end
