@@ -16,12 +16,20 @@ module DICOM
     # Creates a DLibrary instance.
     #
     def initialize
-      # Load the data elements hash, where the keys are tag strings, and values
-      # are two-element arrays [vr, name] (where vr itself is an array of 1-3 elements):
-      @tags = Dictionary.load_data_elements
-      # Load UID hash (DICOM unique identifiers), where the keys are UID strings,
-      # and values are two-element arrays [description, type]:
-      @uid = Dictionary.load_uid
+      # Load the elements dictionary:
+      @tags = Hash.new
+      File.open('dictionary/elements.txt').each do |record|
+         fields = record.split("\t")
+         # Use tags as key and [vr, name] as value (where vr itself is an array of 1-3 elements):
+         @tags[fields[0]] = [fields[2].split(","), fields[1]]
+       end
+      # Load the unique identifiers dictionary:
+      @uid = Hash.new
+      File.open('dictionary/uids.txt').each do |record|
+         fields = record.split("\t")
+         # Use UIDs as key and [name, type] as value:
+         @uid[fields[0]] = [fields[1], fields[2]]
+       end
       create_method_conversion_tables
     end
 

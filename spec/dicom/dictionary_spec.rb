@@ -6,6 +6,46 @@ module DICOM
 
   describe DLibrary do
 
+    context "#get_syntax_description" do
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.1.1')
+        name.should eql 'Verification SOP Class'
+      end
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.1.2.4.52') # Retired
+        name.should eql 'JPEG Extended (Process 3 & 5) (Retired)'
+      end
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.1.2.6.2')
+        name.should eql 'XML Encoding'
+      end
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.5.1.1.4.2') # Retired
+        name.should eql 'Referenced Image Box SOP Class (Retired)'
+      end
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.5.1.4.1.1.481.8')
+        name.should eql 'RT Ion Plan Storage'
+      end
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.15.0.4.8')
+        name.should eql 'dicomTransferCapability'
+      end
+
+      it "should return the expected Name corresponding to this UID" do
+        name = LIBRARY.get_syntax_description('1.2.840.10008.15.1.1') # New UID in the 2011 edition
+        name.should eql 'Universal Coordinated Time'
+      end
+
+    end
+
+
     context "#get_name_vr [Command Elements]" do
 
       it "should return the expected Name and VR for this tag" do
@@ -21,7 +61,7 @@ module DICOM
       end
 
       it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.get_name_vr('0000,51b0')
+        name, vr = LIBRARY.get_name_vr('0000,51B0') # Retired command element
         name.should eql 'Overlays'
         vr.should eql 'US'
       end
@@ -111,6 +151,12 @@ module DICOM
         name, vr = LIBRARY.get_name_vr('3002,0022')
         name.should eql 'Radiation Machine SAD'
         vr.should eql 'DS'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.get_name_vr('0014,4056') # New tag in the 2011 edition
+        name.should eql 'Coupling Medium'
+        vr.should eql 'ST'
       end
 
       it "should return the expected Name and VR for this tag" do
