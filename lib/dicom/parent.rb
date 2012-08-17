@@ -205,6 +205,82 @@ module DICOM
       return total_count
     end
 
+    # Deletes the specified element from this parent.
+    #
+    # === Parameters
+    #
+    # * <tt>tag</tt> -- A tag string which specifies the element to be deleted (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
+    # * <tt>options</tt> -- A hash of parameters.
+    #
+    # === Options
+    #
+    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is deleted.
+    #
+    # === Examples
+    #
+    #   # Delete an Element from a DObject instance:
+    #   dcm.delete("0008,0090")
+    #   # Delete Item 1 from a specific Sequence:
+    #   dcm["3006,0020"].delete(1)
+    #
+    def delete(tag, options={})
+      if tag.is_a?(String) or tag.is_a?(Integer)
+        raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
+        raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
+      else
+        raise ArgumentError, "Expected String or Integer, got #{tag.class}."
+      end
+      # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
+      element = self[tag]
+      if element
+        element.parent = nil unless options[:no_follow]
+        @tags.delete(tag)
+      end
+    end
+
+    # Deletes all child elements from this parent.
+    #
+    def delete_children
+      @tags.each_key do |tag|
+        delete(tag)
+      end
+    end
+
+    # Deletes all data elements of the specified group from this parent.
+    #
+    # === Parameters
+    #
+    # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
+    #
+    # === Examples
+    #
+    #   # Delete the File Meta Group of a DICOM object:
+    #   dcm.delete_group("0002")
+    #
+    def delete_group(group_string)
+      group_elements = group(group_string)
+      group_elements.each do |element|
+        delete(element.tag)
+      end
+    end
+
+    # Deletes all private data elements from the child elements of this parent.
+    #
+    # === Examples
+    #
+    #   # Delete all private elements from a DObject instance:
+    #   dcm.delete_private
+    #   # Delete only private elements belonging to a specific Sequence:
+    #   dcm["3006,0020"].delete_private
+    #
+    def delete_private
+      # Iterate all children, and repeat recursively if a child itself has children, to delete all private data elements:
+      children.each do |element|
+        delete(element.tag) if element.tag.private?
+        element.delete_private if element.children?
+      end
+    end
+
     # Iterates the children of this parent, calling <tt>block</tt> for each child.
     #
     def each(&block)
@@ -426,6 +502,57 @@ module DICOM
       items.any?
     end
 
+    # Sets the length of a Sequence or Item.
+    #
+    # === Notes
+    #
+    # Currently, Ruby DICOM does not use sequence/item lengths when writing DICOM files
+    # (it sets the length to -1, which means UNDEFINED). Therefore, in practice, it isn't
+    # necessary to use this method, at least as far as writing (valid) DICOM files is concerned.
+    #
+    # === Parameters
+    #
+    # * <tt>new_length</tt> -- Fixnum. The new length to assign to the Sequence/Item.
+    #
+    def length=(new_length)
+      unless self.is_a?(DObject)
+        @length = new_length
+      else
+        raise "Length can not be set for a DObject instance."
+      end
+    end
+
+    # Finds and returns the maximum character lengths of name and length which occurs for any child element,
+    # as well as the maximum number of generations of elements.
+    #
+    # === Notes
+    #
+    # This method is not intended for external use, but for technical reasons (the fact that is called between
+    # instances of different classes), cannot be made private.
+    #
+    # The method is used by the print() method to achieve a proper format in its output.
+    #
+    def max_lengths
+      max_name = 0
+      max_length = 0
+      max_generations = 0
+      children.each do |element|
+        if element.children?
+          max_nc, max_lc, max_gc = element.max_lengths
+          max_name = max_nc if max_nc > max_name
+          max_length = max_lc if max_lc > max_length
+          max_generations = max_gc if max_gc > max_generations
+        end
+        n_length = element.name.length
+        l_length = element.length.to_s.length
+        generations = element.parents.length
+        max_name = n_length if n_length > max_name
+        max_length = l_length if l_length > max_length
+        max_generations = generations if generations > max_generations
+      end
+      return max_name, max_length, max_generations
+    end
+
     # Handles missing methods, which in our case is intended to be dynamic
     # method names matching DICOM elements in the dictionary.
     #
@@ -471,26 +598,6 @@ module DICOM
       end
       # Forward to Object#method_missing:
       super
-    end
-
-    # Sets the length of a Sequence or Item.
-    #
-    # === Notes
-    #
-    # Currently, Ruby DICOM does not use sequence/item lengths when writing DICOM files
-    # (it sets the length to -1, which means UNDEFINED). Therefore, in practice, it isn't
-    # necessary to use this method, at least as far as writing (valid) DICOM files is concerned.
-    #
-    # === Parameters
-    #
-    # * <tt>new_length</tt> -- Fixnum. The new length to assign to the Sequence/Item.
-    #
-    def length=(new_length)
-      unless self.is_a?(DObject)
-        @length = new_length
-      else
-        raise "Length can not be set for a DObject instance."
-      end
     end
 
     # Prints all child elements of this particular parent.
@@ -539,113 +646,6 @@ module DICOM
         puts "Notice: Object #{self} is empty (contains no data elements)!"
       end
       return elements
-    end
-
-    # Finds and returns the maximum character lengths of name and length which occurs for any child element,
-    # as well as the maximum number of generations of elements.
-    #
-    # === Notes
-    #
-    # This method is not intended for external use, but for technical reasons (the fact that is called between
-    # instances of different classes), cannot be made private.
-    #
-    # The method is used by the print() method to achieve a proper format in its output.
-    #
-    def max_lengths
-      max_name = 0
-      max_length = 0
-      max_generations = 0
-      children.each do |element|
-        if element.children?
-          max_nc, max_lc, max_gc = element.max_lengths
-          max_name = max_nc if max_nc > max_name
-          max_length = max_lc if max_lc > max_length
-          max_generations = max_gc if max_gc > max_generations
-        end
-        n_length = element.name.length
-        l_length = element.length.to_s.length
-        generations = element.parents.length
-        max_name = n_length if n_length > max_name
-        max_length = l_length if l_length > max_length
-        max_generations = generations if generations > max_generations
-      end
-      return max_name, max_length, max_generations
-    end
-
-    # Deletes the specified element from this parent.
-    #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- A tag string which specifies the element to be deleted (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is deleted.
-    #
-    # === Examples
-    #
-    #   # Delete an Element from a DObject instance:
-    #   dcm.delete("0008,0090")
-    #   # Delete Item 1 from a specific Sequence:
-    #   dcm["3006,0020"].delete(1)
-    #
-    def delete(tag, options={})
-      if tag.is_a?(String) or tag.is_a?(Integer)
-        raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
-        raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
-      else
-        raise ArgumentError, "Expected String or Integer, got #{tag.class}."
-      end
-      # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
-      element = self[tag]
-      if element
-        element.parent = nil unless options[:no_follow]
-        @tags.delete(tag)
-      end
-    end
-
-    # Deletes all child elements from this parent.
-    #
-    def delete_children
-      @tags.each_key do |tag|
-        delete(tag)
-      end
-    end
-
-    # Deletes all data elements of the specified group from this parent.
-    #
-    # === Parameters
-    #
-    # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
-    #
-    # === Examples
-    #
-    #   # Delete the File Meta Group of a DICOM object:
-    #   dcm.delete_group("0002")
-    #
-    def delete_group(group_string)
-      group_elements = group(group_string)
-      group_elements.each do |element|
-        delete(element.tag)
-      end
-    end
-
-    # Deletes all private data elements from the child elements of this parent.
-    #
-    # === Examples
-    #
-    #   # Delete all private elements from a DObject instance:
-    #   dcm.delete_private
-    #   # Delete only private elements belonging to a specific Sequence:
-    #   dcm["3006,0020"].delete_private
-    #
-    def delete_private
-      # Iterate all children, and repeat recursively if a child itself has children, to delete all private data elements:
-      children.each do |element|
-        delete(element.tag) if element.tag.private?
-        element.delete_private if element.children?
-      end
     end
 
     # Resets the length of a Sequence or Item to -1, which is the number used for 'undefined' length.
