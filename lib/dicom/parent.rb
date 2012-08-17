@@ -583,7 +583,7 @@ module DICOM
             # What kind of element to create?
             if tag == "FFFE,E000"
               return self.add_item
-            elsif LIBRARY.tags[tag][0][0] == "SQ"
+            elsif LIBRARY.tags[tag].vr == "SQ"
               return self.add(Sequence.new(tag))
             else
               return self.add(Element.new(tag, *args))

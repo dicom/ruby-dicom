@@ -23,6 +23,7 @@ require_relative 'dicom/elemental'
 # Subclasses and independent classes:
 require_relative 'dicom/d_client'
 require_relative 'dicom/d_library'
+require_relative 'dicom/dictionary_element'
 require_relative 'dicom/d_object'
 require_relative 'dicom/d_read'
 require_relative 'dicom/d_server'

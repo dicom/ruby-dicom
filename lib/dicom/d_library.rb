@@ -19,16 +19,15 @@ module DICOM
       # Load the elements dictionary:
       @tags = Hash.new
       File.open('dictionary/elements.txt').each do |record|
-         fields = record.split("\t")
-         # Use tags as key and [vr, name] as value (where vr itself is an array of 1-3 elements):
-         @tags[fields[0]] = [fields[2].split(","), fields[1]]
+        fields = record.split("\t")
+        @tags[fields[0]] = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3], fields[4])
        end
       # Load the unique identifiers dictionary:
       @uid = Hash.new
       File.open('dictionary/uids.txt').each do |record|
-         fields = record.split("\t")
-         # Use UIDs as key and [name, type] as value:
-         @uid[fields[0]] = [fields[1], fields[2]]
+        fields = record.split("\t")
+        # Use UIDs as key and [name, type] as value:
+        @uid[fields[0]] = [fields[1], fields[2]]
        end
       create_method_conversion_tables
     end
@@ -154,39 +153,42 @@ module DICOM
         vr = "UN"
       else
         # Check the dictionary:
-        values = @tags[tag]
-        if values
-          name = values[1]
-          vr = values[0][0]
+        element = @tags[tag]
+        if element
+          name = element.name
+          vr = element.vr
         else
           # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
           if tag.element == GROUP_LENGTH
+            # Create a group length element:
+            element = DictionaryElement.new(tag, 'Group Length', ['UL'], '1', '')
             # Group length:
-            values = [["UL"], "Group Length"]
-          elsif tag[0..6] == "0020,31"
-            # Source Image ID's (Retired):
-            values = @tags["0020,31xx"]
+            #element = [["UL"], "Group Length"]
           elsif tag.group == "1000" and tag.element =~ /\A\h{3}[0-5]\z/
             # Group 1000,xxx[0-5] (Retired):
             new_tag = tag.group + ",xxx" + tag.element[3..3]
-            values = @tags[new_tag]
+            de = @tags[new_tag]
+            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
           elsif tag.group == "1010"
             # Group 1010,xxxx (Retired):
             new_tag = tag.group + ",xxxx"
-            values = @tags[new_tag]
+            de = @tags[new_tag]
+            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
           elsif tag[0..1] == "50" or tag[0..1] == "60"
             # Group 50xx (Retired) and 60xx:
             new_tag = tag[0..1]+"xx"+tag[4..8]
-            values = @tags[new_tag]
+            de = @tags[new_tag]
+            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
           elsif tag[0..1] == "7F" and tag[5..6] == "00"
             # Group 7Fxx,00[10,11,20,30,40] (Retired):
             new_tag = tag[0..1]+"xx"+tag[4..8]
-            values = @tags[new_tag]
+            de = @tags[new_tag]
+            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
           end
           # Extract name/vr, or if nothing matched, mark it as unknown:
-          if values
-            name = values[1]
-            vr = values[0][0]
+          if element
+            name = element.name
+            vr = element.vr
           else
             name = "Unknown"
             vr = "UN"
@@ -208,9 +210,9 @@ module DICOM
       name = name.to_s.downcase
       @tag_name_pairs_cache ||= Hash.new
       return @tag_name_pairs_cache[name] unless @tag_name_pairs_cache[name].nil?
-      @tags.each_pair do |key, value|
-        next unless value[1].downcase == name
-        tag = key
+      @tags.each_value do |element|
+        next unless element.name.downcase == name
+        tag = element.tag
         break
       end
       @tag_name_pairs_cache[name]=tag
@@ -275,8 +277,8 @@ module DICOM
         @methods_from_names = Hash.new
         @names_from_methods = Hash.new
         # Fill the hashes:
-        @tags.each_pair do |key, value|
-          name = value[1]
+        @tags.each_value do |element|
+          name = element.name
           method_name = name.dicom_methodize
           @methods_from_names[name] = method_name.to_sym
           @names_from_methods[method_name.to_sym] = name
