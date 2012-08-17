@@ -4,7 +4,7 @@ require 'spec_helper'
 
 
 module DICOM
-  
+
   describe Parent do
 
     describe "#[]" do
@@ -78,11 +78,25 @@ module DICOM
         expect {dcm.add(Item.new)}.to raise_error(ArgumentError)
       end
 
-      it "should raise an error when the it is called on a Sequence" do
+      it "should raise an error when the it is called on a Sequence with an Element argument" do
         seq = Sequence.new("0008,1140")
         name = Element.new("0010,0010", "John_Doe")
         expect {seq.add(name)}.to raise_error
       end
+
+# It should be possible to add Data Set Trailing Padding elements anywhere in a DICOM file, but
+# this requires some deeper changes to the library, so we'll keep the tests on hold until a
+# clever implementation has been thought out:
+=begin
+      it "should allow the special Data Set Trailing Padding Element to be added to a Sequence" do
+        seq = Sequence.new('0008,1140')
+        padding = Element.new('FFFC,FFFC', 0)
+        seq.add(padding)
+        seq.exists?('FFFC,FFFC').should be_true
+        seq.children.length.should eql 1
+        seq['FFFC,FFFC'].should eql padding
+      end
+=end
 
     end
 
@@ -641,7 +655,7 @@ module DICOM
       end
 
     end
-    
+
   end
 
 end
