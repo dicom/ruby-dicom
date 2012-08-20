@@ -15,8 +15,28 @@ module DICOM
         element.tag.should eql tag
       end
 
-      it "should return nil when no match is made" do
-        LIBRARY.element('FFFF,ABCD').should be_nil
+      it "should create a 'group length element' when given a group length type tag" do
+        element = LIBRARY.element('0010,0000')
+        element.name.should eql 'Group Length'
+        element.vr.should eql 'UL'
+      end
+
+      it "should create a 'group length element' when given a private group length type tag" do
+        element = LIBRARY.element('0011,0000')
+        element.name.should eql 'Group Length'
+        element.vr.should eql 'UL'
+      end
+
+      it "should create a 'private element' when given a private type tag" do
+        element = LIBRARY.element('0011,ABCD')
+        element.name.should eql 'Private'
+        element.vr.should eql 'UN'
+      end
+
+      it "should create an 'unknown element' when no match is made" do
+        element = LIBRARY.element('EEEE,ABCD')
+        element.name.should eql 'Unknown'
+        element.vr.should eql 'UN'
       end
 
     end

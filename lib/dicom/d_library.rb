@@ -99,11 +99,37 @@ module DICOM
 
     # Identifies the DictionaryElement that corresponds to the given tag.
     #
+    # @note If a given tag doesn't return a dictionary match, a new DictionaryElement is created.
+    #   For private tags, a name 'Private' and VR 'UN' is assigned.
+    #   For unknown tags, a name 'Unknown' and VR 'UN' is assigned.
     # @param [String] tag The tag of the element.
-    # @return [DictionaryElement, NilClass] The corresponding DictionaryElement (or nil).
+    # @return [DictionaryElement] A corresponding DictionaryElement.
     #
     def element(tag)
-      @tags[tag]
+      element = @tags[tag]
+      unless element
+        if tag.group_length?
+          element = DictionaryElement.new(tag, 'Group Length', ['UL'], '1', '')
+        else
+          if tag.private?
+            element = DictionaryElement.new(tag, 'Private', ['UN'], '1', '')
+          else
+            if !(de = @tags["#{tag[0..3]},xxx#{tag[8]}"]).nil? # 1000,xxxh
+              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
+            elsif !(de = @tags["#{tag[0..3]},xxxx"]).nil? # 1010,xxxx
+              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
+            elsif !(de = @tags["#{tag[0..1]}xx,#{tag[5..8]}"]).nil? # hhxx,hhhh
+              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
+            elsif !(de = @tags["#{tag[0..6]}x#{tag[8]}"]).nil? # 0028,hhxh
+              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
+            else
+              # We are facing an unknown (but not private) tag:
+              element = DictionaryElement.new(tag, 'Unknown', ['UN'], '1', '')
+            end
+          end
+        end
+      end
+      return element
     end
 
     # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,
@@ -190,54 +216,8 @@ module DICOM
     # * <tt>tag</tt> -- String. A data element tag.
     #
     def name_and_vr(tag)
-      if tag.private? and tag.element != GROUP_LENGTH
-        name = 'Private'
-        vr = 'UN'
-      else
-        # Check the dictionary:
-        element = @tags[tag]
-        if element
-          name = element.name
-          vr = element.vr
-        else
-          # For the tags that are not recognised, we need to do some additional testing to see if it is one of the special cases:
-          if tag.element == GROUP_LENGTH
-            # Create a group length element:
-            element = DictionaryElement.new(tag, 'Group Length', ['UL'], '1', '')
-            # Group length:
-            #element = [['UL'], 'Group Length']
-          elsif tag.group == '0028'
-            # Group 0028,0[4,8]x[0-9] (Retired):
-            new_tag = tag[0..6] + 'x' + tag[8]
-            de = @tags[new_tag]
-            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          elsif tag.group == '1000' and tag.element =~ /\A\h{3}[0-5]\z/
-            # Group 1000,xxx[0-5] (Retired):
-            new_tag = tag.group + ',xxx' + tag.element[3..3]
-            de = @tags[new_tag]
-            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          elsif tag.group == '1010'
-            # Group 1010,xxxx (Retired):
-            new_tag = tag.group + ',xxxx'
-            de = @tags[new_tag]
-            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          elsif tag[0..1] == '50' or tag[0..1] == '60' or tag[0..1] == '7F'
-            # Group 50xx (Retired), 60xx and 7Fxx,00[10,11,20,30,40] (Retired):
-            new_tag = tag[0..1]+'xx'+tag[4..8]
-            de = @tags[new_tag]
-            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          end
-          # Extract name/vr, or if nothing matched, mark it as unknown:
-          if element
-            name = element.name
-            vr = element.vr
-          else
-            name = 'Unknown'
-            vr = 'UN'
-          end
-        end
-      end
-      return name, vr
+      de = element(tag)
+      return de.name, de.vr
     end
 
     # Checks the validity of the specified transfer syntax UID and determines the
