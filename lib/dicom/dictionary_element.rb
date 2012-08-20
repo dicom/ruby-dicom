@@ -32,6 +32,14 @@ module DICOM
       @retired = retired
     end
 
+    # Checks if the element is private by analyzing its tag string.
+    #
+    # @return [Boolean] true if the element is private, and false if not.
+    #
+    def private?
+      @tag.private?
+    end
+
     # Converts the retired status string to a boolean.
     #
     # @return [Boolean] true if the element is retired, and false if not.
