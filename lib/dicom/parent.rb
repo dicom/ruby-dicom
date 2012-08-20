@@ -581,9 +581,9 @@ module DICOM
           # Assignment:
           unless args.length==0 || args[0].nil?
             # What kind of element to create?
-            if tag == "FFFE,E000"
+            if tag == 'FFFE,E000'
               return self.add_item
-            elsif LIBRARY.tags[tag].vr == "SQ"
+            elsif LIBRARY.element(tag).vr == 'SQ'
               return self.add(Sequence.new(tag))
             else
               return self.add(Element.new(tag, *args))

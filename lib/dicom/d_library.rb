@@ -8,8 +8,6 @@ module DICOM
     attr_reader :methods_from_names
     # A hash with element method name symbols as key and name strings as value.
     attr_reader :names_from_methods
-    # A hash containing tags as key and an array as value, where the array contains data element vr and name.
-    attr_reader :tags
     # A hash containing UIDs as key and an array as value, where the array contains name and type.
     attr_reader :uid
 
@@ -97,6 +95,15 @@ module DICOM
         result = true if value[1] == "Transfer Syntax"
       end
       return result
+    end
+
+    # Identifies the DictionaryElement that corresponds to the given tag.
+    #
+    # @param [String] tag The tag of the element.
+    # @return [DictionaryElement, NilClass] The corresponding DictionaryElement (or nil).
+    #
+    def element(tag)
+      @tags[tag]
     end
 
     # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,

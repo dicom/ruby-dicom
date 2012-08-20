@@ -6,6 +6,22 @@ module DICOM
 
   describe DLibrary do
 
+    context "#element" do
+
+      it "should return the matching DictionaryElement" do
+        tag = '0010,0010'
+        element = LIBRARY.element(tag)
+        element.should be_a DictionaryElement
+        element.tag.should eql tag
+      end
+
+      it "should return nil when no match is made" do
+        LIBRARY.element('FFFF,ABCD').should be_nil
+      end
+
+    end
+
+
     context "#get_syntax_description" do
 
       it "should return the expected Name corresponding to this UID" do
