@@ -54,7 +54,7 @@ module DICOM
       # STEP 2:
       # Access library to retrieve the data element name and VR from the tag we just read:
       # (Note: VR will be overwritten in the next step if the DICOM string contains VR (explicit encoding))
-      name, vr = LIBRARY.get_name_vr(tag)
+      name, vr = LIBRARY.name_and_vr(tag)
       # STEP 3:
       # Read VR (if it exists) and the length value:
       vr, length = read_vr_length(vr,tag)

@@ -46,9 +46,9 @@ module DICOM
         @name = options[:name]
         @vr = options[:vr]
       else
-        name, vr = LIBRARY.get_name_vr(tag)
+        name, vr = LIBRARY.name_and_vr(tag)
         @name = options[:name] || name
-        @vr = options[:vr] || "SQ"
+        @vr = options[:vr] || 'SQ'
       end
       @length = options[:length] || -1
       if options[:parent]

@@ -47,7 +47,7 @@ module DICOM
         @name = options[:name]
         @vr = options[:vr].upcase
       else
-        name, vr = LIBRARY.get_name_vr(tag)
+        name, vr = LIBRARY.name_and_vr(tag)
         @name = options[:name] || name
         @vr = (options[:vr] ? options[:vr].upcase : vr)
       end
@@ -67,9 +67,9 @@ module DICOM
             @value = value
             @bin = options[:bin]
           else
-            if value == ""
+            if value == ''
               @value = value
-              @bin = ""
+              @bin = ''
             else
               # Set the value with our custom setter method to get proper encoding:
               self.value = value
@@ -77,7 +77,7 @@ module DICOM
           end
         else
           # When no value is present, we set the binary as an empty string, unless the binary is specified:
-          @bin = options[:bin] || ""
+          @bin = options[:bin] || ''
         end
       else
         @bin = value

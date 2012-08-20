@@ -36,7 +36,7 @@ module DICOM
     def as_method(value)
       case true
       when value.tag?
-        name, vr = get_name_vr(value)
+        name, vr = name_and_vr(value)
         @methods_from_names[name]
       when value.dicom_name?
         @methods_from_names[value]
@@ -53,7 +53,7 @@ module DICOM
     def as_name(value)
       case true
       when value.tag?
-        name, vr = get_name_vr(value)
+        name, vr = name_and_vr(value)
         name
       when value.dicom_name?
         @methods_from_names.has_key?(value) ? value.to_s : nil
@@ -70,7 +70,7 @@ module DICOM
     def as_tag(value)
       case true
       when value.tag?
-        name, vr = get_name_vr(value)
+        name, vr = name_and_vr(value)
         name.nil? ? nil : value
       when value.dicom_name?
         get_tag(value)
@@ -142,8 +142,43 @@ module DICOM
       return result
     end
 
+    # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
+    # Returns nil if no match is found.
+    #
+    # === Parameters
+    #
+    # * <tt>name</tt> -- String. A data element name.
+    #
+    def get_tag(name)
+      tag = nil
+      name = name.to_s.downcase
+      @tag_name_pairs_cache ||= Hash.new
+      return @tag_name_pairs_cache[name] unless @tag_name_pairs_cache[name].nil?
+      @tags.each_value do |element|
+        next unless element.name.downcase == name
+        tag = element.tag
+        break
+      end
+      @tag_name_pairs_cache[name]=tag
+      return tag
+    end
+
+    # Returns the description/name of a specified UID (i.e. a transfer syntax or SOP class).
+    # Returns nil if no match is found
+    #
+    # === Parameters
+    #
+    # * <tt>uid</tt> -- String. A DICOM UID value.
+    #
+    def get_syntax_description(uid)
+      name = nil
+      value = @uid[uid]
+      name = value[0] if value
+      return name
+    end
+
     # Determines, and returns, the name and vr of the data element which the specified tag belongs to.
-    # Values are retrieved from the Ruby DICOM dictionary if a match is found.
+    # Values are retrieved from the element dictionary if a match is found.
     #
     # === Notes
     #
@@ -154,7 +189,7 @@ module DICOM
     #
     # * <tt>tag</tt> -- String. A data element tag.
     #
-    def get_name_vr(tag)
+    def name_and_vr(tag)
       if tag.private? and tag.element != GROUP_LENGTH
         name = "Private"
         vr = "UN"
@@ -203,41 +238,6 @@ module DICOM
         end
       end
       return name, vr
-    end
-
-    # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
-    # Returns nil if no match is found.
-    #
-    # === Parameters
-    #
-    # * <tt>name</tt> -- String. A data element name.
-    #
-    def get_tag(name)
-      tag = nil
-      name = name.to_s.downcase
-      @tag_name_pairs_cache ||= Hash.new
-      return @tag_name_pairs_cache[name] unless @tag_name_pairs_cache[name].nil?
-      @tags.each_value do |element|
-        next unless element.name.downcase == name
-        tag = element.tag
-        break
-      end
-      @tag_name_pairs_cache[name]=tag
-      return tag
-    end
-
-    # Returns the description/name of a specified UID (i.e. a transfer syntax or SOP class).
-    # Returns nil if no match is found
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- String. A DICOM UID value.
-    #
-    def get_syntax_description(uid)
-      name = nil
-      value = @uid[uid]
-      name = value[0] if value
-      return name
     end
 
     # Checks the validity of the specified transfer syntax UID and determines the

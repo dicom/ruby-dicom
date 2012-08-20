@@ -307,7 +307,7 @@ module DICOM
       type_lengths = Array.new
       value_lengths = Array.new
       @tags.each_index do |i|
-        name, vr = LIBRARY.get_name_vr(@tags[i])
+        name, vr = LIBRARY.name_and_vr(@tags[i])
         names << name
         types << vr
         tag_lengths[i] = @tags[i].length
@@ -489,7 +489,7 @@ module DICOM
     # * <tt>tag</tt> -- A tag string.
     #
     def default_value(tag)
-      name, vr = LIBRARY.get_name_vr(tag)
+      name, vr = LIBRARY.name_and_vr(tag)
       conversion = VALUE_CONVERSION[vr] || :to_s
       case conversion
       when :to_i then return 0
