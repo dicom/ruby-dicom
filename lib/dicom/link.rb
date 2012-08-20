@@ -250,7 +250,7 @@ module DICOM
         # Tag (4 bytes)
         @outgoing.add_last(@outgoing.encode_tag(element[0]))
         # Encode the value in advance of putting it into the message, so we know its length:
-        vr = LIBRARY.get_name_vr(element[0])[1]
+        vr = LIBRARY.element(element[0]).vr
         value = @outgoing.encode_value(element[1], vr)
         if @explicit
           # Type (VR) (2 bytes)
@@ -916,12 +916,10 @@ module DICOM
           end
           # Reserved (2 bytes)
           msg.skip(2)
-          # Type (VR) (from library - not the stream):
-          result = LIBRARY.get_name_vr(tag)
-          name = result[0]
-          type = result[1]
+          # VR (from library - not the stream):
+          vr = LIBRARY.element(tag).vr
           # Value (variable length)
-          value = msg.decode(length, type)
+          value = msg.decode(length, vr)
           # Put tag and value in a hash:
           results[tag] = value
         end
@@ -968,10 +966,8 @@ module DICOM
             if length > msg.rest_length
               logger.error("The specified length of the data element value exceeds the remaining length of the received message!")
             end
-            # Fetch the name (& type if not defined already) for this data element:
-            result = LIBRARY.get_name_vr(tag)
-            name = result[0]
-            type = result[1] unless type
+            # Fetch type (if not defined already) for this data element:
+            type = LIBRARY.element(tag).vr unless type
             # Value (variable length)
             value = msg.decode(length, type)
             # Put tag and value in a hash:
