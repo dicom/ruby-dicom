@@ -182,8 +182,8 @@ module DICOM
     #
     # === Notes
     #
-    # * Private tags will have their names listed as "Private".
-    # * Non-private tags that are not found in the dictionary will be listed as "Unknown".
+    # * Private tags will have their names listed as 'Private'.
+    # * Non-private tags that are not found in the dictionary will be listed as 'Unknown'.
     #
     # === Parameters
     #
@@ -191,8 +191,8 @@ module DICOM
     #
     def name_and_vr(tag)
       if tag.private? and tag.element != GROUP_LENGTH
-        name = "Private"
-        vr = "UN"
+        name = 'Private'
+        vr = 'UN'
       else
         # Check the dictionary:
         element = @tags[tag]
@@ -205,25 +205,20 @@ module DICOM
             # Create a group length element:
             element = DictionaryElement.new(tag, 'Group Length', ['UL'], '1', '')
             # Group length:
-            #element = [["UL"], "Group Length"]
-          elsif tag.group == "1000" and tag.element =~ /\A\h{3}[0-5]\z/
+            #element = [['UL'], 'Group Length']
+          elsif tag.group == '1000' and tag.element =~ /\A\h{3}[0-5]\z/
             # Group 1000,xxx[0-5] (Retired):
-            new_tag = tag.group + ",xxx" + tag.element[3..3]
+            new_tag = tag.group + ',xxx' + tag.element[3..3]
             de = @tags[new_tag]
             element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          elsif tag.group == "1010"
+          elsif tag.group == '1010'
             # Group 1010,xxxx (Retired):
-            new_tag = tag.group + ",xxxx"
+            new_tag = tag.group + ',xxxx'
             de = @tags[new_tag]
             element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          elsif tag[0..1] == "50" or tag[0..1] == "60"
-            # Group 50xx (Retired) and 60xx:
-            new_tag = tag[0..1]+"xx"+tag[4..8]
-            de = @tags[new_tag]
-            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-          elsif tag[0..1] == "7F" and tag[5..6] == "00"
-            # Group 7Fxx,00[10,11,20,30,40] (Retired):
-            new_tag = tag[0..1]+"xx"+tag[4..8]
+          elsif tag[0..1] == '50' or tag[0..1] == '60' or tag[0..1] == '7F'
+            # Group 50xx (Retired), 60xx and 7Fxx,00[10,11,20,30,40] (Retired):
+            new_tag = tag[0..1]+'xx'+tag[4..8]
             de = @tags[new_tag]
             element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
           end
@@ -232,8 +227,8 @@ module DICOM
             name = element.name
             vr = element.vr
           else
-            name = "Unknown"
-            vr = "UN"
+            name = 'Unknown'
+            vr = 'UN'
           end
         end
       end
