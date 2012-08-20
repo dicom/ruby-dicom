@@ -176,6 +176,18 @@ module DICOM
       end
 
       it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.name_and_vr('0028,0453') # (0028,04x3)
+        name.should eql 'Coefficient Coding Pointers'
+        vr.should eql 'AT'
+      end
+
+      it "should return the expected Name and VR for this tag" do
+        name, vr = LIBRARY.name_and_vr('0028,08A8') # (0028,08x8)
+        name.should eql 'Image Data Location'
+        vr.should eql 'AT'
+      end
+
+      it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('1000,ABC0') # (1000,xxx0)
         name.should eql 'Escape Triplet'
         vr.should eql 'US'

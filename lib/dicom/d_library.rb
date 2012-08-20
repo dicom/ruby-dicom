@@ -206,6 +206,11 @@ module DICOM
             element = DictionaryElement.new(tag, 'Group Length', ['UL'], '1', '')
             # Group length:
             #element = [['UL'], 'Group Length']
+          elsif tag.group == '0028'
+            # Group 0028,0[4,8]x[0-9] (Retired):
+            new_tag = tag[0..6] + 'x' + tag[8]
+            de = @tags[new_tag]
+            element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
           elsif tag.group == '1000' and tag.element =~ /\A\h{3}[0-5]\z/
             # Group 1000,xxx[0-5] (Retired):
             new_tag = tag.group + ',xxx' + tag.element[3..3]
