@@ -12,21 +12,28 @@ module DICOM
     # Creates a DLibrary instance.
     #
     def initialize
+      # Create instance hashes used for dictionary data and method conversion:
+      @elements = Hash.new
+      @uids = Hash.new
+      @methods_from_names = Hash.new
+      @names_from_methods = Hash.new
       # Load the elements dictionary:
-      @tags = Hash.new
       File.open('dictionary/elements.txt').each do |record|
         fields = record.split("\t")
         # Store the elements in a hash with tag as key and the element instance as value:
-        @tags[fields[0]] = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
+        element = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
+        @elements[fields[0]] = element
+        # Populate the method conversion hashes with element data:
+        method_name = element.name.dicom_methodize
+        @methods_from_names[element.name] = method_name.to_sym
+        @names_from_methods[method_name.to_sym] = element.name
        end
       # Load the unique identifiers dictionary:
-      @uids = Hash.new
       File.open('dictionary/uids.txt').each do |record|
         fields = record.split("\t")
         # Store the uids in a hash with uid-value as key and the uid instance as value:
         @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
        end
-      create_method_conversion_tables
     end
 
     # Returns the method (symbol) corresponding to the specified string value (which may represent a element tag, name or method).
@@ -100,7 +107,7 @@ module DICOM
     # @return [DictionaryElement] A corresponding DictionaryElement.
     #
     def element(tag)
-      element = @tags[tag]
+      element = @elements[tag]
       unless element
         if tag.group_length?
           element = DictionaryElement.new(tag, 'Group Length', ['UL'], '1', '')
@@ -108,13 +115,13 @@ module DICOM
           if tag.private?
             element = DictionaryElement.new(tag, 'Private', ['UN'], '1', '')
           else
-            if !(de = @tags["#{tag[0..3]},xxx#{tag[8]}"]).nil? # 1000,xxxh
+            if !(de = @elements["#{tag[0..3]},xxx#{tag[8]}"]).nil? # 1000,xxxh
               element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            elsif !(de = @tags["#{tag[0..3]},xxxx"]).nil? # 1010,xxxx
+            elsif !(de = @elements["#{tag[0..3]},xxxx"]).nil? # 1010,xxxx
               element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            elsif !(de = @tags["#{tag[0..1]}xx,#{tag[5..8]}"]).nil? # hhxx,hhhh
+            elsif !(de = @elements["#{tag[0..1]}xx,#{tag[5..8]}"]).nil? # hhxx,hhhh
               element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            elsif !(de = @tags["#{tag[0..6]}x#{tag[8]}"]).nil? # 0028,hhxh
+            elsif !(de = @elements["#{tag[0..6]}x#{tag[8]}"]).nil? # 0028,hhxh
               element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
             else
               # We are facing an unknown (but not private) tag:
@@ -167,7 +174,7 @@ module DICOM
       name = name.to_s.downcase
       @tag_name_pairs_cache ||= Hash.new
       return @tag_name_pairs_cache[name] unless @tag_name_pairs_cache[name].nil?
-      @tags.each_value do |element|
+      @elements.each_value do |element|
         next unless element.name.downcase == name
         tag = element.tag
         break
@@ -244,26 +251,6 @@ module DICOM
     #
     def uid(value)
       @uids[value]
-    end
-
-
-    private
-
-
-    # Creates the instance hashes that are used for name to/from method conversion.
-    #
-    def create_method_conversion_tables
-      if @methods_from_names.nil?
-        @methods_from_names = Hash.new
-        @names_from_methods = Hash.new
-        # Fill the hashes:
-        @tags.each_value do |element|
-          name = element.name
-          method_name = name.dicom_methodize
-          @methods_from_names[name] = method_name.to_sym
-          @names_from_methods[method_name.to_sym] = name
-        end
-      end
     end
 
   end
