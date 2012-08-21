@@ -45,7 +45,7 @@ module DICOM
     # @return [Boolean] true if the element is retired, and false if not.
     #
     def retired?
-      @retired == 'R' ? true : false
+      @retired =~ /R/ ? true : false
     end
 
     # Extracts the first (default) value representation of the element's value representations.

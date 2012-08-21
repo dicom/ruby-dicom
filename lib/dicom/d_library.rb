@@ -1,6 +1,6 @@
 module DICOM
 
-  # This class contains methods that interact with Ruby DICOM's dictionary.
+  # This class contains methods that interact with ruby-dicom's dictionary data.
   #
   class DLibrary
 
@@ -16,14 +16,15 @@ module DICOM
       @tags = Hash.new
       File.open('dictionary/elements.txt').each do |record|
         fields = record.split("\t")
-        @tags[fields[0]] = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3], fields[4])
+        # Store the elements in a hash with tag as key and the element instance as value:
+        @tags[fields[0]] = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
        end
       # Load the unique identifiers dictionary:
-      @uid = Hash.new
+      @uids = Hash.new
       File.open('dictionary/uids.txt').each do |record|
         fields = record.split("\t")
-        # Use UIDs as key and [name, type] as value:
-        @uid[fields[0]] = [fields[1], fields[2]]
+        # Store the uids in a hash with uid-value as key and the uid instance as value:
+        @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
        end
       create_method_conversion_tables
     end
@@ -79,20 +80,15 @@ module DICOM
       end
     end
 
-    # Checks whether a given string is a valid transfer syntax or not.
+    # Checks whether a given string is a valid transfer syntax.
     # Returns true if valid, false if not.
     #
     # === Parameters
     #
-    # * <tt>uid</tt> -- String. A DICOM UID value which will be matched against known transfer syntaxes.
+    # * <tt>uid</tt> -- String. A UID value which to be matched against the known transfer syntaxes.
     #
     def check_ts_validity(uid)
-      result = false
-      value = @uid[uid]
-      if value
-        result = true if value[1] == "Transfer Syntax"
-      end
-      return result
+      @uids[uid] ? @uids[uid].transfer_syntax? : false
     end
 
     # Identifies the DictionaryElement that corresponds to the given tag.
@@ -138,11 +134,11 @@ module DICOM
     def extract_transfer_syntaxes_and_sop_classes
       transfer_syntaxes = Hash.new
       sop_classes = Hash.new
-      @uid.each_pair do |key, value|
-        if value[1] == "Transfer Syntax"
-          transfer_syntaxes[key] = value[0]
-        elsif value[1] == "SOP Class"
-          sop_classes[key] = value[0]
+      @uids.each_value do |uid|
+        if uid.transfer_syntax?
+          transfer_syntaxes[uid.value] = uid.name
+        elsif uid.sop_class?
+          sop_classes[uid.value] = uid.name
         end
       end
       return transfer_syntaxes, sop_classes
@@ -153,17 +149,10 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>uid</tt> -- String. A DICOM UID value.
+    # * <tt>uid</tt> -- String. A transfer syntax unique identifier value.
     #
     def get_compression(uid)
-      raise ArgumentError, "Expected String, got #{uid.class}" unless uid.is_a?(String)
-      result = false
-      value = @uid[uid]
-      if value
-        first_word = value[0].split(" ").first
-        result = true if value[1] == "Transfer Syntax" and not ["Implicit", "Explicit"].include?(first_word)
-      end
-      return result
+      @uids[uid] ? @uids[uid].transfer_syntax? && !(@uids[uid].name =~ /Implicit|Explicit/) : false
     end
 
     # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
@@ -192,13 +181,10 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>uid</tt> -- String. A DICOM UID value.
+    # * <tt>uid</tt> -- String. A unique identifier value.
     #
     def get_syntax_description(uid)
-      name = nil
-      value = @uid[uid]
-      name = value[0] if value
-      return name
+      @uids[uid] ? @uids[uid].name : nil
     end
 
     # Determines, and returns, the name and vr of the data element which the specified tag belongs to.
@@ -249,6 +235,15 @@ module DICOM
           endian = false
       end
       return valid, explicit, endian
+    end
+
+    # Identifies the UID that corresponds to the given value.
+    #
+    # @param [String] value The unique identifier value.
+    # @return [UID, NilClass] A corresponding UID instance, or nil.
+    #
+    def uid(value)
+      @uids[value]
     end
 
 

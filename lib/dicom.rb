@@ -22,8 +22,6 @@ require_relative 'dicom/image_item'
 require_relative 'dicom/elemental'
 # Subclasses and independent classes:
 require_relative 'dicom/d_client'
-require_relative 'dicom/d_library'
-require_relative 'dicom/dictionary_element'
 require_relative 'dicom/d_object'
 require_relative 'dicom/d_read'
 require_relative 'dicom/d_server'
@@ -34,6 +32,10 @@ require_relative 'dicom/item'
 require_relative 'dicom/link'
 require_relative 'dicom/sequence'
 require_relative 'dicom/stream'
+# Dictionary:
+require_relative 'dicom/d_library'
+require_relative 'dicom/dictionary_element'
+require_relative 'dicom/uid'
 # Extensions to the Ruby library:
 require_relative 'dicom/ruby_extensions'
 # Module settings:

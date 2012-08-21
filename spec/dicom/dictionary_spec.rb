@@ -13,30 +13,85 @@ module DICOM
         element = LIBRARY.element(tag)
         element.should be_a DictionaryElement
         element.tag.should eql tag
+        element.retired?.should be_false
+      end
+
+      it "should return the matching (retired) DictionaryElement" do
+        tag = '0000,51B0' # retired
+        element = LIBRARY.element(tag)
+        element.should be_a DictionaryElement
+        element.tag.should eql tag
+        element.retired?.should be_true
       end
 
       it "should create a 'group length element' when given a group length type tag" do
         element = LIBRARY.element('0010,0000')
         element.name.should eql 'Group Length'
         element.vr.should eql 'UL'
+        element.retired?.should be_false
       end
 
       it "should create a 'group length element' when given a private group length type tag" do
         element = LIBRARY.element('0011,0000')
         element.name.should eql 'Group Length'
         element.vr.should eql 'UL'
+        element.retired?.should be_false
       end
 
       it "should create a 'private element' when given a private type tag" do
         element = LIBRARY.element('0011,ABCD')
         element.name.should eql 'Private'
         element.vr.should eql 'UN'
+        element.retired?.should be_false
       end
 
       it "should create an 'unknown element' when no match is made" do
         element = LIBRARY.element('EEEE,ABCD')
         element.name.should eql 'Unknown'
         element.vr.should eql 'UN'
+        element.retired?.should be_false
+      end
+
+    end
+
+
+    context "#check_ts_validity" do
+
+      it "should return true for this valid transfer syntax" do
+        LIBRARY.check_ts_validity('1.2.840.10008.1.2').should be_true
+      end
+
+      it "should return true for this valid transfer syntax" do
+        LIBRARY.check_ts_validity('1.2.840.10008.1.2.6.2').should be_true
+      end
+
+      it "should return false for this non-transfer syntax (SOP Class) value" do
+        LIBRARY.check_ts_validity('1.2.840.10008.1.1').should be_false
+      end
+
+      it "should return false for this non-transfer syntax (made up) value" do
+        LIBRARY.check_ts_validity('1.999.9999.1234.56789.999999').should be_false
+      end
+
+    end
+
+
+    context "#get_compression" do
+
+      it "should return false for this valid (uncompressed) transfer syntax" do
+        LIBRARY.get_compression('1.2.840.10008.1.2').should be_false
+      end
+
+      it "should return true for this valid (compressed) transfer syntax" do
+        LIBRARY.get_compression('1.2.840.10008.1.2.4.64').should be_true
+      end
+
+      it "should return false for this non-transfer syntax (SOP Class) value" do
+        LIBRARY.get_compression('1.2.840.10008.1.1').should be_false
+      end
+
+      it "should return false for this non-transfer syntax (made up) value" do
+        LIBRARY.get_compression('1.999.9999.1234.56789.999999').should be_false
       end
 
     end
@@ -301,6 +356,44 @@ module DICOM
         name, vr = LIBRARY.name_and_vr('1111,2222') # (A private tag)
         name.should eql 'Private'
         vr.should eql 'UN'
+      end
+
+    end
+
+
+    context "#uid" do
+
+      it "should return the nil when no matching UID instance exists" do
+        value = '1.999.9999.1234.56789.999999'
+        uid = LIBRARY.uid(value)
+        uid.should be_nil
+      end
+
+      it "should return the matching UID instance" do
+        value = '1.2.840.10008.1.1'
+        uid = LIBRARY.uid(value)
+        uid.should be_a UID
+        uid.value.should eql value
+        uid.name.should eql 'Verification SOP Class'
+        uid.retired?.should be_false
+      end
+
+      it "should return the matching UID instance" do
+        value = '1.2.840.10008.1.2.4.52'
+        uid = LIBRARY.uid(value)
+        uid.should be_a UID
+        uid.value.should eql value
+        uid.name.should eql 'JPEG Extended (Process 3 & 5) (Retired)'
+        uid.retired?.should be_true
+      end
+
+      it "should return the matching (retired) UID instance" do
+        value = '1.2.840.10008.15.1.1' # New uid in the 2011 edition
+        uid = LIBRARY.uid(value)
+        uid.should be_a UID
+        uid.value.should eql value
+        uid.name.should eql 'Universal Coordinated Time'
+        uid.retired?.should be_false
       end
 
     end
