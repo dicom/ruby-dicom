@@ -1475,7 +1475,7 @@ module DICOM
     def set_user_information_array(info=nil)
       @user_information = [
         [ITEM_MAX_LENGTH, "UL", @max_package_size],
-        [ITEM_IMPLEMENTATION_UID, "STR", UID],
+        [ITEM_IMPLEMENTATION_UID, "STR", UID_ROOT],
         [ITEM_IMPLEMENTATION_VERSION, "STR", NAME]
       ]
       # A bit of a hack to include "asynchronous operations window negotiation" and/or "role negotiation",

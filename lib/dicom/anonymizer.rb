@@ -85,7 +85,7 @@ module DICOM
       # Register the uid anonymization option:
       @uid = options[:uid]
       # Set the uid_root to be used when anonymizing study_uid series_uid and sop_instance_uid
-      @uid_root = options[:uid_root] ? options[:uid_root] : UID
+      @uid_root = options[:uid_root] ? options[:uid_root] : UID_ROOT
       # Setup audit trail if requested:
       if options[:audit_trail]
         @audit_trail_file = options[:audit_trail]

@@ -73,8 +73,8 @@ module DICOM
         @a.uid.should be_nil
       end
 
-      it "should by default set the uid_root attribute as the DICOM module's UID constant" do
-        @a.uid_root.should eql UID
+      it "should by default set the uid_root attribute as the DICOM module's UID_ROOT constant" do
+        @a.uid_root.should eql UID_ROOT
       end
 
       it "should pass the :uid option to the uid attribute" do

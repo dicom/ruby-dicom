@@ -453,7 +453,7 @@ module DICOM
       Element.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
       if !exists?("0002,0012") and !exists?("0002,0013")
         # Implementation Class UID:
-        Element.new("0002,0012", UID, :parent => self)
+        Element.new("0002,0012", UID_ROOT, :parent => self)
         # Implementation Version Name:
         Element.new("0002,0013", NAME, :parent => self)
       end

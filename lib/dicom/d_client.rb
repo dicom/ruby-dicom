@@ -918,7 +918,7 @@ module DICOM
     def set_user_information_array
       @user_information = [
         [ITEM_MAX_LENGTH, "UL", @max_package_size],
-        [ITEM_IMPLEMENTATION_UID, "STR", UID],
+        [ITEM_IMPLEMENTATION_UID, "STR", UID_ROOT],
         [ITEM_IMPLEMENTATION_VERSION, "STR", NAME]
       ]
     end

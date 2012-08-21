@@ -363,7 +363,7 @@ module DICOM
 
       it "should add the Implementation Class UID to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0012").should eql UID
+        @dcm.value("0002,0012").should eql UID_ROOT
       end
 
       it "should add the Implementation Version Name to the File Meta Group when it is undefined" do

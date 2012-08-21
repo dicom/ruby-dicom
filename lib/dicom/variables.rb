@@ -27,7 +27,7 @@ module DICOM
     # * <tt>root</tt> -- String. The DICOM root UID to be used for generating the UID string, e.g. '1.2.840.999'.
     # * <tt>prefix</tt> -- String. An integer string which is placed between the dicom root and the time/random part of the UID.
     #
-    def generate_uid(root=UID, prefix=1)
+    def generate_uid(root=UID_ROOT, prefix=1)
       # NB! For UIDs, leading zeroes immediately after a dot is not allowed.
       date = Time.now.strftime("%Y%m%d").to_i.to_s
       time = Time.now.strftime("%H%M%S").to_i.to_s
