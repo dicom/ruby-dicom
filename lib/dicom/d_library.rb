@@ -8,8 +8,6 @@ module DICOM
     attr_reader :methods_from_names
     # A hash with element method name symbols as key and name strings as value.
     attr_reader :names_from_methods
-    # A hash containing UIDs as key and an array as value, where the array contains name and type.
-    attr_reader :uid
 
     # Creates a DLibrary instance.
     #
