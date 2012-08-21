@@ -259,20 +259,20 @@ module DICOM
 
   describe String, " (Extensions)" do
 
-    context "".method(:dicom_methodize) do
+    context "".method(:to_element_method) do
 
       it "should return a method name 'three_d_stuff_and_with_some_weird_characters' for '3d Stuff & with some !? weird !!! characters'" do
-        "3d Stuff & with some !? weird !!! characters".dicom_methodize.should == "three_d_stuff_and_with_some_weird_characters"
+        "3d Stuff & with some !? weird !!! characters".to_element_method.should == :three_d_stuff_and_with_some_weird_characters
       end
 
       it "should return a method name 'three_d_something_its_nice' for '3d (something) it's NICE'" do
-        "3d (something) it's NICE".dicom_methodize.should == "three_d_something_its_nice"
+        "3d (something) it's NICE".to_element_method.should == :three_d_something_its_nice
       end
 
       # Comment: How non-ascii characters in method names should be handled is something that may be up for debate.
       it "should return a method name with the non-ascii character preserved" do
         #"hello µValue it's STUPID".dicom_methodize.should == "hello_uvalue_its_stupid" # (alternative spec)
-        "hello µValue it's STUPID".dicom_methodize.should == "hello_µvalue_its_stupid"
+        "hello µValue it's STUPID".to_element_method.should == :hello_µvalue_its_stupid
       end
 
     end

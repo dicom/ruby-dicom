@@ -24,9 +24,9 @@ module DICOM
         element = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
         @elements[fields[0]] = element
         # Populate the method conversion hashes with element data:
-        method_name = element.name.dicom_methodize
-        @methods_from_names[element.name] = method_name.to_sym
-        @names_from_methods[method_name.to_sym] = element.name
+        method = element.name.to_element_method
+        @methods_from_names[element.name] = method
+        @names_from_methods[method] = element.name
        end
       # Load the unique identifiers dictionary:
       File.open('dictionary/uids.txt').each do |record|

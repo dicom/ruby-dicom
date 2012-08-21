@@ -24,12 +24,6 @@ class String
     self == self.dicom_underscore
   end
 
-  # Returns a proper DICOM method name string.
-  #
-  def dicom_methodize
-    self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase
-  end
-
   # Capitalizes all the words and replaces some characters in the string to make a nicer looking title.
   #
   def dicom_titleize
@@ -105,6 +99,12 @@ class String
   def tag?
     # Test that the string is composed of exactly 4 HEX characters, followed by a comma, then 4 more HEX characters:
     return ((self.upcase =~ /\A\h{4},\h{4}\z/) == nil ? false : true)
+  end
+
+  # Returns a proper DICOM element method name symbol.
+  #
+  def to_element_method
+    self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase.to_sym
   end
 
   # Redefines the old unpack method, adding the ability to decode signed integers in big endian.
