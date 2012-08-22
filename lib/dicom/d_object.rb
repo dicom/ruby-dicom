@@ -265,11 +265,9 @@ module DICOM
     #
     # This information includes properties like encoding, byte order, modality and various image properties.
     #
-    #--
-    # FIXME: Perhaps this method should be split up in one or two separate methods
-    # which just builds the information arrays, and a third method for printing this to the screen.
-    #
     def summary
+      # FIXME: Perhaps this method should be split up in one or two separate methods
+      # which just builds the information arrays, and a third method for printing this to the screen.
       sys_info = Array.new
       info = Array.new
       # Version of Ruby DICOM used:
@@ -280,32 +278,17 @@ module DICOM
       # File path/name:
       info << "File:                 #{@file}"
       # Modality:
-      modality = (exists?("0008,0016") ? LIBRARY.get_syntax_description(self["0008,0016"].value) : "SOP Class unknown or not specified!")
+      modality = (LIBRARY.uid(value('0008,0016')) ? LIBRARY.uid(value('0008,0016')).name : "SOP Class unknown or not specified!")
       info << "Modality:             #{modality}"
       # Meta header presence (Simply check for the presence of the transfer syntax data element), VR and byte order:
-      transfer_syntax = self["0002,0010"]
-      if transfer_syntax
-        syntax_validity, explicit, endian = LIBRARY.process_transfer_syntax(transfer_syntax.value)
-        if syntax_validity
-          meta_comment, explicit_comment, encoding_comment = "", "", ""
-        else
-          meta_comment = " (But unknown/invalid transfer syntax: #{transfer_syntax})"
-          explicit_comment = " (Assumed)"
-          encoding_comment = " (Assumed)"
-        end
-        explicitness = (explicit ? "Explicit" : "Implicit")
-        encoding = (endian ? "Big Endian" : "Little Endian")
-        meta = "Yes#{meta_comment}"
-      else
-        meta = "No"
-        explicitness = (@explicit == true ? "Explicit" : "Implicit")
-        encoding = (@str_endian == true ? "Big Endian" : "Little Endian")
-        explicit_comment = " (Assumed)"
-        encoding_comment = " (Assumed)"
-      end
-      info << "Meta Header:          #{meta}"
-      info << "Value Representation: #{explicitness}#{explicit_comment}"
-      info << "Byte Order (File):    #{encoding}#{encoding_comment}"
+      ts_status = self['0002,0010'] ? '' : ' (Assumed)'
+      ts = LIBRARY.uid(transfer_syntax)
+      explicit = ts ? ts.explicit? : true
+      endian = ts ? ts.big_endian? : false
+      meta_comment = ts ? "" : " (But unknown/invalid transfer syntax: #{transfer_syntax})"
+      info << "Meta Header:          #{self['0002,0010'] ? 'Yes' : 'No'}#{meta_comment}"
+      info << "Value Representation: #{explicit ? 'Explicit' : 'Implicit'}#{ts_status}"
+      info << "Byte Order (File):    #{endian ? 'Big Endian' : 'Little Endian'}#{ts_status}"
       # Pixel data:
       pixels = self[PIXEL_TAG]
       unless pixels
@@ -331,17 +314,8 @@ module DICOM
         colors = (exists?("0028,0004") ? self["0028,0004"].value : "Not specified")
         info << "Photometry:           #{colors}"
         # Compression:
-        if transfer_syntax
-          compression = LIBRARY.get_compression(transfer_syntax.value)
-          if compression
-            compression = LIBRARY.get_syntax_description(transfer_syntax.value) || "Unknown UID!"
-          else
-            compression = "No"
-          end
-        else
-          compression = "No (Assumed)"
-        end
-        info << "Compression:          #{compression}"
+        compression = (ts ? (ts.compressed_pixels? ? ts.name : 'No') : 'No' )
+        info << "Compression:          #{compression}#{ts_status}"
         # Pixel bits (allocated):
         bits = (exists?("0028,0100") ? self["0028,0100"].value : "Not specified")
         info << "Bits per Pixel:       #{bits}"
@@ -386,20 +360,21 @@ module DICOM
     # * <tt>new_syntax</tt> -- The new transfer syntax string which will be applied to the DObject.
     #
     def transfer_syntax=(new_syntax)
-      valid_ts, new_explicit, new_endian = LIBRARY.process_transfer_syntax(new_syntax)
-      raise ArgumentError, "Invalid transfer syntax specified: #{new_syntax}" unless valid_ts
-      # Get the old transfer syntax and write the new one to the DICOM object:
-      old_syntax = transfer_syntax
-      valid_ts, old_explicit, old_endian = LIBRARY.process_transfer_syntax(old_syntax)
+      # Verify old and new transfer syntax:
+      new_uid = LIBRARY.uid(new_syntax)
+      old_uid = LIBRARY.uid(transfer_syntax)
+      raise ArgumentError, "Invalid/unknown transfer syntax specified: #{new_syntax}" unless new_uid && new_uid.transfer_syntax?
+      raise ArgumentError, "Invalid/unknown existing transfer syntax: #{new_syntax} Unable to reliably handle byte order encoding. Modify the transfer syntax element directly instead." unless old_uid && old_uid.transfer_syntax?
+      # Set the new transfer syntax:
       if exists?("0002,0010")
         self["0002,0010"].value = new_syntax
       else
         add(Element.new("0002,0010", new_syntax))
       end
       # Update our Stream instance with the new encoding:
-      @stream.endian = new_endian
+      @stream.endian = new_uid.big_endian?
       # If endianness is changed, re-encode elements (only elements depending on endianness will actually be re-encoded):
-      encode_children(old_endian) if old_endian != new_endian
+      encode_children(old_uid.big_endian?) if old_uid.big_endian? != new_uid.big_endian?
     end
 
     # Writes the DICOM object to file.

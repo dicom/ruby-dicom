@@ -17,7 +17,7 @@ module DICOM
       end
 
       it "should return the matching (retired) DictionaryElement" do
-        tag = '0000,51B0' # retired
+        tag = '0000,51B0' # Retired
         element = LIBRARY.element(tag)
         element.should be_a DictionaryElement
         element.tag.should eql tag
@@ -50,88 +50,6 @@ module DICOM
         element.name.should eql 'Unknown'
         element.vr.should eql 'UN'
         element.retired?.should be_false
-      end
-
-    end
-
-
-    context "#check_ts_validity" do
-
-      it "should return true for this valid transfer syntax" do
-        LIBRARY.check_ts_validity('1.2.840.10008.1.2').should be_true
-      end
-
-      it "should return true for this valid transfer syntax" do
-        LIBRARY.check_ts_validity('1.2.840.10008.1.2.6.2').should be_true
-      end
-
-      it "should return false for this non-transfer syntax (SOP Class) value" do
-        LIBRARY.check_ts_validity('1.2.840.10008.1.1').should be_false
-      end
-
-      it "should return false for this non-transfer syntax (made up) value" do
-        LIBRARY.check_ts_validity('1.999.9999.1234.56789.999999').should be_false
-      end
-
-    end
-
-
-    context "#get_compression" do
-
-      it "should return false for this valid (uncompressed) transfer syntax" do
-        LIBRARY.get_compression('1.2.840.10008.1.2').should be_false
-      end
-
-      it "should return true for this valid (compressed) transfer syntax" do
-        LIBRARY.get_compression('1.2.840.10008.1.2.4.64').should be_true
-      end
-
-      it "should return false for this non-transfer syntax (SOP Class) value" do
-        LIBRARY.get_compression('1.2.840.10008.1.1').should be_false
-      end
-
-      it "should return false for this non-transfer syntax (made up) value" do
-        LIBRARY.get_compression('1.999.9999.1234.56789.999999').should be_false
-      end
-
-    end
-
-
-    context "#get_syntax_description" do
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.1.1')
-        name.should eql 'Verification SOP Class'
-      end
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.1.2.4.52') # Retired
-        name.should eql 'JPEG Extended (Process 3 & 5) (Retired)'
-      end
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.1.2.6.2')
-        name.should eql 'XML Encoding'
-      end
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.5.1.1.4.2') # Retired
-        name.should eql 'Referenced Image Box SOP Class (Retired)'
-      end
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.5.1.4.1.1.481.8')
-        name.should eql 'RT Ion Plan Storage'
-      end
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.15.0.4.8')
-        name.should eql 'dicomTransferCapability'
-      end
-
-      it "should return the expected Name corresponding to this UID" do
-        name = LIBRARY.get_syntax_description('1.2.840.10008.15.1.1') # New UID in the 2011 edition
-        name.should eql 'Universal Coordinated Time'
       end
 
     end
@@ -379,7 +297,7 @@ module DICOM
       end
 
       it "should return the matching UID instance" do
-        value = '1.2.840.10008.1.2.4.52'
+        value = '1.2.840.10008.1.2.4.52' # Retired
         uid = LIBRARY.uid(value)
         uid.should be_a UID
         uid.value.should eql value

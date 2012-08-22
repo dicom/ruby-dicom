@@ -29,6 +29,30 @@ module DICOM
       @retired = retired
     end
 
+    # Checks if the UID is a Transfer Syntax that big endian byte order.
+    #
+    # @return [Boolean] true if the UID indicates big endian byte order, and false if not.
+    #
+    def big_endian?
+      @value == EXPLICIT_BIG_ENDIAN ? true : false
+    end
+
+    # Checks if the UID is a Transfer Syntax that implies compressed pixel data.
+    #
+    # @return [Boolean] true if the UID indicates compressed pixel data, and false if not.
+    #
+    def compressed_pixels?
+      transfer_syntax? ? (@name =~ /Implicit|Explicit/).nil? : false
+    end
+
+    # Checks if the UID is a Transfer Syntax that implies explicit encoding.
+    #
+    # @return [Boolean] true if the UID indicates explicit encoding, and false if not.
+    #
+    def explicit?
+      transfer_syntax? ? (@name =~ /Implicit/).nil? : false
+    end
+
     # Converts the retired status string to a boolean.
     #
     # @return [Boolean] true if the UID is retired, and false if not.

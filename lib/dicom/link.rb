@@ -1456,10 +1456,10 @@ module DICOM
     def set_transfer_syntax(syntax)
       @transfer_syntax = syntax
       # Query the library with our particular transfer syntax string:
-      valid_syntax, @explicit, @data_endian = LIBRARY.process_transfer_syntax(syntax)
-      unless valid_syntax
-        logger.warn("Invalid (unknown) transfer syntax encountered! Will try to continue, but errors may occur.")
-      end
+      ts = LIBRARY.uid(transfer_syntax)
+      @explicit = ts ? ts.explicit? : true
+      @data_endian = ts ? ts.big_endian? : false
+      logger.warn("Invalid/unknown transfer syntax encountered: #{@transfer_syntax} Will try to continue, but errors may occur.") unless ts
     end
 
     # Sets the @user_information items instance array.

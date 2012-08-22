@@ -748,18 +748,15 @@ module DICOM
       else
         # We still consider the request 'approved' if at least one context were accepted:
         @request_approved = true if @approved_syntaxes.length > 0
-
         logger.error("One or more of your presentation contexts were denied by host #{@host_ae}!")
-
         @approved_syntaxes.each_pair do |key, value|
-          sntx_k = LIBRARY.get_syntax_description(key)
-          sntx_v = LIBRARY.get_syntax_description(value[1])
+          sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : 'Unknown UID!')
+          sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : 'Unknown UID!')
           logger.info("APPROVED: #{sntx_k} (#{sntx_v})")
         end
-
         rejected.each_pair do |key, value|
-          sntx_k = LIBRARY.get_syntax_description(key)
-          sntx_v = LIBRARY.get_syntax_description(value[1])
+          sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : 'Unknown UID!')
+          sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : 'Unknown UID!')
           logger.error("REJECTED: #{sntx_k} (#{sntx_v})")
         end
       end

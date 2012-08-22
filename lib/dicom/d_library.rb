@@ -87,17 +87,6 @@ module DICOM
       end
     end
 
-    # Checks whether a given string is a valid transfer syntax.
-    # Returns true if valid, false if not.
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- String. A UID value which to be matched against the known transfer syntaxes.
-    #
-    def check_ts_validity(uid)
-      @uids[uid] ? @uids[uid].transfer_syntax? : false
-    end
-
     # Identifies the DictionaryElement that corresponds to the given tag.
     #
     # @note If a given tag doesn't return a dictionary match, a new DictionaryElement is created.
@@ -151,17 +140,6 @@ module DICOM
       return transfer_syntaxes, sop_classes
     end
 
-    # Checks if the specified transfer syntax implies the presence of pixel compression.
-    # Returns true if pixel compression is implied, false if not.
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- String. A transfer syntax unique identifier value.
-    #
-    def get_compression(uid)
-      @uids[uid] ? @uids[uid].transfer_syntax? && !(@uids[uid].name =~ /Implicit|Explicit/) : false
-    end
-
     # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
     # Returns nil if no match is found.
     #
@@ -183,17 +161,6 @@ module DICOM
       return tag
     end
 
-    # Returns the description/name of a specified UID (i.e. a transfer syntax or SOP class).
-    # Returns nil if no match is found
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- String. A unique identifier value.
-    #
-    def get_syntax_description(uid)
-      @uids[uid] ? @uids[uid].name : nil
-    end
-
     # Determines, and returns, the name and vr of the data element which the specified tag belongs to.
     # Values are retrieved from the element dictionary if a match is found.
     #
@@ -209,39 +176,6 @@ module DICOM
     def name_and_vr(tag)
       de = element(tag)
       return de.name, de.vr
-    end
-
-    # Checks the validity of the specified transfer syntax UID and determines the
-    # encoding settings (explicitness & endianness) associated with this value.
-    # The results are returned as 3 booleans: validity, explicitness & endianness.
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- String. A DICOM UID value.
-    #
-    def process_transfer_syntax(uid)
-      valid = check_ts_validity(uid)
-      case uid
-        # Some variations with uncompressed pixel data:
-        when IMPLICIT_LITTLE_ENDIAN
-          explicit = false
-          endian = false
-        when EXPLICIT_LITTLE_ENDIAN
-          explicit = true
-          endian = false
-        when "1.2.840.10008.1.2.1.99" # Deflated Explicit VR, Little Endian
-          # Note: Has this transfer syntax been tested yet?
-          explicit = true
-          endian = false
-        when EXPLICIT_BIG_ENDIAN
-          explicit = true
-          endian = true
-        else
-          # For everything else, assume compressed pixel data, with Explicit VR, Little Endian:
-          explicit = true
-          endian = false
-      end
-      return valid, explicit, endian
     end
 
     # Identifies the UID that corresponds to the given value.

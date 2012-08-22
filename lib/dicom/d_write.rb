@@ -334,11 +334,11 @@ module DICOM
     # Changes encoding variables as the file writing proceeds past the initial meta group part (0002,xxxx) of the DICOM object.
     #
     def switch_syntax_on_write
-      # The information from the Transfer syntax element (if present), needs to be processed:
-      valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
-      unless valid_syntax
-        logger.warn("Invalid (unknown) transfer syntax! Will complete encoding the file, but an investigation of the result is recommended.")
-      end
+      # Process the transfer syntax string to establish encoding settings:
+      ts = LIBRARY.uid(@transfer_syntax)
+      logger.warn("Invalid/unknown transfer syntax: #{@transfer_syntax} Will complete encoding the file, but an investigation of the result is recommended.") unless ts && ts.transfer_syntax?
+      @rest_explicit = ts ? ts.explicit? : true
+      @rest_endian = ts ? ts.big_endian? : false
       # Make sure we only run this method once:
       @switched = true
       # Update explicitness and endianness (pack/unpack variables):

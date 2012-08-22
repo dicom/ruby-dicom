@@ -39,6 +39,101 @@ module DICOM
     end
 
 
+    context "#big_endian?" do
+
+      it "should return false for this non-transfer syntax (SOP Class) value" do
+        uid = LIBRARY.uid('1.2.840.10008.1.1')
+        uid.big_endian?.should be_false
+      end
+
+      it "should return false for the default implicit little endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2')
+        uid.big_endian?.should be_false
+      end
+
+      it "should return false for the explicit little endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.1')
+        uid.big_endian?.should be_false
+      end
+
+      it "should return false for the deflated explicit little endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.1.99')
+        uid.big_endian?.should be_false
+      end
+
+      it "should return true for the explicit big endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.2')
+        uid.big_endian?.should be_true
+      end
+
+      it "should return false for a compressed pixel data transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.4.58')
+        uid.big_endian?.should be_false
+      end
+
+    end
+
+
+    context "#compressed_pixels?" do
+
+      it "should return false for this non-transfer syntax (SOP Class) value" do
+        uid = LIBRARY.uid('1.2.840.10008.1.1')
+        uid.compressed_pixels?.should be_false
+      end
+
+      it "should return false for this uncompressed transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2')
+        uid.compressed_pixels?.should be_false
+      end
+
+      it "should return true for this compressed transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.4.64')
+        uid.compressed_pixels?.should be_true
+      end
+
+      it "should return false for this transfer syntax where the dicom file itself, not the pixel data, is compressed" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.1.99')
+        uid.compressed_pixels?.should be_false
+      end
+
+    end
+
+
+    context "#explicit?" do
+
+      it "should return false for this non-transfer syntax (SOP Class) value" do
+        uid = LIBRARY.uid('1.2.840.10008.1.1')
+        uid.explicit?.should be_false
+      end
+
+      it "should return false for the default implicit little endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2')
+        uid.explicit?.should be_false
+      end
+
+      it "should return true for the explicit little endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.1')
+        uid.explicit?.should be_true
+      end
+
+      it "should return true for the deflated explicit little endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.1.99')
+        uid.explicit?.should be_true
+      end
+
+      it "should return true for the explicit big endian transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.2')
+        uid.explicit?.should be_true
+      end
+
+      it "should return true for a compressed pixel data transfer syntax" do
+        uid = LIBRARY.uid('1.2.840.10008.1.2.4.58')
+        uid.explicit?.should be_true
+      end
+
+    end
+
+
     context "#retired?" do
 
       it "should return false when the UID is not retired" do

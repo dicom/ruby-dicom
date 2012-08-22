@@ -102,12 +102,9 @@ module DICOM
     # * <tt>uid</tt> -- An abstract syntax UID string.
     #
     def add_abstract_syntax(uid)
-      if uid.is_a?(String)
-        name = LIBRARY.get_syntax_description(uid) || "Unknown UID"
-        @accepted_abstract_syntaxes[uid] = name
-      else
-        raise "Invalid type of UID. Expected String, got #{uid.class}!"
-      end
+      lib_uid = LIBRARY.uid(uid)
+      raise "Invalid/unknown UID: #{uid}" unless lib_uid
+      @accepted_abstract_syntaxes[uid] = lib_uid.name
     end
 
     # Adds a transfer syntax to the list of transfer syntaxes that the server will accept.
@@ -118,12 +115,9 @@ module DICOM
     # * <tt>uid</tt> -- A transfer syntax UID string.
     #
     def add_transfer_syntax(uid)
-      if uid.is_a?(String)
-        name = LIBRARY.get_syntax_description(uid) || "Unknown UID"
-        @accepted_transfer_syntaxes[uid] = name
-      else
-        raise "Invalid type of UID. Expected String, got #{uid.class}!"
-      end
+      lib_uid = LIBRARY.uid(uid)
+      raise "Invalid/unknown UID: #{uid}" unless lib_uid
+      @accepted_transfer_syntaxes[uid] = lib_uid.name
     end
 
     # Prints the list of accepted abstract syntaxes to the screen.
@@ -231,9 +225,10 @@ module DICOM
               unless association_error
                 info, approved, rejected = process_syntax_requests(info)
                 link.handle_association_accept(info)
+                context = (LIBRARY.uid(info[:pc].first[:abstract_syntax]) ? LIBRARY.uid(info[:pc].first[:abstract_syntax]).name : 'Unknown UID!')
                 if approved > 0
                   if approved == 1
-                    logger.info("Accepted the association request with context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.info("Accepted the association request with context: #{context}")
                   else
                     if rejected == 0
                       logger.info("Accepted all #{approved} proposed contexts in the association request.")
@@ -248,7 +243,7 @@ module DICOM
                 else
                   # No abstract syntaxes in the incoming request were accepted:
                   if rejected == 1
-                    logger.warn("Rejected the association request with proposed context: #{LIBRARY.get_syntax_description(info[:pc].first[:abstract_syntax])}")
+                    logger.warn("Rejected the association request with proposed context: #{context}")
                   else
                     logger.warn("Rejected all #{rejected} proposed contexts in the association request.")
                   end

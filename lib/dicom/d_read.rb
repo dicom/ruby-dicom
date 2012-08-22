@@ -323,17 +323,12 @@ module DICOM
     #
     def switch_syntax_on_read
       # Get the transfer syntax string, unless it has already been provided by keyword:
-      unless @transfer_syntax
-        ts_element = self["0002,0010"]
-        if ts_element
-          @transfer_syntax = ts_element.value
-        else
-          @transfer_syntax = IMPLICIT_LITTLE_ENDIAN
-        end
-      end
+      @transfer_syntax = (self["0002,0010"] ? self["0002,0010"].value : IMPLICIT_LITTLE_ENDIAN) unless @transfer_syntax
       # Query the library with our particular transfer syntax string:
-      valid_syntax, @rest_explicit, @rest_endian = LIBRARY.process_transfer_syntax(@transfer_syntax)
-      logger.warn("Invalid/unknown transfer syntax: #{@transfer_syntax} Will try parsing the string, but errors may occur.") unless valid_syntax
+      ts = LIBRARY.uid(@transfer_syntax)
+      logger.warn("Invalid/unknown transfer syntax: #{@transfer_syntax} Will try parsing the string, but errors may occur.") unless ts && ts.transfer_syntax?
+      @rest_explicit = ts ? ts.explicit? : true
+      @rest_endian = ts ? ts.big_endian? : false
       # Make sure we only run this method once:
       @switched = true
       # Update endian, explicitness and unpack variables:
