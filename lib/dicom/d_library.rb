@@ -18,7 +18,7 @@ module DICOM
       @methods_from_names = Hash.new
       @names_from_methods = Hash.new
       # Load the elements dictionary:
-      File.open('dictionary/elements.txt').each do |record|
+      File.open("#{ROOT_DIR}/dictionary/elements.txt").each do |record|
         fields = record.split("\t")
         # Store the elements in a hash with tag as key and the element instance as value:
         element = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
@@ -29,7 +29,7 @@ module DICOM
         @names_from_methods[method] = element.name
        end
       # Load the unique identifiers dictionary:
-      File.open('dictionary/uids.txt').each do |record|
+      File.open("#{ROOT_DIR}/dictionary/uids.txt").each do |record|
         fields = record.split("\t")
         # Store the uids in a hash with uid-value as key and the uid instance as value:
         @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)

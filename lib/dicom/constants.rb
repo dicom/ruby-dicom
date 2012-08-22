@@ -1,5 +1,8 @@
 module DICOM
 
+  # Defines the gem root directory in the file system.
+  ROOT_DIR = "#{File.dirname(__FILE__)}/../.."
+  
   # Ruby DICOM's registered DICOM UID root (Implementation Class UID).
   UID_ROOT = "1.2.826.0.1.3680043.8.641"
   # Ruby DICOM name & version (max 16 characters).
