@@ -36,14 +36,14 @@ module DICOM
        end
     end
 
-    # Returns the method (symbol) corresponding to the specified string value (which may represent a element tag, name or method).
+    # Returns the method (symbol) corresponding to the specified string value
+    # (which may represent a element tag, name or method).
     # Returns nil if no match is found.
     #
     def as_method(value)
       case true
       when value.tag?
-        name, vr = name_and_vr(value)
-        @methods_from_names[name]
+        @methods_from_names[element(value).name]
       when value.dicom_name?
         @methods_from_names[value]
       when value.dicom_method?
@@ -53,14 +53,14 @@ module DICOM
       end
     end
 
-    # Returns the name (string) corresponding to the specified string value (which may represent a element tag, name or method).
+    # Returns the name (string) corresponding to the specified string value
+    # (which may represent an element tag, name or method).
     # Returns nil if no match is found.
     #
     def as_name(value)
       case true
       when value.tag?
-        name, vr = name_and_vr(value)
-        name
+        element(value).name
       when value.dicom_name?
         @methods_from_names.has_key?(value) ? value.to_s : nil
       when value.dicom_method?
@@ -70,14 +70,14 @@ module DICOM
       end
     end
 
-    # Returns the tag (string) corresponding to the specified string value (which may represent a element tag, name or method).
+    # Returns the tag (string) corresponding to the specified string value
+    # (which may represent a element tag, name or method).
     # Returns nil if no match is found.
     #
     def as_tag(value)
       case true
       when value.tag?
-        name, vr = name_and_vr(value)
-        name.nil? ? nil : value
+        element(value) ? value : nil
       when value.dicom_name?
         get_tag(value)
       when value.dicom_method?

@@ -271,7 +271,7 @@ module DICOM
 
       # Comment: How non-ascii characters in method names should be handled is something that may be up for debate.
       it "should return a method name with the non-ascii character preserved" do
-        #"hello µValue it's STUPID".dicom_methodize.should == "hello_uvalue_its_stupid" # (alternative spec)
+        #"hello µValue it's STUPID".to_element_method.should == :hello_uvalue_its_stupid # (alternative spec)
         "hello µValue it's STUPID".to_element_method.should == :hello_µvalue_its_stupid
       end
 
