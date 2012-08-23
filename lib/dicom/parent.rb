@@ -11,6 +11,8 @@ module DICOM
   #
   class Parent
 
+    include Logging
+
     # Returns the specified child element.
     # If the requested data element isn't found, nil is returned.
     #

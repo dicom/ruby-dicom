@@ -11,7 +11,6 @@ module DICOM
   class ImageItem < Parent
 
     include ImageProcessor
-    include Logging
 
     # Checks if colored pixel data is present.
     # Returns true if it is, false if not.
