@@ -567,7 +567,7 @@ module DICOM
 
     describe "#delete_private" do
 
-      it "should delete all private children from the parent element" do
+      it "should delete all private child elements from the parent element" do
         dcm = DObject.new
         dcm.add(Element.new("0010,0030", "20000101"))
         dcm.add(Element.new("0011,0030", "42"))
@@ -577,6 +577,35 @@ module DICOM
         dcm["0008,1140"].add_item
         dcm.delete_private
         dcm.children.length.should eql 2
+      end
+
+    end
+
+
+    describe "#delete_retired" do
+
+      it "should delete all retired child elements from the parent element" do
+        dcm = DObject.new
+        dcm.add(Element.new('0010,0010', 'Name'))
+        dcm.add(Element.new('5600,0020', '42'))
+        dcm.add(Element.new('0008,0041', 'Ret')) # Retired
+        dcm.add(Element.new('4008,0100', '20010101')) # Retired
+        dcm.add(Sequence.new('0008,1140'))
+        dcm['0008,1140'].add_item
+        dcm['0008,1140'][0].add(Element.new('0008,0042', '131-I')) # Retired
+        dcm.add(Sequence.new('0008,1145')) # Retired
+        dcm['0008,1145'].add_item
+        dcm['0008,1145'][0].add(Element.new('0008,0070', 'ACME'))
+        dcm.delete_retired
+        dcm.count.should eql 3
+        dcm.count_all.should eql 4
+        dcm.exists?('0010,0010').should be_true
+        dcm.exists?('5600,0020').should be_true
+        dcm.exists?('0008,1140').should be_true
+        dcm['0008,1140'][0].exists?('0008,0042').should be_false
+        dcm.exists?('0008,0041').should be_false
+        dcm.exists?('4008,0100').should be_false
+        dcm.exists?('0008,1145').should be_false
       end
 
     end

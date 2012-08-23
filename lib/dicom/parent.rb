@@ -264,7 +264,7 @@ module DICOM
       end
     end
 
-    # Deletes all private data elements from the child elements of this parent.
+    # Deletes all private data/sequence elements from the child elements of this parent.
     #
     # === Examples
     #
@@ -278,6 +278,22 @@ module DICOM
       children.each do |element|
         delete(element.tag) if element.tag.private?
         element.delete_private if element.children?
+      end
+    end
+
+    # Deletes all retired data/sequence elements from the child elements of this parent.
+    #
+    # === Examples
+    #
+    #   # Delete all retired elements from a DObject instance:
+    #   dcm.delete_retired
+    #
+    def delete_retired
+      # Iterate all children, and repeat recursively if a child itself has children, to delete all retired elements:
+      children.each do |element|
+        dict_element = LIBRARY.element(element.tag)
+        delete(element.tag) if dict_element && dict_element.retired?
+        element.delete_retired if element.children?
       end
     end
 
