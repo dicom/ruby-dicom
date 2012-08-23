@@ -19,22 +19,29 @@ module DICOM
       @names_from_methods = Hash.new
       # Load the elements dictionary:
       File.open("#{ROOT_DIR}/dictionary/elements.txt").each do |record|
-        fields = record.split("\t")
-        # Store the elements in a hash with tag as key and the element instance as value:
-        element = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
-        @elements[fields[0]] = element
-        # Populate the method conversion hashes with element data:
-        method = element.name.to_element_method
-        @methods_from_names[element.name] = method
-        @names_from_methods[method] = element.name
-       end
+        load_element(record)
+      end
       # Load the unique identifiers dictionary:
       File.open("#{ROOT_DIR}/dictionary/uids.txt").each do |record|
         fields = record.split("\t")
         # Store the uids in a hash with uid-value as key and the uid instance as value:
         @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
-       end
+      end
     end
+
+    # Adds a custom dictionary file to the ruby-dicom element dictionary.
+    #
+    # @note The format of the dictionary is a tab-separated text file with 5 columns:
+    #   Tag, Name, VR, VM & Retired status.
+    #   For samples check out ruby-dicom's element dictionaries in the git repository.
+    # @param [String] file The path to the dictionary file to be added.
+    #
+    def add_element_dictionary(file)
+      File.open(file).each do |record|
+        load_element(record)
+      end
+    end
+
 
     # Returns the method (symbol) corresponding to the specified string value
     # (which may represent a element tag, name or method).
@@ -185,6 +192,25 @@ module DICOM
     #
     def uid(value)
       @uids[value]
+    end
+
+
+    private
+
+
+    # Loads an element to the dictionary from an element string record.
+    #
+    # @param [String] record A tab-separated string line as extracted from a dictionary file.
+    #
+    def load_element(record)
+      fields = record.split("\t")
+      # Store the elements in a hash with tag as key and the element instance as value:
+      element = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
+      @elements[fields[0]] = element
+      # Populate the method conversion hashes with element data:
+      method = element.name.to_element_method
+      @methods_from_names[element.name] = method
+      @names_from_methods[method] = element.name
     end
 
   end

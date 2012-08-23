@@ -42,6 +42,8 @@ suppress_warnings do
   DICOM::DCM_ISO8859_1 = 'samples/encoding_iso8859-1.dcm'
   # Sample JSON files:
   DICOM::JSON_AUDIT_TRAIL = 'samples/json/audit_trail.json'
+  # Sample dictionary files:
+  DICOM::DICT_ELEMENTS = 'samples/dictionary/private_elements.txt'
   # Directory for writing temporary files:
   DICOM::TMPDIR = "tmp/"
   DICOM::LOGDIR = DICOM::TMPDIR + "logs/"

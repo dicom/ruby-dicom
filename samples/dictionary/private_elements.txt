@@ -1,0 +1,4 @@
+0009,010C	World Domination Scheme UID	UI	1	
+2027,010F	Code Smell Context Identifier	CS	1	R
+AAAB,0110	Github Commit Sequence	SQ	1	
+FFFF,0112	Bug Registry	UL	1-n	

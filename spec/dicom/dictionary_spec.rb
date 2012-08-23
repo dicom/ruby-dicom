@@ -6,6 +6,35 @@ module DICOM
 
   describe DLibrary do
 
+    context "#add_element_dictionary" do
+
+      it "should add this dictionary to ruby-dicom's element dictionary" do
+        LIBRARY.add_element_dictionary(DICT_ELEMENTS)
+        e1 = LIBRARY.element('0009,010C')
+        e1.name.should eql 'World Domination Scheme UID'
+        e1.vr.should eql 'UI'
+        e1.vm.should eql '1'
+        e1.retired?.should be_false
+        e2 = LIBRARY.element('2027,010F')
+        e2.name.should eql 'Code Smell Context Identifier'
+        e2.vr.should eql 'CS'
+        e2.vm.should eql '1'
+        e2.retired?.should be_true
+        e3 = LIBRARY.element('AAAB,0110')
+        e3.name.should eql 'Github Commit Sequence'
+        e3.vr.should eql 'SQ'
+        e3.vm.should eql '1'
+        e3.retired?.should be_false
+        e4 = LIBRARY.element('FFFF,0112')
+        e4.name.should eql 'Bug Registry'
+        e4.vr.should eql 'UL'
+        e4.vm.should eql '1-n'
+        e4.retired?.should be_false
+      end
+
+    end
+
+
     context "#element" do
 
       it "should return the matching DictionaryElement" do
