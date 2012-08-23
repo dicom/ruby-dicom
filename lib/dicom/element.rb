@@ -56,7 +56,7 @@ module DICOM
         @parent = options[:parent]
         # FIXME: Because of some implementation problems, attaching the special
         # Data Set Trailing Padding element to a parent is not supported yet!
-        @parent.add(self, :no_follow => true) unless @tag == 'FFFC,FFFC'
+        @parent.add(self, :no_follow => true) unless @tag == 'FFFC,FFFC' && @parent.is_a?(Sequence)
       end
       # Value may in some cases be the binary string:
       unless options[:encoded]
