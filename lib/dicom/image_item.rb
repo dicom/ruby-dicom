@@ -115,10 +115,10 @@ module DICOM
     # === Examples
     #
     #   # Retrieve pixel data as an RMagick image object and display it:
-    #   image = obj.image
+    #   image = dcm.image
     #   image.display
     #   # Retrieve frame number 5 in the pixel data:
-    #   image = obj.image(:frame => 5)
+    #   image = dcm.image(:frame => 5)
     #
     def image(options={})
       options[:frame] = options[:frame] || 0
@@ -149,13 +149,13 @@ module DICOM
     # === Examples
     #
     #   # Retrieve the pixel data as RMagick image objects:
-    #   images = obj.images
+    #   images = dcm.images
     #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values (but without any leveling):
-    #   images = obj.images(:remap => true)
+    #   images = dcm.images(:remap => true)
     #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values and leveled using the default center/width values in the DICOM object:
-    #   images = obj.images(:level => true)
+    #   images = dcm.images(:level => true)
     #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values, leveled with the specified center/width values and using numerical array for the rescaling (~twice as fast).
-    #   images = obj.images(:level => [-200,1000], :narray => true)
+    #   images = dcm.images(:level => [-200,1000], :narray => true)
     #
     def images(options={})
       images = Array.new
@@ -201,7 +201,7 @@ module DICOM
     #
     # === Examples
     #
-    #   obj.image_from_file("custom_image.dat")
+    #   dcm.image_from_file("custom_image.dat")
     #
     def image_from_file(file)
       raise ArgumentError, "Expected #{String}, got #{file.class}." unless file.is_a?(String)
@@ -252,7 +252,7 @@ module DICOM
     #
     # === Examples
     #
-    #   obj.image_to_file("exported_image.dat")
+    #   dcm.image_to_file("exported_image.dat")
     #
     def image_to_file(file)
       raise ArgumentError, "Expected #{String}, got #{file.class}." unless file.is_a?(String)
@@ -338,9 +338,9 @@ module DICOM
     # === Examples
     #
     #   # Retrieve numerical pixel array:
-    #   data = obj.narray
+    #   data = dcm.narray
     #   # Retrieve numerical pixel array remapped from the original pixel values to presentation values:
-    #   data = obj.narray(:remap => true)
+    #   data = dcm.narray(:remap => true)
     #
     def narray(options={})
       pixels = nil
@@ -398,11 +398,11 @@ module DICOM
     # === Examples
     #
     #   # Simply retrieve the pixel data:
-    #   pixels = obj.pixels
+    #   pixels = dcm.pixels
     #   # Retrieve the pixel data remapped to presentation values according to window center/width settings:
-    #   pixels = obj.pixels(:remap => true)
+    #   pixels = dcm.pixels(:remap => true)
     #   # Retrieve the remapped pixel data while using numerical array (~twice as fast):
-    #   pixels = obj.pixels(:remap => true, :narray => true)
+    #   pixels = dcm.pixels(:remap => true, :narray => true)
     #
     def pixels(options={})
       pixels = nil
