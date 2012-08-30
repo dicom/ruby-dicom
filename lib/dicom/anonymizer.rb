@@ -1,12 +1,11 @@
 module DICOM
 
-  # This is a convenience class for handling anonymization of DICOM files.
+  # This is a convenience class for handling the anonymization (de-identification) of DICOM files.
   #
-  # === Notes
-  #
-  # For 'advanced' anonymization, a good resource might be:
-  # ftp://medical.nema.org/medical/dicom/supps/sup142_pc.pdf
-  # (Clinical Trials De-identification Profiles, DICOM Standards Committee, Working Group 18)
+  # @note
+  #   For 'advanced' anonymization, a good resource might be the work on "Clinical Trials
+  #   De-identification Profiles" by the DICOM Standards Committee, Working Group 18:
+  #   ftp://medical.nema.org/medical/dicom/supps/sup142_pc.pdf
   #
   class Anonymizer
     include Logging
@@ -34,26 +33,15 @@ module DICOM
 
     # Creates an Anonymizer instance.
     #
-    # === Notes
-    #
-    # * To customize logging behaviour, refer to the Logging module documentation.
-    #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:audit_trail</tt> -- String. A file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
-    # * <tt>:uid</tt> -- Boolean. If true, all (top level) UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
-    # * <tt>:uid_root</tt> -- String. An organization (or custom) UID root to use when replacing UIDs.
-    #
-    # === Examples
-    #
-    #   # Create an Anonymizer instance and restrict the log output:
+    # @note To customize logging behaviour, refer to the Logging module documentation.
+    # @param [Hash] options the options to create an anonymizer instance with
+    # @option options [String] :audit_trail a file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
+    # @option options [Boolean] :uid if true, all (top level) UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
+    # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs.
+    # @example Create an Anonymizer instance and restrict the log output
     #   a = Anonymizer.new
     #   a.logger.level = Logger::ERROR
-    #   # Carry out anonymization using the audit trail feature:
+    # @example Perform anonymization using the audit trail feature
     #   a = Anonymizer.new(:audit_trail => "trail.json")
     #   a.enumeration = true
     #   a.folder = "//dicom/today/"
@@ -103,12 +91,8 @@ module DICOM
 
     # Adds an exception folder which will be avoided when anonymizing.
     #
-    # === Parameters
-    #
-    # * <tt>path</tt> -- String. A path that will be avoided.
-    #
-    # === Examples
-    #
+    # @param [String] path a path that will be avoided
+    # @example Adding a folder
     #   a.add_exception("/home/dicom/tutorials/")
     #
     def add_exception(path)
@@ -122,12 +106,8 @@ module DICOM
 
     # Adds a folder who's files will be anonymized.
     #
-    # === Parameters
-    #
-    # * <tt>path</tt> -- String. A path that will be included in the anonymization.
-    #
-    # === Examples
-    #
+    # @param [String] path a path that will be included in the anonymization
+    # @example Adding a folder
     #   a.add_folder("/home/dicom")
     #
     def add_folder(path)
@@ -135,12 +115,10 @@ module DICOM
       @folders << path
     end
 
-    # Returns the enumeration status for this tag.
-    # Returns nil if no match is found for the provided tag.
+    # Checks the enumeration status of this tag.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
+    # @param [String] tag a data element tag
+    # @return [Boolean, NilClass] the enumeration status of the tag, or nil if the tag has no match
     #
     def enum(tag)
       raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
@@ -158,14 +136,10 @@ module DICOM
     #
     # This method is run when all settings have been finalized for the Anonymization instance.
     #
-    # === Restrictions
-    #
-    # * Only top level data elements are anonymized!
-    #
-    #--
-    # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.
+    # @note Only top level data elements are anonymized!
     #
     def execute
+      # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.
       # Search through the folders to gather all the files to be anonymized:
       logger.info("Initiating anonymization process.")
       start_time = Time.now.to_f
@@ -286,8 +260,10 @@ module DICOM
     end
 
     # Setter method for the identity file.
-    # NB! The identity file feature is deprecated!
-    # Please use the AuditTrail feature instead.
+    #
+    # @deprecated The identity file feature is deprecated!
+    #   Please use the AuditTrail feature instead.
+    # @param [String] file_name the path of the identity file
     #
     def identity_file=(file_name)
       # Deprecation warning:
@@ -352,12 +328,8 @@ module DICOM
 
     # Removes a tag from the list of tags that will be anonymized.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
-    #
-    # === Examples
-    #
+    # @param [String] tag a data element tag
+    # @example Do not anonymize the Patient's Name tag
     #   a.remove_tag("0010,0010")
     #
     def remove_tag(tag)
@@ -373,12 +345,8 @@ module DICOM
 
     # Compeletely deletes a tag from the file
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
-    #
-    # === Examples
-    #
+    # @param [String] tag a data element tag
+    # @example Completely delete the Patient's Name tag from the DICOM files
     #   a.delete_tag("0010,0010")
     #
     def delete_tag(tag)
@@ -390,18 +358,11 @@ module DICOM
     # Sets the anonymization settings for the specified tag. If the tag is already present in the list
     # of tags to be anonymized, its settings are updated, and if not, a new tag entry is created.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:value</tt> -- The replacement value to be used when anonymizing this data element. Defaults to the pre-existing value and "" for new tags.
-    # * <tt>:enum</tt> -- Boolean. Specifies if enumeration is to be used for this tag. Defaults to the pre-existing value and false for new tags.
-    #
-    # === Examples
-    #
+    # @param [String] tag a data element tag
+    # @param [Hash] options the anonymization settings for the specified tag
+    # @option options [String, Integer, Float] :value the replacement value to be used when anonymizing this data element. Defaults to the pre-existing value and "" for new tags.
+    # @option options [String, Integer, Float] :enum specifies if enumeration is to be used for this tag. Defaults to the pre-existing value and false for new tags.
+    # @example Set the anonymization settings of the Patient's Name tag
     #   a.set_tag("0010,0010", :value => "MrAnonymous", :enum => true)
     #
     def set_tag(tag, options={})
@@ -420,14 +381,13 @@ module DICOM
       end
     end
 
-    # Returns the value which will be used when anonymizing this tag.
-    # If enumeration is selected for the particular tag, a number will be
-    # appended in addition to the string that is returned here.
-    # Returns nil if no match is found for the provided tag.
+    # Gives the value which will be used when anonymizing this tag.
     #
-    # === Parameters
+    # @note If enumeration is selected for a string type tag, a number will be
+    #   appended in addition to the string that is returned here.
     #
-    # * <tt>tag</tt> -- String. A data element tag.
+    # @param [String] tag a data element tag
+    # @return [String, Integer, Float, NilClass] the replacement value for the specified tag, or nil if the tag is not matched
     #
     def value(tag)
       raise ArgumentError, "Expected String, got #{tag.class}." unless tag.is_a?(String)
@@ -442,18 +402,15 @@ module DICOM
     end
 
 
-    # The following methods are private:
     private
 
 
     # Finds the common path (if any) in the instance file path array, by performing a recursive search
     # on the folders that make up the path of one such file.
-    # Returns the index of the last folder in the path of the selected file that is common for all file paths.
     #
-    # === Parameters
-    #
-    # * <tt>str_arr</tt> -- An array of folder strings from the path of a select file.
-    # * <tt>index</tt> -- Fixnum. The index of the folder in str_arr to check against all file paths.
+    # @param [Array<String>] str_arr an array of folder strings from the path of a select file
+    # @param [Fixnum] index the index of the folder in str_arr to check against all file paths
+    # @return [Fixnum] the index of the last folder in the path of the selected file that is common for all file paths
     #
     def common_path(str_arr, index=0)
       common_folders = Array.new
@@ -482,11 +439,10 @@ module DICOM
       end
     end
 
-    # Sets a default value to use for anonymizing the given tag.
+    # Determines a default value to use for anonymizing the given tag.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- A tag string.
+    # @param [String] tag a data element tag
+    # @return [String, Integer, Float] the default replacement value for a given tag
     #
     def default_value(tag)
       name, vr = LIBRARY.name_and_vr(tag)
@@ -504,12 +460,10 @@ module DICOM
     # If its value has been encountered before, its corresponding enumerated
     # replacement value is retrieved, and if a new original value is encountered,
     # a new enumerated replacement value is found by increasing an index by 1.
-    # Returns the replacement value which is used for the anonymization of the tag.
     #
-    # === Parameters
-    #
-    # * <tt>original</tt> -- The original value of the tag that to be anonymized.
-    # * <tt>j</tt> -- Fixnum. The index of this tag in the tag-related instance arrays.
+    # @param [String, Integer, Float] original the original value of the tag to be anonymized
+    # @param [Fixnum] j the index of this tag in the tag-related instance arrays
+    # @return [String, Integer, Float] the replacement value which is used for the anonymization of the tag
     #
     def enumerated_value(original, j)
       # Is enumeration requested for this tag?
@@ -580,8 +534,8 @@ module DICOM
     end
 
     # Analyzes the write_path and the 'read' file path to determine if they have some common root.
-    # If there are parts of the file path that exists also in the write path, the common parts will not be added to the write_path.
-    # The processed paths are put in a write_path instance array.
+    # If there are parts of the file path that exists also in the write path, the common parts will
+    # not be added to the write_path. The processed paths are put in a write_path instance array.
     #
     def process_write_paths
       # First make sure @write_path ends with a file separator character:
@@ -616,13 +570,10 @@ module DICOM
 
     # Replaces the UIDs of the given DICOM object.
     #
-    # === Notes
-    #
-    # Empty UIDs are ignored (we don't generate new UIDs for these).
-    # If AuditTrail is set, the relationship between old and new UIDs
-    # are preserved, and the relations between files in a study/series
-    # should remain valid.
-    #
+    # @note Empty UIDs are ignored (we don't generate new UIDs for these).
+    # @note If AuditTrail is set, the relationship between old and new UIDs are preserved,
+    #   and the relations between files in a study/series should remain valid.
+    # @param [DObject] dcm the dicom object to be processed
     #
     def replace_uids(dcm)
       @uids.each_pair do |tag, prefix|
@@ -663,34 +614,36 @@ module DICOM
       # Sets up default tags that will be anonymized, along with default replacement values and enumeration settings.
       # This data is stored in 3 separate instance arrays for tags, values and enumeration.
       data = [
-      ["0008,0012", "20000101", false], # Instance Creation Date
-      ["0008,0013", "000000.00", false], # Instance Creation Time
-      ["0008,0020", "20000101", false], # Study Date
-      ["0008,0023", "20000101", false], # Image Date
-      ["0008,0030", "000000.00", false], # Study Time
-      ["0008,0033", "000000.00", false], # Image Time
-      ["0008,0050", "", true], # Accession Number
-      ["0008,0080", "Institution", true], # Institution name
-      ["0008,0090", "Physician", true], # Referring Physician's name
-      ["0008,1010", "Station", true], # Station name
-      ["0008,1070", "Operator", true], # Operator's Name
-      ["0010,0010", "Patient", true], # Patient's name
-      ["0010,0020", "ID", true], # Patient's ID
-      ["0010,0030", "20000101", false], # Patient's Birth Date
-      ["0010,0040", "N", false], # Patient's Sex
-      ["0020,4000", "", false], # Image Comments
+        ["0008,0012", "20000101", false], # Instance Creation Date
+        ["0008,0013", "000000.00", false], # Instance Creation Time
+        ["0008,0020", "20000101", false], # Study Date
+        ["0008,0023", "20000101", false], # Image Date
+        ["0008,0030", "000000.00", false], # Study Time
+        ["0008,0033", "000000.00", false], # Image Time
+        ["0008,0050", "", true], # Accession Number
+        ["0008,0080", "Institution", true], # Institution name
+        ["0008,0090", "Physician", true], # Referring Physician's name
+        ["0008,1010", "Station", true], # Station name
+        ["0008,1070", "Operator", true], # Operator's Name
+        ["0010,0010", "Patient", true], # Patient's name
+        ["0010,0020", "ID", true], # Patient's ID
+        ["0010,0030", "20000101", false], # Patient's Birth Date
+        ["0010,0040", "N", false], # Patient's Sex
+        ["0020,4000", "", false], # Image Comments
       ].transpose
       @tags = data[0]
       @values = data[1]
       @enumerations = data[2]
-
-      # Tags to be deleted completely during anonymization
+      # Tags to be deleted completely during anonymization:
       @delete_tags = [
       ]
     end
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
     # using the enumeration feature. Values are saved in a text file, using semi colon delineation.
+    #
+    # @deprecated The identity file feature is deprecated!
+    #   Please use the AuditTrail feature instead.
     #
     def write_identity_file
       raise ArgumentError, "Expected String, got #{@identity_file.class}. Unable to write identity file." unless @identity_file.is_a?(String)

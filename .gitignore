@@ -25,3 +25,7 @@ html
 *.swp
 *.swo
 tags
+
+# YARD (documentation):
+.yardoc
+doc

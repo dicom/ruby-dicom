@@ -16,9 +16,8 @@ module DICOM
     # Creates a new AuditTrail instance by loading the information stored
     # in the specified file.
     #
-    # === Parameters
-    #
-    # * <tt>file_name</tt> -- The path to a file containing a previously stored audit trail.
+    # @param [String] file_name the path to a file containing a previously stored audit trail
+    # @return [AuditTrail] the created AuditTrail instance
     #
     def self.read(file_name)
       audit_trail = AuditTrail.new
@@ -37,11 +36,9 @@ module DICOM
 
     # Adds a tag record to the log.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- The tag string (e.q. "0010,0010").
-    # * <tt>original</tt> -- The original value (e.q. "John Doe").
-    # * <tt>replacement</tt> -- The replacement value (e.q. "Patient1").
+    # @param [String] tag the tag string (e.q. '0010,0010')
+    # @param [String, Integer, Float] original the original value (e.q. 'John Doe')
+    # @param [String, Integer, Float] replacement the replacement value (e.q. 'Patient1')
     #
     def add_record(tag, original, replacement)
       @dictionary[tag] = Hash.new unless @dictionary.key?(tag)
@@ -50,20 +47,17 @@ module DICOM
 
     # Loads the key/value dictionary hash from a specified file.
     #
-    # === Parameters
-    #
-    # * <tt>file_name</tt> -- The path to a file containing a previously stored audit trail.
+    # @param [String] file_name the path to a file containing a previously stored audit trail
     #
     def load(file_name)
       @dictionary = JSON.load(File.new(file_name, "r:UTF-8"))
     end
 
-    # Retrieves the replacement value used for the given tag and its original value.
+    # Retrieves the original value used for the given combination of tag & replacement value.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- The tag string (e.q. "0010,0010").
-    # * <tt>replacement</tt> -- The replacement value (e.q. "Patient1").
+    # @param [String] tag the tag string (e.q. '0010,0010')
+    # @param [String, Integer, Float] replacement the replacement value (e.q. 'Patient1')
+    # @return [String, Integer, Float] the original value of the given tag
     #
     def original(tag, replacement)
       original = nil
@@ -73,11 +67,10 @@ module DICOM
       return original
     end
 
-    # Returns the key/value pairs for a specific tag.
+    # Gives the key/value pairs for a specific tag.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- The tag string (e.q. "0010,0010").
+    # @param [String] tag the tag string (e.q. '0010,0010')
+    # @return [Hash] the key/value pairs of a specific tag
     #
     def records(tag)
       if @dictionary.key?(tag)
@@ -87,12 +80,11 @@ module DICOM
       end
     end
 
-    # Retrieves the replacement value used for the given tag and its original value.
+    # Retrieves the replacement value used for the given combination of tag & original value.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- The tag string (e.q. "0010,0010").
-    # * <tt>original</tt> -- The original value (e.q. "John Doe").
+    # @param [String] tag the tag string (e.q. '0010,0010')
+    # @param [String, Integer, Float] original the original value (e.q. 'John Doe')
+    # @return [String, Integer, Float] the replacement value of the given tag
     #
     def replacement(tag, original)
       replacement = nil
@@ -100,13 +92,9 @@ module DICOM
       return replacement
     end
 
-    # Dumps the key/value pairs to a json string which is written to
-    # file as specified by the @file_name attribute of this instance.
+    # Dumps the key/value pairs to a json string which is written to the specified file.
     #
-    #
-    # === Parameters
-    #
-    # * <tt>file_name</tt> -- The file name string to be used for storing & retrieving key/value pairs on disk.
+    # @param [String] file_name the path to be used for storing key/value pairs on disk
     #
     def write(file_name)
       str = JSON.pretty_generate(@dictionary)
