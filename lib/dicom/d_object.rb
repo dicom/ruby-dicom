@@ -40,7 +40,7 @@ module DICOM
   class DObject < ImageItem
     include Logging
 
-    # A boolean set as false. This attribute is included to provide consistency with other object types for the internal methods which use it.
+    # An attribute set as nil. This attribute is included to provide consistency with the other element types which usually have a parent defined.
     attr_reader :parent
     # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
     attr_accessor :read_success
@@ -55,15 +55,12 @@ module DICOM
     # Creates a DObject instance by downloading a DICOM file
     # specified by a hyperlink, and parsing the retrieved file.
     #
-    # === Restrictions
+    # @note Highly experimental and un-tested!
+    # @note Designed for the HTTP protocol only.
+    # @note Whether this method should be included or removed from ruby-dicom is up for debate.
     #
-    # * Highly experimental and un-tested!
-    # * Designed for HTTP protocol only.
-    # * Whether this method should be included or removed from ruby-dicom is up for debate.
-    #
-    # === Parameters
-    #
-    # * <tt>link</tt> -- A hyperlink string which specifies remote location of the DICOM file to be loaded.
+    # @param [String] link a hyperlink string which specifies remote location of the DICOM file to be loaded.
+    # @return [DObject] the created DObject instance
     #
     def self.get(link)
       raise ArgumentError, "Invalid argument 'link'. Expected String, got #{link.class}." unless link.is_a?(String)
@@ -99,22 +96,14 @@ module DICOM
 
     # Creates a DObject instance by parsing an encoded binary DICOM string.
     #
-    # === Parameters
-    #
-    # * <tt>string</tt> -- An encoded binary string containing DICOM information.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:signature</tt> -- Boolean. If set as false, the parsing algorithm will not be looking for the DICOM header signature. Defaults to true.
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string.
-    #
-    # === Examples
-    #
-    #   # Parse a DICOM file that has already been loaded to a binary string:
+    # @param [String] string an encoded binary string containing DICOM information
+    # @param [Hash] options the options to use for parsing the DICOM string
+    # @option options [Boolean] :signature if set as false, the parsing algorithm will not be looking for the DICOM header signature (defaults to true)
+    # @option options [String] :syntax if a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string
+    # @example Parse a DICOM file that has already been loaded to a binary string
     #   require 'dicom'
     #   dcm = DICOM::DObject.parse(str)
-    #   # Parse a header-less DICOM string with explicit little endian transfer syntax:
+    # @example Parse a header-less DICOM string with explicit little endian transfer syntax
     #   dcm = DICOM::DObject.parse(str, :syntax => '1.2.840.10008.1.2.1')
     #
     def self.parse(string, options={})
@@ -133,13 +122,8 @@ module DICOM
 
     # Creates a DObject instance by reading and parsing a DICOM file.
     #
-    # === Parameters
-    #
-    # * <tt>file</tt> -- A string which specifies the path of the DICOM file to be loaded.
-    #
-    # === Examples
-    #
-    #   # Load a DICOM file:
+    # @param [String] file a string which specifies the path of the DICOM file to be loaded
+    # @example Load a DICOM file
     #   require 'dicom'
     #   dcm = DICOM::DObject.read('test.dcm')
     #
@@ -186,20 +170,16 @@ module DICOM
 
     # Creates a DObject instance (DObject is an abbreviation for "DICOM object").
     #
-    # === Notes
-    #
     # The DObject instance holds references to the different types of objects (Element, Item, Sequence)
-    # that makes up a DICOM object. A DObject is typically buildt by reading and parsing a file or a
-    # binary string, but can also be buildt from an empty state by the user.
+    # that makes up a DICOM object. A DObject is typically buildt by reading and parsing a file or a binary
+    # string (with DObject::read or ::parse), but can also be buildt from an empty state by this method.
     #
     # To customize logging behaviour, refer to the Logging module documentation.
     #
-    # === Examples
-    #
-    #   # Create an empty DICOM object:
+    # @example Create an empty DICOM object
     #   require 'dicom'
     #   dcm = DICOM::DObject.new
-    #   # Increasing the log message threshold (default level is INFO):
+    # @example Increasing the log message threshold (default level is INFO)
     #   DICOM.logger.level = Logger::ERROR
     #
     def initialize
@@ -216,7 +196,13 @@ module DICOM
       @parent = nil
     end
 
-    # Returns true if the argument is an instance with attributes equal to self.
+    # Checks for equality.
+    #
+    # Other and self are considered equivalent if they are
+    # of compatible types and their attributes are equivalent.
+    #
+    # @param other an object to be compared with self.
+    # @return [Boolean] true if self and other are considered equivalent
     #
     def ==(other)
       if other.respond_to?(:to_dcm)
@@ -230,14 +216,11 @@ module DICOM
     #
     # Returns the encoded binary strings in an array.
     #
-    # === Parameters
-    #
-    # * <tt>max_size</tt> -- An integer (Fixnum) which specifies the maximum allowed size of the binary data strings which will be encoded.
-    # * <tt>transfer_syntax</tt> -- The transfer syntax string to be used when encoding the DICOM object to string segments. When this method is used for making network packets, the transfer_syntax is not part of the object, and thus needs to be specified. Defaults to the DObject's transfer syntax/Implicit little endian.
-    #
-    # === Examples
-    #
-    #  encoded_strings = dcm.encode_segments(16384)
+    # @param [Integer] max_size the maximum allowed size of the binary data strings to be encoded
+    # @param [String] transfer_syntax the transfer syntax string to be used when encoding the DICOM object to string segments. When this method is used for making network packets, the transfer_syntax is not part of the object, and thus needs to be specified.
+    # @return [Array<String>] the encoded DICOM strings
+    # @example Encode the DObject to strings of max length 2^14 bytes
+    #   encoded_strings = dcm.encode_segments(16384)
     #
     def encode_segments(max_size, transfer_syntax=IMPLICIT_LITTLE_ENDIAN)
       raise ArgumentError, "Invalid argument. Expected an Integer, got #{max_size.class}." unless max_size.is_a?(Integer)
@@ -246,14 +229,18 @@ module DICOM
       encode_in_segments(max_size, :syntax => transfer_syntax)
     end
 
-    # Generates a Fixnum hash value for this instance.
+    # Computes a hash code for this object.
+    #
+    # @note Two objects with the same attributes will have the same hash code.
+    #
+    # @return [Fixnum] the object's hash code
     #
     def hash
       state.hash
     end
 
     # Prints information of interest related to the DICOM object.
-    # Calls the print() method of Parent as well as the information() method of DObject.
+    # Calls the Parent#print method as well as DObject#summary.
     #
     def print_all
       puts ""
@@ -262,8 +249,9 @@ module DICOM
     end
 
     # Gathers key information about the DObject as well as some system data, and prints this information to the screen.
-    #
     # This information includes properties like encoding, byte order, modality and various image properties.
+    #
+    # @return [Array<String>] strings describing the properties of the DICOM object
     #
     def summary
       # FIXME: Perhaps this method should be split up in one or two separate methods
@@ -335,13 +323,17 @@ module DICOM
 
     # Returns self.
     #
+    # @return [DObject] self
+    #
     def to_dcm
       self
     end
 
-    # Returns the transfer syntax string of the DObject.
+    # Gives the transfer syntax string of the DObject.
     #
     # If a transfer syntax has not been defined in the DObject, a default tansfer syntax is assumed and returned.
+    #
+    # @return [String] the DObject's transfer syntax
     #
     def transfer_syntax
       return value("0002,0010") || IMPLICIT_LITTLE_ENDIAN
@@ -350,14 +342,11 @@ module DICOM
     # Changes the transfer syntax Element of the DObject instance, and performs re-encoding of all
     # numerical values if a switch of endianness is implied.
     #
-    # === Restrictions
+    # @note This method does not change the compressed state of the pixel data element. Changing
+    # the transfer syntax between an uncompressed and compressed state will NOT change the pixel
+    # data accordingly (this must be taken care of manually).
     #
-    # This method does not change the compressed state of the pixel data element. Changing the transfer syntax between
-    # an uncompressed and compressed state will NOT change the pixel data accordingly (this must be taken care of manually).
-    #
-    # === Parameters
-    #
-    # * <tt>new_syntax</tt> -- The new transfer syntax string which will be applied to the DObject.
+    # @param [String] new_syntax the new transfer syntax string to be applied to the DObject
     #
     def transfer_syntax=(new_syntax)
       # Verify old and new transfer syntax:
@@ -379,28 +368,17 @@ module DICOM
 
     # Writes the DICOM object to file.
     #
-    # === Notes
+    # @note The goal of the Ruby DICOM library is to yield maximum conformance with the DICOM
+    # standard when outputting DICOM files. Therefore, when encoding the DICOM file, manipulation
+    # of items such as the meta group, group lengths and header signature may occur. Therefore,
+    # the file that is written may not be an exact bitwise copy of the file that was read, even if no
+    # DObject manipulation has been done by the user.
     #
-    # The goal of the Ruby DICOM library is to yield maximum conformance with
-    # the DICOM standard when outputting DICOM files. Therefore, when encoding
-    # the DICOM file, manipulation of items such as the meta group, group lengths
-    # and header signature may occur.
-    #
-    # Therefore, the file that is written may not be an exact bitwise copy of the
-    # file that was read, even if no DObject manipulation has been done by the user.
-    #
-    # === Parameters
-    #
-    # * <tt>file_name</tt> -- String. The path & name of the DICOM file which is to be written to disk.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:add_meta</tt> -- (Deprecated) If set to false, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file.
-    # * <tt>:ignore_meta</tt> -- Boolean. If true, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file.
-    #
-    # === Examples
-    #
+    # @param [String] file_name the path of the DICOM file which is to be written to disk
+    # @param [Hash] options the options to use for writing the DICOM file
+    # @option options [Boolean] :add_meta <DEPRECATED> if set to false, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file
+    # @option options [Boolean] :ignore_meta if true, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file
+    # @example Encode a DICOM file from a DObject
     #   dcm.write('C:/dicom/test.dcm')
     #
     def write(file_name, options={})
@@ -415,7 +393,7 @@ module DICOM
 
 
     # Adds any missing meta group (0002,xxxx) data elements to the DICOM object,
-    # to ensure that a valid DICOM object will be written to file.
+    # to ensure that a valid DICOM object is encoded.
     #
     def insert_missing_meta
       # File Meta Information Version:
@@ -439,7 +417,9 @@ module DICOM
       Element.new("0002,0000", meta_group_length, :parent => self)
     end
 
-    # Determines and returns the length of the meta group in the DObject instance.
+    # Determines the length of the meta group in the DObject instance.
+    #
+    # @return [Integer] the length of the file meta group string
     #
     def meta_group_length
       group_length = 0
@@ -458,7 +438,9 @@ module DICOM
       return group_length
     end
 
-    # Returns the attributes (children) of this instance (for comparison purposes).
+    # Collects the attributes of this instance.
+    #
+    # @return [Array<Element, Sequence>] an array of elements and sequences
     #
     def state
       @tags

@@ -6,8 +6,8 @@ module DICOM
 
 
     # Checks for the official DICOM header signature.
-    # Returns true if the proper signature is present, false if it is not present,
-    # and nil if the string was shorter then the length of the DICOM signature.
+    #
+    # @return [Boolean] true if the proper signature is present, false if not, and nil if the string was shorter then the length of the DICOM signature
     #
     def check_header
       # According to the official DICOM standard, a DICOM file shall contain 128 consequtive (zero) bytes,
@@ -38,14 +38,11 @@ module DICOM
 
     # Handles the process of reading a data element from the DICOM string, and
     # creating an element object from the parsed data.
-    # Returns nil if end of string has been reached (in an expected way), false if
-    # the element parse failed, and true if an element was parsed successfully.
     #
-    #--
-    # FIXME: This method has grown a bit messy and isn't very easy to follow.
-    # It would be nice if it could be cleaned up somewhat.
+    # @return [Boolean] nil if end of string has been reached (in an expected way), false if the element parse failed, and true if an element was parsed successfully
     #
     def process_data_element
+      # FIXME: This method has grown a bit messy and isn't very pleasant to read. Cleanup possible?
       # STEP 1:
       # Attempt to read data element tag:
       tag = read_tag
@@ -132,15 +129,10 @@ module DICOM
 
     # Builds a DICOM object by parsing an encoded DICOM string.
     #
-    # === Parameters
-    #
-    # * <tt>string</tt> -- A binary DICOM string to be parsed.
-    # * <tt>signature</tt> -- Boolean. If true (default), the parsing algorithm will look for the DICOM header signature.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:syntax</tt> -- String. If a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the string.
+    # @param [String] string a binary DICOM string to be parsed
+    # @param [Boolean] signature if true (default), the parsing algorithm will look for the DICOM header signature
+    # @param [Hash] options the options to use for parsing the DICOM string
+    # @option options [String] :syntax if a syntax string is specified, the parsing algorithm is forced to use this transfer syntax when decoding the string
     #
     def read(string, signature=true, options={})
       # (Re)Set variables:
@@ -213,18 +205,18 @@ module DICOM
       end
     end
 
-    # Reads and returns the data element's binary value string (varying length).
+    # Reads the data element's binary value string (varying length).
     #
-    # === Parameters
-    #
-    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
+    # @param [Integer] length the length of the binary string to be extracted
+    # @return [String] the element value
     #
     def read_bin(length)
       return @stream.extract(length)
     end
 
-    # Reads and returns the data element's tag (the 4 first bytes of a data element).
-    # Returns nil if no tag could be read (end of string).
+    # Reads the data element's tag (the 4 first bytes of a data element).
+    #
+    # @return [String, NilClass] the element tag, or nil (if end of string reached)
     #
     def read_tag
       tag = @stream.decode_tag
@@ -242,19 +234,17 @@ module DICOM
       return tag
     end
 
-    # Decodes and returns the data element's value (varying length).
-    #
-    # === Notes
+    # Decodes the data element's value (varying length).
     #
     # * Data elements which have multiple numbers as value, will have these numbers joined to a string, separated by the \ character.
     # * For some value representations (OW, OB, OF, UN), a value is not processed, and nil is returned.
-    # This means that for data like pixel data, compressed data, unknown data, a value is not available in the data element,
-    # and must be processed from the data element's binary variable.
     #
-    # === Parameters
+    # This means that for data like pixel data, compressed data, unknown data, a value is not
+    # available in the data element, and must be processed from the data element's binary variable.
     #
-    # * <tt>vr</tt> -- String. The value representation of the data element which the value to be decoded belongs to.
-    # * <tt>length</tt> -- Fixnum. The length of the binary string that will be extracted.
+    # @param [String] vr the value representation of the data element which the value to be decoded belongs to
+    # @param [Integer] length the length of the binary string to be extracted
+    # @return [String, NilClass] the data element value
     #
     def read_value(vr, length)
       unless vr == "OW" or vr == "OB" or vr == "OF" or vr == "UN"
@@ -274,12 +264,10 @@ module DICOM
     # Reads the data element's value representation (2 bytes), as well as the
     # data element's length (varying length: 2-6 bytes). The decoding scheme
     # to be applied depends on explicitness, data element type and vr.
-    # Returns vr and length.
     #
-    # === Parameters
-    #
-    # * <tt>vr</tt> -- String. The value representation that was retrieved from the dictionary for the tag of this data element.
-    # * <tt>tag</tt> -- String. The tag of this data element.
+    # @param [String] vr the value representation that was retrieved from the dictionary for the tag of this data element
+    # @param [String] tag the tag of this data element
+    # @return [Array<String, Integer>] the value representation and length of the element
     #
     def read_vr_length(vr, tag)
       # Structure will differ, dependent on whether we have explicit or implicit encoding:
@@ -319,7 +307,8 @@ module DICOM
       return vr, length
     end
 
-    # Changes encoding variables as the parsing proceeds past the initial meta group part (0002,xxxx) of the DICOM string.
+    # Changes encoding variables as the parsing proceeds past the initial meta
+    # group part (0002,xxxx) of the DICOM string.
     #
     def switch_syntax_on_read
       # Get the transfer syntax string, unless it has already been provided by keyword:

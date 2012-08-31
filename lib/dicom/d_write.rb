@@ -7,6 +7,8 @@ module DICOM
 
     # Adds a binary string to (the end of) either the instance file or string.
     #
+    # @param [String] string a pre-encoded string
+    #
     def add_encoded(string)
       if @file
         @stream.write(string)
@@ -47,9 +49,7 @@ module DICOM
 
     # Toggles the status for enclosed pixel data.
     #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- A data element (DataElement, Sequence or Item).
+    # @param [Element, Item, Sequence] element a data element
     #
     def check_encapsulated_image(element)
       # If DICOM object contains encapsulated pixel data, we need some special handling for its items:
@@ -61,14 +61,10 @@ module DICOM
     # Writes DICOM content to a series of size-limited binary strings, which is returned in an array.
     # This is typically used in preparation of transmitting DICOM objects through network connections.
     #
-    # === Parameters
-    #
-    # * <tt>max_size</tt> -- Fixnum. The maximum segment string length.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
+    # @param [Integer] max_size the maximum segment string length
+    # @param [Hash] options the options to use for encoding the DICOM strings
+    # @option options [String] :syntax the transfer syntax used for the encoding settings of the post-meta part of the DICOM string
+    # @return [Array<String>] the encoded DICOM strings
     #
     def encode_in_segments(max_size, options={})
       @max_size = max_size
@@ -96,9 +92,7 @@ module DICOM
 
     # Tests if the path/file is writable, creates any folders if necessary, and opens the file for writing.
     #
-    # === Parameters
-    #
-    # * <tt>file</tt> -- A path/file string.
+    # @param [String] file a path/file string
     #
     def open_file(file)
       # Check if file already exists:
@@ -132,9 +126,7 @@ module DICOM
 
     # Encodes and writes a single data element.
     #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- A data element (DataElement, Sequence or Item).
+    # @param [Element, Item, Sequence] element a data element
     #
     def write_data_element(element)
       # Step 1: Write tag:
@@ -147,15 +139,11 @@ module DICOM
     end
 
     # Iterates through the data elements, encoding/writing one by one.
-    # If an element has children, this is method is repeated recursively.
+    # If an element has children, this method is repeated recursively.
     #
-    # === Notes
+    # @note Group length data elements are NOT written (they are deprecated/retired in the DICOM standard).
     #
-    # * Group length data elements are NOT written (they have been deprecated/retired in the DICOM standard).
-    #
-    # === Parameters
-    #
-    # * <tt>elements</tt> -- An array of data elements (sorted by their tags).
+    # @param [Array<Element, Item, Sequence>] elements an array of data elements (sorted by their tags)
     #
     def write_data_elements(elements)
       elements.each do |element|
@@ -191,9 +179,7 @@ module DICOM
 
     # Encodes and writes an Item or Sequence delimiter.
     #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- A parent element (Item or Sequence).
+    # @param [Item, Sequence] element a parent element
     #
     def write_delimiter(element)
       delimiter_tag = (element.tag == ITEM_TAG ? ITEM_DELIMITER : SEQUENCE_DELIMITER)
@@ -203,15 +189,10 @@ module DICOM
 
     # Handles the encoding of DICOM information to string as well as writing it to file.
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:file_name</tt> -- String. The path & name of the DICOM file which is to be written to disk.
-    # * <tt>:signature</tt> -- Boolean. If true, the 128 byte preamble and 'DICM' signature is prepended to the encoded string.
-    # * <tt>:syntax</tt> -- String. The transfer syntax used for the encoding settings of the post-meta part of the DICOM string.
+    # @param [Hash] options the options to use for encoding the DICOM string
+    # @option options [String] :file_name the path & name of the DICOM file which is to be written to disk
+    # @option options [Boolean] :signature if true, the 128 byte preamble and 'DICM' signature is prepended to the encoded string
+    # @option options [String] :syntax the transfer syntax used for the encoding settings of the post-meta part of the DICOM string
     #
     def write_elements(options={})
       # Check if we are able to create given file:
@@ -258,9 +239,7 @@ module DICOM
 
     # Encodes and writes a tag (the first part of the data element).
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
+    # @param [String] tag a data element tag
     #
     def write_tag(tag)
       # Group 0002 is always little endian, but the rest of the file may be little or big endian.
@@ -273,9 +252,7 @@ module DICOM
 
     # Writes the data element's pre-encoded value.
     #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- The binary string value of this data element.
+    # @param [String] bin the binary string value of this data element
     #
     def write_value(bin)
       # This is pretty straightforward, just dump the binary data to the file/string:
@@ -285,11 +262,9 @@ module DICOM
     # Encodes and writes the value representation (if it is to be written) and length value.
     # The encoding scheme to be applied here depends on explicitness, data element type and vr.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. The tag of this data element.
-    # * <tt>vr</tt> -- String. The value representation of this data element.
-    # * <tt>length</tt> -- Fixnum. The data element's length.
+    # @param [String] tag the tag of this data element
+    # @param [String] vr the value representation of this data element
+    # @param [Integer] length the data element's length
     #
     def write_vr_length(tag, vr, length)
       # Encode the length value (cover both scenarios of 2 and 4 bytes):
@@ -331,7 +306,8 @@ module DICOM
       end
     end
 
-    # Changes encoding variables as the file writing proceeds past the initial meta group part (0002,xxxx) of the DICOM object.
+    # Changes encoding variables as the file writing proceeds past the initial meta
+    # group part (0002,xxxx) of the DICOM object.
     #
     def switch_syntax_on_write
       # Process the transfer syntax string to establish encoding settings:
