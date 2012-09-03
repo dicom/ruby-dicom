@@ -7,36 +7,29 @@ module DICOM
     # Include the Elemental mix-in module:
     include Elemental
 
-    # Creates a Element instance.
+    # Creates an Element instance.
     #
-    # === Notes
+    # @note In the case where the Element is given a binary instead of value,
+    #   the Element will not have a formatted value (value = nil).
+    # @note Private data elements are named as 'Private'.
+    # @note Non-private data elements that are not found in the dictionary are named as 'Unknown'.
     #
-    # * In the case where the Element is given a binary instead of value, the Element will not have a formatted value (value = nil).
-    # * Private data elements will have their names listed as "Private".
-    # * Non-private data elements that are not found in the dictionary will be listed as "Unknown".
+    # @param [String] tag a ruby-dicom type element tag string
+    # @param [String, Integer, Float, Array, NilClass] value a custom value to be encoded as the data element binary string, or in some cases (specified by options), a pre-encoded binary string
+    # @param [Hash] options the options to use for creating the element
     #
-    # === Parameters
+    # @option options [String] :bin if you already have the value pre-encoded to a binary string, the string can be supplied with this option to avoid it being encoded a second time
+    # @option options [Boolean] :encoded if the value parameter contains a pre-encoded binary, this boolean must to be set as true
+    # @option options [String] :name the name of the Element (if not specified, the name is retrieved from the dictionary)
+    # @option options [DObject, Item, NilClass] :parent a parent instance (Item or DObject) which the element belongs to
+    # @option options [String] :vr if a private element is created with a custom value, this must be specified to enable the encoding of the value (if not specified, the vr is retrieved from the dictionary)
     #
-    # * <tt>tag</tt> -- A string which identifies the tag of the data element.
-    # * <tt>value</tt> -- A custom value to be encoded as the data element binary string, or in some cases (specified by options), a pre-encoded binary string.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:bin</tt> -- String. If you already have the value pre-encoded to a binary string, the string can be supplied with this option to avoid it being encoded a second time.
-    # * <tt>:encoded</tt> -- Boolean. If the value parameter contains a pre-encoded binary, this boolean must to be set as true.
-    # * <tt>:name</tt> - String. The name of the Element may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
-    # * <tt>:parent</tt> - Item or DObject instance which the Element instance shall belong to.
-    # * <tt>:vr</tt> -- String. If a private Element is created with a custom value, this must be specified to enable the encoding of the value. If it is not specified, the vr will be retrieved from the dictionary.
-    #
-    # === Examples
-    #
-    #   # Create a new data element and connect it to a DObject instance:
-    #   patient_name = Element.new("0010,0010", "John Doe", :parent => dcm)
-    #   # Create a "Pixel Data" element and insert image data that you have already encoded elsewhere:
-    #   pixel_data = Element.new("7FE0,0010", processed_pixel_data, :encoded => true, :parent => dcm)
-    #   # Create a private data element:
-    #   private_data = Element.new("0011,2102", some_data, :parent => dcm, :vr => "LO")
+    # @example Create a new data element and connect it to a DObject instance
+    #   patient_name = Element.new('0010,0010', 'John Doe', :parent => dcm)
+    # @example Create a "Pixel Data" element and insert image data that you have already encoded elsewhere
+    #   pixel_data = Element.new('7FE0,0010', processed_pixel_data, :encoded => true, :parent => dcm)
+    # @example Create a private data element
+    #   private = Element.new('0011,2102', some_data, :parent => dcm, :vr => 'LO')
     #
     def initialize(tag, value, options={})
       raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
@@ -86,7 +79,13 @@ module DICOM
       @length = @bin.length
     end
 
-    # Returns true if the argument is an instance with attributes equal to self.
+    # Checks for equality.
+    #
+    # Other and self are considered equivalent if they are
+    # of compatible types and their attributes are equivalent.
+    #
+    # @param other an object to be compared with self.
+    # @return [Boolean] true if self and other are considered equivalent
     #
     def ==(other)
       if other.respond_to?(:to_element)
@@ -98,14 +97,10 @@ module DICOM
 
     # Sets the binary string of a Element.
     #
-    # === Notes
+    # @note if the specified binary has an odd length, a proper pad byte will automatically be appended
+    #   to give it an even length (which is needed to conform with the DICOM standard).
     #
-    # If the specified binary has an odd length, a proper pad byte will automatically be appended
-    # to give it an even length (which is needed to conform with the DICOM standard).
-    #
-    # === Parameters
-    #
-    # * <tt>new_bin</tt> -- A binary string of encoded data.
+    # @param [String] new_bin a binary string of encoded data
     #
     def bin=(new_bin)
       raise ArgumentError, "Expected String, got #{new_bin.class}." unless new_bin.is_a?(String)
@@ -120,39 +115,52 @@ module DICOM
     end
 
     # Checks if the Element actually has any child elementals.
-    # Returns false, as Element instances by definition can not have children.
+    #
+    # @return [FalseClass] always returns false, as Element instances by definition can't have children
     #
     def children?
       return false
     end
 
-    # Returns the endianness of the encoded binary value of this data element.
-    # Returns false if little endian, true if big endian.
+    # Gives the endianness of the encoded binary value of this element.
+    #
+    # @return [Boolean] false if little endian, true if big endian
     #
     def endian
       return stream.str_endian
     end
 
-    # Generates a Fixnum hash value for this instance.
+    # Computes a hash code for this object.
+    #
+    # @note Two objects with the same attributes will have the same hash code.
+    #
+    # @return [Fixnum] the object's hash code
     #
     def hash
       state.hash
     end
 
-    # Returns a string containing a human-readable hash representation of the Element.
+    # Gives a string containing a human-readable hash representation of the Element.
+    #
+    # @return [String] a hash representation string of the element
     #
     def inspect
       to_hash.inspect
     end
 
     # Checks if the Element is a parent.
-    # Returns false, as Element instances by definition can not be parents.
+    #
+    # @return [FalseClass] always returns false, as Element instances by definition are not parents
     #
     def is_parent?
       return false
     end
 
-    # Returns the value of the elemental (used as value in the parent's hash representation).
+    # Creates a hash representation of the element instance.
+    #
+    # @note The key representation in this hash is configurable
+    #   (refer to the DICOM module methods documentation for more details).
+    # @return [Hash] a hash containing a key & value pair (e.g. {"Modality"=>"MR"})
     #
     def to_hash
       return {self.send(DICOM.key_representation) => value}
@@ -160,34 +168,40 @@ module DICOM
 
     # Returns self.
     #
+    # @return [Element] self
+    #
     def to_element
       self
     end
 
-    # Returns a json string containing a human-readable representation of the Element.
+    # Gives a json string containing a human-readable representation of the Element.
+    #
+    # @return [String] a string containing a key & value pair (e.g. "{\"Modality\":\"MR\"}")
     #
     def to_json
       to_hash.to_json
     end
 
-    # Returns a yaml string containing a human-readable representation of the Element.
+    # Gives a yaml string containing a human-readable representation of the Element.
+    #
+    # @return [String] a string containing a key & value pair (e.g. "---\nModality: MR\n")
     #
     def to_yaml
       to_hash.to_yaml
     end
 
-    # The (decoded) value of the data element.
+    # Gives the (decoded) value of the data element.
     #
-    # === Notes
+    # @note Returned string values are automatically converted from their originally
+    #   encoding (e.g. ISO8859-1 or ASCII-8BIT) to UTF-8 for convenience reasons.
+    #   If the value string is wanted in its original encoding, extract the data
+    #   element's bin attribute instead.
     #
-    # Returned string values are automatically converted from their originally
-    # encoding (e.g. ISO8859-1 or ASCII-8BIT) to UTF-8 for convenience reasons.
-    # If the value string is wanted in its original encoding, extract the data
-    # element's bin attribute instead.
-    #
-    # Note that according to the DICOM Standard PS 3.5 C.12.1.1.2, the Character Set only applies
+    # @note Note that according to the DICOM Standard PS 3.5 C.12.1.1.2, the Character Set only applies
     # to values of data elements of type SH, LO, ST, PN, LT or UT. Currently in ruby-dicom, all
     # string values are encoding converted regardless of VR, but whether this causes any problems is uknown.
+    #
+    # @return [String, Integer, Float] the formatted element value
     #
     def value
       if @value.is_a?(String)
@@ -208,16 +222,11 @@ module DICOM
 
     # Sets the value of the Element instance.
     #
-    # === Notes
-    #
     # In addition to updating the value attribute, the specified value is encoded to binary
     # and used to update the Element's bin and length attributes too.
     #
-    # The specified value must be of a type that is compatible with the Element's value representation (vr).
-    #
-    # === Parameters
-    #
-    # * <tt>new_value</tt> -- A custom value (String, Fixnum, etc..) that is assigned to the Element.
+    # @note The specified value must be of a type that is compatible with the Element's value representation (vr).
+    # @param [String, Integer, Float, Array] new_value a formatted value that is assigned to the element
     #
     def value=(new_value)
       conversion = VALUE_CONVERSION[@vr] || :to_s
@@ -246,21 +255,21 @@ module DICOM
     end
 
 
-    # Following methods are private.
     private
 
 
-    # Encodes a formatted value to a binary string and returns it.
+    # Encodes a formatted value to a binary string.
     #
-    # === Parameters
-    #
-    # * <tt>formatted_value</tt> -- A custom value (String, Fixnum, etc..).
+    # @param [String, Integer, Float, Array] formatted_value a formatted value
+    # @return [String] the encoded, binary string
     #
     def encode(formatted_value)
-      return stream.encode_value(formatted_value, @vr)
+      stream.encode_value(formatted_value, @vr)
     end
 
-    # Returns the attributes of this instance in an array (for comparison purposes).
+    # Collects the attributes of this instance.
+    #
+    # @return [Array<String>] an array of attributes
     #
     def state
       [@tag, @vr, @value, @bin]

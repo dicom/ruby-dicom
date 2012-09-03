@@ -17,15 +17,15 @@ module DICOM
     # Module methods:
     #++
 
-    # Generates a random (unique) UID string.
+    # Generates a unique identifier string.
     # The UID is composed of a DICOM root UID, a type prefix,
     # a datetime part and a random number part.
-    # Returns the UID string.
     #
-    # === Parameters
-    #
-    # * <tt>root</tt> -- String. The DICOM root UID to be used for generating the UID string, e.g. '1.2.840.999'.
-    # * <tt>prefix</tt> -- String. An integer string which is placed between the dicom root and the time/random part of the UID.
+    # @param [String] root the DICOM root UID to be used for generating the UID string
+    # @param [String] prefix an integer string which is placed between the dicom root and the time/random part of the UID
+    # @return [String] the generated unique identifier
+    # @example Create a random UID with specified root and prefix
+    #   uid = DICOM.generate_uid('1.2.840.999', '5')
     #
     def generate_uid(root=UID_ROOT, prefix=1)
       # NB! For UIDs, leading zeroes immediately after a dot is not allowed.
@@ -36,7 +36,7 @@ module DICOM
       return uid
     end
 
-    # Use tags as key. Example: "0010,0010"
+    # Use tags as key. Example: '0010,0010'
     #
     def key_use_tags
       @key_representation = :tag
@@ -65,6 +65,6 @@ module DICOM
   # The default key representation.
   self.key_representation = :name
   # The default source application entity title.
-  self.source_app_title = "RUBY_DICOM"
+  self.source_app_title = 'RUBY_DICOM'
 
 end

@@ -1,6 +1,7 @@
 module DICOM
 
-  # The Elemental mix-in module contains methods that are common among the different element classes:
+  # The Elemental mix-in module contains methods that
+  # are common among the various element type classes:
   # * Element
   # * Item
   # * Sequence
@@ -20,16 +21,18 @@ module DICOM
     # The elemental's value representation (String).
     attr_reader :vr
 
-    # Returns the method (symbol) corresponding to the name string of this element.
+    # Gives the method (symbol) corresponding to the name string of this element.
+    #
+    # @return [Symbol, NilClass] the matched element method (or nil, if no match is made)
     #
     def name_as_method
       LIBRARY.as_method(@name)
     end
 
-    # Retrieves the entire chain of parents connected to this elemental.
-    # The parents are returned in an array, where the first entry is the
-    # immediate parent and the last entry is the top parent.
-    # Returns an empty array if no parent is defined.
+    # Retrieves the entire chain of parents connected to this elemental
+    # (or an empty array, if the element is parent-less).
+    #
+    # @return [Array] array of parents (immediate parent first, top parent last)
     #
     def parents
       all_parents = Array.new
@@ -41,16 +44,12 @@ module DICOM
       return all_parents
     end
 
-    # Sets a specified parent instance as this elemental's parent, while taking care to delete this elemental from any previous parent
-    # as well as adding itself to the new parent (unless new parent is nil).
+    # Sets a specified parent instance as this elemental's parent, while taking
+    # care to delete this elemental from any previous parent, as well as adding
+    # itself to the new parent (unless new parent is nil).
     #
-    # === Parameters
-    #
-    # * <tt>new_parent</tt> -- A parent object (which can be either a DObject, Item or Sequence instance), or nil.
-    #
-    # === Examples
-    #
-    #   # Create a new Sequence and connect it to a DObject instance:
+    # @param [DObject, Item, Sequence, NilClass] new_parent the new parent object for this elemental
+    # @example Create a new Sequence and connect it to a DObject instance
     #   structure_set_roi = Sequence.new("3006,0020")
     #   structure_set_roi.parent = dcm
     #
@@ -76,12 +75,10 @@ module DICOM
       @parent = new_parent
     end
 
-    # Sets a specified parent instance as this elemental's parent, without doing any other updates, like removing the elemental
-    # from any previous parent or adding itself to the new parent.
+    # Sets a specified parent instance as this elemental's parent, without doing any other updates,
+    # like removing the elemental from any previous parent or adding itself to the new parent.
     #
-    # === Parameters
-    #
-    # * <tt>new_parent</tt> -- A parent object (which can be either a DObject, Item or Sequence instance), or nil.
+    # @param [DObject, Item, Sequence, NilClass] new_parent the new parent object for this elemental
     #
     def set_parent(new_parent)
       # Set the new parent (should we bother to test for parent validity here?):
@@ -90,10 +87,8 @@ module DICOM
 
     # Returns a Stream instance which can be used for encoding a value to binary.
     #
-    # === Notes
-    #
-    # * Retrieves the Stream instance of the top parent DObject instance.
-    # If this fails, a new Stream instance is created (with Little Endian encoding assumed).
+    # @note Retrieves the Stream instance of the top parent DObject instance.
+    #   If this fails, a new Stream instance is created (with little endian encoding assumed).
     #
     def stream
       if top_parent.is_a?(DObject)
@@ -105,9 +100,8 @@ module DICOM
 
     # Returns the top parent of a particular elemental.
     #
-    # === Notes
-    #
-    # Unless the elemental, or one of its parent instances, are independent, the top parent will be a DObject instance.
+    # @note Unless the elemental, or one of its parent instances, are independent,
+    #   the top parent will be a DObject instance.
     #
     def top_parent
       # The top parent is determined recursively:

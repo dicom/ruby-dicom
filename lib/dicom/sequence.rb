@@ -9,29 +9,20 @@ module DICOM
 
     # Creates a Sequence instance.
     #
-    # === Notes
+    # @note Private sequences are named as 'Private'.
+    # @note Non-private sequences that are not found in the dictionary are named as 'Unknown'.
     #
-    # * Private sequences will have their names listed as "Private".
-    # * Non-private sequences that are not found in the dictionary will be listed as "Unknown".
+    # @param [String] tag a ruby-dicom type element tag string
+    # @param [Hash] options the options to use for creating the sequence
+    # @option options [Integer] :length the sequence length, which refers to the length of the encoded string of children of this sequence
+    # @option options [Integer] :name the name of the sequence may be specified upon creation (if it is not, the name is retrieved from the dictionary)
+    # @option options [Integer] :parent an Item or DObject instance which the sequence instance shall belong to
+    # @option options [Integer] :vr the value representation of the Sequence may be specified upon creation (if it is not, a default vr is chosen)
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- A string which identifies the tag of the sequence.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:length</tt> -- Fixnum. The Sequence length, which refers to the length of the encoded string of children of this Sequence.
-    # * <tt>:name</tt> - String. The name of the Sequence may be specified upon creation. If it is not, the name will be retrieved from the dictionary.
-    # * <tt>:parent</tt> - Item or DObject instance which the Sequence instance shall belong to.
-    # * <tt>:vr</tt> -- String. The value representation of the Sequence may be specified upon creation. If it is not, a default vr is chosen.
-    #
-    # === Examples
-    #
-    #   # Create a new Sequence and connect it to a DObject instance:
-    #   structure_set_roi = Sequence.new("3006,0020", :parent => dcm)
-    #   # Create an "Encapsulated Pixel Data" Sequence:
-    #   encapsulated_pixel_data = Sequence.new("7FE0,0010", :name => "Encapsulated Pixel Data", :parent => dcm, :vr => "OW")
+    # @example Create a new Sequence and connect it to a DObject instance
+    #   structure_set_roi = Sequence.new('3006,0020', :parent => dcm)
+    # @example Create an "Encapsulated Pixel Data" Sequence
+    #   encapsulated_pixel_data = Sequence.new('7FE0,0010', :name => 'Encapsulated Pixel Data', :parent => dcm, :vr => 'OW')
     #
     def initialize(tag, options={})
       raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
@@ -57,7 +48,13 @@ module DICOM
       end
     end
 
-    # Returns true if the argument is an instance with attributes equal to self.
+    # Checks for equality.
+    #
+    # Other and self are considered equivalent if they are
+    # of compatible types and their attributes are equivalent.
+    #
+    # @param other an object to be compared with self.
+    # @return [Boolean] true if self and other are considered equivalent
     #
     def ==(other)
       if other.respond_to?(:to_sequence)
@@ -67,7 +64,11 @@ module DICOM
 
     alias_method :eql?, :==
 
-    # Generates a Fixnum hash value for this instance.
+    # Computes a hash code for this object.
+    #
+    # @note Two objects with the same attributes will have the same hash code.
+    #
+    # @return [Fixnum] the object's hash code
     #
     def hash
       state.hash
@@ -76,10 +77,8 @@ module DICOM
     # Loads data from an encoded DICOM string and creates
     # items and elements which are linked to this instance.
     #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- An encoded binary string containing DICOM information.
-    # * <tt>syntax</tt> -- String. The transfer syntax to use when decoding the DICOM string.
+    # @param [String] bin an encoded binary string containing DICOM information
+    # @param [String] syntax the transfer syntax to use when decoding the DICOM string
     #
     def parse(bin, syntax)
       raise ArgumentError, "Invalid argument 'bin'. Expected String, got #{bin.class}." unless bin.is_a?(String)
@@ -89,6 +88,8 @@ module DICOM
 
     # Returns self.
     #
+    # @return [Sequence] self
+    #
     def to_sequence
       self
     end
@@ -97,7 +98,9 @@ module DICOM
     private
 
 
-    # Returns the attributes of this instance in an array (for comparison purposes).
+    # Collects the attributes of this instance.
+    #
+    # @return [Array<String, Item>] an array of attributes
     #
     def state
       [@tag, @vr, @tags]

@@ -17,29 +17,21 @@ module DICOM
 
     # Creates an Item instance.
     #
-    # === Notes
+    # Normally, an Item contains data elements and/or sequences. However,
+    # in some cases, an Item will instead/also carry binary string data,
+    # like the pixel data of an encapsulated image fragment.
     #
-    # Normally, an Item contains data elements and/or sequences. However, in some cases, an Item will instead/also
-    # carry binary string data, like the pixel data of an encapsulated image fragment.
+    # @param [Hash] options the options to use for creating the item
+    # @option options [String] :bin a binary string to be carried by the item
+    # @option options [String] :indexif the item is to be inserted at a specific index (Item number), this option parameter needs to set
+    # @option options [String] :length theiItem length (which either refers to the length of the encoded string of children of this item, or the length of its binary data)
+    # @option options [String] :name the name of the item may be specified upon creation  (if not, a default name is used)
+    # @option options [String] :parent a Sequence or DObject instance which the item instance shall belong to
+    # @option options [String] :vr the value representation of the item may be specified upon creation (if not, a default vr is used)
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:bin</tt> -- A binary string to be carried by the Item.
-    # * <tt>:index</tt> -- Fixnum. If the Item is to be inserted at a specific index (Item number), this option parameter needs to set.
-    # * <tt>:length</tt> -- Fixnum. The Item length (which either refers to the length of the encoded string of children of this Item, or the length of its binary data).
-    # * <tt>:name</tt> - String. The name of the Item may be specified upon creation. If it is not, a default name is chosen.
-    # * <tt>:parent</tt> - Sequence or DObject instance which the Item instance shall belong to.
-    # * <tt>:vr</tt> -- String. The value representation of the Item may be specified upon creation. If it is not, a default vr is chosen.
-    #
-    # === Examples
-    #
-    #   # Create an empty Item and connect it to the "Structure Set ROI Sequence":
+    # @example Create an empty Item and connect it to the "Structure Set ROI Sequence"
     #   item = Item.new(:parent => dcm["3006,0020"])
-    #   # Create a "Pixel Data Item" which carries an encapsulated image frame (a pre-encoded binary):
+    # @example Create a "Pixel Data Item" which carries an encapsulated image frame (a pre-encoded binary)
     #   pixel_item = Item.new(:bin => processed_pixel_data, :parent => dcm["7FE0,0010"][1])
     #
     def initialize(options={})
@@ -62,7 +54,13 @@ module DICOM
       end
     end
 
-    # Returns true if the argument is an instance with attributes equal to self.
+    # Checks for equality.
+    #
+    # Other and self are considered equivalent if they are
+    # of compatible types and their attributes are equivalent.
+    #
+    # @param other an object to be compared with self.
+    # @return [Boolean] true if self and other are considered equivalent
     #
     def ==(other)
       if other.respond_to?(:to_item)
@@ -74,14 +72,9 @@ module DICOM
 
     # Sets the binary string that the Item will contain.
     #
-    # === Parameters
-    #
-    # * <tt>new_bin</tt> -- A binary string of encoded data.
-    #
-    # === Examples
-    #
-    #   # Insert a custom jpeg in the (encapsulated) pixel data element, in it's first pixel data item:
-    #   dcm["7FE0,0010"][1].children.first.bin = jpeg_binary_string
+    # @param [String] new_bin a binary string of encoded data
+    # @example Insert a custom jpeg in the (encapsulated) pixel data element (in it's first pixel data item)
+    #   dcm['7FE0,0010'][1].children.first.bin = jpeg_binary_string
     #
     def bin=(new_bin)
       raise ArgumentError, "Invalid parameter type. String was expected, got #{new_bin.class}." unless new_bin.is_a?(String)
@@ -95,7 +88,11 @@ module DICOM
       @length = @bin.length
     end
 
-    # Generates a Fixnum hash value for this instance.
+    # Computes a hash code for this object.
+    #
+    # @note Two objects with the same attributes will have the same hash code.
+    #
+    # @return [Fixnum] the object's hash code
     #
     def hash
       state.hash
@@ -104,10 +101,8 @@ module DICOM
     # Loads data from an encoded DICOM string and creates
     # sequences and elements which are linked to this instance.
     #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- An encoded binary string containing DICOM information.
-    # * <tt>syntax</tt> -- String. The transfer syntax to use when decoding the DICOM string.
+    # @param [String] bin an encoded binary string containing DICOM information
+    # @param [String] syntax the transfer syntax to use when decoding the DICOM string
     #
     def parse(bin, syntax)
       raise ArgumentError, "Invalid argument 'bin'. Expected String, got #{bin.class}." unless bin.is_a?(String)
@@ -117,6 +112,8 @@ module DICOM
 
     # Returns self.
     #
+    # @return [Item] self
+    #
     def to_item
       self
     end
@@ -125,7 +122,9 @@ module DICOM
     private
 
 
-    # Returns the attributes of this instance in an array (for comparison purposes).
+    # Collects the attributes of this instance.
+    #
+    # @return [Array<String, Sequence, Element>] an array of attributes
     #
     def state
       [@vr, @name, @tags]
