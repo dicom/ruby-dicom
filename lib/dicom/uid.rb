@@ -17,10 +17,10 @@ module DICOM
 
     # Creates a new UID.
     #
-    # @param [String] value The UID's value.
-    # @param [String] name The UID's name.
-    # @param [String] type The UID's type.
-    # @param [String] retired The UID's retired status string.
+    # @param [String] value the UID's value
+    # @param [String] name the UID's name
+    # @param [String] type the UID's type
+    # @param [String] retired the UID's retired status string
     #
     def initialize(value, name, type, retired)
       @value = value
@@ -31,7 +31,7 @@ module DICOM
 
     # Checks if the UID is a Transfer Syntax that big endian byte order.
     #
-    # @return [Boolean] true if the UID indicates big endian byte order, and false if not.
+    # @return [Boolean] true if the UID indicates big endian byte order, and false if not
     #
     def big_endian?
       @value == EXPLICIT_BIG_ENDIAN ? true : false
@@ -39,7 +39,7 @@ module DICOM
 
     # Checks if the UID is a Transfer Syntax that implies compressed pixel data.
     #
-    # @return [Boolean] true if the UID indicates compressed pixel data, and false if not.
+    # @return [Boolean] true if the UID indicates compressed pixel data, and false if not
     #
     def compressed_pixels?
       transfer_syntax? ? (@name =~ /Implicit|Explicit/).nil? : false
@@ -47,7 +47,7 @@ module DICOM
 
     # Checks if the UID is a Transfer Syntax that implies explicit encoding.
     #
-    # @return [Boolean] true if the UID indicates explicit encoding, and false if not.
+    # @return [Boolean] true if the UID indicates explicit encoding, and false if not
     #
     def explicit?
       transfer_syntax? ? (@name =~ /Implicit/).nil? : false
@@ -55,7 +55,7 @@ module DICOM
 
     # Converts the retired status string to a boolean.
     #
-    # @return [Boolean] true if the UID is retired, and false if not.
+    # @return [Boolean] true if the UID is retired, and false if not
     #
     def retired?
       @retired =~ /R/ ? true : false
@@ -63,7 +63,7 @@ module DICOM
 
     # Checks if the UID is a SOP Class.
     #
-    # @return [Boolean] true if the UID is of type SOP Class, and false if not.
+    # @return [Boolean] true if the UID is of type SOP Class, and false if not
     #
     def sop_class?
       @type =~ /SOP Class/ ? true : false
@@ -71,7 +71,7 @@ module DICOM
 
     # Checks if the UID is a Transfer Syntax.
     #
-    # @return [Boolean] true if the UID is of type Transfer Syntax, and false if not.
+    # @return [Boolean] true if the UID is of type Transfer Syntax, and false if not
     #
     def transfer_syntax?
       @type =~ /Transfer Syntax/ ? true : false

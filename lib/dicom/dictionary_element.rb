@@ -18,11 +18,11 @@ module DICOM
 
     # Creates a new dictionary element.
     #
-    # @param [String] tag The element's tag.
-    # @param [String] name The element's name.
-    # @param [Array<String>] vrs The element's value representation(s).
-    # @param [String] vm The element's value multiplicity.
-    # @param [String] retired The element's retired status string.
+    # @param [String] tag the element's tag
+    # @param [String] name the element's name
+    # @param [Array<String>] vrs the element's value representation(s)
+    # @param [String] vm the element's value multiplicity
+    # @param [String] retired the element's retired status string
     #
     def initialize(tag, name, vrs, vm, retired)
       @tag = tag

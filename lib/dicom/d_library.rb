@@ -1,6 +1,12 @@
 module DICOM
 
-  # This class contains methods that interact with ruby-dicom's dictionary data.
+  # The DLibrary class contains methods for interacting with ruby-dicom's dictionary data.
+  #
+  # In practice, the library is for internal use and not accessed by the user. However, a
+  # a library instance is available through the DICOM::LIBRARY constant.
+  #
+  # @example Get a dictionary element corresponding to the given tag
+  #   element = DICOM::LIBRARY.element('0010,0010')
   #
   class DLibrary
 
@@ -32,9 +38,9 @@ module DICOM
     # Adds a custom dictionary file to the ruby-dicom element dictionary.
     #
     # @note The format of the dictionary is a tab-separated text file with 5 columns:
-    #   Tag, Name, VR, VM & Retired status.
-    #   For samples check out ruby-dicom's element dictionaries in the git repository.
-    # @param [String] file The path to the dictionary file to be added.
+    #   * Tag, Name, VR, VM & Retired status
+    #   * For samples check out ruby-dicom's element dictionaries in the git repository
+    # @param [String] file The path to the dictionary file to be added
     #
     def add_element_dictionary(file)
       File.open(file).each do |record|
@@ -43,9 +49,10 @@ module DICOM
     end
 
 
-    # Returns the method (symbol) corresponding to the specified string value
-    # (which may represent a element tag, name or method).
-    # Returns nil if no match is found.
+    # Gives the method (symbol) corresponding to the specified element string value.
+    #
+    # @param [String] value an element tag, element name or an element's method name
+    # @return [Symbol, NilClass] the matched element method, or nil if no match is made
     #
     def as_method(value)
       case true
@@ -60,9 +67,10 @@ module DICOM
       end
     end
 
-    # Returns the name (string) corresponding to the specified string value
-    # (which may represent an element tag, name or method).
-    # Returns nil if no match is found.
+    # Gives the name corresponding to the specified element string value.
+    #
+    # @param [String] value an element tag, element name or an element's method name
+    # @return [String, NilClass] the matched element name, or nil if no match is made
     #
     def as_name(value)
       case true
@@ -77,9 +85,10 @@ module DICOM
       end
     end
 
-    # Returns the tag (string) corresponding to the specified string value
-    # (which may represent a element tag, name or method).
-    # Returns nil if no match is found.
+    # Gives the tag corresponding to the specified element string value.
+    #
+    # @param [String] value an element tag, element name or an element's method name
+    # @return [String, NilClass] the matched element tag, or nil if no match is made
     #
     def as_tag(value)
       case true
@@ -97,10 +106,10 @@ module DICOM
     # Identifies the DictionaryElement that corresponds to the given tag.
     #
     # @note If a given tag doesn't return a dictionary match, a new DictionaryElement is created.
-    #   For private tags, a name 'Private' and VR 'UN' is assigned.
-    #   For unknown tags, a name 'Unknown' and VR 'UN' is assigned.
-    # @param [String] tag The tag of the element.
-    # @return [DictionaryElement] A corresponding DictionaryElement.
+    #   * For private tags, a name 'Private' and VR 'UN' is assigned
+    #   * For unknown tags, a name 'Unknown' and VR 'UN' is assigned
+    # @param [String] tag the tag of the element
+    # @return [DictionaryElement] a corresponding DictionaryElement
     #
     def element(tag)
       element = @elements[tag]
@@ -129,10 +138,9 @@ module DICOM
       return element
     end
 
-    # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary,
-    # in the form of a transfer syntax hash and a sop class hash.
+    # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary.
     #
-    # Both hashes have UIDs as keys and their descriptions as values.
+    # @return [Array<Hash, Hash>] transfer syntax and sop class hashes, each with uid as key and name as value
     #
     def extract_transfer_syntaxes_and_sop_classes
       transfer_syntaxes = Hash.new
@@ -147,12 +155,10 @@ module DICOM
       return transfer_syntaxes, sop_classes
     end
 
-    # Returns the tag that matches the supplied data element name, by searching the Ruby DICOM dictionary.
-    # Returns nil if no match is found.
+    # Gives the tag that matches the supplied data element name, by searching the element dictionary.
     #
-    # === Parameters
-    #
-    # * <tt>name</tt> -- String. A data element name.
+    # @param [String] name a data element name
+    # @return [String, NilClass] the corresponding element tag, or nil if no match is made
     #
     def get_tag(name)
       tag = nil
@@ -168,17 +174,14 @@ module DICOM
       return tag
     end
 
-    # Determines, and returns, the name and vr of the data element which the specified tag belongs to.
-    # Values are retrieved from the element dictionary if a match is found.
+    # Determines the name and vr of the element which the specified tag belongs to,
+    # based on a lookup in the element data dictionary.
     #
-    # === Notes
-    #
-    # * Private tags will have their names listed as 'Private'.
-    # * Non-private tags that are not found in the dictionary will be listed as 'Unknown'.
-    #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- String. A data element tag.
+    # @note If a given tag doesn't return a dictionary match, the following values are assigned:
+    #   * For private tags: name 'Private' and VR 'UN'
+    #   * For unknown (non-private) tags: name 'Unknown' and VR 'UN'
+    # @param [String] tag an element's tag
+    # @return [Array<String, String>] the name and value representation corresponding to the given tag
     #
     def name_and_vr(tag)
       de = element(tag)
@@ -187,8 +190,8 @@ module DICOM
 
     # Identifies the UID that corresponds to the given value.
     #
-    # @param [String] value The unique identifier value.
-    # @return [UID, NilClass] A corresponding UID instance, or nil.
+    # @param [String] value the unique identifier value
+    # @return [UID, NilClass] a corresponding UID instance, or nil (if no match is made)
     #
     def uid(value)
       @uids[value]
@@ -200,7 +203,7 @@ module DICOM
 
     # Loads an element to the dictionary from an element string record.
     #
-    # @param [String] record A tab-separated string line as extracted from a dictionary file.
+    # @param [String] record a tab-separated string line as extracted from a dictionary file
     #
     def load_element(record)
       fields = record.split("\t")
