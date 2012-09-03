@@ -13,49 +13,32 @@ module DICOM
 
     include Logging
 
-    # Returns the specified child element.
-    # If the requested data element isn't found, nil is returned.
+    # Retrieves the child element matching the specified element tag or item index.
     #
-    # === Notes
+    # Only immediate children are searched. Grandchildren etc. are not included.
     #
-    # * Only immediate children are searched. Grandchildren etc. are not included.
-    #
-    # === Parameters
-    #
-    # * <tt>tag_or_index</tt> -- A tag string which identifies the data element to be returned (Exception: In the case where an Item is wanted, an index (Fixnum) is used instead).
-    #
-    # === Examples
-    #
-    #   # Extract the "Pixel Data" data element from the DObject instance:
+    # @param [String, Integer] tag_or_index a ruby-dicom tag string or item index
+    # @return [Element, Sequence, Item, NilClass] the matched element (or nil, if no match was made)
+    # @example Extract the "Pixel Data" data element from the DObject instance
     #   pixel_data_element = dcm["7FE0,0010"]
-    #   # Extract the first Item from a Sequence:
-    #   first_item = dcm["3006,0020"][1]
+    # @example Extract the first Item from a Sequence
+    #   first_item = dcm["3006,0020"][0]
     #
     def [](tag_or_index)
       formatted = tag_or_index.is_a?(String) ? tag_or_index.upcase : tag_or_index
       return @tags[formatted]
     end
 
-    # Adds a Element or Sequence instance to self (where self can be either a DObject or an Item).
+    # Adds an Element or Sequence instance to self (where self can be either a DObject or an Item).
     #
-    # === Restrictions
+    # @note Items can not be added with this method (use add_item instead).
     #
-    # * Items can not be added with this method.
-    #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- An element (Element or Sequence).
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is added.
-    #
-    # === Examples
-    #
-    #   # Set a new patient's name to the DICOM object:
+    # @param [Element, Sequence] element a child element/sequence
+    # @param [Hash] options the options used for adding the element/sequence
+    # option options [Boolean] :no_follow when true, the method does not update the parent attribute of the child that is added
+    # @example Set a new patient's name to the DICOM object
     #   dcm.add(Element.new("0010,0010", "John_Doe"))
-    #   # Add a previously defined element roi_name to the first item in the following sequence:
+    # @example Add a previously defined element roi_name to the first item of a sequence
     #   dcm["3006,0020"][0].add(roi_name)
     #
     def add(element, options={})
@@ -79,28 +62,20 @@ module DICOM
     end
 
     # Adds a child item to a Sequence (or Item in some cases where pixel data is encapsulated).
-    # If no existing Item is specified, an empty item will be added.
     #
-    # === Notes
+    # If no existing Item is given, a new item will be created and added.
     #
-    # * Items are specified by index (starting at 0) instead of a tag string!
+    # @note Items are specified by index (starting at 0) instead of a tag string!
     #
-    # === Parameters
-    #
-    # * <tt>item</tt> -- The Item instance that is to be added (defaults to nil, in which case an empty Item will be added).
+    # @param [Item] item the Item instance to be added
+    # @param [Hash] options the options used for adding the item
+    # option options [Integer] :if specified, forces the item to be inserted at that specific index (Item number)
+    # option options [Boolean] :no_follow when true, the method does not update the parent attribute of the child that is added
     # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:index</tt> -- Fixnum. If the Item is to be inserted at a specific index (Item number), this option parameter needs to set.
-    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is added.
-    #
-    # === Examples
-    #
-    #   # Add an empty Item to a specific Sequence:
+    # @example Add an empty Item to a specific Sequence
     #   dcm["3006,0020"].add_item
-    #   # Add an existing Item at the 2nd item position/index in the specific Sequence:
-    #   dcm["3006,0020"].add_item(my_item, :index => 2)
+    # @example Add an existing Item at the 2nd item position/index in the specific Sequence
+    #   dcm["3006,0020"].add_item(my_item, :index => 1)
     #
     def add_item(item=nil, options={})
       unless self.is_a?(DObject)
@@ -156,29 +131,26 @@ module DICOM
       end
     end
 
-    # Returns all (immediate) child elements in an array (sorted by element tag).
-    # If this particular parent doesn't have any children, an empty array is returned
+    # Retrieves all (immediate) child elementals in an array (sorted by element tag).
     #
-    # === Examples
-    #
-    #   # Retrieve all top level data elements in a DICOM object:
+    # @return [Array<Element, Item, Sequence>] the parent's child elementals (an empty array if childless)
+    # @example Retrieve all top level elements in a DICOM object
     #   top_level_elements = dcm.children
     #
     def children
       return @tags.sort.transpose[1] || Array.new
     end
 
-    # Checks if an element actually has any child elements.
-    # Returns true if it has and false if it doesn't.
-    #
-    # === Notes
+    # Checks if an element actually has any child elementals (elements/items/sequences).
     #
     # Notice the subtle difference between the children? and is_parent? methods. While they
     # will give the same result in most real use cases, they differ when used on parent elements
     # that do not have any children added yet.
     #
-    # For example, when called on an empty Sequence, the children? method will return false,
-    # while the is_parent? method still returns true.
+    # For example, when called on an empty Sequence, the children? method
+    # will return false, whereas the is_parent? method still returns true.
+    #
+    # @return [Boolean] true if the element has children, and false if not
     #
     def children?
       if @tags.length > 0
@@ -188,15 +160,21 @@ module DICOM
       end
     end
 
-    # Counts and returns the number of elements contained directly in this parent.
+    # Gives the number of elements connected directly to this parent.
+    #
     # This count does NOT include the number of elements contained in any possible child elements.
+    #
+    # @return [Integer] The number of child elements belonging to this parent
     #
     def count
       return @tags.length
     end
 
-    # Counts and returns the total number of elements contained in this parent.
+    # Gives the total number of elements connected to this parent.
+    #
     # This count includes all the elements contained in any possible child elements.
+    #
+    # @return [Integer] The total number of child elements connected to this parent
     #
     def count_all
       # Iterate over all elements, and repeat recursively for all elements which themselves contain children.
@@ -209,34 +187,26 @@ module DICOM
 
     # Deletes the specified element from this parent.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- A tag string which specifies the element to be deleted (Exception: In the case of an Item removal, an index (Fixnum) is used instead).
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:no_follow</tt> -- Boolean. If true, the method does not update the parent attribute of the child that is deleted.
-    #
-    # === Examples
-    #
-    #   # Delete an Element from a DObject instance:
+    # @param [String, Integer] tag_or_index a ruby-dicom tag string or item index
+    # @param [Hash] options the options used for deleting the element
+    # option options [Boolean] :no_follow when true, the method does not update the parent attribute of the child that is deleted
+    # @example Delete an Element from a DObject instance
     #   dcm.delete("0008,0090")
-    #   # Delete Item 1 from a specific Sequence:
+    # @example Delete Item 1 from a Sequence
     #   dcm["3006,0020"].delete(1)
     #
-    def delete(tag, options={})
-      if tag.is_a?(String) or tag.is_a?(Integer)
-        raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
-        raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
+    def delete(tag_or_index, options={})
+      if tag_or_index.is_a?(String) or tag_or_index.is_a?(Integer)
+        raise ArgumentError, "Argument (#{tag_or_index}) is not a valid tag string." if tag_or_index.is_a?(String) && !tag_or_index.tag?
+        raise ArgumentError, "Negative Integer argument (#{tag_or_index}) is not allowed." if tag_or_index.is_a?(Integer) && tag_or_index < 0
       else
-        raise ArgumentError, "Expected String or Integer, got #{tag.class}."
+        raise ArgumentError, "Expected String or Integer, got #{tag_or_index.class}."
       end
       # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
-      element = self[tag]
+      element = self[tag_or_index]
       if element
         element.parent = nil unless options[:no_follow]
-        @tags.delete(tag)
+        @tags.delete(tag_or_index)
       end
     end
 
@@ -248,15 +218,10 @@ module DICOM
       end
     end
 
-    # Deletes all data elements of the specified group from this parent.
+    # Deletes all elements of the specified group from this parent.
     #
-    # === Parameters
-    #
-    # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
-    #
-    # === Examples
-    #
-    #   # Delete the File Meta Group of a DICOM object:
+    # @param [String] group_string a group string (the first 4 characters of a tag string)
+    # @example Delete the File Meta Group of a DICOM object
     #   dcm.delete_group("0002")
     #
     def delete_group(group_string)
@@ -266,13 +231,11 @@ module DICOM
       end
     end
 
-    # Deletes all private data/sequence elements from the child elements of this parent.
+    # Deletes all private data/sequence elements from this parent.
     #
-    # === Examples
-    #
-    #   # Delete all private elements from a DObject instance:
+    # @example Delete all private elements from a DObject instance
     #   dcm.delete_private
-    #   # Delete only private elements belonging to a specific Sequence:
+    # @example Delete only private elements belonging to a specific Sequence
     #   dcm["3006,0020"].delete_private
     #
     def delete_private
@@ -283,11 +246,9 @@ module DICOM
       end
     end
 
-    # Deletes all retired data/sequence elements from the child elements of this parent.
+    # Deletes all retired data/sequence elements from this parent.
     #
-    # === Examples
-    #
-    #   # Delete all retired elements from a DObject instance:
+    # @example Delete all retired elements from a DObject instance
     #   dcm.delete_retired
     #
     def delete_retired
@@ -299,7 +260,7 @@ module DICOM
       end
     end
 
-    # Iterates the children of this parent, calling <tt>block</tt> for each child.
+    # Iterates all children of this parent, calling <tt>block</tt> for each child.
     #
     def each(&block)
       children.each_with_index(&block)
@@ -329,14 +290,17 @@ module DICOM
       @tags.each_key(&block)
     end
 
-    # Returns all child elements of this parent in an array.
-    # If no child elements exists, returns an empty array.
+    # Retrieves all child elements of this parent in an array.
+    #
+    # @return [Array<Element>] child elements (or empty array, if childless)
     #
     def elements
       children.select { |child| child.is_a?(Element)}
     end
 
     # A boolean which indicates whether the parent has any child elements.
+    #
+    # @return [Boolean] true if any child elements exists, and false if not
     #
     def elements?
       elements.any?
@@ -345,14 +309,9 @@ module DICOM
     # Re-encodes the binary data strings of all child Element instances.
     # This also includes all the elements contained in any possible child elements.
     #
-    # === Notes
-    #
-    # This method is not intended for external use, but for technical reasons (the fact that is called between
-    # instances of different classes), cannot be made private.
-    #
-    # === Parameters
-    #
-    # * <tt>old_endian</tt> -- The previous endianness of the elements/DObject instance (used for decoding values from binary).
+    # @note This method is only intended for internal library use, but for technical reasons
+    #   (the fact that is called between instances of different classes), can't be made private.
+    # @param [Boolean] old_endian the previous endianness of the elements/DObject instance (used for decoding values from binary)
     #
     def encode_children(old_endian)
        # Cycle through all levels of children recursively:
@@ -366,18 +325,14 @@ module DICOM
     end
 
     # Checks whether a specific data element tag is defined for this parent.
-    # Returns true if the tag is found and false if not.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- A tag string which identifies the data element that is queried (Exception: In the case of an Item query, an index integer is used instead).
-    #
-    # === Examples
-    #
+    # @param [String, Integer] tag_or_index a ruby-dicom tag string or item index
+    # @return [Boolean] true if the element is found, and false if not
+    # @example Do something with an element only if it exists
     #   process_name(dcm["0010,0010"]) if dcm.exists?("0010,0010")
     #
-    def exists?(tag)
-      if self[tag]
+    def exists?(tag_or_index)
+      if self[tag_or_index]
         return true
       else
         return false
@@ -385,11 +340,9 @@ module DICOM
     end
 
     # Returns an array of all child elements that belongs to the specified group.
-    # If no matches are found, returns an empty array.
     #
-    # === Parameters
-    #
-    # * <tt>group_string</tt> -- A group string (the first 4 characters of a tag string).
+    # @param [String] group_string a group string (the first 4 characters of a tag string)
+    # @return [Array<Element, Item, Sequence>] the matching child elements (an empty array if no children matches)
     #
     def group(group_string)
       raise ArgumentError, "Expected String, got #{group_string.class}." unless group_string.is_a?(String)
@@ -400,34 +353,25 @@ module DICOM
       return found
     end
 
-    # Gathers the desired information from the selected data elements and processes this information to make
-    # a text output which is nicely formatted. Returns a text array and an index of the last data element.
+    # Gathers the desired information from the selected data elements and
+    # processes this information to make a text output which is nicely formatted.
     #
-    # === Notes
+    # @note This method is only intended for internal library use, but for technical reasons
+    #   (the fact that is called between instances of different classes), can't be made private.
+    #   The method is used by the print() method to construct its text output.
     #
-    # This method is not intended for external use, but for technical reasons (the fact that is called between
-    # instances of different classes), cannot be made private.
-    #
-    # The method is used by the print() method to construct the text output.
-    #
-    # === Parameters
-    #
-    # * <tt>index</tt> -- Fixnum. The index which is given to the first child of this parent.
-    # * <tt>max_digits</tt> -- Fixnum. The maximum number of digits in the index of an element (which is the index of the last element).
-    # * <tt>max_name</tt> -- Fixnum. The maximum number of characters in the name of any element to be printed.
-    # * <tt>max_length</tt> -- Fixnum. The maximum number of digits in the length of an element.
-    # * <tt>max_generations</tt> -- Fixnum. The maximum number of generations of children for this parent.
-    # * <tt>visualization</tt> -- An array of string symbols which visualizes the tree structure that the children of this particular parent belongs to. For no visualization, an empty array is passed.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:value_max</tt> -- Fixnum. If a value max length is specified, the data elements who's value exceeds this length will be trimmed to this length.
-    #
-    #--
-    # FIXME: This method is somewhat complex, and some simplification, if possible, wouldn't hurt.
+    # @param [Integer] index the index which is given to the first child of this parent
+    # @param [Integer] max_digits the maximum number of digits in the index of an element (in reality the number of digits of the last element)
+    # @param [Integer] max_name the maximum number of characters in the name of any element to be printed
+    # @param [Integer] max_length the maximum number of digits in the length of an element
+    # @param [Integer] max_generations the maximum number of generations of children for this parent
+    # @param [Integer] visualization an array of string symbols which visualizes the tree structure that the children of this particular parent belongs to (for no visualization, an empty array is passed)
+    # @param [Hash] options the options to use when processing the print information
+    # @option options [Integer] :value_max if a value max length is specified, the element values which exceeds this are trimmed
+    # @return [Array] a text array and an index of the last element
     #
     def handle_print(index, max_digits, max_name, max_length, max_generations, visualization, options={})
+      # FIXME: This method is somewhat complex, and some simplification, if possible, wouldn't hurt.
       elements = Array.new
       s = " "
       hook_symbol = "|_"
@@ -494,21 +438,25 @@ module DICOM
       return elements.flatten, index
     end
 
-    # Returns a string containing a human-readable hash representation of the element.
+    # Gives a string containing a human-readable hash representation of the parent.
+    #
+    # @return [String] a hash representation string of the parent
     #
     def inspect
       to_hash.inspect
     end
 
-    # Checks if an element is a parent.
-    # Returns true for all parent elements.
+    # Checks if an elemental is a parent.
+    #
+    # @return [Boolean] true for all parent elementals (Item, Sequence, DObject)
     #
     def is_parent?
       return true
     end
 
-    # Returns all child items of this parent in an array.
-    # If no child items exists, returns an empty array.
+    # Retrieves all child items of this parent in an array.
+    #
+    # @return [Array<Item>] child items (or empty array, if childless)
     #
     def items
       children.select { |child| child.is_a?(Item)}
@@ -516,21 +464,19 @@ module DICOM
 
     # A boolean which indicates whether the parent has any child items.
     #
+    # @return [Boolean] true if any child items exists, and false if not
+    #
     def items?
       items.any?
     end
 
     # Sets the length of a Sequence or Item.
     #
-    # === Notes
-    #
-    # Currently, Ruby DICOM does not use sequence/item lengths when writing DICOM files
-    # (it sets the length to -1, which means UNDEFINED). Therefore, in practice, it isn't
+    # @note Currently, ruby-dicom does not use sequence/item lengths when writing DICOM files
+    # (it sets the length to -1, meaning UNDEFINED). Therefore, in practice, it isn't
     # necessary to use this method, at least as far as writing (valid) DICOM files is concerned.
     #
-    # === Parameters
-    #
-    # * <tt>new_length</tt> -- Fixnum. The new length to assign to the Sequence/Item.
+    # @param [Integer] new_length the new length to assign to the Sequence/Item
     #
     def length=(new_length)
       unless self.is_a?(DObject)
@@ -543,12 +489,9 @@ module DICOM
     # Finds and returns the maximum character lengths of name and length which occurs for any child element,
     # as well as the maximum number of generations of elements.
     #
-    # === Notes
-    #
-    # This method is not intended for external use, but for technical reasons (the fact that is called between
-    # instances of different classes), cannot be made private.
-    #
-    # The method is used by the print() method to achieve a proper format in its output.
+    # @note This method is only intended for internal library use, but for technical reasons
+    #   (the fact that is called between instances of different classes), can't be made private.
+    #   The method is used by the print() method to achieve a proper format in its output.
     #
     def max_lengths
       max_name = 0
@@ -574,9 +517,7 @@ module DICOM
     # Handles missing methods, which in our case is intended to be dynamic
     # method names matching DICOM elements in the dictionary.
     #
-    # === Notes
-    #
-    # * When a dynamic method name is matched against a DICOM element, this method:
+    # When a dynamic method name is matched against a DICOM element, this method:
     # * Returns the element if the method name suggests an element retrieval, and the element exists.
     # * Returns nil if the method name suggests an element retrieval, but the element doesn't exist.
     # * Returns a boolean, if the method name suggests a query (?), based on whether the matched element exists or not.
@@ -584,9 +525,7 @@ module DICOM
     #
     # * When a dynamic method name is not matched against a DICOM element, and the method is not defined by the parent, a NoMethodError is raised.
     #
-    # === Parameters
-    #
-    # * <tt>sym</tt> -- Symbol. A method name.
+    # @param [Symbol] sym a method name
     #
     def method_missing(sym, *args, &block)
       # Try to match the method against a tag from the dictionary:
@@ -618,34 +557,24 @@ module DICOM
       super
     end
 
-    # Prints all child elements of this particular parent.
-    # Information such as tag, parent-child relationship, name, vr, length and value is gathered for each data element
-    # and processed to produce a nicely formatted output.
-    # Returns an array of formatted data elements.
+    # Prints all child elementals of this particular parent.
+    # Information such as tag, parent-child relationship, name, vr, length and value is
+    # gathered for each element and processed to produce a nicely formatted output.
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:value_max</tt> -- Fixnum. If a value max length is specified, the data elements who's value exceeds this length will be trimmed to this length.
-    # * <tt>:file</tt> -- String. If a file path is specified, the output will be printed to this file instead of being printed to the screen.
-    #
-    # === Examples
-    #
-    #   # Print a DObject instance to screen
+    # @param [Hash] options the options to use for handling the printout
+    # option options [Integer] :value_max if a value max length is specified, the element values which exceeds this are trimmed
+    # option options [String] :file if a file path is specified, the output is printed to this file instead of being printed to the screen
+    # @return [Array<String>] an array of formatted element string lines
+    # @example Print a DObject instance to screen
     #   dcm.print
-    #   # Print the DObject to the screen, but specify a 25 character value cutoff to produce better-looking results:
+    # @example Print the DObject to the screen, but specify a 25 character value cutoff to produce better-looking results
     #   dcm.print(:value_max => 25)
-    #   # Print to a text file the elements that belong to a specific Sequence:
+    # @example Print to a text file the elements that belong to a specific Sequence
     #   dcm["3006,0020"].print(:file => "dicom.txt")
     #
-    #--
-    # FIXME: Perhaps a :children => false option would be a good idea (to avoid lengthy printouts in cases where this would be desirable)?
-    # FIXME: Speed. The new print algorithm may seem to be slower than the old one (observed on complex, hiearchical DICOM files). Perhaps it can be optimized?
-    #
     def print(options={})
+      # FIXME: Perhaps a :children => false option would be a good idea (to avoid lengthy printouts in cases where this would be desirable)?
+      # FIXME: Speed. The new print algorithm may seem to be slower than the old one (observed on complex, hiearchical DICOM files). Perhaps it can be optimized?
       elements = Array.new
       # We first gather some properties that is necessary to produce a nicely formatted printout (max_lengths, count_all),
       # then the actual information is gathered (handle_print),
@@ -677,13 +606,11 @@ module DICOM
       end
     end
 
-    # Returns true if the parent responds to the given method (symbol) (method is defined).
-    # Returns false if the method is not defined.
+    # Checks if the parent responds to the given method (symbol) (whether the method is defined or not).
     #
-    # === Parameters
-    #
-    # * <tt>method</tt> -- Symbol. A method name who's response is tested.
-    # * <tt>include_private</tt> -- (Not used by ruby-dicom) Boolean. If true, private methods are included in the search.
+    # @param [Symbol] method a method name who's response is tested
+    # @param [Boolean] include_private if true, private methods are included in the search (not used by ruby-dicom)
+    # @return [Boolean] true if the parent responds to the given method (method is defined), and false if not
     #
     def respond_to?(method, include_private=false)
       # Check the library for a tag corresponding to the given method name symbol:
@@ -694,8 +621,9 @@ module DICOM
       super
     end
 
-    # Returns all child sequences of this parent in an array.
-    # If no child sequences exists, returns an empty array.
+    # Retrieves all child sequences of this parent in an array.
+    #
+    # @return [Array<Sequence>] child sequences (or empty array, if childless)
     #
     def sequences
       children.select { |child| child.is_a?(Sequence) }
@@ -703,17 +631,19 @@ module DICOM
 
     # A boolean which indicates whether the parent has any child sequences.
     #
+    # @return [Boolean] true if any child sequences exists, and false if not
+    #
     def sequences?
       sequences.any?
     end
 
-    # Builds and returns a nested hash containing all children of this parent.
+    # Builds a nested hash containing all children of this parent.
+    #
     # Keys are determined by the key_representation attribute, and data element values are used as values.
-    #
-    # === Notes
-    #
     # * For private elements, the tag is used for key instead of the key representation, as private tags lacks names.
     # * For child-less parents, the key_representation attribute is used as value.
+    #
+    # @return [Hash] a nested hash containing key & value pairs of all children
     #
     def to_hash
       as_hash = Hash.new
@@ -742,35 +672,32 @@ module DICOM
       return as_hash
     end
 
-    # Returns a json string containing a human-readable representation of the element.
+    # Builds a json string containing a human-readable representation of the parent.
+    #
+    # @return [String] a human-readable representation of this parent
     #
     def to_json
       to_hash.to_json
     end
 
-    # Returns a yaml string containing a human-readable representation of the element.
+    # Returns a yaml string containing a human-readable representation of the parent.
+    #
+    # @return [String] a human-readable representation of this parent
     #
     def to_yaml
       to_hash.to_yaml
     end
 
-    # Returns the value of a specific Element child of this parent.
-    # Returns nil if the child element does not exist.
-    #
-    # === Notes
+    # Gives the value of a specific Element child of this parent.
     #
     # * Only Element instances have values. Parent elements like Sequence and Item have no value themselves.
-    #   If the specified <tt>tag</tt> is that of a parent element, <tt>value()</tt> will raise an exception.
+    # * If the specified tag is that of a parent element, an exception is raised.
     #
-    # === Parameters
-    #
-    # * <tt>tag</tt> -- A tag string which identifies the child Element.
-    #
-    # === Examples
-    #
-    #   # Get the patient's name value:
+    # @param [String] tag a tag string which identifies the child Element
+    # @return [String, Integer, Float, NilClass] an element value (or nil, if no element is matched)
+    # @example Get the patient's name value
     #   name = dcm.value("0010,0010")
-    #   # Get the Frame of Reference UID from the first item in the Referenced Frame of Reference Sequence:
+    # @example Get the Frame of Reference UID from the first item in the Referenced Frame of Reference Sequence
     #   uid = dcm["3006,0010"][0].value("0020,0052")
     #
     def value(tag)
@@ -792,20 +719,14 @@ module DICOM
     end
 
 
-    # Following methods are private:
     private
 
 
-    # Re-encodes the value of a child Element (but only if the Element encoding is
-    # influenced by a shift in endianness).
+    # Re-encodes the value of a child Element (but only if the
+    # Element encoding is influenced by a shift in endianness).
     #
-    # === Parameters
-    #
-    # * <tt>element</tt> -- The Element who's value will be re-encoded.
-    # * <tt>old_endian</tt> -- The previous endianness of the element binary (used for decoding the value).
-    #
-    #--
-    # FIXME: Tag with VR AT has no re-encoding yet..
+    # @param [Element] element the Element who's value will be re-encoded
+    # @param [Boolean] old_endian the previous endianness of the element binary (used for decoding the value)
     #
     def encode_child(element, old_endian)
       if element.tag == "7FE0,0010"
@@ -834,12 +755,10 @@ module DICOM
       @tags = Hash.new
     end
 
-    # Prints an array of data element ascii text lines gathered by the print() method to file.
+    # Prints an array of formatted element string lines gathered by the print() method to file.
     #
-    # === Parameters
-    #
-    # * <tt>elements</tt> -- An array of formatted data element lines.
-    # * <tt>file</tt> -- A path & file string.
+    # @param [Array<String>] elements an array of formatted element string lines
+    # @param [String] file a path/file_name string
     #
     def print_file(elements, file)
       File.open(file, 'w') do |output|
@@ -849,11 +768,9 @@ module DICOM
       end
     end
 
-    # Prints an array of data element ascii text lines gathered by the print() method to the screen.
+    # Prints an array of formatted element string lines gathered by the print() method to the screen.
     #
-    # === Parameters
-    #
-    # * <tt>elements</tt> -- An array of formatted data element lines.
+    # @param [Array<String>] elements an array of formatted element string lines
     #
     def print_screen(elements)
       elements.each do |line|
