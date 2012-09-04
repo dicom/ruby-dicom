@@ -1,19 +1,22 @@
 module DICOM
 
   # Super class which contains common code for both the DObject and Item classes.
-  # This class includes the image related methods, since images may be stored either directly in the DObject,
-  # or in items (encapsulated items in the "Pixel Data" element or in "Icon Image Sequence" items).
+  # This class includes the image related methods, since images may be stored either
+  # directly in the DObject, or in items (encapsulated items in the "Pixel Data"
+  # element or in "Icon Image Sequence" items).
   #
   # === Inheritance
   #
-  # As the ImageItem class inherits from the Parent class, all Parent methods are also available to objects which has inherited ImageItem.
+  # As the ImageItem class inherits from the Parent class, all Parent methods are
+  # also available to objects which has inherited ImageItem.
   #
   class ImageItem < Parent
 
     include ImageProcessor
 
     # Checks if colored pixel data is present.
-    # Returns true if it is, false if not.
+    #
+    # @return [Boolean] true if the object contains colored pixels, and false if not
     #
     def color?
       # "Photometric Interpretation" is contained in the data element "0028,0004":
@@ -30,7 +33,8 @@ module DICOM
     end
 
     # Checks if compressed pixel data is present.
-    # Returns true if it is, false if not.
+    #
+    # @return [Boolean] true if the object contains compressed pixels, and false if not
     #
     def compression?
       # If compression is used, the pixel data element is a Sequence (with encapsulated elements), instead of a Element:
@@ -41,13 +45,12 @@ module DICOM
       end
     end
 
-    # Unpacks a binary pixel string and returns decoded pixel values in an array.
-    # The decode is performed using values defined in the image related data elements of the DObject instance.
+    # Unpacks pixel values from a binary pixel string. The decode is performed
+    # using values defined in the image related elements of the DObject instance.
     #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- A binary String containing the pixels that will be decoded.
-    # * <tt>stream</tt> -- A Stream instance to be used for decoding the pixels (optional).
+    # @param [String] bin a binary string containing the pixels to be decoded
+    # @param [Stream] stream a Stream instance to be used for decoding the pixels (optional)
+    # @return [Array<Integer>] decoded pixel values
     #
     def decode_pixels(bin, stream=@stream)
       raise ArgumentError, "Expected String, got #{bin.class}." unless bin.is_a?(String)
@@ -67,13 +70,12 @@ module DICOM
       return pixels
     end
 
-    # Packs a pixel value array and returns an encoded binary string.
-    # The encoding is performed using values defined in the image related data elements of the DObject instance.
+    # Packs a pixel value array to a binary pixel string. The encoding is performed
+    # using values defined in the image related elements of the DObject instance.
     #
-    # === Parameters
-    #
-    # * <tt>pixels</tt> -- An array containing the pixel values that will be encoded.
-    # * <tt>stream</tt> -- A Stream instance to be used for encoding the pixels (optional).
+    # @param [Array<Integer>] pixels an array containing the pixel values to be encoded
+    # @param [Stream] stream a Stream instance to be used for encoding the pixels (optional)
+    # @return [String] encoded pixel string
     #
     def encode_pixels(pixels, stream=@stream)
       raise ArgumentError, "Expected Array, got #{pixels.class}." unless pixels.is_a?(Array)
@@ -91,32 +93,24 @@ module DICOM
       return bin
     end
 
-    # Returns a single image object, created from the encoded pixel data using the image related data elements in the DICOM object.
-    # If the object contains multiple image frames, the first image frame is returned, unless the :frame option is used.
-    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
+    # Extracts a single image object, created from the encoded pixel data using
+    # the image related elements in the DICOM object. If the object contains multiple
+    # image frames, the first image frame is returned, unless the :frame option is used.
     #
-    # === Notes
+    # @note Creates an image object in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
+    # @note When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
     #
-    # * Returns an image object in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
-    # * When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
+    # @param [Hash] options the options to use for extracting the image
+    # @option options [Integer] :frame for DICOM objects containing multiple frames, this option can be used to extract a specific image frame (defaults to 0)
+    # @option options [TrueClass, Array<Integer>] :level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @option options [Boolean] :narray if true, forces the use of NArray for the pixel remap process (for faster execution)
+    # @option options [Boolean] :remap if true, the returned pixel values are remapped to presentation values
+    # @return [MagickImage, NilClass, FalseClass] an image object, alternatively nil (if no image present) or false (if image decode failed)
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:frame</tt> -- Fixnum. For DICOM objects containing multiple frames, this option can be used to extract a specific image frame. Defaults to 0.
-    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
-    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
-    #
-    # === Examples
-    #
-    #   # Retrieve pixel data as an RMagick image object and display it:
+    # @example Retrieve pixel data as an RMagick image object and display it
     #   image = dcm.image
     #   image.display
-    #   # Retrieve frame number 5 in the pixel data:
+    # @example Retrieve frame index 5 in the pixel data
     #   image = dcm.image(:frame => 5)
     #
     def image(options={})
@@ -126,34 +120,26 @@ module DICOM
       return image
     end
 
-    # Returns an array of image objects, created from the encoded pixel data using the image related data elements in the DICOM object.
-    # Returns an empty array if no data is present, or if it fails to retrieve pixel data which is present.
+    # Extracts an array of image objects, created from the encoded pixel data using
+    # the image related elements in the DICOM object.
     #
-    # === Notes
+    # @note Creates an array of image objects in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
+    # @note When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
     #
-    # * Returns an array of image objects in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
-    # * When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
+    # @param [Hash] options the options to use for extracting the images
+    # @option options [Integer] :frame makes the method return an array containing only the image object corresponding to the specified frame number
+    # @option options [TrueClass, Array<Integer>] :level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @option options [Boolean] :narray if true, forces the use of NArray for the pixel remap process (for faster execution)
+    # @option options [Boolean] :remap if true, the returned pixel values are remapped to presentation values
+    # @return [Array<MagickImage, NilClass>] an array of image objects, alternatively an empty array (if no image present or image decode failed)
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:frame</tt> -- Fixnum. Makes the method return an array containing only the image object corresponding to the specified frame number.
-    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
-    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
-    #
-    # === Examples
-    #
-    #   # Retrieve the pixel data as RMagick image objects:
+    # @example Retrieve the pixel data as RMagick image objects
     #   images = dcm.images
-    #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values (but without any leveling):
+    # @example Retrieve the pixel data as RMagick image objects, remapped to presentation values (but without any leveling)
     #   images = dcm.images(:remap => true)
-    #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values and leveled using the default center/width values in the DICOM object:
+    # @example Retrieve the pixel data as RMagick image objects, remapped to presentation values and leveled using the default center/width values in the DICOM object
     #   images = dcm.images(:level => true)
-    #   # Retrieve the pixel data as RMagick image objects, remapped to presentation values, leveled with the specified center/width values and using numerical array for the rescaling (~twice as fast).
+    # @example Retrieve the pixel data as RMagick image objects, remapped to presentation values, leveled with the specified center/width values and using numerical array for the rescaling (~twice as fast)
     #   images = dcm.images(:level => [-200,1000], :narray => true)
     #
     def images(options={})
@@ -194,12 +180,9 @@ module DICOM
 
     # Reads a binary string from a specified file and writes it to the value field of the pixel data element (7FE0,0010).
     #
-    # === Parameters
+    # @param [String] file a string which specifies the path of the file containing pixel data
     #
-    # * <tt>file</tt> -- A string which specifies the path of the file containing pixel data.
-    #
-    # === Examples
-    #
+    # @example Load pixel data from a file
     #   dcm.image_from_file("custom_image.dat")
     #
     def image_from_file(file)
@@ -214,12 +197,10 @@ module DICOM
       end
     end
 
-    # Returns the pixel data binary string(s) in an array.
-    # If no pixel data is present, returns an empty array.
+    # Extracts the pixel data binary string(s) in an array.
     #
-    # === Parameters
-    #
-    # * <tt>split</tt> -- Boolean. If true, a pixel data string containing 3d volumetric data will be split into N substrings, where N equals the number of frames.
+    # @param [Boolean] split if true, a pixel data string containing 3D volumetric data will be split into N substrings (where N equals the number of frames)
+    # @return [Array<String, NilClass>] an array of pixel data strings, or an empty array (if no pixel data present)
     #
     def image_strings(split=false)
       # Pixel data may be a single binary string in the pixel data element,
@@ -241,16 +222,11 @@ module DICOM
 
     # Dumps the binary content of the Pixel Data element to the specified file.
     #
-    # === Notes
+    # If the DICOM object contains multi-fragment pixel data, each fragment
+    # will be dumped to separate files (e.q. 'fragment-0.dat', 'fragment-1.dat').
     #
-    # * If the DICOM object contains multi-fragment pixel data, each fragment will be dumped to separate files (e.q. 'fragment-0.dat', 'fragment-1.dat').
-    #
-    # === Parameters
-    #
-    # * <tt>file</tt> -- A string which specifies the file path to use when dumping the pixel data.
-    #
-    # === Examples
-    #
+    # @param [String] file a string which specifies the file path to use when dumping the pixel data
+    # @example Dumping the pixel data to a file
     #   dcm.image_to_file("exported_image.dat")
     #
     def image_to_file(file)
@@ -277,14 +253,16 @@ module DICOM
       end
     end
 
-    # Encodes pixel data from a (Magick) image object and writes it to the pixel data element (7FE0,0010).
+    # Encodes pixel data from a (Magick) image object and writes it to the
+    # pixel data element (7FE0,0010).
     #
-    # === Restrictions
+    # Because of pixel value issues related to image objects (images don't like
+    # signed integers), and the possible difference between presentation values
+    # and raw pixel values, the use of image=() may result in pixel data where the
+    # integer values differs somewhat from what is expected. Use with care! For
+    # precise pixel value processing, use the Array and NArray based pixel data methods instead.
     #
-    # Because of pixel value issues related to image objects (images dont like signed integers), and the possible
-    # difference between presentation values and raw pixel values, the use of image=() may
-    # result in pixel data where the integer values differs somewhat from what is expected. Use with care!
-    # For precise pixel value processing, use the Array and NArray based pixel data methods instead.
+    # @param [MagickImage] image the image to be assigned to the pixel data element
     #
     def image=(image)
       raise ArgumentError, "Expected one of the supported image objects (#{valid_image_objects}), got #{image.class}." unless valid_image_objects.include?(image.class)
@@ -294,51 +272,47 @@ module DICOM
       self.pixels = pixels
     end
 
-    # Returns the number of columns in the pixel data (as an Integer).
-    # Returns nil if the value is not defined.
+    # Gives the number of columns in the pixel data.
+    #
+    # @return [Integer, NilClass] the number of columns, or nil (if the columns value is undefined)
     #
     def num_cols
       self["0028,0011"].value rescue nil
     end
 
-    # Returns the number of frames in the pixel data (as an Integer).
-    # Assumes and returns 1 if the value is not defined.
+    # Gives the number of frames in the pixel data.
+    #
+    # @note Assumes and gives 1 if the number of frames value is not defined.
+    # @return [Integer] the number of rows
     #
     def num_frames
       (self["0028,0008"].is_a?(Element) == true ? self["0028,0008"].value.to_i : 1)
     end
 
-    # Returns the number of rows in the pixel data (as an Integer).
-    # Returns nil if the value is not defined.
+    # Gives the number of rows in the pixel data.
+    #
+    # @return [Integer, NilClass] the number of rows, or nil (if the rows value is undefined)
     #
     def num_rows
       self["0028,0010"].value rescue nil
     end
 
-    # Returns an NArray containing the pixel data. If the pixel data is an image (single frame), a 2-dimensional
-    # NArray is returned [columns, rows]. If a the pixel data is 3-dimensional (more than one frame),
-    # a 3-dimensional NArray is returned [frames, columns, rows].
-    # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
+    # Creates an NArray containing the pixel data. If the pixel data is an image
+    # (single frame), a 2-dimensional NArray is returned [columns, rows]. If the
+    # pixel data is 3-dimensional (more than one frame), a 3-dimensional NArray
+    # is returned [frames, columns, rows].
     #
-    # === Notes
+    # @note To call this method you need to have loaded the NArray library in advance (require 'narray').
     #
-    # * To call this method you need to have loaded the NArray library in advance (require 'narray').
+    # @param [Hash] options the options to use for extracting the pixel data
+    # @option options [TrueClass, Array<Integer>] :level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @option options [Boolean] :remap if true, the returned pixel values are remapped to presentation values
+    # @option options [Boolean] :volume if true, the returned array will always be 3-dimensional, even if the pixel data only has one frame
+    # @return [NArray, NilClass, FalseClass] an NArray of pixel values, alternatively nil (if no image present) or false (if image decode failed)
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:remap</tt> -- Boolean.  If set as true, the returned pixel values are remapped to presentation values.
-    # * <tt>:volume</tt> -- Boolean.  If set as true, the returned array will always be 3-dimensional, even if the pixel data only has one frame.
-    #
-    # === Examples
-    #
-    #   # Retrieve numerical pixel array:
+    # @example Retrieve numerical pixel array
     #   data = dcm.narray
-    #   # Retrieve numerical pixel array remapped from the original pixel values to presentation values:
+    # @example Retrieve numerical pixel array remapped from the original pixel values to presentation values
     #   data = dcm.narray(:remap => true)
     #
     def narray(options={})
@@ -377,30 +351,23 @@ module DICOM
       return pixels
     end
 
-    # Returns the Pixel Data values in a standard Ruby Array.
+    # Extracts the Pixel Data values in an ordinary Ruby Array.
     # Returns nil if no pixel data is present, and false if it fails to retrieve pixel data which is present.
     #
-    # === Notes
+    # The returned array does not carry the dimensions of the pixel data:
+    # It is put in a one dimensional Array (vector).
     #
-    # * The returned array does not carry the dimensions of the pixel data: It is put in a one dimensional Array (vector).
+    # @param [Hash] options the options to use for extracting the pixel data
+    # @option options [TrueClass, Array<Integer>] :level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @option options [Boolean] :narray if true, forces the use of NArray for the pixel remap process (for faster execution)
+    # @option options [Boolean] :remap if true, the returned pixel values are remapped to presentation values
+    # @return [Array, NilClass, FalseClass] an Array of pixel values, alternatively nil (if no image present) or false (if image decode failed)
     #
-    # === Parameters
-    #
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
-    # * <tt>:remap</tt> -- Boolean. If set as true, the returned pixel values are remapped to presentation values.
-    #
-    # === Examples
-    #
-    #   # Simply retrieve the pixel data:
+    # @example Simply retrieve the pixel data
     #   pixels = dcm.pixels
-    #   # Retrieve the pixel data remapped to presentation values according to window center/width settings:
+    # @example Retrieve the pixel data remapped to presentation values according to window center/width settings
     #   pixels = dcm.pixels(:remap => true)
-    #   # Retrieve the remapped pixel data while using numerical array (~twice as fast):
+    # @example Retrieve the remapped pixel data while using numerical array (~twice as fast)
     #   pixels = dcm.pixels(:remap => true, :narray => true)
     #
     def pixels(options={})
@@ -432,9 +399,7 @@ module DICOM
 
     # Encodes pixel data from a Ruby Array or NArray, and writes it to the pixel data element (7FE0,0010).
     #
-    # === Parameters
-    #
-    # * <tt>values</tt> -- An Array (or NArray) containing integer pixel values.
+    # @param [Array<Integer>, NArray] values an Array (or NArray) containing integer pixel values
     #
     def pixels=(values)
       raise ArgumentError, "Expected Array or NArray, got #{values.class}." unless [Array, NArray].include?(values.class)
@@ -466,10 +431,14 @@ module DICOM
     end
 
 
-    # Following methods are private:
     private
 
-    # Returns the effective bit depth of the pixel data (considers a special case for Palette colored images).
+
+    # Gives the effective bit depth of the pixel data (considers a special case
+    # for Palette colored images).
+    #
+    # @raise [RuntimeError] if the 'Bits Allocated' element is missing
+    # @return [Integer] the effective bit depth of the pixel data
     #
     def actual_bit_depth
       raise "The 'Bits Allocated' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
@@ -482,29 +451,27 @@ module DICOM
     end
 
 
-    # Returns the value from the "Bits Allocated" Element.
+    # Gives the value from the "Bits Allocated" Element.
+    #
+    # @raise [RuntimeError] if the 'Bits Allocated' element is missing
+    # @return [Integer] the number of bits allocated
     #
     def bit_depth
       raise "The 'Bits Allocated' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
       return value("0028,0100")
     end
 
-    # Performes a run length decoding on the input stream.
+    # Performs a run length decoding on the input stream.
     #
-    # === Notes
+    # @note For details on RLE encoding, refer to the DICOM standard, PS3.5, Section 8.2.2 as well as Annex G.
     #
-    # * For details on RLE encoding, refer to the DICOM standard, PS3.5, Section 8.2.2 as well as Annex G.
-    #
-    # === Parameters
-    #
-    # * <tt>cols</tt>   - number of colums of the encoded image
-    # * <tt>rows</tt>    - number of rows of the encoded image
-    # * <tt>string</tt> - packed data
-    #
-    #--
-    # TODO: Remove cols and rows, were only added for debugging.
+    # @param [Integer] cols number of colums of the encoded image
+    # @param [Integer] rows number of rows of the encoded image
+    # @param [Integer] string the encoded pixel string
+    # @return [Array<Integer>] the decoded pixel values
     #
     def decode_rle(cols, rows, string)
+      # FIXME: Remove cols and rows (were only added for debugging).
       pixels = Array.new
       # RLE header specifying the number of segments:
       header = string[0...64].unpack('L*')
@@ -550,21 +517,23 @@ module DICOM
       return pixels
     end
 
-    # Returns the value from the "Photometric Interpretation" Element.
-    # Raises an error if it is missing.
+    # Gives the value from the "Photometric Interpretation" Element.
+    #
+    # @raise [RuntimeError] if the 'Photometric Interpretation' element is missing
+    # @return [String] the photometric interpretation
     #
     def photometry
       raise "The 'Photometric Interpretation' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
       return value("0028,0004").upcase
     end
 
-    # Processes the pixel array based on attributes defined in the DICOM object to produce a pixel array
-    # with correct pixel colors (RGB) as well as pixel order (RGB-pixel1, RGB-pixel2, etc).
-    # The relevant DICOM tags are Photometric Interpretation (0028,0004) and Planar Configuration (0028,0006).
+    # Processes the pixel array based on attributes defined in the DICOM object,
+    #to produce a pixel array with correct pixel colors (RGB) as well as pixel
+    # order (RGB-pixel1, RGB-pixel2, etc). The relevant DICOM tags are
+    # Photometric Interpretation (0028,0004) and Planar Configuration (0028,0006).
     #
-    # === Parameters
-    #
-    # * <tt>pixels</tt> -- An array of pixel values (integers).
+    # @param [Array<Integer>] pixels an array of (unsorted) color pixel values
+    # @return [Array<Integer>] an array of properly (sorted) color pixel values
     #
     def process_colors(pixels)
       proper_rgb = false
@@ -611,14 +580,13 @@ module DICOM
       return proper_rgb
     end
 
-    # Converts original pixel data values to presentation values, which are returned.
+    # Converts original pixel data values to presentation values.
     #
-    # === Parameters
-    #
-    # * <tt>pixel_data</tt> -- An array of pixel values (integers).
-    # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed in the returned pixels.
-    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed in the returned pixels.
-    # * <tt>level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # @param [Array<Integer>] pixel_data an array of pixel values (integers)
+    # @param [Integer] min_allowed the minimum value allowed in the pixel data
+    # @param [Integer] max_allowed the maximum value allowed in the pixel data
+    # @param [Boolean, Array<Integer>] level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @return [Array<Integer>] presentation values
     #
     def process_presentation_values(pixel_data, min_allowed, max_allowed, level=nil)
       # Process pixel data for presentation according to the image information in the DICOM object:
@@ -670,17 +638,14 @@ module DICOM
 
     # Converts original pixel data values to presentation values, using the efficient NArray library.
     #
-    # === Notes
+    # @note If a Ruby Array is supplied, the method returns a one-dimensional NArray object (i.e. no columns & rows).
+    # @note If a NArray is supplied, the NArray is returned with its original dimensions.
     #
-    # * If a Ruby Array is supplied, the method returns a one-dimensional NArray object (i.e. no columns & rows).
-    # * If a NArray is supplied, the NArray is returned with its original dimensions.
-    #
-    # === Parameters
-    #
-    # * <tt>pixel_data</tt> -- An Array/NArray of pixel values (integers).
-    # * <tt>min_allowed</tt> -- Fixnum. The minimum value allowed in the returned pixels.
-    # * <tt>max_allowed</tt> -- Fixnum. The maximum value allowed in the returned pixels.
-    # * <tt>level</tt> -- Boolean or array. If set as true window leveling is performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
+    # @param [Array<Integer>, NArray] pixel_data pixel values
+    # @param [Integer] min_allowed the minimum value allowed in the pixel data
+    # @param [Integer] max_allowed the maximum value allowed in the pixel data
+    # @param [Boolean, Array<Integer>] level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @return [Array<Integer>, NArray] presentation values
     #
     def process_presentation_values_narray(pixel_data, min_allowed, max_allowed, level=nil)
       # Process pixel data for presentation according to the image information in the DICOM object:
@@ -732,25 +697,19 @@ module DICOM
       return n_arr
     end
 
-    # Creates an image object from the specified pixel value array, performing presentation value processing if requested.
-    # Returns the image object.
+    # Creates an image object from the specified pixel value array, performing
+    # presentation value processing if requested.
     #
-    # === Parameters
+    # @note Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
     #
-    # * <tt>pixel_data</tt> -- An array of pixel values (integers).
-    # * <tt>columns</tt> -- Fixnum. Number of columns in the pixel data.
-    # * <tt>rows</tt> -- Fixnum. Number of rows in the pixel data.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:remap</tt> -- Boolean. If set, pixel values will be remapped to presentation values (using intercept and slope values from the DICOM object).
-    # * <tt>:level</tt> -- Boolean or array. If set (as true) window leveling are performed using default values from the DICOM object. If an array ([center, width]) is specified, these custom values are used instead.
-    # * <tt>:narray</tt> -- Boolean. If set as true, forces the use of NArray for the pixel remap process (for faster execution).
-    #
-    # === Notes
-    #
-    # * Definitions for Window Center and Width can be found in the DICOM standard, PS 3.3 C.11.2.1.2
+    # @param [Array<Integer>] pixel_data an array of pixel values
+    # @param [Integer] columns the number of columns in the pixel data
+    # @param [Integer] rows the number of rows in the pixel data
+    # @param [Hash] options the options to use for reading the image
+    # @option options [Boolean] :remap if true, pixel values are remapped to presentation values (using intercept and slope values from the DICOM object)
+    # @option options [Boolean, Array<Integer>] :level if true, window leveling is performed using default values from the DICOM object, or if an array ([center, width]) is specified, these custom values are used instead
+    # @option options [Boolean] :narray if true, forces the use of NArray for the pixel remap process (for faster execution)
+    # @return [MagickImage] the extracted image object
     #
     def read_image(pixel_data, columns, rows, options={})
       raise ArgumentError, "Expected Array for pixel_data, got #{pixel_data.class}" unless pixel_data.is_a?(Array)
@@ -773,8 +732,10 @@ module DICOM
       return image
     end
 
-    # Returns true if the Pixel Representation indicates signed pixel values, and false if it indicates unsigned pixel values.
-    # Raises an error if the Pixel Representation element is not present.
+    # Checks if the Pixel Representation indicates signed pixel values or not.
+    #
+    # @raise [RuntimeError] if the 'Pixel Representation' element is missing
+    # @return [Boolean] true if pixel values are signed, false if not
     #
     def signed_pixels?
       raise "The 'Pixel Representation' data element is missing from this DICOM instance. Unable to process pixel data." unless exists?("0028,0103")
@@ -788,12 +749,11 @@ module DICOM
       end
     end
 
-    # Determines and returns a template string for pack/unpacking pixel data, based on
+    # Determines the template/format string for pack/unpacking pixel data, based on
     # the number of bits per pixel as well as the pixel representation (signed or unsigned).
     #
-    # === Parameters
-    #
-    # * <tt>depth</tt> -- Integer. The number of allocated bits in the integers to be decoded/encoded.
+    # @param [Integer] depth the number of allocated bits in the integers to be decoded/encoded
+    # @return [String] a format string
     #
     def template_string(depth)
       template = false
@@ -824,12 +784,13 @@ module DICOM
       return template
     end
 
-    # Gathers and returns the window level values needed to convert the original pixel values to presentation values.
+    # Collects the window level values needed to convert the original pixel
+    # values to presentation values.
     #
-    # === Notes
-    #
-    # If some of these values are missing in the DObject instance, default values are used instead
-    # for intercept and slope, while center and width are set to nil. No errors are raised.
+    # @note If some of these values are missing in the DObject instance,
+    #   default values are used instead for intercept and slope, while center
+    #   and width are set to nil. No errors are raised.
+    # @return [Array<Integer, NilClass>] center, width, intercept and slope
     #
     def window_level_values
       center = (self["0028,1050"].is_a?(Element) == true ? self["0028,1050"].value.to_i : nil)
@@ -842,9 +803,7 @@ module DICOM
     # Transfers a pre-encoded binary string to the pixel data element, either by
     # overwriting the existing element value, or creating a new "Pixel Data" element.
     #
-    # === Parameters
-    #
-    # * <tt>bin</tt> -- A binary string containing encoded pixel data.
+    # @param [String] bin a binary string containing encoded pixel data
     #
     def write_pixels(bin)
       if self.exists?(PIXEL_TAG)
