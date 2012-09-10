@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 # This script produces DICOM UID and element dictionaries in a specific
 # tab separated format which is used by the ruby-dicom library. The source
 # of the data is the DICOM Standard, DICOM Part 6: Data Dictionary,
@@ -76,8 +78,8 @@ end
 
 # We use a simple Element class for storing the various elements.
 class Element
-  attr_accessor :tag, :name, :keyword, :vm, :ret
-  attr_reader :tag, :vr
+  attr_accessor :tag, :keyword, :vm, :ret
+  attr_reader :tag, :vr, :name
 
   def initialize(tag)
     #raise ArgumentError, "Argument #{tag} is not a valid tag." unless tag.tag?
@@ -88,6 +90,11 @@ class Element
   # Produces a formatted string from the attributes of the Element instance.
   def output
     return "#{[@tag, @name.rstrip, @vr, @vm, @ret].join(@@delimiter)}\n"
+  end
+
+  # Sets the Name of the Element (reformattes an apostrophe, if present).
+  def name=(val)
+    @name = val.gsub("’", "'")
   end
 
   # Sets the VR of the Element.

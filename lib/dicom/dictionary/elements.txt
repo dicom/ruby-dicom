@@ -116,9 +116,9 @@
 0008,0080	Institution Name	LO	1	
 0008,0081	Institution Address	ST	1	
 0008,0082	Institution Code Sequence	SQ	1	
-0008,0090	Referring Physician’s Name	PN	1	
-0008,0092	Referring Physician’s Address	ST	1	
-0008,0094	Referring Physician’s Telephone Numbers	SH	1-n	
+0008,0090	Referring Physician's Name	PN	1	
+0008,0092	Referring Physician's Address	ST	1	
+0008,0094	Referring Physician's Telephone Numbers	SH	1-n	
 0008,0096	Referring Physician Identification Sequence	SQ	1	
 0008,0100	Code Value	SH	1	
 0008,0102	Coding Scheme Designator	SH	1	
@@ -147,15 +147,15 @@
 0008,1040	Institutional Department Name	LO	1	
 0008,1048	Physician(s) of Record	PN	1-n	
 0008,1049	Physician(s) of Record Identification Sequence	SQ	1	
-0008,1050	Performing Physician’s Name	PN	1-n	
+0008,1050	Performing Physician's Name	PN	1-n	
 0008,1052	Performing Physician Identification Sequence	SQ	1	
 0008,1060	Name of Physician(s) Reading Study	PN	1-n	
 0008,1062	Physician(s) Reading Study Identification Sequence	SQ	1	
-0008,1070	Operators’ Name	PN	1-n	
+0008,1070	Operators' Name	PN	1-n	
 0008,1072	Operator Identification Sequence	SQ	1	
 0008,1080	Admitting Diagnoses Description	LO	1-n	
 0008,1084	Admitting Diagnoses Code Sequence	SQ	1	
-0008,1090	Manufacturer’s Model Name	LO	1	
+0008,1090	Manufacturer's Model Name	LO	1	
 0008,1100	Referenced Results Sequence	SQ	1	R
 0008,1110	Referenced Study Sequence	SQ	1	
 0008,1111	Referenced Performed Procedure Step Sequence	SQ	1	
@@ -243,28 +243,28 @@
 0008,9458	Frame Display Sequence	SQ	1	
 0008,9459	Recommended Display Frame Rate in Float	FL	1	
 0008,9460	Skip Frame Range Flag	CS	1	
-0010,0010	Patient’s Name	PN	1	
+0010,0010	Patient's Name	PN	1	
 0010,0020	Patient ID	LO	1	
 0010,0021	Issuer of Patient ID	LO	1	
 0010,0022	Type of Patient ID	CS	1	
 0010,0024	Issuer of Patient ID Qualifiers Sequence	SQ	1	
-0010,0030	Patient’s Birth Date	DA	1	
-0010,0032	Patient’s Birth Time	TM	1	
-0010,0040	Patient’s Sex	CS	1	
-0010,0050	Patient’s Insurance Plan Code Sequence	SQ	1	
-0010,0101	Patient’s Primary Language Code Sequence	SQ	1	
-0010,0102	Patient’s Primary Language Modifier Code Sequence	SQ	1	
+0010,0030	Patient's Birth Date	DA	1	
+0010,0032	Patient's Birth Time	TM	1	
+0010,0040	Patient's Sex	CS	1	
+0010,0050	Patient's Insurance Plan Code Sequence	SQ	1	
+0010,0101	Patient's Primary Language Code Sequence	SQ	1	
+0010,0102	Patient's Primary Language Modifier Code Sequence	SQ	1	
 0010,1000	Other Patient IDs	LO	1-n	
 0010,1001	Other Patient Names	PN	1-n	
 0010,1002	Other Patient IDs Sequence	SQ	1	
-0010,1005	Patient’s Birth Name	PN	1	
-0010,1010	Patient’s Age	AS	1	
-0010,1020	Patient’s Size	DS	1	
-0010,1021	Patient’s Size Code Sequence	SQ	1	
-0010,1030	Patient’s Weight	DS	1	
-0010,1040	Patient’s Address	LO	1	
+0010,1005	Patient's Birth Name	PN	1	
+0010,1010	Patient's Age	AS	1	
+0010,1020	Patient's Size	DS	1	
+0010,1021	Patient's Size Code Sequence	SQ	1	
+0010,1030	Patient's Weight	DS	1	
+0010,1040	Patient's Address	LO	1	
 0010,1050	Insurance Plan Identification	LO	1-n	R
-0010,1060	Patient’s Mother’s Birth Name	PN	1	
+0010,1060	Patient's Mother's Birth Name	PN	1	
 0010,1080	Military Rank	LO	1	
 0010,1081	Branch of Service	LO	1	
 0010,1090	Medical Record Locator	LO	1	
@@ -272,17 +272,17 @@
 0010,2110	Allergies	LO	1-n	
 0010,2150	Country of Residence	LO	1	
 0010,2152	Region of Residence	LO	1	
-0010,2154	Patient’s Telephone Numbers	SH	1-n	
+0010,2154	Patient's Telephone Numbers	SH	1-n	
 0010,2160	Ethnic Group	SH	1	
 0010,2180	Occupation	SH	1	
 0010,21A0	Smoking Status	CS	1	
 0010,21B0	Additional Patient History	LT	1	
 0010,21C0	Pregnancy Status	US	1	
 0010,21D0	Last Menstrual Date	DA	1	
-0010,21F0	Patient’s Religious Preference	LO	1	
+0010,21F0	Patient's Religious Preference	LO	1	
 0010,2201	Patient Species Description	LO	1	
 0010,2202	Patient Species Code Sequence	SQ	1	
-0010,2203	Patient’s Sex Neutered	CS	1	
+0010,2203	Patient's Sex Neutered	CS	1	
 0010,2210	Anatomical Orientation Type	CS	1	
 0010,2292	Patient Breed Description	LO	1	
 0010,2293	Patient Breed Code Sequence	SQ	1	
@@ -505,10 +505,10 @@
 0018,1014	Time of Secondary Capture	TM	1	
 0018,1016	Secondary Capture Device Manufacturer	LO	1	
 0018,1017	Hardcopy Device Manufacturer	LO	1	R
-0018,1018	Secondary Capture Device Manufacturer’s Model Name	LO	1	
+0018,1018	Secondary Capture Device Manufacturer's Model Name	LO	1	
 0018,1019	Secondary Capture Device Software Versions	LO	1-n	
 0018,101A	Hardcopy Device Software Version	LO	1-n	R
-0018,101B	Hardcopy Device Manufacturer’s Model Name	LO	1	R
+0018,101B	Hardcopy Device Manufacturer's Model Name	LO	1	R
 0018,1020	Software Version(s)	LO	1-n	
 0018,1022	Video Image Format Acquired	SH	1	
 0018,1023	Digital Image Format Acquired	LO	1	
@@ -774,7 +774,7 @@
 0018,7026	Detector Active Dimension(s)	DS	1-2	
 0018,7028	Detector Active Origin	DS	2	
 0018,702A	Detector Manufacturer Name	LO	1	
-0018,702B	Detector Manufacturer’s Model Name	LO	1	
+0018,702B	Detector Manufacturer's Model Name	LO	1	
 0018,7030	Field of View Origin	DS	2	
 0018,7032	Field of View Rotation	DS	1	
 0018,7034	Field of View Horizontal Flip	CS	1	
@@ -1385,7 +1385,7 @@
 0024,0039	Excessive Fixation Losses Data Flag	CS	1	
 0024,0040	Excessive Fixation Losses	CS	1	
 0024,0042	Stimuli Retesting Quantity	US	1	
-0024,0044	Comments on Patient’s Performance of Visual Field	LT	1	
+0024,0044	Comments on Patient's Performance of Visual Field	LT	1	
 0024,0045	False Negatives Estimate Flag	CS	1	
 0024,0046	False Negatives Estimate	FL	1	
 0024,0048	Negative Catch Trials Quantity	US	1	
@@ -1707,7 +1707,7 @@
 0038,0064	Issuer of Service Episode ID Sequence	SQ	1	
 0038,0100	Pertinent Documents Sequence	SQ	1	
 0038,0300	Current Patient Location	LO	1	
-0038,0400	Patient’s Institution Residence	LO	1	
+0038,0400	Patient's Institution Residence	LO	1	
 0038,0500	Patient State	LO	1	
 0038,0502	Patient Clinical Trial Participation Sequence	SQ	1	
 0038,4000	Visit Comments	LT	1	
@@ -1754,7 +1754,7 @@
 0040,0003	Scheduled Procedure Step Start Time	TM	1	
 0040,0004	Scheduled Procedure Step End Date	DA	1	
 0040,0005	Scheduled Procedure Step End Time	TM	1	
-0040,0006	Scheduled Performing Physician’s Name	PN	1	
+0040,0006	Scheduled Performing Physician's Name	PN	1	
 0040,0007	Scheduled Procedure Step Description	LO	1	
 0040,0008	Scheduled Protocol Code Sequence	SQ	1	
 0040,0009	Scheduled Procedure Step ID	SH	1	
@@ -1863,8 +1863,8 @@
 0040,1012	Reason For Performed Procedure Code Sequence	SQ	1	
 0040,1060	Requested Procedure Description (Trial)	LO	1	R
 0040,1101	Person Identification Code Sequence	SQ	1	
-0040,1102	Person’s Address	ST	1	
-0040,1103	Person’s Telephone Numbers	LO	1-n	
+0040,1102	Person's Address	ST	1	
+0040,1103	Person's Telephone Numbers	LO	1-n	
 0040,1400	Requested Procedure Comments	LT	1	
 0040,2001	Reason for the Imaging Service Request	LO	1	R
 0040,2004	Issue Date of Imaging Service Request	DA	1	
@@ -1872,7 +1872,7 @@
 0040,2006	Placer Order Number / Imaging Service Request (Retired)	SH	1	R
 0040,2007	Filler Order Number / Imaging Service Request (Retired)	SH	1	R
 0040,2008	Order Entered By	PN	1	
-0040,2009	Order Enterer’s Location	SH	1	
+0040,2009	Order Enterer's Location	SH	1	
 0040,2010	Order Callback Phone Number	SH	1	
 0040,2016	Placer Order Number / Imaging Service Request	LO	1	
 0040,2017	Filler Order Number / Imaging Service Request	LO	1	
@@ -1907,8 +1907,8 @@
 0040,4033	Output Information Sequence	SQ	1	
 0040,4034	Scheduled Human Performers Sequence	SQ	1	
 0040,4035	Actual Human Performers Sequence	SQ	1	
-0040,4036	Human Performer’s Organization	LO	1	
-0040,4037	Human Performer’s Name	PN	1	
+0040,4036	Human Performer's Organization	LO	1	
+0040,4037	Human Performer's Name	PN	1	
 0040,4040	Raw Data Handling	CS	1	
 0040,4041	Input Readiness State	CS	1	
 0040,4050	Performed Procedure Step Start DateTime	DT	1	
@@ -2450,8 +2450,8 @@
 0070,0081	Content Description	LO	1	
 0070,0082	Presentation Creation Date	DA	1	
 0070,0083	Presentation Creation Time	TM	1	
-0070,0084	Content Creator’s Name	PN	1	
-0070,0086	Content Creator’s Identification Code Sequence	SQ	1	
+0070,0084	Content Creator's Name	PN	1	
+0070,0086	Content Creator's Identification Code Sequence	SQ	1	
 0070,0087	Alternate Content Description Sequence	SQ	1	
 0070,0100	Presentation Size Mode	CS	1	
 0070,0101	Presentation Pixel Spacing	DS	2	

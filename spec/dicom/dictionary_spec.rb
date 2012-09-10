@@ -81,6 +81,12 @@ module DICOM
         element.retired?.should be_false
       end
 
+      it "should give the expected name when it contains an apostrophe" do
+        tag = '0010,0010'
+        element = LIBRARY.element(tag)
+        element.name.should eql "Patient's Name"
+      end
+
     end
 
 
