@@ -1,3 +1,25 @@
+= 0.9.4
+
+=== XXth September, 2012
+
+* Converted the documentation format from RDOC to YARD.
+* Removed deprecated remove_* methods (use the delete_* versions instead).
+* Added the Parent#delete_retired method which makes it trivially easy to delete all retired elements/sequences from a DICOM file.
+* Added a method to add a private dictionary to ruby-dicom's dictionary with LIBRARY#add_element_dictionary(file). The file must have the same tab separated format as ruby-dicom's element dictionary.
+* Renamed the DICOM::UID constant to DICOM::UID_ROOT.
+* Refactored the dictionary/DLibrary code and introduced two new classes: DictionaryElement and UID.
+* Fixed an issue where the presence of the 'FFFC,FFFC' element in a DICOM file with compressed pixel data would result in a read failure.
+* Updated the data dictionary to the 2011 edition.
+* Replaced the Ruby coded dictionary with a pure tab separated text file.
+* Added a script for generating a data dictionary based on the DICOM Standard documents published by NEMA.
+* Fixed an issue where data elements which are specified by a range in the dictionary ('xx') where not properly recognized.
+* Improved handling of non-string values in the Anonymizer (e.q. use an integer/float by default where applicable instead of a string).
+* Implemented dynamic typing for data element values (e.q. converting a decimal string '2' to an integer).
+* Added a missing pad byte for the 'BY' value representation.
+* Made ruby-dicom encoding aware (using the Specific Character set tag) and return all element values encoded with UTF-8.
+* Refactored read and write code to get rid of the 'private' DRead and DWrite classes.
+
+
 = 0.9.3
 
 === 6th May, 2012
@@ -26,7 +48,7 @@
   * DObject#read is the new preferred method for reading a DICOM file.
   * DObject#parse is the new preferred method for parsing an encoded DICOM string.
   * The experimental feature of retrieving a DICOM file through http was moved to DObject#get.
-  * Calling DObject with a string argument was deprecated. 
+  * Calling DObject with a string argument was deprecated.
 * Introduced proper logging capabilities which replaced the simple message printouts to STDOUT:
   * Based on the Logger class of the Ruby Standard Library.
   * Automatically integrates with the Rails logger in a Rails application.
