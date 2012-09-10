@@ -2,7 +2,7 @@ module DICOM
 
   # Defines the gem root directory in the file system.
   ROOT_DIR = "#{File.dirname(__FILE__)}/../.."
-  
+
   # Ruby DICOM's registered DICOM UID root (Implementation Class UID).
   UID_ROOT = "1.2.826.0.1.3680043.8.641"
   # Ruby DICOM name & version (max 16 characters).
@@ -114,11 +114,10 @@ module DICOM
   # Custom string used for (un)packing big endian signed long.
   CUSTOM_SL = "r*"
 
-  # Ruby DICOM's library (data dictionary).
+  # ruby-dicom's library instance (data dictionary).
   LIBRARY =  DICOM::DLibrary.new
 
-  # Transfer Syntaxes
-  # Taken from DICOM Specification PS 3.5, Chapter 10
+  # Transfer Syntaxes (taken from the DICOM Specification PS 3.5, Chapter 10).
 
   # General
   TXS_IMPLICIT_LITTLE_ENDIAN            = '1.2.840.10008.1.2'      # also defined as IMPLICIT_LITTLE_ENDIAN, default transfer syntax

@@ -3,11 +3,8 @@ module DICOM
 
   # This class contains code for handling the client side of DICOM TCP/IP network communication.
   #
-  # === Resources
-  #
-  # * For information regarding query, such as required/optional attributes and value matching, refer to the DICOM standard, PS3.4, C 2.2.
-  #--
-  # FIXME: The code which waits for incoming network packets seems to be very CPU intensive. Perhaps there is a more elegant way to wait for incoming messages?
+  # For more information regarding queries, such as required/optional attributes
+  # and value matching, refer to the DICOM standard, PS3.4, C 2.2.
   #
   class DClient
     include Logging
@@ -31,26 +28,17 @@ module DICOM
 
     # Creates a DClient instance.
     #
-    # === Notes
+    # @note To customize logging behaviour, refer to the Logging module documentation.
     #
-    # * To customize logging behaviour, refer to the Logging module documentation.
+    # @param [String] host_ip the IP adress of the server which you are going to communicate with
+    # @param [Integer] port the network port to be used
+    # @param [Hash] options the options to use for the network communication
+    # @option options [String] :ae the name of this client (application entity)
+    # @option options [String] :host_ae the name of the server (application entity)
+    # @option options [Integer] :max_package_size the maximum allowed size of network packages (in bytes)
+    # @option options [Integer] :timeout the number of seconds the client will wait on an answer from a server before aborting (defaults to 10)
     #
-    # === Parameters
-    #
-    # * <tt>host_ip</tt> -- String. The IP adress of the server which you are going to communicate with.
-    # * <tt>port</tt> -- Fixnum. The network port to be used.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:ae</tt> -- String. The name of this client (application entity).
-    # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
-    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
-    # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    #
-    # === Examples
-    #
-    #   # Create a client instance using default settings:
+    # @example Create a client instance using default settings
     #   node = DICOM::DClient.new("10.1.25.200", 104)
     #
     def initialize(host_ip, port, options={})
@@ -78,7 +66,7 @@ module DICOM
       @link = Link.new(:ae => @ae, :host_ae => @host_ae, :max_package_size => @max_package_size, :timeout => @timeout)
     end
 
-    # Tests the connection to the server by performing a C-ECHO.
+    # Tests the connection to the server by performing a C-ECHO procedure.
     #
     def echo
       # Verification SOP Class:
@@ -88,24 +76,22 @@ module DICOM
 
     # Queries a service class provider for images (composite object instances) that match the specified criteria.
     #
-    # === Parameters
+    # === Instance level attributes for this query:
     #
-    # * <tt>query_params</tt> -- A hash of query parameters.
+    # * '0008,0018' (SOP Instance UID)
+    # * '0020,0013' (Instance Number)
     #
-    # === Options
+    # In addition to the above listed attributes, a number of "optional" attributes
+    # may be specified. For a general list of optional object instance level attributes,
+    # please refer to the DICOM standard, PS3.4 C.6.1.1.5, Table C.6-4.
     #
-    # * <tt>"0008,0018"</tt> -- SOP Instance UID
-    # * <tt>"0020,0013"</tt> -- Instance Number
+    # @note Caution: Calling this method without parameters will instruct your PACS
+    #   to return info on ALL images in the database!
+    # @param [Hash] query_params the query parameters to use
+    # @option query_params [String] 'GGGG,EEEE' a tag and value pair to be used in the query
     #
-    # === Notes
-    #
-    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL images in the database!
-    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
-    # * For a general list of optional object instance level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.5, Table C.6-4.
-    #
-    # === Examples
-    #
-    #   node.find_images("0020,000D" => "1.2.840.1145.342", "0020,000E" => "1.3.6.1.4.1.2452.6.687844")
+    # @example Find all images belonging to a given study and series
+    #   node.find_images('0020,000D' => '1.2.840.1145.342', '0020,000E' => '1.3.6.1.4.1.2452.6.687844')
     #
     def find_images(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
@@ -128,27 +114,25 @@ module DICOM
 
     # Queries a service class provider for patients that match the specified criteria.
     #
-    # === Parameters
+    # === Instance level attributes for this query:
     #
-    # * <tt>query_params</tt> -- A hash of parameters.
+    # * '0008,0052' (Query/Retrieve Level)
+    # * '0010,0010' (Patient's Name)
+    # * '0010,0020' (Patient ID)
+    # * '0010,0030' (Patient's Birth Date)
+    # * '0010,0040' (Patient's Sex)
     #
-    # === Options
+    # In addition to the above listed attributes, a number of "optional" attributes
+    # may be specified. For a general list of optional object instance level attributes,
+    # please refer to the DICOM standard, PS3.4 C.6.1.1.2, Table C.6-1.
     #
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
-    # * <tt>"0010,0010"</tt> -- Patient's Name
-    # * <tt>"0010,0020"</tt> -- Patient ID
-    # * <tt>"0010,0030"</tt> -- Patient's Birth Date
-    # * <tt>"0010,0040"</tt> -- Patient's Sex
+    # @note Caution: Calling this method without parameters will instruct your PACS
+    #   to return info on ALL patients in the database!
+    # @param [Hash] query_params the query parameters to use
+    # @option query_params [String] 'GGGG,EEEE' a tag and value pair to be used in the query
     #
-    # === Notes
-    #
-    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL patients in the database!
-    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
-    # * For a general list of optional patient level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.2, Table C.6-1.
-    #
-    # === Examples
-    #
-    #   node.find_patients("0010,0010" => "James*")
+    # @example Find all patients matching the given name
+    #   node.find_patients('0010,0010' => 'James*')
     #
     def find_patients(query_params={})
       # Patient Root Query/Retrieve Information Model - FIND:
@@ -172,25 +156,23 @@ module DICOM
 
     # Queries a service class provider for series that match the specified criteria.
     #
-    # === Parameters
+    # === Instance level attributes for this query:
     #
-    # * <tt>query_params</tt> -- A hash of query parameters.
+    # * '0008,0060' (Modality)
+    # * '0020,000E' (Series Instance UID)
+    # * '0020,0011' (Series Number)
     #
-    # === Options
+    # In addition to the above listed attributes, a number of "optional" attributes
+    # may be specified. For a general list of optional object instance level attributes,
+    # please refer to the DICOM standard, PS3.4 C.6.1.1.4, Table C.6-3.
     #
-    # * <tt>"0008,0060"</tt> -- Modality
-    # * <tt>"0020,000E"</tt> -- Series Instance UID
-    # * <tt>"0020,0011"</tt> -- Series Number
+    # @note Caution: Calling this method without parameters will instruct your PACS
+    #   to return info on ALL series in the database!
+    # @param [Hash] query_params the query parameters to use
+    # @option query_params [String] 'GGGG,EEEE' a tag and value pair to be used in the query
     #
-    # === Notes
-    #
-    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL series in the database!
-    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
-    # * For a general list of optional series level attributes, refer to the DICOM standard, PS3.4 C.6.1.1.4, Table C.6-3.
-    #
-    # === Examples
-    #
-    #   node.find_series("0020,000D" => "1.2.840.1145.342")
+    # @example Find all series belonging to the given study
+    #   node.find_series('0020,000D' => '1.2.840.1145.342')
     #
     def find_series(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
@@ -215,29 +197,27 @@ module DICOM
 
     # Queries a service class provider for studies that match the specified criteria.
     #
-    # === Parameters
+    # === Instance level attributes for this query:
     #
-    # * <tt>query_params</tt> -- A hash of query parameters.
+    # * '0008,0020' (Study Date)
+    # * '0008,0030' (Study Time)
+    # * '0008,0050' (Accession Number)
+    # * '0010,0010' (Patient's Name)
+    # * '0010,0020' (Patient ID)
+    # * '0020,000D' (Study Instance UID)
+    # * '0020,0010' (Study ID)
     #
-    # === Options
+    # In addition to the above listed attributes, a number of "optional" attributes
+    # may be specified. For a general list of optional object instance level attributes,
+    # please refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
     #
-    # * <tt>"0008,0020"</tt> -- Study Date
-    # * <tt>"0008,0030"</tt> -- Study Time
-    # * <tt>"0008,0050"</tt> -- Accession Number
-    # * <tt>"0010,0010"</tt> -- Patient's Name
-    # * <tt>"0010,0020"</tt> -- Patient ID
-    # * <tt>"0020,000D"</tt> -- Study Instance UID
-    # * <tt>"0020,0010"</tt> -- Study ID
+    # @note Caution: Calling this method without parameters will instruct your PACS
+    #   to return info on ALL studies in the database!
+    # @param [Hash] query_params the query parameters to use
+    # @option query_params [String] 'GGGG,EEEE' a tag and value pair to be used in the query
     #
-    # === Notes
-    #
-    # * Caution: Calling this method without parameters will instruct your PACS to return info on ALL studies in the database!
-    # * In addition to the above listed attributes, a number of "optional" attributes may be specified.
-    # * For a general list of optional study level attributes, refer to the DICOM standard, PS3.4 C.6.2.1.2, Table C.6-5.
-    #
-    # === Examples
-    #
-    #   node.find_studies("0008,0020" => "20090604-", "0010,000D" => "123456789")
+    # @example Find all studies matching the given study date and patient's id
+    #   node.find_studies('0008,0020' => '20090604-', '0010,0020' => '123456789')
     #
     def find_studies(query_params={})
       # Study Root Query/Retrieve Information Model - FIND:
@@ -266,25 +246,22 @@ module DICOM
 
     # Retrieves a DICOM file from a service class provider (SCP/PACS).
     #
-    # === Restrictions
+    # === Instance level attributes for this procedure:
     #
-    # * This method has never actually been tested, and as such, it is probably not working! Feedback is welcome.
+    # * '0008,0018' (SOP Instance UID)
+    # * '0008,0052' (Query/Retrieve Level)
+    # * '0020,000D' (Study Instance UID)
+    # * '0020,000E' (Series Instance UID)
     #
-    # === Parameters
+    # @note This method has never actually been tested, and as such,
+    #   it is probably not working! Feedback is welcome.
     #
-    # * <tt>path</tt> -- The path where incoming files will be saved.
-    # * <tt>options</tt> -- A hash of parameters.
+    # @param [String] path the directory where incoming files will be saved
+    # @param [Hash] options the options to use for retrieving the DICOM object
+    # @option options [String] 'GGGG,EEEE' a tag and value pair to be used for the procedure
     #
-    # === Options
-    #
-    # * <tt>"0008,0018"</tt> -- SOP Instance UID
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
-    # * <tt>"0020,000D"</tt> -- Study Instance UID
-    # * <tt>"0020,000E"</tt> -- Series Instance UID
-    #
-    # === Examples
-    #
-    #   node.get_image("c:/dicom/", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+    # @example Retrieve a file as specified by its UIDs
+    #   node.get_image('c:/dicom/', '0008,0018' => sop_uid, '0020,000D' => study_uid, '0020,000E' => series_uid)
     #
     def get_image(path, options={})
       # Study Root Query/Retrieve Information Model - GET:
@@ -299,25 +276,22 @@ module DICOM
 
     # Moves a single image to a DICOM server.
     #
-    # === Notes
+    # This DICOM node must be a third party (i.e. not the client instance you
+    # are requesting the move with!).
     #
-    # * This DICOM node must be a third party (not yourself).
+    # === Instance level attributes for this procedure:
     #
-    # === Parameters
+    # * '0008,0018' (SOP Instance UID)
+    # * '0008,0052' (Query/Retrieve Level)
+    # * '0020,000D' (Study Instance UID)
+    # * '0020,000E' (Series Instance UID)
     #
-    # * <tt>destination</tt> -- String. The name (AE title) of the DICOM server which will receive the file.
-    # * <tt>options</tt> -- A hash of parameters.
+    # @param [String] destination the AE title of the DICOM server which will receive the file
+    # @param [Hash] options the options to use for moving the DICOM object
+    # @option options [String] 'GGGG,EEEE' a tag and value pair to be used for the procedure
     #
-    # === Options
-    #
-    # * <tt>"0008,0018"</tt> -- SOP Instance UID
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
-    # * <tt>"0020,000D"</tt> -- Study Instance UID
-    # * <tt>"0020,000E"</tt> -- Series Instance UID
-    #
-    # === Examples
-    #
-    #   node.move_image("SOME_SERVER", "0008,0018" => sop_uid, "0020,000D" => study_uid, "0020,000E" => series_uid)
+    # @example Move an image from e.q. a PACS to another SCP on the network
+    #   node.move_image('SOME_SERVER', '0008,0018' => sop_uid, '0020,000D' => study_uid, '0020,000E' => series_uid)
     #
     def move_image(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
@@ -332,24 +306,21 @@ module DICOM
 
     # Move an entire study to a DICOM server.
     #
-    # === Notes
+    # This DICOM node must be a third party (i.e. not the client instance you
+    # are requesting the move with!).
     #
-    # * This DICOM node must be a third party (not yourself).
+    # === Instance level attributes for this procedure:
     #
-    # === Parameters
+    # * '0008,0052' (Query/Retrieve Level)
+    # * '0010,0020' (Patient ID)
+    # * '0020,000D' (Study Instance UID)
     #
-    # * <tt>destination</tt> -- String. The name (AE title) of the DICOM server which will receive the files.
-    # * <tt>options</tt> -- A hash of parameters.
+    # @param [String] destination the AE title of the DICOM server which will receive the files
+    # @param [Hash] options the options to use for moving the DICOM objects
+    # @option options [String] 'GGGG,EEEE' a tag and value pair to be used for the procedure
     #
-    # === Options
-    #
-    # * <tt>"0008,0052"</tt> -- Query/Retrieve Level
-    # * <tt>"0010,0020"</tt> -- Patient ID
-    # * <tt>"0020,000D"</tt> -- Study Instance UID
-    #
-    # === Examples
-    #
-    #   node.move_study("SOME_SERVER", "0010,0020" => pat_id, "0020,000D" => study_uid)
+    # @example Move an entire study from e.q. a PACS to another SCP on the network
+    #   node.move_study('SOME_SERVER', '0010,0020' => pat_id, '0020,000D' => study_uid)
     #
     def move_study(destination, options={})
       # Study Root Query/Retrieve Information Model - MOVE:
@@ -364,13 +335,9 @@ module DICOM
 
     # Sends one or more DICOM files to a service class provider (SCP/PACS).
     #
-    # === Parameters
-    #
-    # * <tt>files</tt> -- A single file path or an array of paths, or a DObject or an array of DObject instances.
-    #
-    # === Examples
-    #
-    #   node.send("my_file.dcm")
+    # @param [Array<String, DObject>, String, DObject] files a single file path or an array of paths, alternatively a DObject or an array of DObject instances
+    # @example Send a DICOM file to a storage server
+    #   node.send('my_file.dcm')
     #
     def send(files)
       # Prepare the DICOM object(s):
@@ -393,7 +360,8 @@ module DICOM
       end
     end
 
-    # Tests the connection to the server in a very simple way  by negotiating an association and then releasing it.
+    # Tests the connection to the server in a very simple way  by negotiating
+    # an association and then releasing it.
     #
     def test
       logger.info("TESTING CONNECTION...")
@@ -418,7 +386,6 @@ module DICOM
     end
 
 
-    # Following methods are private:
     private
 
 
@@ -920,18 +887,26 @@ module DICOM
       ]
     end
 
+    # Checks if an association has been established.
+    #
     def association_established?
       @association == true
     end
 
+    # Checks if a request has been approved.
+    #
     def request_approved?
       @request_approved == true
     end
 
+    # Extracts the presentation context id from the approved syntax.
+    #
     def presentation_context_id
       @approved_syntaxes.to_a.first[1][0] # ID of first (and only) syntax in this Hash.
     end
 
+    # Sets the data_elements instance array with the given options.
+    #
     def set_data_elements(options)
       @data_elements = []
       options.keys.sort.each do |tag|

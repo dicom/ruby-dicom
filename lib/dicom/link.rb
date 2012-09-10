@@ -1,6 +1,7 @@
 module DICOM
 
-  # This class handles the construction and interpretation of network packages as well as network communication.
+  # This class handles the construction and interpretation of network packages
+  # as well as network communication.
   #
   class Link
     include Logging
@@ -1029,6 +1030,9 @@ module DICOM
     # * <tt>file</tt> -- A boolean used to inform whether an incoming data fragment is part of a DICOM file reception or not.
     #
     def receive_multiple_transmissions(file=nil)
+      # FIXME: The code which waits for incoming network packets seems to be very CPU intensive.
+      # Perhaps there is a more elegant way to wait for incoming messages?
+      #
       @listen = true
       segments = Array.new
       while @listen
@@ -1089,7 +1093,6 @@ module DICOM
     end
 
 
-    # Following methods are private:
     private
 
 

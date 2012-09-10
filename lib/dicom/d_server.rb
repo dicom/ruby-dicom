@@ -3,20 +3,16 @@ module DICOM
   # This class contains code for setting up a Service Class Provider (SCP),
   # which will act as a simple storage node (a DICOM server that receives images).
   #
-
   class DServer
     include Logging
 
     # Runs the server and takes a block for initializing.
     #
-    # === Parameters
+    # @param [Integer] port the network port to be used (defaults to 104)
+    # @param [String] path the directory where incoming DICOM files will be stored (defaults to './received/')
+    # @param [&block] block a block of code that will be run on the DServer instance, between creation and the launch of the SCP itself
     #
-    # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
-    # * <tt>path</tt> -- String. The path where incoming DICOM files will be stored. Defaults to "./received/".
-    # * <tt>&block</tt> -- A block of code that will be run on the DServer instance, between creation and the launch of the SCP itself.
-    #
-    # === Examples
-    #
+    # @example Run a server instance with a custom file handler
     #   require 'dicom'
     #   require 'my_file_handler'
     #   include DICOM
@@ -31,7 +27,7 @@ module DICOM
       server.start_scp(path)
     end
 
-    # A customized FileHandler class to use instead of the default FileHandler included with Ruby DICOM.
+    # A customized FileHandler class to use instead of the default FileHandler included with ruby-dicom.
     attr_accessor :file_handler
     # The hostname that the TCPServer binds to.
     attr_accessor :host
@@ -51,28 +47,19 @@ module DICOM
 
     # Creates a DServer instance.
     #
-    # === Notes
+    # @note To customize logging behaviour, refer to the Logging module documentation.
     #
-    # * To customize logging behaviour, refer to the Logging module documentation.
+    # @param [Integer] port the network port to be used
+    # @param [Hash] options the options to use for the DICOM server
+    # @option options [String] :file_handler a customized FileHandler class to use instead of the default FileHandler
+    # @option options [String] :host the hostname that the TCPServer binds to (defaults to '127.0.0.1')
+    # @option options [String] :host_ae the name of the server (application entity)
+    # @option options [String] :max_package_size the maximum allowed size of network packages (in bytes)
+    # @option options [String] :timeout the number of seconds the server will wait on an answer from a client before aborting the communication
     #
-    # === Parameters
-    #
-    # * <tt>port</tt> -- Fixnum. The network port to be used. Defaults to 104.
-    # * <tt>options</tt> -- A hash of parameters.
-    #
-    # === Options
-    #
-    # * <tt>:file_handler</tt> -- A customized FileHandler class to use instead of the default FileHandler.
-    # * <tt>:host</tt> -- String. The hostname that the TCPServer binds to. Defaults to '127.0.0.1'.
-    # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
-    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
-    # * <tt>:timeout</tt> -- Fixnum. The maximum period the server will wait on an answer from a client before aborting the communication.
-    #
-    # === Examples
-    #
-    #   # Create a server using default settings:
+    # @example Create a server using default settings
     #   s = DICOM::DServer.new
-    #   # Create a server and specify a host name as well as a custom buildt file handler:
+    # @example Create a server with a specific host name and a custom buildt file handler
     #   require 'MyFileHandler'
     #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
     #
@@ -97,9 +84,7 @@ module DICOM
 
     # Adds an abstract syntax to the list of abstract syntaxes that the server will accept.
     #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- An abstract syntax UID string.
+    # @param [String] uid an abstract syntax UID
     #
     def add_abstract_syntax(uid)
       lib_uid = LIBRARY.uid(uid)
@@ -109,10 +94,7 @@ module DICOM
 
     # Adds a transfer syntax to the list of transfer syntaxes that the server will accept.
     #
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- A transfer syntax UID string.
+    # @param [String] uid a transfer syntax UID
     #
     def add_transfer_syntax(uid)
       lib_uid = LIBRARY.uid(uid)
@@ -142,12 +124,10 @@ module DICOM
       end
     end
 
-    # Deletes a specific abstract syntax from the list of abstract syntaxes that the server will accept.
+    # Deletes a specific abstract syntax from the list of abstract syntaxes
+    # that the server will accept.
     #
-    #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- An abstract syntax UID string.
+    # @param [String] uid an abstract syntax UID
     #
     def delete_abstract_syntax(uid)
       if uid.is_a?(String)
@@ -157,11 +137,10 @@ module DICOM
       end
     end
 
-    # Deletes a specific transfer syntax from the list of transfer syntaxes that the server will accept.
+    # Deletes a specific transfer syntax from the list of transfer syntaxes
+    # that the server will accept.
     #
-    # === Parameters
-    #
-    # * <tt>uid</tt> -- A transfer syntax UID string.
+    # @param [String] uid a transfer syntax UID
     #
     def delete_transfer_syntax(uid)
       if uid.is_a?(String)
@@ -173,9 +152,8 @@ module DICOM
 
     # Completely clears the list of abstract syntaxes that the server will accept.
     #
-    # === Notes
-    #
-    # * Following such a clearance, the user must ensure to add the specific abstract syntaxes that are to be accepted by the server.
+    # Following such a clearance, the user must ensure to add the specific
+    # abstract syntaxes that are to be accepted by the server.
     #
     def clear_abstract_syntaxes
       @accepted_abstract_syntaxes = Hash.new
@@ -183,9 +161,8 @@ module DICOM
 
     # Completely clears the list of transfer syntaxes that the server will accept.
     #
-    # === Notes
-    #
-    # * Following such a clearance, the user must ensure to add the specific transfer syntaxes that are to be accepted by the server.
+    # Following such a clearance, the user must ensure to add the specific
+    # transfer syntaxes that are to be accepted by the server.
     #
     def clear_transfer_syntaxes
       @accepted_transfer_syntaxes = Hash.new
@@ -193,14 +170,12 @@ module DICOM
 
     # Starts the Service Class Provider (SCP).
     #
-    # === Notes
+    # This service acts as a simple storage node, which receives DICOM files
+    # and stores them in the specified folder.
     #
-    # * This service acts as a simple storage node, which receives DICOM files and stores them in a specified folder.
-    # * Customized storage actions can be set my modifying or replacing the FileHandler class.
+    # Customized storage actions can be set my modifying or replacing the FileHandler class.
     #
-    # === Parameters
-    #
-    # * <tt>path</tt> -- The path where incoming files are to be saved.
+    # @param [String] path the directory where incoming files are to be saved
     #
     def start_scp(path='./received/')
       if @accepted_abstract_syntaxes.size > 0 and @accepted_transfer_syntaxes.size > 0
@@ -270,8 +245,8 @@ module DICOM
     end
 
 
-    # Following methods are private:
     private
+
 
     # Checks if the association request is formally correct, by matching against an exact application context UID.
     # Returns nil if valid, and an error code if it is not approved.
