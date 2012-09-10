@@ -1,6 +1,6 @@
 = 0.9.4
 
-=== XXth September, 2012
+=== 10th September, 2012
 
 * Converted the documentation format from RDOC to YARD.
 * Removed deprecated remove_* methods (use the delete_* versions instead).
