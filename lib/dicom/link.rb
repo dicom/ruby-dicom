@@ -1459,7 +1459,7 @@ module DICOM
     def set_transfer_syntax(syntax)
       @transfer_syntax = syntax
       # Query the library with our particular transfer syntax string:
-      ts = LIBRARY.uid(transfer_syntax)
+      ts = LIBRARY.uid(@transfer_syntax)
       @explicit = ts ? ts.explicit? : true
       @data_endian = ts ? ts.big_endian? : false
       logger.warn("Invalid/unknown transfer syntax encountered: #{@transfer_syntax} Will try to continue, but errors may occur.") unless ts
