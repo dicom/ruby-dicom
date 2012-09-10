@@ -1,15 +1,16 @@
 module DICOM
   module ImageProcessor
+
+    # This module contains methods for interacting with pixel data using the mini_magick gem.
+    #
     module DcmMiniMagick
 
       class << self
 
         # Creates image objects from an array of compressed, binary string blobs.
-        # Returns an array of images. If decompression fails, returns false.
         #
-        # === Parameters
-        #
-        # * <tt>blobs</tt> -- An array of binary string blobs containing compressed pixel data.
+        # @param [Array<String>] blobs an array of binary string blobs containing compressed pixel data
+        # @return [Array<MiniMagick::Image>, FalseClass] - an array of images, or false (if decompression failed)
         #
         def decompress(blobs)
           images = Array.new
@@ -22,39 +23,36 @@ module DICOM
 
         # Extracts an array of pixels (integers) from an image object.
         #
-        # === Notes
+        # @note This feature is not available as of yet in the mini_magick image processor.
+        #   If this feature is needed, please try another image processor (RMagick).
         #
-        # * This feature is not available as of yet in the mini_magick image processor. If this feature is needed, please try another image processor (RMagick).
-        #
-        # === Parameters
-        #
-        # * <tt>image</tt> -- An MiniMagick image object.
+        # @param [MiniMagick::Image] image a mini_magick image object
+        # @param [String] photometry a code describing the photometry of the pixel data (e.g. 'MONOCHROME1' or 'COLOR')
+        # @return [Array<Integer>] an array of pixel values
         #
         def export_pixels(image, photometry)
           raise ArgumentError, "Expected MiniMagick::Image, got #{image.class}." unless image.is_a?(MiniMagick::Image)
           raise "Exporting pixels is not yet available with the mini_magick processor. Please try another image processor (RMagick)."
         end
 
-        # Creates an image object from a binary string blob which contains raw pixel data.
+        # Creates an image object from a binary string blob.
         #
-        # === Parameters
-        #
-        # * <tt>blob</tt> -- Binary string blob containing raw pixel data.
-        # * <tt>columns</tt> -- Number of columns.
-        # * <tt>rows</tt> -- Number of rows.
-        # * <tt>depth</tt> -- Bit depth of the encoded pixel data.
-        # * <tt>photometry</tt> -- String describing the DICOM photometry of the pixel data.
-        # * <tt>format</tt> -- String describing the image format to be used when creating the image object. Defaults to 'png'.
+        # @param [String] blob binary string blob containing pixel data
+        # @param [Integer] columns the number of columns
+        # @param [Integer] rows the number of rows
+        # @param [Integer] depth the bit depth of the encoded pixel data
+        # @param [String] photometry a code describing the photometry of the pixel data (e.g. 'MONOCHROME1' or 'COLOR')
+        # @param [String] format the image format to use
+        # @return [Magick::Image] a mini_magick image object
         #
         def import_pixels(blob, columns, rows, depth, photometry, format="png")
           image = MiniMagick::Image.import_pixels(blob, columns, rows, depth, im_map(photometry), format)
         end
 
-        # Returns an ImageMagick pixel map string based on the input DICOM photometry string.
+        # Converts a given DICOM photometry string to a mini_magick pixel map string.
         #
-        # === Parameters
-        #
-        # * <tt>photometry</tt> -- String describing the photometry of the pixel data. Example: 'MONOCHROME1' or 'COLOR'.
+        # @param [String] photometry a code describing the photometry of the pixel data (e.g. 'MONOCHROME1' or 'COLOR')
+        # @return [String] a mini_magick pixel map string
         #
         def im_map(photometry)
           raise ArgumentError, "Expected String, got #{photometry.class}." unless photometry.is_a?(String)
