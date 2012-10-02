@@ -1,8 +1,10 @@
 # Available commands:
 # Testing the specification:
 #   bundle exec rake spec
-# Building a gem package from source:
+# Building a gem from source with rake:
 #   bundle exec rake package
+# Building a gem from source with rubygems:
+#   bundle exec gem build dicom.gemspec
 # Create html documentation files:
 #   bundle exec rake yard
 
