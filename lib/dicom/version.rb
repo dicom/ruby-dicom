@@ -1,6 +1,6 @@
 module DICOM
 
   # The ruby-dicom version string.
-  VERSION = '0.9.4'
+  VERSION = '0.9.5b'
 
 end
