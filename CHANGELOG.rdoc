@@ -1,3 +1,11 @@
+= [In development]
+
+=== (Unreleased)
+
+* Defaults to ignoring duplicate data elements and sequences instead of replacing the original element.
+* Added the :overwrite option to DObject#read and #parse which makes ruby-dicom overwrite elements when duplicates are encountered.
+
+
 = 0.9.4
 
 === 10th September, 2012

@@ -98,6 +98,7 @@ module DICOM
     #
     # @param [String] string an encoded binary string containing DICOM information
     # @param [Hash] options the options to use for parsing the DICOM string
+    # @option options [Boolean] :overwrite for the rare case of a DICOM file containing duplicate elements, setting this as true instructs the parsing algorithm to overwrite the original element with duplicates
     # @option options [Boolean] :signature if set as false, the parsing algorithm will not be looking for the DICOM header signature (defaults to true)
     # @option options [String] :syntax if a syntax string is specified, the parsing algorithm will be forced to use this transfer syntax when decoding the binary string
     # @example Parse a DICOM file that has already been loaded to a binary string
@@ -111,7 +112,7 @@ module DICOM
       raise ArgumentError, "Invalid option :syntax. Expected String, got #{options[:syntax].class}." if options[:syntax] && !options[:syntax].is_a?(String)
       signature = options[:signature].nil? ? true : options[:signature]
       dcm = self.new
-      dcm.send(:read, string, signature, :syntax => options[:syntax])
+      dcm.send(:read, string, signature, :overwrite => options[:overwrite], :syntax => options[:syntax])
       if dcm.read?
         logger.debug("DICOM string successfully parsed.")
       else
@@ -123,11 +124,13 @@ module DICOM
     # Creates a DObject instance by reading and parsing a DICOM file.
     #
     # @param [String] file a string which specifies the path of the DICOM file to be loaded
+    # @param [Hash] options the options to use for reading the DICOM file
+    # @option options [Boolean] :overwrite for the rare case of a DICOM file containing duplicate elements, setting this as true instructs the parsing algorithm to overwrite the original element with duplicates
     # @example Load a DICOM file
     #   require 'dicom'
     #   dcm = DICOM::DObject.read('test.dcm')
     #
-    def self.read(file)
+    def self.read(file, options={})
       raise ArgumentError, "Invalid argument 'file'. Expected String, got #{file.class}." unless file.is_a?(String)
       # Read the file content:
       bin = nil
@@ -150,12 +153,13 @@ module DICOM
       end
       # Parse the file contents and create the DICOM object:
       if bin
-        dcm = self.parse(bin)
+        dcm = self.parse(bin, options)
         # If reading failed, and no transfer syntax was detected, we will make another attempt at reading the file while forcing explicit (little endian) decoding.
         # This will help for some rare cases where the DICOM file is saved (erroneously, Im sure) with explicit encoding without specifying the transfer syntax tag.
         if !dcm.read? and !dcm.exists?("0002,0010")
           logger.info("Attempting a second decode pass (assuming Explicit Little Endian transfer syntax).")
-          dcm = self.parse(bin, :syntax => EXPLICIT_LITTLE_ENDIAN)
+          options[:syntax] = EXPLICIT_LITTLE_ENDIAN
+          dcm = self.parse(bin, options)
         end
       else
         dcm = self.new

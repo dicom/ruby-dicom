@@ -40,6 +40,8 @@ suppress_warnings do
   DICOM::DCM_AT_INVALID = 'samples/at_invalid.dcm'
   DICOM::DCM_UTF8 = 'samples/encoding_utf8.dcm'
   DICOM::DCM_ISO8859_1 = 'samples/encoding_iso8859-1.dcm'
+  # Duplicate tags/sequences:
+  DICOM::DCM_DUPLICATES = 'samples/duplicates.dcm'
   # Sample JSON files:
   DICOM::JSON_AUDIT_TRAIL = 'samples/json/audit_trail.json'
   # Sample dictionary files:

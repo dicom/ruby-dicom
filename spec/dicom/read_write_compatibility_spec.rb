@@ -115,6 +115,27 @@ module DICOM
         dcm.count_all.should eql 42
       end
 
+      it "should parse this DICOM file and build a valid DICOM object" do
+        dcm = DObject.read(DCM_UTF8)
+        dcm.read?.should be_true
+        dcm.count.should eql 13
+        dcm.count_all.should eql 13
+      end
+
+      it "should parse this DICOM file and build a valid DICOM object" do
+        dcm = DObject.read(DCM_ISO8859_1)
+        dcm.read?.should be_true
+        dcm.count.should eql 14
+        dcm.count_all.should eql 14
+      end
+
+      it "should parse this DICOM file and build a valid DICOM object" do
+        dcm = DObject.read(DCM_DUPLICATES)
+        dcm.read?.should be_true
+        dcm.count.should eql 12
+        dcm.count_all.should eql 14
+      end
+
     end
 
   end

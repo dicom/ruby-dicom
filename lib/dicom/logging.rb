@@ -122,6 +122,7 @@ module DICOM
       end
 
       # The logger object setter.
+      #
       # This method is used to replace the default logger instance with
       # a custom logger of your own.
       #

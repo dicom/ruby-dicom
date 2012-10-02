@@ -88,8 +88,17 @@ module DICOM
       # Create an Element from the gathered data:
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
-          # Create a Sequence:
-          @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          # Check for duplicate and create sequence:
+          logger.warn("Duplicate Sequence (#{tag}) detected at level #{@current_parent.parent + '=>' if @current_parent.parent}#{@current_parent}") if @current_parent[tag]
+          unless @current_parent[tag] and !@overwrite
+            @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
+          else
+            # We have skipped a sequence. This means that any following children
+            # of this sequence must be skipped as well. We solve this by creating an 'orphaned'
+            # sequence that has a parent defined, but does not add itself to this parent:
+            @current_element = Sequence.new(tag, :length => length, :name => name, :vr => vr)
+            @current_element.set_parent(@current_parent)
+          end
         elsif tag == ITEM_TAG
           # Create an Item:
           if @enc_image
@@ -118,10 +127,13 @@ module DICOM
         # The occurance of such a tag indicates that a sequence or item has ended, and the parent must be changed:
         @current_parent = @current_parent.parent
       else
-        # Create an ordinary Data Element:
-        @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
-        # Check that the data stream didnt end abruptly:
-        raise "The actual length of the value (#{@current_element.bin.length}) does not match its specified length (#{length}) for Data Element #{@current_element.tag}" if length != @current_element.bin.length
+        # Check for duplicate and create an ordinary data element:
+        logger.warn("Duplicate Element (#{tag}) detected at level #{@current_parent.parent + '=>' if @current_parent.parent}#{@current_parent}") if @current_parent[tag]
+        unless @current_parent[tag] and !@overwrite
+          @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
+          # Check that the data stream didn't end abruptly:
+          raise "The actual length of the value (#{@current_element.bin.length}) does not match its specified length (#{length}) for Data Element #{@current_element.tag}" if length != @current_element.bin.length
+        end
       end
       # Return true to indicate success:
       return true
@@ -132,11 +144,13 @@ module DICOM
     # @param [String] string a binary DICOM string to be parsed
     # @param [Boolean] signature if true (default), the parsing algorithm will look for the DICOM header signature
     # @param [Hash] options the options to use for parsing the DICOM string
+    # @option options [Boolean] :overwrite for the rare case of a DICOM file containing duplicate elements, setting this as true instructs the parsing algorithm to overwrite the original element with duplicates
     # @option options [String] :syntax if a syntax string is specified, the parsing algorithm is forced to use this transfer syntax when decoding the string
     #
     def read(string, signature=true, options={})
       # (Re)Set variables:
       @str = string
+      @overwrite = options[:overwrite]
       # Presence of the official DICOM signature:
       @signature = false
       # Default explicitness of start of DICOM string:
