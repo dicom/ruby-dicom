@@ -132,8 +132,8 @@ module DICOM
       it "should parse this DICOM file and build a valid DICOM object" do
         dcm = DObject.read(DCM_DUPLICATES)
         dcm.read?.should be_true
-        dcm.count.should eql 12
-        dcm.count_all.should eql 14
+        dcm.count.should eql 13
+        dcm.count_all.should eql 20
       end
 
     end

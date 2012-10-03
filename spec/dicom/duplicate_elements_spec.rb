@@ -19,12 +19,16 @@ module DICOM
       it "should by default keep the original instance(s) when duplicate element(s)/sequence(s) occurs" do
         dcm = DObject.read(DCM_DUPLICATES)
         dcm.value('0010,0010').should eql 'First'
+        dcm['3006,0010'][0].value('0020,0052').should eql '11'
+        dcm['3006,0010'][0]['3006,0012'][0].value('0008,1150').should eql '11'
         dcm['3006,0020'][0].value('3006,0026').should eql 'First SQ'
       end
 
-      it "should by overwrite the original instance(s) when duplicate element(s)/sequence(s) occurs and the :overwrite option is true" do
+      it "should overwrite the original instance(s) when duplicate element(s)/sequence(s) occurs and the :overwrite option is true" do
         dcm = DObject.read(DCM_DUPLICATES, :overwrite => true)
         dcm.value('0010,0010').should eql 'Latest'
+        dcm['3006,0010'][0].value('0020,0052').should eql '12'
+        dcm['3006,0010'][0]['3006,0012'][0].value('0008,1150').should eql '12'
         dcm['3006,0020'][0].value('3006,0026').should eql 'LatestSQ'
       end
 

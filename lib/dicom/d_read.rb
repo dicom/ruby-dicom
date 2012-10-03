@@ -89,7 +89,7 @@ module DICOM
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
           # Check for duplicate and create sequence:
-          logger.warn("Duplicate Sequence (#{tag}) detected at level #{@current_parent.parent + '=>' if @current_parent.parent}#{@current_parent}") if @current_parent[tag]
+          logger.warn("Duplicate Sequence (#{tag}) detected at level #{@current_parent.parent.is_a?(DObject) ? 'DObject' : @current_parent.parent.tag + ' => ' if @current_parent.parent}#{@current_parent.is_a?(DObject) ? 'DObject' : @current_parent.tag}") if @current_parent[tag]
           unless @current_parent[tag] and !@overwrite
             @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
           else
@@ -128,7 +128,7 @@ module DICOM
         @current_parent = @current_parent.parent
       else
         # Check for duplicate and create an ordinary data element:
-        logger.warn("Duplicate Element (#{tag}) detected at level #{@current_parent.parent + '=>' if @current_parent.parent}#{@current_parent}") if @current_parent[tag]
+        logger.warn("Duplicate Element (#{tag}) detected at level #{@current_parent.parent.is_a?(DObject) ? 'DObject' : @current_parent.parent.tag + ' => ' if @current_parent.parent}#{@current_parent.is_a?(DObject) ? 'DObject' : @current_parent.tag}") if @current_parent[tag]
         unless @current_parent[tag] and !@overwrite
           @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
           # Check that the data stream didn't end abruptly:
