@@ -18,7 +18,6 @@ Gem::Specification.new do |s|
   s.rubyforge_project = 'dicom'
 
   s.required_ruby_version = '>= 1.9.2'
-  s.required_rubygems_version = '>= 1.8.6'
 
   s.add_development_dependency('bundler', '~> 1.2')
   s.add_development_dependency('mocha', '~> 0.12')
