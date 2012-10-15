@@ -1,5 +1,8 @@
 = Contributing Code
 
+So you want to contribute to ruby-dicom? That's great, thanks! If you're a
+first time committer, you may want to take a second to read these instructions.
+
 The preferred method, by far, is to convey your code contribution in the form
 of a pull request on {github}[https://github.com/dicom/ruby-dicom].
 
@@ -11,6 +14,7 @@ of a pull request on {github}[https://github.com/dicom/ruby-dicom].
 * Add a spec example for your change. Only refactoring and documentation changes
   require no new tests. If you are adding functionality or fixing a bug, a test is mandatory!
 * Alter the code to make the new spec example(s) pass.
+* Don't modify the version or changelog.
 * Push to your fork and submit a pull request.
 * Wait for feedback (this shouldn't take too long). The pull request may be accepted right
   away, it may be rejected (with a reason specified), or it may be discussed with
