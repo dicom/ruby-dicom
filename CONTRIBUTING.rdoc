@@ -1,14 +1,14 @@
 = Contributing Code
 
-So you want to contribute to ruby-dicom? That's great, thanks! If you're a
-first time committer, you may want to take a second to read these instructions.
+So you want to contribute to ruby-dicom? That's great! Thank you! If you are a
+first time committer however, you must to take a moment to read these instructions.
 
 The preferred method, by far, is to convey your code contribution in the form
 of a pull request on {github}[https://github.com/dicom/ruby-dicom].
 
 == Committer's Recipe
 
-* Fork the repository (for bonus points, create a topical branch name).
+* Fork the repository (for bonus points, use a topical branch name).
 * Execute the specification (tests) to verify that all spec examples pass
   (if in doubt, check out the rakefile for instructions).
 * Add a spec example for your change. Only refactoring and documentation changes
@@ -30,7 +30,7 @@ add {technical debt}[http://en.wikipedia.org/wiki/Technical_debt] to the project
   and give information on parameters, exceptions and return values where relevant.
   Provide examples for non-trivial use cases.
 * Indentation: Two spaces (no tabs).
-* No trailling whitespace. Blank lines should not have any space.
+* No trailing whitespace. Blank lines should not have any space.
 * Method parameters: my_method(my_arg) is preferred instead of my_method( my_arg ) or my_method my_arg
 * Assignment: a = b and not a=b
 * In general: Follow the conventions you see used in the source code already.
@@ -57,8 +57,8 @@ for a fuller explanation of the need for this.
 == Credits
 
 All contributors are credited, with full name and link to their github account,
-in the README file. If such an accreditation is not wanted, please let me know so,
-either in the pull request or in private.
+in the README file. If such an accreditation is not wanted (for whatever reason),
+please let me know so, either in the pull request or in private.
 
 
 = Other contributions
@@ -67,8 +67,9 @@ Don't want to get your hands dirty with source code and git? Don't worry,
 there are other ways you can contribute to the project as well!
 
 * Create an issue on github for feature requests or bug reports.
+* Weigh in with your opinion on existing issues.
 * Write a tutorial.
-* Answer questions, or tell others about your ruby-dicom projects in the
+* Answer questions, or tell the community about your exciting ruby-dicom projects in the
   {mailing list}[http://groups.google.com/group/ruby-dicom].
 * Academic works: Properly reference ruby-dicom in your work and tell us about it.
 * Spread the word: Tell your colleagues about ruby-dicom.
