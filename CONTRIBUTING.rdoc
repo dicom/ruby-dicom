@@ -14,9 +14,9 @@ of a pull request on {github}[https://github.com/dicom/ruby-dicom].
 * Add a spec example for your change. Only refactoring and documentation changes
   require no new tests. If you are adding functionality or fixing a bug, a test is mandatory!
 * Alter the code to make the new spec example(s) pass.
-* Keep it simple! One issue per pull pull request. Mixing two or more independent
+* Keep it simple! One issue per pull request. Mixing two or more independent
   issues in the same pull request will complicate the review of your request and
-  may result in a rejection (even if parts of the commit are sound).
+  may result in a rejection (even if independent parts of the commit are sound).
 * Don't modify the version or changelog.
 * Push to your fork and submit a pull request.
 * Wait for feedback (this shouldn't take too long). The pull request may be accepted right
