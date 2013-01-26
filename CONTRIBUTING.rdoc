@@ -32,10 +32,14 @@ add {technical debt}[http://en.wikipedia.org/wiki/Technical_debt] to the project
 * Provide thorough documentation. It should follow the format used by this project
   and give information on parameters, exceptions and return values where relevant.
   Provide examples for non-trivial use cases.
-* Indentation: Two spaces (no tabs).
-* No trailing whitespace. Blank lines should not have any space.
-* Method parameters: my_method(my_arg) is preferred instead of my_method( my_arg ) or my_method my_arg
-* Assignment: a = b and not a=b
+* Read the excellent {Github Ruby Styleguide}[https://github.com/styleguide/ruby]
+  if you are new to collaborative Ruby development. Do note though, that we actually
+  don't follow all styles listed yet (perhaps we should?!).
+* Some sample patterns of ours:
+  * Indentation: Two spaces (no tabs).
+  * No trailing whitespace. Blank lines should not have any space.
+  * Method parameters: my_method(my_arg) is preferred instead of my_method( my_arg ) or my_method my_arg
+  * Assignment: a = b and not a=b
 * In general: Follow the conventions you see used in the source code already.
 
 == Contribution Agreement
@@ -51,7 +55,7 @@ or
 
 b) Disclaim copyright on it and thus put it in the public domain
 
-Copyright assignment is the preferred and encouraged option for larger
+Copyright assignment (a) is the preferred and encouraged option for larger
 code contributions, and is assumed unless otherwise is specified.
 
 Please see the {GNU FAQ}[http://www.gnu.org/licenses/gpl-faq.html#AssignCopyright]
