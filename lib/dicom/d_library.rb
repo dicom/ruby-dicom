@@ -24,11 +24,11 @@ module DICOM
       @methods_from_names = Hash.new
       @names_from_methods = Hash.new
       # Load the elements dictionary:
-      File.open("#{ROOT_DIR}/dictionary/elements.txt").each do |record|
+      File.open("#{ROOT_DIR}/dictionary/elements.txt", :encoding => "utf-8").each do |record|
         load_element(record)
       end
       # Load the unique identifiers dictionary:
-      File.open("#{ROOT_DIR}/dictionary/uids.txt").each do |record|
+      File.open("#{ROOT_DIR}/dictionary/uids.txt", :encoding => "utf-8").each do |record|
         fields = record.split("\t")
         # Store the uids in a hash with uid-value as key and the uid instance as value:
         @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
