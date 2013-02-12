@@ -449,8 +449,8 @@ module DICOM
       end
 
     end
-    
-    
+
+
     after :all do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL

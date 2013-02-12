@@ -1,9 +1,9 @@
-# encoding: ASCII-8BIT
+# encoding: UTF-8
 
 require 'spec_helper'
 
 module DICOM
-  
+
   describe DServer do
 
     describe '::run' do
@@ -44,7 +44,7 @@ module DICOM
       end
 
     end
-    
+
   end
-  
+
 end

@@ -54,7 +54,7 @@ module DICOM
         element.bin.should eql ''
         element.value.should be_nil
       end
-      
+
       it "should accept the creation of an empty-stringed AT element" do
         element = Element.new("0020,5000", '')
         element.bin.should eql ''

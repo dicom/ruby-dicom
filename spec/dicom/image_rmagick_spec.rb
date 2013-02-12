@@ -1,4 +1,4 @@
-# encoding: ASCII-8BIT
+# encoding: UTF-8
 
 # Specification for the image methods using the RMagick interface as the image processor.
 

@@ -1,4 +1,4 @@
-# encoding: ASCII-8BIT
+# encoding: UTF-8
 
 require 'spec_helper'
 require 'narray'
@@ -529,7 +529,7 @@ module DICOM
           @dcm.pixels = narr
           @dcm.pixels.should eql Array.new(24) {|i| i}
         end
-        
+
         it "should encode the pixels of the (flat) Array such that the pixel values are properly placed in expected indices" do
           @dcm.pixels = Array.new(24) {|i| i}
           @dcm.pixels.should eql Array.new(24) {|i| i}

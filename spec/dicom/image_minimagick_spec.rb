@@ -1,4 +1,4 @@
-# encoding: ASCII-8BIT
+# encoding: UTF-8
 
 # Specification for the image methods using the MiniMagick wrapper as the image processor.
 

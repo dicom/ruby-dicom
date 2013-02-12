@@ -1,4 +1,4 @@
-# encoding: ASCII-8BIT
+# encoding: UTF-8
 
 # Compatibility specification. Ruby DICOM should be able to read and write all these sample DICOM files successfully.
 # Only reading files checked yet.
