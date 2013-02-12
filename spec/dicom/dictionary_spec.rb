@@ -87,6 +87,18 @@ module DICOM
         element.name.should eql "Patient's Name"
       end
 
+      it "should give the name of this tag encoded as UTF-8" do
+        tag = '0018,1153'
+        element = LIBRARY.element(tag)
+        element.name.encoding.should eql Encoding::UTF_8
+      end
+
+      it "should give the proper UTF-8 name string of this tag" do
+        tag = '0018,1153'
+        element = LIBRARY.element(tag)
+        element.name.should eql 'Exposure in µAs'
+      end
+
     end
 
 
@@ -347,6 +359,12 @@ module DICOM
         uid.value.should eql value
         uid.name.should eql 'Universal Coordinated Time'
         uid.retired?.should be_false
+      end
+
+      it "should return the name of the UID encoded as UTF-8" do
+        value = '1.2.840.10008.1.2.4.100'
+        uid = LIBRARY.uid(value)
+        uid.name.encoding.should eql Encoding::UTF_8
       end
 
     end
