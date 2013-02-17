@@ -44,6 +44,8 @@ module DICOM
     attr_reader :parent
     # A boolean which is set as true if a DICOM file has been successfully read & parsed from a file (or binary string).
     attr_accessor :read_success
+    # The source of the DObject (nil, :str or file name string).
+    attr_accessor :source
     # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
     attr_reader :stream
     # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
@@ -91,6 +93,7 @@ module DICOM
         dcm = self.new
         dcm.read_success = false
       end
+      dcm.source = link
       return dcm
     end
 
@@ -118,6 +121,7 @@ module DICOM
       else
         logger.warn("Failed to parse this string as DICOM.")
       end
+      dcm.source = :str
       return dcm
     end
 
@@ -169,6 +173,7 @@ module DICOM
       else
         logger.warn("Reading DICOM file failed: #{file}")
       end
+      dcm.source = file
       return dcm
     end
 
@@ -267,8 +272,17 @@ module DICOM
       # System endian:
       cpu = (CPU_ENDIAN ? "Big Endian" : "Little Endian")
       sys_info << "Byte Order (CPU):     #{cpu}"
-      # File path/name:
-      info << "File:                 #{@file}"
+      # Source (file name):
+      if @source
+        if @source == :str
+          source = "Binary string #{@read_success ? '(successfully parsed)' : '(failed to parse)'}"
+        else
+          source = "File #{@read_success ? '(successfully read)' : '(failed to read)'}: #{@source}"
+        end 
+      else
+        source = 'Created from scratch'
+      end
+      info << "Source:               #{source}"
       # Modality:
       modality = (LIBRARY.uid(value('0008,0016')) ? LIBRARY.uid(value('0008,0016')).name : "SOP Class unknown or not specified!")
       info << "Modality:             #{modality}"

@@ -34,6 +34,11 @@ module DICOM
         dcm = DObject.new
         dcm.written?.should be_nil
       end
+      
+      it "should set the source attribute as nil when initializing an empty DICOM object" do
+        dcm = DObject.new
+        dcm.source.should be_nil
+      end
 
       it "should store a Stream instance in the stream attribute" do
         dcm = DObject.new
@@ -87,6 +92,12 @@ module DICOM
         dcm.read?.should be_false
         dcm.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
       end
+      
+      it "should set :str as the 'source' attribute" do
+        str = File.open(DCM_ISO8859_1, 'rb') { |f| f.read }
+        dcm = DObject.parse(str, :syntax => EXPLICIT_LITTLE_ENDIAN)
+        dcm.source.should eql :str
+      end
 
     end
 
@@ -119,6 +130,11 @@ module DICOM
       it "should fail gracefully when a directory is passed as an argument" do
         dcm = DObject.read(TMPDIR)
         dcm.read?.should be_false
+      end
+      
+      it "should set the file name string as the 'source' attribute" do
+        dcm = DObject.read(DCM_ISO8859_1)
+        dcm.source.should eql DCM_ISO8859_1
       end
 
     end
