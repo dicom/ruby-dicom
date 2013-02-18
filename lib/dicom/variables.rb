@@ -49,11 +49,18 @@ module DICOM
       data.each do |element|
         if element.is_a?(String)
           begin
-            dcm = DObject.read(element)
+            if File.directory?(element)
+              files = Dir[File.join(element, '**/*')].reject {|f| File.directory?(f) }
+              dcms = files.collect {|f| DObject.read(f)}
+            elsif File.file?(element)
+              dcms = [DObject.read(element)]
+            else
+              dcms = [DObject.parse(element)]
+            end
           rescue
-            dcm = DObject.parse(element)
+            dcms = [DObject.parse(element)]
           end
-          ary << dcm if dcm.read?
+          ary += dcms.keep_if {|dcm| dcm.read?}
         else
           ary << element.to_dcm
         end

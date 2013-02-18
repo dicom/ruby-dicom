@@ -95,6 +95,17 @@ module DICOM
         ary = DICOM.load([str, file, dcm])
         ary.should eql [DObject.read(file), DObject.read(file), DObject.read(file)]
       end
+      
+      it "should return an array containing the expected DObject instances when given a directory (with sub-directories) which contains multiple DICOM files" do
+        dir = DICOM::TMPDIR + 'load_files/'
+        FileUtils.mkdir(dir)
+        FileUtils.mkdir(dir + 'subdir/')
+        FileUtils.mkdir(dir + 'subdir_empty/')
+        FileUtils.copy_file(DCM_ISO8859_1, dir + File.basename(DCM_ISO8859_1))
+        FileUtils.copy_file(DCM_AT_NO_VALUE, dir + 'subdir/' + File.basename(DCM_AT_NO_VALUE))
+        ary = DICOM.load(dir)
+        ary.should eql [DObject.read(DCM_ISO8859_1), DObject.read(DCM_AT_NO_VALUE)]
+      end
 
     end
 
