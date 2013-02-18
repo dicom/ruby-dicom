@@ -35,6 +35,31 @@ module DICOM
       uid = [root, prefix, date, time, random].join('.')
       return uid
     end
+    
+    # Loads DICOM data to DObject instances and returns them in an array.
+    # Invalid DICOM sources (files) are ignored.
+    # If no valid DICOM source is given, an empty array is returned.
+    #
+    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (file paths, binary strings, DObjects)
+    # @return [Array<DObject>] an array of successfully loaded DICOM objects
+    #
+    def load(data)
+      data = Array[data] unless data.respond_to?(:to_ary)
+      ary = Array.new
+      data.each do |element|
+        if element.is_a?(String)
+          begin
+            dcm = DObject.read(element)
+          rescue
+            dcm = DObject.parse(element)
+          end
+          ary << dcm if dcm.read?
+        else
+          ary << element.to_dcm
+        end
+      end
+      ary
+    end
 
     # Use tags as key. Example: '0010,0010'
     #
