@@ -76,6 +76,10 @@ module DICOM
       it "should by default set the uid_root attribute as the DICOM module's UID_ROOT constant" do
         @a.uid_root.should eql UID_ROOT
       end
+      
+      it "should by default set the encryption attribute as nil" do
+        @a.encryption.should be_nil
+      end
 
       it "should pass the :uid option to the uid attribute" do
         a = Anonymizer.new(:uid => true)
@@ -89,14 +93,23 @@ module DICOM
       end
 
       it "should pass the :audit_trail option to the audit_trail_file attribute" do
-        trail_file = "my_audit_file.json"
+        trail_file = 'audit_trail.json'
         a = Anonymizer.new(:audit_trail => trail_file)
         a.audit_trail_file.should eql trail_file
       end
+      
+      it "should pass the :encryption option to the encryption attribute when a Digest class is passed (along with the :audit_trail option)" do
+        a = Anonymizer.new(:audit_trail => 'audit_trail.json', :encryption => Digest::SHA256)
+        a.encryption.should eql Digest::SHA256
+      end
+      
+      it "should set MD5 as the default Digest class when an :encryption option that is not a Digest class is given (along with the :audit_trail option)" do
+        a = Anonymizer.new(:audit_trail => 'audit_trail.json', :encryption => true)
+        a.encryption.should eql Digest::MD5
+      end
 
       it "should load an AuditTrail instance to the audit_trail attribute when the :audit_trail option is used" do
-        trail_file = "my_audit_file.json"
-        a = Anonymizer.new(:audit_trail => trail_file)
+        a = Anonymizer.new(:audit_trail => 'audit_trail.json')
         a.audit_trail.should be_an AuditTrail
       end
 
@@ -339,6 +352,23 @@ module DICOM
           File.exists?(audit_file).should be_true
           at = AuditTrail.read(audit_file)
           at.should be_a AuditTrail
+        end
+        
+        it "should encrypt the values stored in the audit trail file" do
+          audit_file = TMPDIR + "anonymization_encrypted.json"
+          a = Anonymizer.new(:audit_trail => audit_file, :encryption => true)
+          a.add_folder(@anon_other)
+          a.write_path = @wpath_s
+          a.enumeration = true
+          a.execute
+          at = AuditTrail.read(audit_file)
+          names = at.records('0010,0010').to_a
+          # MD5 hashes are 32 characters long:
+          names.first[0].length.should eql 32
+          names.last[0].length.should eql 32
+          # Values should be the ordinary, enumerated ones:
+          names.first[1].should eql 'Patient1'
+          names.last[1].should eql 'Patient2'
         end
 
       end

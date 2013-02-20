@@ -16,6 +16,8 @@ module DICOM
     attr_reader :audit_trail_file
     # A boolean that if set as true will cause all anonymized tags to be blank instead of get some generic value.
     attr_accessor :blank
+    # The cryptographic hash function to be used for encrypting DICOM values recorded in an audit trail file.
+    attr_reader :encryption
     # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
     attr_accessor :enumeration
     # The identity file attribute.
@@ -36,6 +38,7 @@ module DICOM
     # @note To customize logging behaviour, refer to the Logging module documentation.
     # @param [Hash] options the options to create an anonymizer instance with
     # @option options [String] :audit_trail a file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
+    # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
     # @option options [Boolean] :uid if true, all (top level) UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
     # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs.
     # @example Create an Anonymizer instance and restrict the log output
@@ -83,6 +86,14 @@ module DICOM
         else
           # Start from scratch with an empty audit trail:
           @audit_trail = AuditTrail.new
+        end
+        # Set up encryption if indicated:
+        if options[:encryption]
+          if options[:encryption].respond_to?(:hexdigest)
+            @encryption = options[:encryption]
+          else
+            @encryption = Digest::MD5
+          end
         end
       end
       # Set the default data elements to be anonymized:
@@ -405,6 +416,16 @@ module DICOM
     private
 
 
+    # Gives the value to be used for the audit trail, which is either
+    # the original value itself, or an encrypted string based on it.
+    #
+    # @param [String, Integer, Float] original the original value of the tag to be anonymized
+    # @return [String, Integer, Float] with encryption, a hash string is returned, otherwise the original value
+    #
+    def at_value(original)
+      @encryption ? @encryption.hexdigest(original) : original
+    end
+    
     # Finds the common path (if any) in the instance file path array, by performing a recursive search
     # on the folders that make up the path of one such file.
     #
@@ -470,7 +491,7 @@ module DICOM
       if @enumerations[j]
         if @audit_trail
           # Check if the UID has been encountered already:
-          replacement = @audit_trail.replacement(@tags[j], original)
+          replacement = @audit_trail.replacement(@tags[j], at_value(original))
           unless replacement
             # This original value has not been encountered yet. Determine the index to use.
             index = @audit_trail.records(@tags[j]).length + 1
@@ -481,7 +502,7 @@ module DICOM
               replacement = @values[j] + index
             end
             # Add this tag record to the audit trail:
-            @audit_trail.add_record(@tags[j], original, replacement)
+            @audit_trail.add_record(@tags[j], at_value(original), replacement)
           end
         else
           # Retrieve earlier used anonymization values:
