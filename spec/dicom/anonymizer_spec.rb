@@ -52,6 +52,14 @@ module DICOM
       it "should by default set the blank attribute as false" do
         @a.blank.should be_false
       end
+      
+      it "should by default set the delete_private attribute as false" do
+        @a.delete_private.should be_false
+      end
+      
+      it "should by default set the encryption attribute as nil" do
+        @a.encryption.should be_nil
+      end
 
       it "should by default set the enumeration attribute as false" do
         @a.enumeration.should be_false
@@ -60,13 +68,9 @@ module DICOM
       it "should by default set the identity_file attribute as nil" do
         @a.identity_file.should be_nil
       end
-
-      it "should by default set the delete_private attribute as false" do
-        @a.delete_private.should be_false
-      end
-
-      it "should by default set the write_path attribute as nil" do
-        @a.write_path.should be_nil
+      
+      it "should by default set the recursive attribute as nil" do
+        @a.recursive.should be_nil
       end
 
       it "should by default set the uid attribute as nil" do
@@ -77,10 +81,15 @@ module DICOM
         @a.uid_root.should eql UID_ROOT
       end
       
-      it "should by default set the encryption attribute as nil" do
-        @a.encryption.should be_nil
+      it "should by default set the write_path attribute as nil" do
+        @a.write_path.should be_nil
       end
 
+      it "should pass the :recursive option to the recursive attribute" do
+        a = Anonymizer.new(:recursive => true)
+        a.recursive.should be_true
+      end
+      
       it "should pass the :uid option to the uid attribute" do
         a = Anonymizer.new(:uid => true)
         a.uid.should be_true
@@ -305,6 +314,26 @@ module DICOM
         s1.value("0010,0010").should_not eql s2.value("0010,0010")
         a1.value("0010,0010").include?(a.value("0010,0010")).should be_true
         a1.value("0010,0010")[-1..-1].to_i.should_not eql a2.value("0010,0010")[-1..-1].to_i
+      end
+      
+      it "should not recursively anonymize the tag hierarchies of the DICOM files when the :recursive option is unused" do
+        a = Anonymizer.new
+        a.add_folder(@anon)
+        a.set_tag('0008,0104', :value => 'Recursive')
+        a.execute
+        dcm = DObject.read(@anon1)
+        dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104').should_not eql 'Recursive'
+        dcm['0008,9215'][0].value('0008,0104').should_not eql 'Recursive'
+      end
+      
+      it "should recursively anonymize the tag hierarchies of the DICOM files when the :recursive option is used" do
+        a = Anonymizer.new(:recursive => true)
+        a.add_folder(@anon)
+        a.set_tag('0008,0104', :value => 'Recursive')
+        a.execute
+        dcm = DObject.read(@anon1)
+        dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104').should eql 'Recursive'
+        dcm['0008,9215'][0].value('0008,0104').should eql 'Recursive'
       end
 
       it "should write the anonymized files to the specified folder and leave the original DICOM files untouched, when the write_path attribute is specified (with the path not ending with a file separator)" do

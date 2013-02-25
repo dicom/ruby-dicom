@@ -24,6 +24,8 @@ module DICOM
     attr_reader :identity_file
     # A boolean that if set as true, will make the anonymization delete all private tags.
     attr_accessor :delete_private
+    # A boolean that if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy.
+    attr_accessor :recursive
     # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
     attr_accessor :write_path
     # A boolean indicating whether or not UIDs shall be replaced when executing the anonymization.
@@ -39,6 +41,7 @@ module DICOM
     # @param [Hash] options the options to create an anonymizer instance with
     # @option options [String] :audit_trail a file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
     # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
+    # @option options [Boolean] :recursive if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy
     # @option options [Boolean] :uid if true, all (top level) UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
     # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs.
     # @example Create an Anonymizer instance and restrict the log output
@@ -71,7 +74,8 @@ module DICOM
       @enum_new_hash = Hash.new
       # All the files to be anonymized will be put in this array:
       @files = Array.new
-      # Write paths will be determined later and put in this array:
+      # Optional parameters:
+      @recursive = options[:recursive]
       @write_paths = Array.new
       # Register the uid anonymization option:
       @uid = options[:uid]
@@ -150,7 +154,7 @@ module DICOM
     # @note Only top level data elements are anonymized!
     #
     def execute
-      # FIXME: This method has grown a bit lengthy. Perhaps it should be looked at one day.
+      # FIXME: This method has grown way too lengthy. It needs to be refactored one of these days.
       # Search through the folders to gather all the files to be anonymized:
       logger.info("Initiating anonymization process.")
       start_time = Time.now.to_f
@@ -194,37 +198,42 @@ module DICOM
             # Read existing file to DICOM object:
             dcm = DObject.read(@files[i])
             if dcm.read?
-              # Anonymize the desired tags:
-              @tags.each_index do |j|
-                if dcm.exists?(@tags[j])
-                  element = dcm[@tags[j]]
-                  if element.is_a?(Element)
-                    if @blank
-                      value = ""
-                    elsif @enumeration
-                      old_value = element.value
-                      # Only launch enumeration logic if there is an actual value to the data element:
-                      if old_value
-                        value = enumerated_value(old_value, j)
-                      else
+              # Extract the data element parents to investigate for this DICOM object:
+              parents = element_parents(dcm)
+              parents.each do |parent|
+                # Anonymize the desired tags:
+                @tags.each_index do |j|
+                  if parent.exists?(@tags[j])
+                    element = parent[@tags[j]]
+                    if element.is_a?(Element)
+                      if @blank
                         value = ""
+                      elsif @enumeration
+                        old_value = element.value
+                        # Only launch enumeration logic if there is an actual value to the data element:
+                        if old_value
+                          value = enumerated_value(old_value, j)
+                        else
+                          value = ""
+                        end
+                      else
+                        # Use the value that has been set for this tag:
+                        value = @values[j]
                       end
-                    else
-                      # Use the value that has been set for this tag:
-                      value = @values[j]
+                      element.value = value
                     end
-                    element.value = value
                   end
                 end
+                # Delete Tags marked for removal:
+                @delete_tags.each_index do |j|
+                  parent.delete(@delete_tags[j]) if parent.exists?(@delete_tags[j])
+                end
               end
+              # General DICOM object manipulation:
               # Handle UIDs if requested:
               replace_uids(dcm) if @uid
               # Delete private tags?
               dcm.delete_private if @delete_private
-              # Delete Tags marked for removal:
-              @delete_tags.each_index do |j|
-                dcm.delete(@delete_tags[j]) if dcm.exists?(@delete_tags[j])
-              end
               # Write DICOM file:
               dcm.write(@write_paths[i])
               if dcm.written?
@@ -475,6 +484,43 @@ module DICOM
         # Assume type is string and return an empty string:
         return ""
       end
+    end
+    
+    # Extracts all parents from a DObject instance which potentially
+    # have child (data) elements. This typically means the DObject
+    # instance itself as well as items (i.e. not sequences).
+    # Note that unless the @recursive attribute has been set,
+    # this method will only return the DObject (placed inside an array).
+    #
+    # @param [DObject] dcm a DICOM object
+    # @return [Array<DObject, Item>] an array containing either just a DObject or also all parental child items within the tag hierarchy
+    #
+    def element_parents(dcm)
+      parents = Array.new
+      parents << dcm
+      if @recursive
+        dcm.sequences.each do |s|
+          parents += element_parents_recursive(s)
+        end
+      end
+      parents
+    end
+    
+    # Recursively extracts all item parents from a sequence instance (including
+    # any sub-sequences) which actually contain child (data) elements.
+    #
+    # @param [Sequence] sequence a Sequence instance
+    # @return [Array<Item>] an array containing items within the tag hierarchy that contains child elements
+    #
+    def element_parents_recursive(sequence)
+      parents = Array.new
+      sequence.items.each do |i|
+        parents << i if i.elements?
+        i.sequences.each do |s|
+          parents += element_parents_recursive(s)
+        end
+      end
+      parents
     end
 
     # Handles the enumeration for the given data element tag.
