@@ -29,9 +29,7 @@ module DICOM
       end
       # Load the unique identifiers dictionary:
       File.open("#{ROOT_DIR}/dictionary/uids.txt", :encoding => "utf-8").each do |record|
-        fields = record.split("\t")
-        # Store the uids in a hash with uid-value as key and the uid instance as value:
-        @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
+        load_uid(record)
       end
     end
 
@@ -48,6 +46,18 @@ module DICOM
       end
     end
 
+    # Adds a custom dictionary file to the ruby-dicom uid dictionary.
+    #
+    # @note The format of the dictionary is a tab-separated text file with 4 columns:
+    #   * UID, Name, Type, Retired status
+    #   * For samples check out ruby-dicom's uid dictionaries in the git repository
+    # @param [String] file The path to the dictionary file to be added
+    #
+    def add_uid_dictionary(file)
+      File.open(file).each do |record|
+        load_element(record)
+      end
+    end
 
     # Gives the method (symbol) corresponding to the specified element string value.
     #
@@ -197,6 +207,15 @@ module DICOM
       @uids[value]
     end
 
+    # Adds a (private) UID to the library
+    #
+    # @param [UID] value the new uid (e.g. SOP Class, Transfer Syntax)
+    #
+    def add_uid(value)
+      raise "Object is not of type DICOM::UID" unless value.is_a?(UID)
+      @uids[value.value] = value
+    end
+
 
     private
 
@@ -215,6 +234,17 @@ module DICOM
       @methods_from_names[element.name] = method
       @names_from_methods[method] = element.name
     end
+ 
 
+    # Loads an uid to the dictionary from an element string record.
+    #
+    # @param [String] record a tab-separated string line as extracted from a dictionary file
+    #
+    def load_uid(record)
+      fields = record.split("\t")
+      # Store the uids in a hash with uid-value as key and the uid instance as value:
+      @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
+    end
   end
+
 end
