@@ -93,6 +93,7 @@ module DICOM
         end
         # Set up encryption if indicated:
         if options[:encryption]
+          require 'digest'
           if options[:encryption].respond_to?(:hexdigest)
             @encryption = options[:encryption]
           else
@@ -434,7 +435,7 @@ module DICOM
     def at_value(original)
       @encryption ? @encryption.hexdigest(original) : original
     end
-    
+
     # Finds the common path (if any) in the instance file path array, by performing a recursive search
     # on the folders that make up the path of one such file.
     #
@@ -485,7 +486,7 @@ module DICOM
         return ""
       end
     end
-    
+
     # Extracts all parents from a DObject instance which potentially
     # have child (data) elements. This typically means the DObject
     # instance itself as well as items (i.e. not sequences).
@@ -505,7 +506,7 @@ module DICOM
       end
       parents
     end
-    
+
     # Recursively extracts all item parents from a sequence instance (including
     # any sub-sequences) which actually contain child (data) elements.
     #

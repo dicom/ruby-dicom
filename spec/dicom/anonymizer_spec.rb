@@ -52,11 +52,11 @@ module DICOM
       it "should by default set the blank attribute as false" do
         @a.blank.should be_false
       end
-      
+
       it "should by default set the delete_private attribute as false" do
         @a.delete_private.should be_false
       end
-      
+
       it "should by default set the encryption attribute as nil" do
         @a.encryption.should be_nil
       end
@@ -68,7 +68,7 @@ module DICOM
       it "should by default set the identity_file attribute as nil" do
         @a.identity_file.should be_nil
       end
-      
+
       it "should by default set the recursive attribute as nil" do
         @a.recursive.should be_nil
       end
@@ -80,7 +80,7 @@ module DICOM
       it "should by default set the uid_root attribute as the DICOM module's UID_ROOT constant" do
         @a.uid_root.should eql UID_ROOT
       end
-      
+
       it "should by default set the write_path attribute as nil" do
         @a.write_path.should be_nil
       end
@@ -89,7 +89,7 @@ module DICOM
         a = Anonymizer.new(:recursive => true)
         a.recursive.should be_true
       end
-      
+
       it "should pass the :uid option to the uid attribute" do
         a = Anonymizer.new(:uid => true)
         a.uid.should be_true
@@ -106,12 +106,13 @@ module DICOM
         a = Anonymizer.new(:audit_trail => trail_file)
         a.audit_trail_file.should eql trail_file
       end
-      
+
       it "should pass the :encryption option to the encryption attribute when a Digest class is passed (along with the :audit_trail option)" do
+        require 'digest'
         a = Anonymizer.new(:audit_trail => 'audit_trail.json', :encryption => Digest::SHA256)
         a.encryption.should eql Digest::SHA256
       end
-      
+
       it "should set MD5 as the default Digest class when an :encryption option that is not a Digest class is given (along with the :audit_trail option)" do
         a = Anonymizer.new(:audit_trail => 'audit_trail.json', :encryption => true)
         a.encryption.should eql Digest::MD5
@@ -315,7 +316,7 @@ module DICOM
         a1.value("0010,0010").include?(a.value("0010,0010")).should be_true
         a1.value("0010,0010")[-1..-1].to_i.should_not eql a2.value("0010,0010")[-1..-1].to_i
       end
-      
+
       it "should not recursively anonymize the tag hierarchies of the DICOM files when the :recursive option is unused" do
         a = Anonymizer.new
         a.add_folder(@anon)
@@ -325,7 +326,7 @@ module DICOM
         dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104').should_not eql 'Recursive'
         dcm['0008,9215'][0].value('0008,0104').should_not eql 'Recursive'
       end
-      
+
       it "should recursively anonymize the tag hierarchies of the DICOM files when the :recursive option is used" do
         a = Anonymizer.new(:recursive => true)
         a.add_folder(@anon)
@@ -382,7 +383,7 @@ module DICOM
           at = AuditTrail.read(audit_file)
           at.should be_a AuditTrail
         end
-        
+
         it "should encrypt the values stored in the audit trail file" do
           audit_file = TMPDIR + "anonymization_encrypted.json"
           a = Anonymizer.new(:audit_trail => audit_file, :encryption => true)
