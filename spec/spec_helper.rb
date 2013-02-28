@@ -48,6 +48,7 @@ suppress_warnings do
   DICOM::JSON_AUDIT_TRAIL = 'samples/json/audit_trail.json'
   # Sample dictionary files:
   DICOM::DICT_ELEMENTS = 'samples/dictionary/private_elements.txt'
+  DICOM::DICT_UIDS = 'samples/dictionary/private_uids.txt'
   # Directory for writing temporary files:
   DICOM::TMPDIR = "tmp/"
   DICOM::LOGDIR = DICOM::TMPDIR + "logs/"

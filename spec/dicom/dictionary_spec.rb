@@ -6,6 +6,31 @@ module DICOM
 
   describe DLibrary do
 
+    context "#add_element" do
+
+      it "should raise an ArgumentError when a non-DictionaryElement is passed as an argument" do
+        expect {LIBRARY.add_element('0011,0013')}.to raise_error(ArgumentError)
+      end
+
+      it "should add this dictionary element to ruby-dicom's element dictionary" do
+        tag = '5005,7007'
+        name = 'My custom tag'
+        vrs = ['LO']
+        vm = '2'
+        retired = 'R'
+        de = DictionaryElement.new(tag, name, vrs, vm, retired)
+        LIBRARY.add_element(de)
+        e = LIBRARY.element(tag)
+        e.tag.should eql tag
+        e.name.should eql name
+        e.vrs.should eql vrs
+        e.vm.should eql vm
+        e.retired.should eql retired
+        e.retired?.should be_true
+      end
+
+    end
+
     context "#add_element_dictionary" do
 
       it "should add this dictionary to ruby-dicom's element dictionary" do
@@ -30,6 +55,48 @@ module DICOM
         e4.vr.should eql 'UL'
         e4.vm.should eql '1-n'
         e4.retired?.should be_false
+      end
+
+    end
+
+
+    context "#add_uid" do
+
+      it "should raise an ArgumentError when a non-DictionaryElement is passed as an argument" do
+        expect {LIBRARY.add_uid('1.2.840.10008.1.1.333')}.to raise_error(ArgumentError)
+      end
+
+      it "should add this dictionary element to ruby-dicom's uid dictionary" do
+        value = '1.2.840.10008.1.1.77'
+        name = 'Some Transfer Syntax'
+        type = 'Transfer Syntax'
+        retired = 'R'
+        uid = UID.new(value, name, type, retired)
+        LIBRARY.add_uid(uid)
+        u = LIBRARY.uid(value)
+        u.value.should eql value
+        u.name.should eql name
+        u.type.should eql type
+        u.retired.should eql retired
+        u.retired?.should be_true
+      end
+
+    end
+
+    context "#add_uid_dictionary" do
+
+      it "should add this dictionary to ruby-dicom's uid dictionary" do
+        LIBRARY.add_uid_dictionary(DICT_UIDS)
+        u1 = LIBRARY.uid('1.2.840.10008.1.1.333')
+        u1.value.should eql '1.2.840.10008.1.1.333'
+        u1.name.should eql 'Custom SOP Class'
+        u1.type.should eql 'SOP Class'
+        u1.retired?.should be_false
+        u2 = LIBRARY.uid('1.2.840.10008.1.1.555')
+        u2.value.should eql '1.2.840.10008.1.1.555'
+        u2.name.should eql 'Custom TS Syntax'
+        u2.type.should eql 'Transfer Syntax'
+        u2.retired?.should be_true
       end
 
     end

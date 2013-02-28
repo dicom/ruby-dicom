@@ -1,0 +1,2 @@
+1.2.840.10008.1.1.333	Custom SOP Class	SOP Class	
+1.2.840.10008.1.1.555	Custom TS Syntax	Transfer Syntax	R

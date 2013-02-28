@@ -24,15 +24,23 @@ module DICOM
       @methods_from_names = Hash.new
       @names_from_methods = Hash.new
       # Load the elements dictionary:
-      File.open("#{ROOT_DIR}/dictionary/elements.txt", :encoding => "utf-8").each do |record|
-        load_element(record)
-      end
+      add_element_dictionary("#{ROOT_DIR}/dictionary/elements.txt")
       # Load the unique identifiers dictionary:
-      File.open("#{ROOT_DIR}/dictionary/uids.txt", :encoding => "utf-8").each do |record|
-        fields = record.split("\t")
-        # Store the uids in a hash with uid-value as key and the uid instance as value:
-        @uids[fields[0]] = UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip)
-      end
+      add_uid_dictionary("#{ROOT_DIR}/dictionary/uids.txt")
+    end
+
+    # Adds a custom DictionaryElement to the ruby-dicom element dictionary.
+    #
+    # @param [DictionaryElement] element the custom dictionary element to be added
+    #
+    def add_element(element)
+      raise ArgumentError, "Invalid argument 'element'. Expected DictionaryElement, got #{element.class}" unless element.is_a?(DictionaryElement)
+      # We store the elements in a hash with tag as key and the element instance as value:
+      @elements[element.tag] = element
+      # Populate the method conversion hashes with element data:
+      method = element.name.to_element_method
+      @methods_from_names[element.name] = method
+      @names_from_methods[method] = element.name
     end
 
     # Adds a custom dictionary file to the ruby-dicom element dictionary.
@@ -40,11 +48,36 @@ module DICOM
     # @note The format of the dictionary is a tab-separated text file with 5 columns:
     #   * Tag, Name, VR, VM & Retired status
     #   * For samples check out ruby-dicom's element dictionaries in the git repository
-    # @param [String] file The path to the dictionary file to be added
+    # @param [String] file the path to the dictionary file to be added
     #
     def add_element_dictionary(file)
-      File.open(file).each do |record|
-        load_element(record)
+      File.open(file, :encoding => 'utf-8').each do |record|
+        fields = record.split("\t")
+        add_element(DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip))
+      end
+    end
+
+    # Adds a custom uid (e.g. SOP Class, Transfer Syntax) to the ruby-dicom uid dictionary.
+    #
+    # @param [UID] uid the custom uid instance to be added
+    #
+    def add_uid(uid)
+      raise ArgumentError, "Invalid argument 'uid'. Expected UID, got #{uid.class}" unless uid.is_a?(UID)
+      # We store the uids in a hash with uid-value as key and the uid instance as value:
+      @uids[uid.value] = uid
+    end
+
+    # Adds a custom dictionary file to the ruby-dicom uid dictionary.
+    #
+    # @note The format of the dictionary is a tab-separated text file with 4 columns:
+    #   * Value, Name, Type & Retired status
+    #   * For samples check out ruby-dicom's uid dictionaries in the git repository
+    # @param [String] file the path to the dictionary file to be added
+    #
+    def add_uid_dictionary(file)
+      File.open(file, :encoding => 'utf-8').each do |record|
+        fields = record.split("\t")
+        add_uid(UID.new(fields[0], fields[1], fields[2].rstrip, fields[3].rstrip))
       end
     end
 
@@ -197,24 +230,6 @@ module DICOM
       @uids[value]
     end
 
-
-    private
-
-
-    # Loads an element to the dictionary from an element string record.
-    #
-    # @param [String] record a tab-separated string line as extracted from a dictionary file
-    #
-    def load_element(record)
-      fields = record.split("\t")
-      # Store the elements in a hash with tag as key and the element instance as value:
-      element = DictionaryElement.new(fields[0], fields[1], fields[2].split(","), fields[3].rstrip, fields[4].rstrip)
-      @elements[fields[0]] = element
-      # Populate the method conversion hashes with element data:
-      method = element.name.to_element_method
-      @methods_from_names[element.name] = method
-      @names_from_methods[method] = element.name
-    end
-
   end
+
 end
