@@ -34,7 +34,7 @@ module DICOM
         dcm = DObject.new
         dcm.written?.should be_nil
       end
-      
+
       it "should set the source attribute as nil when initializing an empty DICOM object" do
         dcm = DObject.new
         dcm.source.should be_nil
@@ -92,7 +92,7 @@ module DICOM
         dcm.read?.should be_false
         dcm.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
       end
-      
+
       it "should set :str as the 'source' attribute" do
         str = File.open(DCM_ISO8859_1, 'rb') { |f| f.read }
         dcm = DObject.parse(str, :syntax => EXPLICIT_LITTLE_ENDIAN)
@@ -131,7 +131,7 @@ module DICOM
         dcm = DObject.read(TMPDIR)
         dcm.read?.should be_false
       end
-      
+
       it "should set the file name string as the 'source' attribute" do
         dcm = DObject.read(DCM_ISO8859_1)
         dcm.source.should eql DCM_ISO8859_1
@@ -410,12 +410,6 @@ module DICOM
         @dcm.add(Element.new("0002,0012", "1.2.54321"))
         @dcm.write(@path)
         @dcm.exists?("0002,0013").should be_false
-      end
-
-      # This option is deprecated:
-      it "should not touch the meta group when the :add_meta => false option is passed" do
-        @dcm.expects(:insert_missing_meta).never
-        @dcm.write(@path, :add_meta => false)
       end
 
       it "should not touch the meta group when the :ignore_meta option is passed" do
