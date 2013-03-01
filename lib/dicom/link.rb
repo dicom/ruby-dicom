@@ -1415,7 +1415,7 @@ module DICOM
         # Convert the variable to an empty string.
         data = ""
       end
-      return data
+      data
     end
 
     # Receives the data from an incoming network transmission.
@@ -1423,17 +1423,13 @@ module DICOM
     #
     def receive_transmission_data
       data = false
-      t1 = Time.now.to_f
-      @receive = true
-      thr = Thread.new{ data=@session.recv(@max_receive_size); @receive=false }
-      while @receive
-        if (Time.now.to_f - t1) > @timeout
-          Thread.kill(thr)
-          logger.error("No answer was received within the specified timeout period. Aborting.")
-          stop_receiving
-        end
+      response = IO.select([@session], nil, nil, @timeout)
+      if response.nil?
+        logger.error("No answer was received within the specified timeout period. Aborting.")
+      else
+        data = @session.recv(@max_receive_size)
       end
-      return data
+      data
     end
 
     # Sets some default values related to encoding.
