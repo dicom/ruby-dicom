@@ -278,7 +278,7 @@ module DICOM
           source = "Binary string #{@read_success ? '(successfully parsed)' : '(failed to parse)'}"
         else
           source = "File #{@read_success ? '(successfully read)' : '(failed to read)'}: #{@source}"
-        end 
+        end
       else
         source = 'Created from scratch'
       end
@@ -394,15 +394,13 @@ module DICOM
     #
     # @param [String] file_name the path of the DICOM file which is to be written to disk
     # @param [Hash] options the options to use for writing the DICOM file
-    # @option options [Boolean] :add_meta <DEPRECATED> if set to false, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file
     # @option options [Boolean] :ignore_meta if true, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file
     # @example Encode a DICOM file from a DObject
     #   dcm.write('C:/dicom/test.dcm')
     #
     def write(file_name, options={})
-      logger.warn("Option :add_meta => false is deprecated. Use option :ignore_meta => true instead.") if options[:add_meta] == false
       raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}." unless file_name.is_a?(String)
-      insert_missing_meta unless options[:add_meta] == false or options[:ignore_meta]
+      insert_missing_meta unless options[:ignore_meta]
       write_elements(:file_name => file_name, :signature => true, :syntax => transfer_syntax)
     end
 
