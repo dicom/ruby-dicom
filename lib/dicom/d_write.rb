@@ -155,14 +155,19 @@ module DICOM
             write_data_element(element)
             write_data_elements(element.children)
             if @enc_image
-              write_delimiter(element) if element.tag == PIXEL_TAG # (Write a delimiter for the pixel tag, but not for it's items)
+              # Write a delimiter for the pixel tag, but not for its items:
+              write_delimiter(element) if element.tag == PIXEL_TAG
             else
               write_delimiter(element)
             end
           else
-            # Empty sequence/item or item with binary data (We choose not to write empty, childless parents):
+            # Parent is childless:
             if element.bin
               write_data_element(element) if element.bin.length > 0
+            elsif @include_empty_parents
+              # Only write empty/childless parents if specifically indicated:
+              write_data_element(element)
+              write_delimiter(element)
             end
           end
         else

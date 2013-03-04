@@ -395,11 +395,13 @@ module DICOM
     # @param [String] file_name the path of the DICOM file which is to be written to disk
     # @param [Hash] options the options to use for writing the DICOM file
     # @option options [Boolean] :ignore_meta if true, no manipulation of the DICOM object's meta group will be performed before the DObject is written to file
+    # @option options [Boolean] :include_empty_parents if true, childless parents (sequences & items) are written to the DICOM file
     # @example Encode a DICOM file from a DObject
     #   dcm.write('C:/dicom/test.dcm')
     #
     def write(file_name, options={})
       raise ArgumentError, "Invalid file_name. Expected String, got #{file_name.class}." unless file_name.is_a?(String)
+      @include_empty_parents = options[:include_empty_parents]
       insert_missing_meta unless options[:ignore_meta]
       write_elements(:file_name => file_name, :signature => true, :syntax => transfer_syntax)
     end

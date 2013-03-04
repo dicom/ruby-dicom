@@ -239,6 +239,42 @@ module DICOM
     end
 
 
+    context "#print_all" do
+
+      it "should successfully print information to the screen" do
+        dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
+        dcm.expects(:puts).at_least_once
+        dcm.print_all
+      end
+
+      it "should successfully print information to the screen when called on an empty DICOM object" do
+        dcm = DObject.new
+        dcm.expects(:puts).at_least_once
+        dcm.print_all
+      end
+
+    end
+
+
+    # FIXME? Currently there is no specification for the format of the summary printout.
+    #
+    context "#summary" do
+
+      it "should print the summary to the screen and return an array of information when called on a full DICOM object" do
+        dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
+        dcm.expects(:puts).at_least_once
+        dcm.summary.should be_an(Array)
+      end
+
+      it "should print the summary to the screen and return an array of information when called on an empty DICOM object" do
+        dcm = DObject.new
+        dcm.expects(:puts).at_least_once
+        dcm.summary.should be_an(Array)
+      end
+
+    end
+
+
     describe "#to_dcm" do
 
       it "should return itself" do
@@ -345,10 +381,10 @@ module DICOM
     context "#write" do
 
       before :each do
-        @path = TMPDIR + "write.dcm"
+        @path = TMPDIR + 'write.dcm'
         @dcm = DObject.new
-        @dcm.add(Element.new("0008,0016", "1.2.34567"))
-        @dcm.add(Element.new("0008,0018", "1.2.34567.89"))
+        @dcm.add(Element.new('0008,0016', '1.2.34567'))
+        @dcm.add(Element.new('0008,0018', '1.2.34567.89'))
       end
 
       it "should succeed in writing a limited DICOM object, created from scratch" do
@@ -359,57 +395,57 @@ module DICOM
 
       it "should add the File Meta Information Version to the File Meta Group, when it is undefined" do
         @dcm.write(@path)
-        @dcm.exists?("0002,0001").should be_true
+        @dcm.exists?('0002,0001').should be_true
       end
 
       it "should use the SOP Class UID to create the Media Storage SOP Class UID of the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0002").should eql @dcm.value("0008,0016")
+        @dcm.value('0002,0002').should eql @dcm.value('0008,0016')
       end
 
       it "should use the SOP Instance UID to create the Media Storage SOP Instance UID of the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0003").should eql @dcm.value("0008,0018")
+        @dcm.value('0002,0003').should eql @dcm.value('0008,0018')
       end
 
       it "should add (the default) Transfer Syntax UID to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0010").should eql IMPLICIT_LITTLE_ENDIAN
+        @dcm.value('0002,0010').should eql IMPLICIT_LITTLE_ENDIAN
       end
 
       it "should add the Implementation Class UID to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0012").should eql UID_ROOT
+        @dcm.value('0002,0012').should eql UID_ROOT
       end
 
       it "should add the Implementation Version Name to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0013").should eql NAME
+        @dcm.value('0002,0013').should eql NAME
       end
 
       it "should add the Source Application Entity Title to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value("0002,0016").should eql DICOM.source_app_title
+        @dcm.value('0002,0016').should eql DICOM.source_app_title
       end
 
       it "should add a user-defined Source Application Entity Title to the File Meta Group when it is undefined (in the DObject)" do
         original_title = DICOM.source_app_title
-        DICOM.source_app_title = "MY_TITLE"
+        DICOM.source_app_title = 'MY_TITLE'
         @dcm.write(@path)
-        @dcm.value("0002,0016").should eql "MY_TITLE"
+        @dcm.value('0002,0016').should eql 'MY_TITLE'
         DICOM.source_app_title = original_title
       end
 
       it "should not add the Implementation Class UID to the File Meta Group, when (it is undefined and) the Implementation Version Name is defined" do
-        @dcm.add(Element.new("0002,0013", "SomeProgram"))
+        @dcm.add(Element.new('0002,0013', 'SomeProgram'))
         @dcm.write(@path)
-        @dcm.exists?("0002,0012").should be_false
+        @dcm.exists?('0002,0012').should be_false
       end
 
       it "should not add the Implementation Version Name to the File Meta Group, when (it is undefined and) the Implementation Class UID is defined" do
-        @dcm.add(Element.new("0002,0012", "1.2.54321"))
+        @dcm.add(Element.new('0002,0012', '1.2.54321'))
         @dcm.write(@path)
-        @dcm.exists?("0002,0013").should be_false
+        @dcm.exists?('0002,0013').should be_false
       end
 
       it "should not touch the meta group when the :ignore_meta option is passed" do
@@ -422,40 +458,32 @@ module DICOM
         @dcm.write(@path)
       end
 
-    end
-
-
-    # FIXME? Currently there is no specification for the format of the summary printout.
-    #
-    context "#summary" do
-
-      it "should print the summary to the screen and return an array of information when called on a full DICOM object" do
-        dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
-        dcm.expects(:puts).at_least_once
-        dcm.summary.should be_an(Array)
+      it "should by default not write empty parents" do
+        s = Sequence.new('0008,1140', :parent => @dcm)
+        s.add_item
+        s.add_item
+        s[0].add(Element.new('0008,1150', '1.267.921'))
+        @dcm.add(Sequence.new('0008,2112'))
+        @dcm.write(@path)
+        r_dcm = DObject.read(@path)
+        # The empty sequence should have been removed:
+        r_dcm.exists?('0008,2112').should be_false
+        # Only one item should remain beneath this sequence, when the empty one is removed:
+        r_dcm['0008,1140'].children.length.should eql 1
       end
 
-      it "should print the summary to the screen and return an array of information when called on an empty DICOM object" do
-        dcm = DObject.new
-        dcm.expects(:puts).at_least_once
-        dcm.summary.should be_an(Array)
-      end
-
-    end
-
-
-    context "#print_all" do
-
-      it "should successfully print information to the screen" do
-        dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
-        dcm.expects(:puts).at_least_once
-        dcm.print_all
-      end
-
-      it "should successfully print information to the screen when called on an empty DICOM object" do
-        dcm = DObject.new
-        dcm.expects(:puts).at_least_once
-        dcm.print_all
+      it "should write empty parents when the :include_empty_parents option is used" do
+        s = Sequence.new('0008,1140', :parent => @dcm)
+        s.add_item
+        s.add_item
+        s[0].add(Element.new('0008,1150', '1.267.921'))
+        @dcm.add(Sequence.new('0008,2112'))
+        @dcm.write(@path, :include_empty_parents => true)
+        r_dcm = DObject.read(@path)
+        # The empty sequence should remain:
+        r_dcm.exists?('0008,2112').should be_true
+        # Both items should remain beneath this sequence:
+        r_dcm['0008,1140'].children.length.should eql 2
       end
 
     end
