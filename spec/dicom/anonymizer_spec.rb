@@ -370,6 +370,102 @@ module DICOM
         File.exists?(TMPDIR + "identification.txt").should be_true
       end
 
+      context " [:uid]" do
+
+        before :each do
+          @dcm = DObject.new
+          @dcm.add(Element.new('0010,0010', 'John Doe'))
+          @dcm.add(Element.new('0002,0010', '1.2.840.10008.1.2.1'))
+          @dcm.add(Element.new('0008,0016', '1.2.840.10008.5.1.4.1.1.2'))
+          @dcm.add(Element.new('0008,0018', DICOM.generate_uid))
+          @dcm.add(Element.new('0020,000D', DICOM.generate_uid))
+          @dcm.add(Element.new('0020,000E', DICOM.generate_uid))
+          @dcm.add(Element.new('0020,0052', DICOM.generate_uid))
+          @rdcm = DObject.new
+          @rdcm.add(Element.new('0010,0010', 'John Doe'))
+          @rdcm.add(Element.new('0002,0010', '1.2.840.10008.1.2'))
+          @rdcm.add(Element.new('0008,0016', '1.2.840.10008.5.1.4.1.1.4'))
+          @rdcm.add(Element.new('0008,0018', DICOM.generate_uid))
+          @rdcm.add(Element.new('0020,000D', DICOM.generate_uid))
+          @rdcm.add(Element.new('0020,000E', DICOM.generate_uid))
+          @rdcm.add(Element.new('0020,0052', DICOM.generate_uid))
+          @rdcm.add(Sequence.new('0008,1140'))
+          @rdcm['0008,1140'].add_item
+          @rdcm['0008,1140'][0].add(Element.new('0008,1150', '1.2.840.10008.5.1.4.1.1.2'))
+          @rdcm['0008,1140'][0].add(Element.new('0008,1155', DICOM.generate_uid))
+          @dir = "#{TMPDIR}/anon/uid_source/"
+          @wdir = "#{TMPDIR}/anon/uid_write1/"
+          @dcm.write("#{@dir}/source.dcm")
+          @rdcm.write("#{@dir}/ref.dcm")
+          @path = "#{@wdir}/source.dcm"
+          @rpath = "#{@wdir}/ref.dcm"
+        end
+
+        it "should by default keep the original UID values" do
+          a = Anonymizer.new(:recursive => true)
+          a.add_folder(@dir)
+          a.write_path = @wdir
+          a.execute
+          dcm = DObject.read(@path)
+          rdcm = DObject.read(@rpath)
+          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
+          dcm.value('0008,0016').should eql @dcm.value('0008,0016')
+          dcm.value('0008,0018').should eql @dcm.value('0008,0018')
+          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
+          rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
+          rdcm.value('0008,0018').should eql @rdcm.value('0008,0018')
+          rdcm['0008,1140'][0].value('0008,1150').should eql @rdcm['0008,1140'][0].value('0008,1150')
+          rdcm['0008,1140'][0].value('0008,1155').should eql @rdcm['0008,1140'][0].value('0008,1155')
+        end
+
+        it "should not touch the Transfer Syntax UID when the :uid option is used" do
+          a = Anonymizer.new(:uid => true)
+          a.add_folder(@dir)
+          a.write_path = @wdir
+          a.execute
+          dcm = DObject.read(@path)
+          rdcm = DObject.read(@rpath)
+          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
+          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
+          dcm.value('0002,0010').should eql @dcm.value('0002,0010')
+          rdcm.value('0002,0010').should eql @rdcm.value('0002,0010')
+        end
+
+        it "should not touch the SOP Class UID when the :uid option is used" do
+          a = Anonymizer.new(:uid => true)
+          a.add_folder(@dir)
+          a.write_path = @wdir
+          a.execute
+          dcm = DObject.read(@path)
+          rdcm = DObject.read(@rpath)
+          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
+          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
+          dcm.value('0008,0016').should eql @dcm.value('0008,0016')
+          rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
+        end
+
+        it "should replace all relevant UIDs when both the :uid and :recursive options are used" do
+          a = Anonymizer.new(:recursive => true, :uid => true)
+          a.add_folder(@dir)
+          a.write_path = @wdir
+          a.execute
+          dcm = DObject.read(@path)
+          rdcm = DObject.read(@rpath)
+          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
+          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
+          dcm.value('0008,0018').should_not eql @dcm.value('0008,0018')
+          dcm.value('0020,000D').should_not eql @dcm.value('0020,000D')
+          dcm.value('0020,000E').should_not eql @dcm.value('0020,000E')
+          dcm.value('0020,0052').should_not eql @dcm.value('0020,0052')
+          rdcm.value('0008,0018').should_not eql @rdcm.value('0008,0018')
+          rdcm.value('0020,000D').should_not eql @rdcm.value('0020,000D')
+          rdcm.value('0020,000E').should_not eql @rdcm.value('0020,000E')
+          rdcm.value('0020,0052').should_not eql @rdcm.value('0020,0052')
+          rdcm['0008,1140'][0].value('0008,1155').should_not eql @rdcm['0008,1140'][0].value('0008,1155')
+        end
+
+      end
+
       context " [:audit_trail]" do
 
         it "should write an audit trail file" do

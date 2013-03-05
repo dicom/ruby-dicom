@@ -601,7 +601,7 @@ module DICOM
         end
       end
     end
-    
+
     # Establishes a prefix for a given UID tag.
     # This makes it somewhat easier to distinguish
     # between different types of random generated UIDs.
@@ -658,7 +658,7 @@ module DICOM
     def replace_meta_uids(dcm)
       dcm['0002,0003'].value = dcm.value('0008,0018')
     end
-    
+
     # Replaces the UIDs of the given DICOM object.
     #
     # @note Empty UIDs are ignored (we don't generate new UIDs for these).
@@ -678,7 +678,7 @@ module DICOM
                 replacement = @audit_trail.replacement(element.tag, original)
                 unless replacement
                   # The UID has not been stored previously. Generate a new one:
-                  replacement = DICOM.generate_uid(@uid_root, prefixes(element.tag))
+                  replacement = DICOM.generate_uid(@uid_root, prefix(element.tag))
                   # Add this tag record to the audit trail:
                   @audit_trail.add_record(element.tag, original, replacement)
                 end
@@ -686,7 +686,7 @@ module DICOM
                 element.value = replacement
               else
                 # We don't care about preserving UID relations. Just insert a custom UID:
-                element.value = DICOM.generate_uid(@uid_root, prefixes(element.tag))
+                element.value = DICOM.generate_uid(@uid_root, prefix(element.tag))
               end
             end
           end
