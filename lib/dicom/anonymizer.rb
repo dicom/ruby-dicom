@@ -42,7 +42,7 @@ module DICOM
     # @option options [String] :audit_trail a file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
     # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
     # @option options [Boolean] :recursive if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy
-    # @option options [Boolean] :uid if true, all (top level) UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
+    # @option options [Boolean] :uid if true, UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
     # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs.
     # @example Create an Anonymizer instance and restrict the log output
     #   a = Anonymizer.new
@@ -79,6 +79,7 @@ module DICOM
       @write_paths = Array.new
       # Register the uid anonymization option:
       @uid = options[:uid]
+      @prefixes = Hash.new
       # Set the uid_root to be used when anonymizing study_uid series_uid and sop_instance_uid
       @uid_root = options[:uid_root] ? options[:uid_root] : UID_ROOT
       # Setup audit trail if requested:
@@ -232,7 +233,7 @@ module DICOM
               end
               # General DICOM object manipulation:
               # Handle UIDs if requested:
-              replace_uids(dcm) if @uid
+              replace_uids(parents) if @uid
               # Delete private tags?
               dcm.delete_private if @delete_private
               # Write DICOM file:
@@ -600,6 +601,19 @@ module DICOM
         end
       end
     end
+    
+    # Establishes a prefix for a given UID tag.
+    # This makes it somewhat easier to distinguish
+    # between different types of random generated UIDs.
+    #
+    def prefix(tag)
+      if @prefixes[tag]
+        @prefixes[tag]
+      else
+        @prefixes[tag] = @prefixes.length + 1
+        @prefixes[tag]
+      end
+    end
 
     # Analyzes the write_path and the 'read' file path to determine if they have some common root.
     # If there are parts of the file path that exists also in the write path, the common parts will
@@ -636,34 +650,45 @@ module DICOM
       end
     end
 
+    # Replaces the file meta header SOP Instance UID in the case
+    # where UID anonymization has been selected.
+    #
+    # @param [DObject] dcm the DObject instance to be edited
+    #
+    def replace_meta_uids(dcm)
+      dcm['0002,0003'].value = dcm.value('0008,0018')
+    end
+    
     # Replaces the UIDs of the given DICOM object.
     #
     # @note Empty UIDs are ignored (we don't generate new UIDs for these).
     # @note If AuditTrail is set, the relationship between old and new UIDs are preserved,
     #   and the relations between files in a study/series should remain valid.
-    # @param [DObject] dcm the dicom object to be processed
+    # @param [Array<DObject, Item>] parents dicom parent objects who's child elements will be investigated
     #
-    def replace_uids(dcm)
-      @uids.each_pair do |tag, prefix|
-        original = dcm.value(tag)
-        if original && original.length > 0
-          # We have a UID value, go ahead and replace it:
-          if @audit_trail
-            # Check if the UID has been encountered already:
-            replacement = @audit_trail.replacement(tag, original)
-            unless replacement
-              # The UID has not been stored previously. Generate a new one:
-              replacement = DICOM.generate_uid(@uid_root, prefix)
-              # Add this tag record to the audit trail:
-              @audit_trail.add_record(tag, original, replacement)
+    def replace_uids(parents)
+      parents.each do |parent|
+        parent.each_element do |element|
+          if element.name.include?('UID') and !element.name.include?('Class UID') and !element.name.include?('Syntax UID')
+            original = element.value
+            if original && original.length > 0
+              # We have a UID value, go ahead and replace it:
+              if @audit_trail
+                # Check if the UID has been encountered already:
+                replacement = @audit_trail.replacement(element.tag, original)
+                unless replacement
+                  # The UID has not been stored previously. Generate a new one:
+                  replacement = DICOM.generate_uid(@uid_root, prefixes(element.tag))
+                  # Add this tag record to the audit trail:
+                  @audit_trail.add_record(element.tag, original, replacement)
+                end
+                # Replace the UID in the DICOM object:
+                element.value = replacement
+              else
+                # We don't care about preserving UID relations. Just insert a custom UID:
+                element.value = DICOM.generate_uid(@uid_root, prefixes(element.tag))
+              end
             end
-            # Replace the UID in the DICOM object:
-            dcm[tag].value = replacement
-            # NB! The SOP Instance UID must also be written to the Media Storage SOP Instance UID tag:
-            dcm["0002,0003"].value = replacement if tag == "0008,0018" && dcm.exists?("0002,0003")
-          else
-            # We don't care about preserving UID relations. Just insert a custom UID:
-            dcm[tag].value = DICOM.generate_uid(@uid_root, prefix)
           end
         end
       end
@@ -672,13 +697,6 @@ module DICOM
     # Sets up some default information variables that are used by the Anonymizer.
     #
     def set_defaults
-      # A hash of UID tags to be replaced (if requested) and prefixes to use for each tag:
-      @uids = {
-        "0008,0018" => 3, # SOP Instance UID
-        "0020,000D" => 1, # Study Instance UID
-        "0020,000E" => 2, # Series Instance UID
-        "0020,0052" => 9 # Frame of Reference UID
-      }
       # Sets up default tags that will be anonymized, along with default replacement values and enumeration settings.
       # This data is stored in 3 separate instance arrays for tags, values and enumeration.
       data = [
