@@ -408,27 +408,23 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
           dcm.value('0008,0016').should eql @dcm.value('0008,0016')
           dcm.value('0008,0018').should eql @dcm.value('0008,0018')
-          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
           rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
           rdcm.value('0008,0018').should eql @rdcm.value('0008,0018')
           rdcm['0008,1140'][0].value('0008,1150').should eql @rdcm['0008,1140'][0].value('0008,1150')
           rdcm['0008,1140'][0].value('0008,1155').should eql @rdcm['0008,1140'][0].value('0008,1155')
         end
 
-        it "should not touch the Transfer Syntax UID when the :uid option is used" do
+        it "should produce a valid Transfer Syntax UID (i.e. not replace it with a random UID), when the :uid option is used" do
           a = Anonymizer.new(:uid => true)
           a.add_folder(@dir)
           a.write_path = @wdir
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
-          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
-          dcm.value('0002,0010').should eql @dcm.value('0002,0010')
-          rdcm.value('0002,0010').should eql @rdcm.value('0002,0010')
+          LIBRARY.uid(dcm.value('0002,0010')).transfer_syntax?.should be_true
+          LIBRARY.uid(rdcm.value('0002,0010')).transfer_syntax?.should be_true
         end
 
         it "should not touch the SOP Class UID when the :uid option is used" do
@@ -438,8 +434,6 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
-          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
           dcm.value('0008,0016').should eql @dcm.value('0008,0016')
           rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
         end
@@ -451,8 +445,6 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0010,0010').should_not eql @dcm.value('0010,0010')
-          rdcm.value('0010,0010').should_not eql @rdcm.value('0010,0010')
           dcm.value('0008,0018').should_not eql @dcm.value('0008,0018')
           dcm.value('0020,000D').should_not eql @dcm.value('0020,000D')
           dcm.value('0020,000E').should_not eql @dcm.value('0020,000E')

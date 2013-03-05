@@ -233,6 +233,9 @@ module DICOM
                 end
               end
               # General DICOM object manipulation:
+              # Delete (and replace) the File Meta Information (as per
+              # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 7):
+              dcm.delete_group('0002')
               # Handle UIDs if requested:
               replace_uids(parents) if @uid
               # Delete private tags?
