@@ -1,11 +1,12 @@
 module DICOM
 
-  # This is a convenience class for handling the anonymization (de-identification) of DICOM files.
+  # This is a convenience class for handling the anonymization
+  # (de-identification) of DICOM files.
   #
   # @note
-  #   For 'advanced' anonymization, a good resource might be the work on "Clinical Trials
-  #   De-identification Profiles" by the DICOM Standards Committee, Working Group 18:
-  #   ftp://medical.nema.org/medical/dicom/supps/sup142_pc.pdf
+  #   For a thorough introduction to the concept of DICOM anonymization,
+  #   please refer to The DICOM Standard, Part 15: Security and System
+  #   Management Profiles, Annex E: Attribute Confidentiality Profiles.
   #
   class Anonymizer
     include Logging
