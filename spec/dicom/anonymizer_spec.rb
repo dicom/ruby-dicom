@@ -336,6 +336,14 @@ module DICOM
         dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104').should eql 'Recursive'
         dcm['0008,9215'][0].value('0008,0104').should eql 'Recursive'
       end
+      
+      it "should add a Patient Identity Removed element with value 'YES' to anonymized DICOM objects" do
+        a = Anonymizer.new
+        a.add_folder(@anon)
+        a.execute
+        dcm = DObject.read(@anon1)
+        dcm.value('0012,0062').should eql 'YES'
+      end
 
       it "should write the anonymized files to the specified folder and leave the original DICOM files untouched, when the write_path attribute is specified (with the path not ending with a file separator)" do
         a = Anonymizer.new

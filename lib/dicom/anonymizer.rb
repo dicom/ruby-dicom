@@ -7,6 +7,9 @@ module DICOM
   #   For a thorough introduction to the concept of DICOM anonymization,
   #   please refer to The DICOM Standard, Part 15: Security and System
   #   Management Profiles, Annex E: Attribute Confidentiality Profiles.
+  #   For guidance on settings for individual data elements, please
+  #   refer to DICOM PS 3.15, Annex E, Table E.1-1: Application Level
+  #   Confidentiality Profile Attributes.
   #
   class Anonymizer
     include Logging
@@ -233,6 +236,9 @@ module DICOM
                 end
               end
               # General DICOM object manipulation:
+              # Add a Patient Identity Removed attribute (as per
+              # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 6):
+              dcm.add(Element.new('0012,0062', 'YES'))
               # Delete (and replace) the File Meta Information (as per
               # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 7):
               dcm.delete_group('0002')
