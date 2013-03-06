@@ -679,7 +679,7 @@ module DICOM
     def replace_uids(parents)
       parents.each do |parent|
         parent.each_element do |element|
-          if element.name.include?('UID') and !element.name.include?('Class UID') and !element.name.include?('Syntax UID')
+          if element.vr == ('UI') and !@static_uids[element.tag]
             original = element.value
             if original && original.length > 0
               # We have a UID value, go ahead and replace it:
@@ -707,6 +707,32 @@ module DICOM
     # Sets up some default information variables that are used by the Anonymizer.
     #
     def set_defaults
+      # Some UIDs should not be remapped even if uid anonymization has been requested:
+      @static_uids = {
+        # Private related:
+        '0002,0100' => true,
+        '0004,1432' => true,
+        # Coding scheme related:
+        '0008,010C' => true,
+        '0008,010D' => true,
+        # Transfer syntax related:
+        '0002,0010' => true,
+        '0400,0010' => true,
+        '0400,0510' => true,
+        '0004,1512' => true,
+        # SOP class related:
+        '0000,0002' => true,
+        '0000,0003' => true,
+        '0002,0002' => true,
+        '0004,1510' => true,
+        '0004,151A' => true,
+        '0008,0016' => true,
+        '0008,001A' => true,
+        '0008,001B' => true,
+        '0008,0062' => true,
+        '0008,1150' => true,
+        '0008,115A' => true
+      }
       # Sets up default tags that will be anonymized, along with default replacement values and enumeration settings.
       # This data is stored in 3 separate instance arrays for tags, values and enumeration.
       data = [

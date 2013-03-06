@@ -446,6 +446,31 @@ module DICOM
           rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
         end
 
+=begin
+        it "should not touch these UID elements with a VR of UI when the :uid option is used" do
+          dcm = DObject.new
+          dcm.add(Element.new('0010,0010', 'John Doe'))
+          dcm.add(Element.new('0008,0018', DICOM.generate_uid))
+          blacklisted_uids = [
+            # Private related:
+            '0002,0100', '0004,1432',
+            # Coding scheme related:
+            '0008,010C', '0008,010D',
+            # Transfer syntax related:
+            '0002,0010', '0400,0010', '0400,0510', '0004,1512',
+            # SOP class related:
+            '0000,0002', '0000,0003', '0002,0002', '0004,1510', '0004,151A', '0008,0016',
+            '0008,001A', '0008,001B', '0008,0062', '0008,1150', '0008,115A'
+          ]
+          blacklisted_uids.each do |uid|
+            e = Element.new(uid, DICOM.generate_uid, :parent => dcm)
+            e.expects(:'value=').never
+          end
+          a = Anonymizer.new(:uid => true)
+          a.anonymize
+        end
+=end
+
         it "should replace all relevant UIDs when both the :uid and :recursive options are used" do
           a = Anonymizer.new(:recursive => true, :uid => true)
           a.add_folder(@dir)
