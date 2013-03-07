@@ -157,8 +157,6 @@ module DICOM
     #
     # This method is run when all settings have been finalized for the Anonymization instance.
     #
-    # @note Only top level data elements are anonymized!
-    #
     def execute
       # FIXME: This method has grown way too lengthy. It needs to be refactored one of these days.
       # Search through the folders to gather all the files to be anonymized:
