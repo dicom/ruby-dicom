@@ -52,7 +52,7 @@ module DICOM
     # @param [Integer] port the network port to be used
     # @param [Hash] options the options to use for the DICOM server
     # @option options [String] :file_handler a customized FileHandler class to use instead of the default FileHandler
-    # @option options [String] :host the hostname that the TCPServer binds to (defaults to '127.0.0.1')
+    # @option options [String] :host the hostname that the TCPServer binds to (defaults to '0.0.0.0')
     # @option options [String] :host_ae the name of the server (application entity)
     # @option options [String] :max_package_size the maximum allowed size of network packages (in bytes)
     # @option options [String] :timeout the number of seconds the server will wait on an answer from a client before aborting the communication
@@ -69,7 +69,7 @@ module DICOM
       @port = port
       # Optional parameters (and default values):
       @file_handler = options[:file_handler] || FileHandler
-      @host = options[:host] || '127.0.0.1'
+      @host = options[:host] || '0.0.0.0'
       @host_ae =  options[:host_ae]  || "RUBY_DICOM"
       @max_package_size = options[:max_package_size] || 32768 # 16384
       @timeout = options[:timeout] || 10 # seconds
