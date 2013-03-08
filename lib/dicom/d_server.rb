@@ -60,7 +60,7 @@ module DICOM
     # @example Create a server using default settings
     #   s = DICOM::DServer.new
     # @example Create a server with a specific host name and a custom buildt file handler
-    #   require 'MyFileHandler'
+    #   require_relative 'my_file_handler'
     #   server = DICOM::DServer.new(104, :host_ae => "RUBY_SERVER", :file_handler => DICOM::MyFileHandler)
     #
     def initialize(port=104, options={})
