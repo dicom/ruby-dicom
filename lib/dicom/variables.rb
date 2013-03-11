@@ -35,7 +35,7 @@ module DICOM
       uid = [root, prefix, date, time, random].join('.')
       return uid
     end
-    
+
     # Loads DICOM data to DObject instances and returns them in an array.
     # Invalid DICOM sources (files) are ignored.
     # If no valid DICOM source is given, an empty array is returned.
@@ -97,6 +97,6 @@ module DICOM
   # The default key representation.
   self.key_representation = :name
   # The default source application entity title.
-  self.source_app_title = 'RUBY_DICOM'
+  self.source_app_title = 'RUBY-DICOM'
 
 end
