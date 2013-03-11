@@ -62,6 +62,7 @@ module DICOM
           end
           ary += dcms.keep_if {|dcm| dcm.read?}
         else
+          element.was_dcm_on_input = true
           ary << element.to_dcm
         end
       end

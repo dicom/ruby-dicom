@@ -48,6 +48,8 @@ module DICOM
     attr_accessor :source
     # The Stream instance associated with this DObject instance (this attribute is mostly used internally).
     attr_reader :stream
+    # An attribute (used by e.g. DICOM.load) to indicate that a DObject-type instance was given to the load method (instead of e.g. a file).
+    attr_accessor :was_dcm_on_input
     # A boolean which is set as true if a DObject instance has been successfully written to file (or successfully encoded).
     attr_reader :write_success
 

@@ -40,6 +40,11 @@ module DICOM
         dcm.source.should be_nil
       end
 
+      it "should set the :was_dcm_on_input attribute as false when initializing an empty DICOM object" do
+        dcm = DObject.new
+        dcm.was_dcm_on_input.should be_false
+      end
+
       it "should store a Stream instance in the stream attribute" do
         dcm = DObject.new
         dcm.stream.class.should eql Stream

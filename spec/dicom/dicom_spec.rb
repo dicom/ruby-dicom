@@ -14,7 +14,7 @@ module DICOM
       DICOM.image_processor = :mini_magick
       DICOM.image_processor.should eql :mini_magick
     end
-    
+
 
     context "#generate_uid" do
 
@@ -38,56 +38,68 @@ module DICOM
       end
 
     end
-    
-    
+
+
     context "#load" do
 
       it "should return an empty array when given an invalid DICOM file path" do
         ary = DICOM.load('./invalid_file.dcm')
         ary.should eql []
       end
-      
+
       it "should return a DObject instance in an array when given a DICOM binary string" do
         str = File.open(DCM_ISO8859_1, "rb") { |f| f.read }
         ary = DICOM.load(str)
         ary.should eql [DObject.parse(str)]
       end
-      
+
       it "should return a DObject instance in an array when given a path to a DICOM file" do
         file = DCM_ISO8859_1
         ary = DICOM.load(file)
         ary.should eql [DObject.read(file)]
       end
-      
+
+      it "should not set the DObject's :was_dcm_on_input attribute as true when given a path to a DICOM file" do
+        file = DCM_ISO8859_1
+        ary = DICOM.load(file)
+        ary.first.was_dcm_on_input.should be_false
+      end
+
       it "should return the DObject instance in an array when given a DObject instance" do
         dcm = DObject.read(DCM_ISO8859_1)
         ary = DICOM.load(dcm)
         ary.should eql [dcm]
       end
-      
+
+      it "should set the DObject's :was_dcm_on_input attribute as true when given a DObject instance" do
+        dcm = DObject.read(DCM_ISO8859_1)
+        ary = DICOM.load(dcm)
+        ary.first.was_dcm_on_input.should be_true
+      end
+
       it "should return a DObject instance in an array when given an array with a DICOM binary string" do
         str = File.open(DCM_ISO8859_1, "rb") { |f| f.read }
         ary = DICOM.load([str])
         ary.should eql [DObject.parse(str)]
       end
-      
+
       it "should return a DObject instance in an array when given an array with a path to a DICOM file" do
         file = DCM_ISO8859_1
         ary = DICOM.load([file])
         ary.should eql [DObject.read(file)]
       end
-      
+
       it "should return the DObject instance in an array when given an array with a DObject instance" do
         dcm = DObject.read(DCM_ISO8859_1)
         ary = DICOM.load([dcm])
         ary.should eql [dcm]
       end
-      
+
       it "should return a one-element array with the valid DObject when given an array with one valid DICOM file path and one invalid file path" do
         ary = DICOM.load([DCM_ISO8859_1, './invalid_file.dcm'])
         ary.should eql [DObject.read(DCM_ISO8859_1)]
       end
-      
+
       it "should return an array with three DObject instance when given an array with a mix of DICOM file path, binary string and DObject instance" do
         file = DCM_ISO8859_1
         str = File.open(file, "rb") { |f| f.read }
@@ -95,7 +107,7 @@ module DICOM
         ary = DICOM.load([str, file, dcm])
         ary.should eql [DObject.read(file), DObject.read(file), DObject.read(file)]
       end
-      
+
       it "should return an array containing the expected DObject instances when given a directory (with sub-directories) which contains multiple DICOM files" do
         dir = DICOM::TMPDIR + 'load_files/'
         FileUtils.mkdir(dir)
