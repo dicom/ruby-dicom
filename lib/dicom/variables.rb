@@ -40,7 +40,7 @@ module DICOM
     # Invalid DICOM sources (files) are ignored.
     # If no valid DICOM source is given, an empty array is returned.
     #
-    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (file paths, binary strings, DObjects)
+    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (directories, file paths, binary strings, DICOM objects)
     # @return [Array<DObject>] an array of successfully loaded DICOM objects
     #
     def load(data)
