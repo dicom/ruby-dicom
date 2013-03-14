@@ -47,10 +47,10 @@ module DICOM
 
     # Gives an array containing the image objects that are supported by the image processor.
     #
-    # @return [Array] the valid image classes
+    # @return [Array<String>] the valid image classes
     #
     def valid_image_objects
-      return [Magick::Image, MiniMagick::Image]
+      return ['Magick::Image', 'MiniMagick::Image']
     end
 
 

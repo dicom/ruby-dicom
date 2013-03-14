@@ -265,7 +265,7 @@ module DICOM
     # @param [MagickImage] image the image to be assigned to the pixel data element
     #
     def image=(image)
-      raise ArgumentError, "Expected one of the supported image objects (#{valid_image_objects}), got #{image.class}." unless valid_image_objects.include?(image.class)
+      raise ArgumentError, "Expected one of the supported image classes: #{valid_image_objects} (got #{image.class})" unless valid_image_objects.include?(image.class.to_s)
       # Export to pixels using the proper image processor:
       pixels = export_pixels(image, photometry)
       # Encode and write to the Pixel Data Element:
