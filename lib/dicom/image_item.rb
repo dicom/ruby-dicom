@@ -402,22 +402,21 @@ module DICOM
     # @param [Array<Integer>, NArray] values an Array (or NArray) containing integer pixel values
     #
     def pixels=(values)
-      raise ArgumentError, "Expected Array or NArray, got #{values.class}." unless [Array, NArray].include?(values.class)
-      if values.is_a?(NArray)
-        # When NArray, convert to a Ruby Array:
+      raise ArgumentError, "The given argument does not respond to #to_a (got an argument of class #{values.class})" unless values.respond_to?(:to_a)
+      if values.class.ancestors.to_s.include?('NArray')
+        # With an NArray argument, make sure that it gets properly converted to an Array:
         if values.shape.length > 2
-          # We need to take care when reshaping this 3D array so that the pixel values falls properly into place:
+          # For a 3D NArray we need to rearrange to ensure that the pixels get their
+          # proper order when converting to an ordinary Array instance:
           narr = NArray.int(values.shape[1] * values.shape[2], values.shape[0])
           values.shape[0].times do |i|
             narr[true, i] = values[i, true, true].reshape(values.shape[1] * values.shape[2])
           end
-          values = narr.to_a
-        else
-          values = values.to_a
+          values = narr
         end
       end
       # Encode the pixel data:
-      bin = encode_pixels(values.flatten)
+      bin = encode_pixels(values.to_a.flatten)
       # Write the binary data to the Pixel Data Element:
       write_pixels(bin)
     end
