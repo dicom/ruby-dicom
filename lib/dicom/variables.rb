@@ -62,6 +62,8 @@ module DICOM
           end
           ary += dcms.keep_if {|dcm| dcm.read?}
         else
+          # The element was not a string, and the only remaining valid element type is a DICOM object:
+          raise ArgumentError, "Invalid element (#{element.class}) given. Expected string or DObject." unless element.respond_to?(:to_dcm)
           element.was_dcm_on_input = true
           ary << element.to_dcm
         end

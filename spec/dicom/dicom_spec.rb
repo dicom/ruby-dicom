@@ -42,6 +42,10 @@ module DICOM
 
     context "#load" do
 
+      it "should raise an ArgumentError when a non-string/non-dcm is passed as an argument" do
+        expect {DICOM.load(42.0)}.to raise_error(ArgumentError)
+      end
+
       it "should return an empty array when given an invalid DICOM file path" do
         ary = DICOM.load('./invalid_file.dcm')
         ary.should eql []
