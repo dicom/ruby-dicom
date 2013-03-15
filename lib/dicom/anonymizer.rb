@@ -45,6 +45,7 @@ module DICOM
     # @param [Hash] options the options to create an anonymizer instance with
     # @option options [String] :audit_trail a file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
     # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
+    # @option options [Fixnum] :logger_level the logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL)
     # @option options [Boolean] :recursive if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy
     # @option options [Boolean] :uid if true, UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
     # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs.
@@ -80,6 +81,7 @@ module DICOM
       @files = Array.new
       # Optional parameters:
       @recursive = options[:recursive]
+      @logger_level = options[:logger_level] || Logger::FATAL
       @write_paths = Array.new
       # Register the uid anonymization option:
       @uid = options[:uid]
@@ -117,6 +119,8 @@ module DICOM
     #   a.add_exception("/home/dicom/tutorials/")
     #
     def add_exception(path)
+      # Deprecation warning:
+      logger.warn("The '#add_exception' method of the Anonymization class has been deprecated! Please use the '#anonymize' method with a dataset argument instead.")
       raise ArgumentError, "Expected String, got #{path.class}." unless path.is_a?(String)
       if path
         # Remove last character if the path ends with a file separator:
@@ -132,8 +136,28 @@ module DICOM
     #   a.add_folder("/home/dicom")
     #
     def add_folder(path)
+      # Deprecation warning:
+      logger.warn("The '#add_exception' method of the Anonymization class has been deprecated! Please use the '#anonymize' method with a dataset argument instead.")
       raise ArgumentError, "Expected String, got #{path.class}." unless path.is_a?(String)
       @folders << path
+    end
+
+    # Anonymizes the given DICOM data with the settings of this Anonymizer instance.
+    #
+    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (directories, file paths, binary strings, DICOM objects)
+    # @return [Array<DObject>] an array of the anonymized DICOM objects
+    #
+    def anonymize(data)
+      dicom = prepare(data)
+      unless @tags.length > 0
+        logger.warn("No tags have been selected for anonymization. Aborting anonymization.")
+      else
+        dicom.each do |dcm|
+          anonymize_dcm(dcm)
+        end
+      end
+      # Reset the ruby-dicom log threshold to its original level:
+      logger.level = @original_level
     end
 
     # Checks the enumeration status of this tag.
@@ -158,6 +182,8 @@ module DICOM
     # This method is run when all settings have been finalized for the Anonymization instance.
     #
     def execute
+      # Deprecation warning:
+      logger.warn("The '#execute' method of the Anonymization class has been deprecated! Please use the '#anonymize' method instead.")
       # FIXME: This method has grown way too lengthy. It needs to be refactored one of these days.
       # Search through the folders to gather all the files to be anonymized:
       logger.info("Initiating anonymization process.")
@@ -435,6 +461,57 @@ module DICOM
     private
 
 
+    # Performs anonymization on a DICOM object.
+    #
+    # @param [DObject] dcm a DICOM object
+    #
+    def anonymize_dcm(dcm)
+      # Extract the data element parents to investigate:
+      parents = element_parents(dcm)
+      parents.each do |parent|
+        # Anonymize the desired tags:
+        @tags.each_index do |j|
+          if parent.exists?(@tags[j])
+            element = parent[@tags[j]]
+            if element.is_a?(Element)
+              if @blank
+                value = ""
+              elsif @enumeration
+                old_value = element.value
+                # Only launch enumeration logic if there is an actual value to the data element:
+                if old_value
+                  value = enumerated_value(old_value, j)
+                else
+                  value = ""
+                end
+              else
+                # Use the value that has been set for this tag:
+                value = @values[j]
+              end
+              element.value = value
+            end
+          end
+        end
+        # Delete Tags marked for deletion:
+        @delete_tags.each_index do |j|
+          parent.delete(@delete_tags[j]) if parent.exists?(@delete_tags[j])
+        end
+      end
+      # General DICOM object manipulation:
+      # Add a Patient Identity Removed attribute (as per
+      # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 6):
+      dcm.add(Element.new('0012,0062', 'YES'))
+      # Delete the old File Meta Information group (as per
+      # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 7):
+      dcm.delete_group('0002')
+      # Handle UIDs if requested:
+      replace_uids(parents) if @uid
+      # Delete private tags if indicated:
+      dcm.delete_private if @delete_private
+      # Write DICOM object to file unless it was passed to the anonymizer as an object:
+      write(dcm) unless dcm.was_dcm_on_input
+    end
+
     # Gives the value to be used for the audit trail, which is either
     # the original value itself, or an encrypted string based on it.
     #
@@ -494,6 +571,34 @@ module DICOM
         # Assume type is string and return an empty string:
         return ""
       end
+    end
+
+    # Creates a write path for the given DICOM object, based on the object's
+    # original file path and the write_path attribute.
+    #
+    # @param [DObject] dcm a DICOM object
+    # @return [String] the destination file path
+    #
+    def destination(dcm)
+      # Split the source path into dir and file:
+      source_file = File.basename(dcm.source)
+      source_dir = File.dirname(dcm.source)
+      source_folders = source_dir.split(File::SEPARATOR)
+      target_folders = @write_path.split(File::SEPARATOR)
+      # If the first element is the current dir symbol, get rid of it:
+      source_folders.delete('.')
+      # Check for equalness of folder names in a range limited by the shortest array:
+      common_length = [source_folders.length, target_folders.length].min
+      uncommon_index = nil
+      common_length.times do |i|
+        if target_folders[i] != source_folders[i]
+          uncommon_index = i
+          break
+        end
+      end
+      # Create the output path by joining the two paths together using the determined index:
+      append_path = uncommon_index ? source_folders[uncommon_index..-1] : nil
+      [target_folders, append_path, source_file].compact.join(File::SEPARATOR)
     end
 
     # Extracts all parents from a DObject instance which potentially
@@ -614,6 +719,8 @@ module DICOM
     # This makes it somewhat easier to distinguish
     # between different types of random generated UIDs.
     #
+    # @param [String] tag a data element string tag
+    #
     def prefix(tag)
       if @prefixes[tag]
         @prefixes[tag]
@@ -621,6 +728,22 @@ module DICOM
         @prefixes[tag] = @prefixes.length + 1
         @prefixes[tag]
       end
+    end
+
+    # Prepares the data for anonymization.
+    #
+    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (directories, file paths, binary strings, DICOM objects)
+    # @return [Array] the original data (wrapped in an array) as well as an array of loaded DObject instances
+    #
+    def prepare(data)
+      dicom = DICOM.load(data)
+      logger.info("#{dicom.length} DICOM objects have been prepared for anonymization.")
+      # Set up enumeration if requested:
+      create_enum_hash if @enumeration
+      # Temporarily adjust the ruby-dicom log threshold (usually to suppress messages from the DObject class):
+      @original_level = logger.level
+      logger.level = @logger_level
+      dicom
     end
 
     # Analyzes the write_path and the 'read' file path to determine if they have some common root.
@@ -757,6 +880,22 @@ module DICOM
       # Tags to be deleted completely during anonymization:
       @delete_tags = [
       ]
+    end
+
+    # Writes a DICOM object to file.
+    #
+    # @param [DObject] dcm a DICOM object
+    #
+    def write(dcm)
+      if @write_path
+        # The DICOM object is to be written to a separate directory. If the
+        # original and the new directories have a common root, this is taken into
+        # consideration when determining the object's write path:
+        dcm.write(destination(dcm))
+      else
+        # The original DICOM file is overwritten with the anonymized DICOM object:
+        dcm.write(dcm.source)
+      end
     end
 
     # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
