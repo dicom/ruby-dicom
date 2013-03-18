@@ -24,8 +24,6 @@ module DICOM
     attr_reader :encryption
     # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
     attr_accessor :enumeration
-    # The identity file attribute.
-    attr_reader :identity_file
     # A boolean that if set as true, will make the anonymization delete all private tags.
     attr_accessor :delete_private
     # A boolean that if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy.
@@ -299,12 +297,6 @@ module DICOM
             logger.warn("Some DICOM objects were NOT succesfully written to file. You are advised to investigate the result (#{files_written} files succesfully written).")
           end
           @audit_trail.write(@audit_trail_file) if @audit_trail
-          # Has user requested enumeration and specified an identity file in which to store the anonymized values?
-          if @enumeration and @identity_file and !@audit_trail
-            logger.info("Writing identity file.")
-            write_identity_file
-            logger.info("Done")
-          end
           elapsed = (end_time-start_time).to_s
           logger.info("Elapsed time: #{elapsed[0..elapsed.index(".")+1]} seconds")
         else
@@ -313,18 +305,6 @@ module DICOM
       else
         logger.warn("No files were found in specified folders. Aborting.")
       end
-    end
-
-    # Setter method for the identity file.
-    #
-    # @deprecated The identity file feature is deprecated!
-    #   Please use the AuditTrail feature instead.
-    # @param [String] file_name the path of the identity file
-    #
-    def identity_file=(file_name)
-      # Deprecation warning:
-      logger.warn("The identity_file feature of the Anonymization class has been deprecated! Please use the AuditTrail feature instead.")
-      @identity_file = file_name
     end
 
     # Prints to screen a list of which tags are currently selected for anonymization along with
@@ -898,32 +878,6 @@ module DICOM
       end
     end
 
-    # Writes an identity file, which allows reidentification of DICOM files that have been anonymized
-    # using the enumeration feature. Values are saved in a text file, using semi colon delineation.
-    #
-    # @deprecated The identity file feature is deprecated!
-    #   Please use the AuditTrail feature instead.
-    #
-    def write_identity_file
-      raise ArgumentError, "Expected String, got #{@identity_file.class}. Unable to write identity file." unless @identity_file.is_a?(String)
-      # Open file and prepare to write text:
-      File.open(@identity_file, 'w') do |output|
-        # Cycle through each
-        @tags.each_index do |i|
-          if @enumerations[i]
-            # This tag has had enumeration. Gather original and anonymized values:
-            old_values = @enum_old_hash[@tags[i]]
-            new_values = @enum_new_hash[@tags[i]]
-            # Print the tag label, then new_value;old_value in the following rows.
-            output.print @tags[i] + "\n"
-            old_values.each_index do |j|
-              output.print new_values[j].to_s.rstrip + ";" + old_values[j].to_s.rstrip + "\n"
-            end
-            # Print empty line for separation between different tags:
-            output.print "\n"
-          end
-        end
-      end
-    end
   end
+
 end

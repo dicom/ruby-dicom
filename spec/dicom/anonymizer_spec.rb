@@ -134,10 +134,6 @@ module DICOM
         @a.enumeration.should be_false
       end
 
-      it "should by default set the identity_file attribute as nil" do
-        @a.identity_file.should be_nil
-      end
-
       it "should by default set the recursive attribute as nil" do
         @a.recursive.should be_nil
       end
@@ -507,15 +503,6 @@ module DICOM
         w.value("0010,0010").should eql a.value("0010,0010")
       end
 
-      # FIXME? There is no specification yet for the format or content of this file printout.
-      it "should write the relationship between original and enumerated values to the specified file" do
-        a = Anonymizer.new
-        a.add_folder(@anon_other)
-        a.enumeration = true
-        a.identity_file = TMPDIR + "identification.txt"
-        a.execute
-        File.exists?(TMPDIR + "identification.txt").should be_true
-      end
 
       context " [:uid]" do
 
