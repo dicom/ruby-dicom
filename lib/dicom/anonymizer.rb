@@ -156,6 +156,7 @@ module DICOM
       end
       # Reset the ruby-dicom log threshold to its original level:
       logger.level = @original_level
+      dicom
     end
 
     # Checks the enumeration status of this tag.
