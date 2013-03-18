@@ -97,6 +97,10 @@ module DICOM
         @a.blank.should be_false
       end
 
+      it "should by default set the delete attribute as an empty hash" do
+        @a.delete.should eql Hash.new
+      end
+
       it "should by default set the delete_private attribute as false" do
         @a.delete_private.should be_false
       end
@@ -107,6 +111,10 @@ module DICOM
 
       it "should by default set the enumeration attribute as false" do
         @a.enumeration.should be_false
+      end
+
+      it "should by default set the logger_level attribute as Logger::FATAL" do
+        @a.logger_level.should eql Logger::FATAL
       end
 
       it "should by default set the recursive attribute as nil" do
@@ -125,32 +133,57 @@ module DICOM
         @a.write_path.should be_nil
       end
 
-      it "should pass the :recursive option to the recursive attribute" do
-        a = Anonymizer.new(:recursive => true)
-        a.recursive.should be_true
-      end
-
-      it "should pass the :uid option to the uid attribute" do
-        a = Anonymizer.new(:uid => true)
-        a.uid.should be_true
-      end
-
-      it "should pass the :uid_root option to the uid_root attribute" do
-        custom_uid = '1.999.5'
-        a = Anonymizer.new(:uid_root => custom_uid)
-        a.uid_root.should eql custom_uid
-      end
-
-      it "should pass the :audit_trail option to the audit_trail_file attribute" do
+      it "should pass the :audit_trail option to the 'audit_trail_file' attribute" do
         trail_file = 'audit_trail.json'
         a = Anonymizer.new(:audit_trail => trail_file)
         a.audit_trail_file.should eql trail_file
       end
 
-      it "should pass the :encryption option to the encryption attribute when a Digest class is passed (along with the :audit_trail option)" do
+      it "should pass the :blank option to the 'blank' attribute" do
+        a = Anonymizer.new(:blank => true)
+        a.blank.should be_true
+      end
+
+      it "should pass the :delete_private option to the 'delete_private' attribute" do
+        a = Anonymizer.new(:delete_private => true)
+        a.delete_private.should be_true
+      end
+
+      it "should pass the :encryption option to the 'encryption' attribute when a Digest class is passed (along with the :audit_trail option)" do
         require 'digest'
         a = Anonymizer.new(:audit_trail => 'audit_trail.json', :encryption => Digest::SHA256)
         a.encryption.should eql Digest::SHA256
+      end
+
+      it "should pass the :enumeration option to the 'enumeration' attribute" do
+        a = Anonymizer.new(:enumeration => true)
+        a.enumeration.should be_true
+      end
+
+      it "should pass the :logger_level option to the 'logger_level' attribute" do
+        a = Anonymizer.new(:logger_level => Logger::DEBUG)
+        a.logger_level.should eql Logger::DEBUG
+      end
+
+      it "should pass the :recursive option to the 'recursive' attribute" do
+        a = Anonymizer.new(:recursive => true)
+        a.recursive.should be_true
+      end
+
+      it "should pass the :uid option to the 'uid' attribute" do
+        a = Anonymizer.new(:uid => true)
+        a.uid.should be_true
+      end
+
+      it "should pass the :uid_root option to the 'uid_root' attribute" do
+        custom_uid = '1.999.5'
+        a = Anonymizer.new(:uid_root => custom_uid)
+        a.uid_root.should eql custom_uid
+      end
+
+      it "should pass the :write_path option to the 'write_path' attribute" do
+        a = Anonymizer.new(:write_path => true)
+        a.write_path.should be_true
       end
 
       it "should set MD5 as the default Digest class when an :encryption option that is not a Digest class is given (along with the :audit_trail option)" do
@@ -158,7 +191,7 @@ module DICOM
         a.encryption.should eql Digest::MD5
       end
 
-      it "should load an AuditTrail instance to the audit_trail attribute when the :audit_trail option is used" do
+      it "should load an AuditTrail instance to the 'audit_trail' attribute when the :audit_trail option is used" do
         a = Anonymizer.new(:audit_trail => 'audit_trail.json')
         a.audit_trail.should be_an AuditTrail
       end

@@ -228,6 +228,7 @@ module DICOM
     # not be added to the write_path. The processed paths are put in a write_path instance array.
     #
     def process_write_paths
+      @write_paths = Array.new
       # First make sure @write_path ends with a file separator character:
       last_character = @write_path[-1..-1]
       @write_path = @write_path + File::SEPARATOR unless last_character == File::SEPARATOR

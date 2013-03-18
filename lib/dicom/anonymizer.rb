@@ -22,33 +22,37 @@ module DICOM
     attr_accessor :blank
     # An hash of elements (represented by tag keys) that will be deleted from the DICOM objects on anonymization.
     attr_reader :delete
-    # The cryptographic hash function to be used for encrypting DICOM values recorded in an audit trail file.
-    attr_reader :encryption
-    # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization identification by the user.
-    attr_accessor :enumeration
     # A boolean that if set as true, will make the anonymization delete all private tags.
     attr_accessor :delete_private
+    # The cryptographic hash function to be used for encrypting DICOM values recorded in an audit trail file.
+    attr_reader :encryption
+    # A boolean that if set as true will cause all anonymized tags to be get enumerated values, to enable post-anonymization re-identification by the user.
+    attr_accessor :enumeration
+    # The logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL).
+    attr_reader :logger_level
     # A boolean that if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy.
     attr_accessor :recursive
-    # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
-    attr_accessor :write_path
     # A boolean indicating whether or not UIDs shall be replaced when executing the anonymization.
     attr_accessor :uid
     # The DICOM UID root to use when generating new UIDs.
     attr_accessor :uid_root
-    # An array of UID tags that will be anonymized if the uid option is used.
-    attr_accessor :uids
+    # The path where the anonymized files will be saved. If this value is not set, the original DICOM files will be overwritten.
+    attr_accessor :write_path
 
     # Creates an Anonymizer instance.
     #
     # @note To customize logging behaviour, refer to the Logging module documentation.
     # @param [Hash] options the options to create an anonymizer instance with
-    # @option options [String] :audit_trail a file name path. If the file contains old audit data, these are loaded and used in the current anonymization.
+    # @option options [String] :audit_trail a file name path (if the file contains old audit data, these are loaded and used in the current anonymization)
+    # @option options [Boolean] :blank toggles whether to set the values of anonymized elements as empty instead of some generic value
+    # @option options [Boolean] :delete_private toggles whether private elements are to be deleted
     # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
+    # @option options [Boolean] :enumeration toggles whether (some) elements get enumerated values (to enable post-anonymization re-identification)
     # @option options [Fixnum] :logger_level the logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL)
-    # @option options [Boolean] :recursive if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy
-    # @option options [Boolean] :uid if true, UIDs will be replaced with custom generated UIDs. To preserve UID relations in studies/series, the AuditTrail feature must be used.
-    # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs.
+    # @option options [Boolean] :recursive toggles whether to anonymize on all sub-levels of the DICOM object tag hierarchies
+    # @option options [Boolean] :uid toggles whether UIDs will be replaced with custom generated UIDs (beware that to preserve UID relations in studies/series, the audit_trail feature must be used)
+    # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs
+    # @option options [String] :write_path a directory where the anonymized files are re-written (if not specified, files are overwritten)
     # @example Create an Anonymizer instance and restrict the log output
     #   a = Anonymizer.new
     #   a.logger.level = Logger::ERROR
@@ -59,10 +63,15 @@ module DICOM
     #   a.anonymize('//dicom/today/')
     #
     def initialize(options={})
-      # Default value of accessors:
-      @blank = false
-      @enumeration = false
-      @delete_private = false
+      # Transfer options to attributes:
+      @blank = options[:blank]
+      @delete_private = options[:delete_private]
+      @enumeration = options[:enumeration]
+      @logger_level = options[:logger_level] || Logger::FATAL
+      @recursive = options[:recursive]
+      @uid = options[:uid]
+      @uid_root = options[:uid_root] ? options[:uid_root] : UID_ROOT
+      @write_path = options[:write_path]
       # Array of folders to be processed for anonymization:
       @folders = Array.new
       # Folders that will be skipped:
@@ -78,15 +87,7 @@ module DICOM
       @enum_new_hash = Hash.new
       # All the files to be anonymized will be put in this array:
       @files = Array.new
-      # Optional parameters:
-      @recursive = options[:recursive]
-      @logger_level = options[:logger_level] || Logger::FATAL
-      @write_paths = Array.new
-      # Register the uid anonymization option:
-      @uid = options[:uid]
       @prefixes = Hash.new
-      # Set the uid_root to be used when anonymizing study_uid series_uid and sop_instance_uid
-      @uid_root = options[:uid_root] ? options[:uid_root] : UID_ROOT
       # Setup audit trail if requested:
       if options[:audit_trail]
         @audit_trail_file = options[:audit_trail]
