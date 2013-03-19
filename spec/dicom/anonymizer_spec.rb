@@ -20,6 +20,7 @@ module DICOM
       @dcm2 = DObject.new
       # Separate attributes:
       # CT image:
+      @dcm1.add(Element.new('0008,0008', 'ORIGINAL\PRIMARY\AXIAL'))
       @dcm1.add(Element.new('0008,0016', '1.2.840.10008.5.1.4.1.1.2'))
       @dcm1.add(Element.new('0008,0018', '1.3.666.1.77'))
       @dcm1.add(Element.new('0008,0023', '20112207'))

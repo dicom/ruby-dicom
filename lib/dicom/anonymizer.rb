@@ -602,7 +602,7 @@ module DICOM
         ['0010,0010', 'Patient', true], # Patient's name
         ['0010,0020', 'ID', true], # Patient's ID
         ['0010,0030', '20000101', false], # Patient's Birth Date
-        ['0010,0040', 'N', false], # Patient's Sex
+        ['0010,0040', 'O', false], # Patient's Sex
         ['0020,4000', '', false], # Image Comments
       ].transpose
       @tags = data[0]
