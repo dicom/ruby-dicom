@@ -125,6 +125,10 @@ module DICOM
         @a.logger_level.should eql Logger::FATAL
       end
 
+      it "should by default set the random_file_name attribute as nil" do
+        @a.random_file_name.should be_nil
+      end
+
       it "should by default set the recursive attribute as nil" do
         @a.recursive.should be_nil
       end
@@ -171,6 +175,11 @@ module DICOM
       it "should pass the :logger_level option to the 'logger_level' attribute" do
         a = Anonymizer.new(:logger_level => Logger::DEBUG)
         a.logger_level.should eql Logger::DEBUG
+      end
+
+      it "should pass the :random_file_name option to the 'random_file_name' attribute" do
+        a = Anonymizer.new(:random_file_name => true)
+        a.random_file_name.should be_true
       end
 
       it "should pass the :recursive option to the 'recursive' attribute" do
@@ -272,6 +281,40 @@ module DICOM
         dcm1 = DObject.read(file_name)
         dcm1.value('0010,0010').should_not eql @dcm1.value('0010,0010')
         dcm1.value('0010,0010').should eql a.value('0010,0010')
+      end
+
+      it "should write the anonymized DICOM file to the separate directory (as given by the :write_path option)" do
+        file_name = File.join(TMPDIR, "anonymization/example_03/test.dcm")
+        write_path = File.join(TMPDIR, "anonymization/example_03/write")
+        @dcm1.write(file_name)
+        a = Anonymizer.new(:write_path => write_path)
+        a.anonymize(file_name)
+        dicom = DICOM.load(write_path)
+        original = DObject.read(file_name)
+        original.value('0010,0010').should eql @dcm1.value('0010,0010')
+        dicom.length.should eql 1
+        dicom[0].value('0010,0010').should_not eql @dcm1.value('0010,0010')
+      end
+
+      it "should by default keep the original file name when writing an anonymized file to a separate location" do
+        file_name = File.join(TMPDIR, "anonymization/example_04/test.dcm")
+        write_path = File.join(TMPDIR, "anonymization/example_04/write")
+        @dcm1.write(file_name)
+        a = Anonymizer.new(:write_path => write_path)
+        a.anonymize(file_name)
+        File.exists?(File.join(write_path, File.basename(file_name))).should be_true
+      end
+
+      it "should use a random file name (but still with a .dcm extension) when the :random_file_name option is used" do
+        file_name = File.join(TMPDIR, "anonymization/example_05/test.dcm")
+        write_path = File.join(TMPDIR, "anonymization/example_05/write")
+        @dcm1.write(file_name)
+        a = Anonymizer.new(:random_file_name => true, :write_path => write_path)
+        a.anonymize(file_name)
+        files = Dir[File.join(write_path, '**/*')]
+        files.length.should eql 1
+        File.extname(files[0]).should eql '.dcm'
+        File.exists?(File.join(write_path, File.basename(file_name))).should be_false
       end
 
     end
@@ -473,58 +516,58 @@ module DICOM
         @a = Anonymizer.new
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = '/home/dicom/temp/file.dcm'
         @a.write_path = '/home/dicom/output/'
-        @a.send(:destination, @dcm).should eql '/home/dicom/output/temp/file.dcm'
+        @a.send(:destination, @dcm).should eql '/home/dicom/output/temp'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = '//home/dicom/temp/file.dcm'
         @a.write_path = '//home/dicom/output/'
-        @a.send(:destination, @dcm).should eql '//home/dicom/output/temp/file.dcm'
+        @a.send(:destination, @dcm).should eql '//home/dicom/output/temp'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = 'C:/home/dicom/temp/file.dcm'
         @a.write_path = 'C:/home/dicom/output/'
-        @a.send(:destination, @dcm).should eql 'C:/home/dicom/output/temp/file.dcm'
+        @a.send(:destination, @dcm).should eql 'C:/home/dicom/output/temp'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = '/home/dicom/temp/file.dcm'
         @a.write_path = '/dicom'
-        @a.send(:destination, @dcm).should eql '/dicom/home/dicom/temp/file.dcm'
+        @a.send(:destination, @dcm).should eql '/dicom/home/dicom/temp'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = '/home/dicom/temp/file.dcm'
         @a.write_path = '/dicom/'
-        @a.send(:destination, @dcm).should eql '/dicom/home/dicom/temp/file.dcm'
+        @a.send(:destination, @dcm).should eql '/dicom/home/dicom/temp'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = './file.dcm'
         @a.write_path = 'dicom/output/'
-        @a.send(:destination, @dcm).should eql 'dicom/output/file.dcm'
+        @a.send(:destination, @dcm).should eql 'dicom/output'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = 'file.dcm'
         @a.write_path = 'dicom/output/'
-        @a.send(:destination, @dcm).should eql 'dicom/output/file.dcm'
+        @a.send(:destination, @dcm).should eql 'dicom/output'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = './ruby/file.dcm'
         @a.write_path = 'dicom/output/'
-        @a.send(:destination, @dcm).should eql 'dicom/output/ruby/file.dcm'
+        @a.send(:destination, @dcm).should eql 'dicom/output/ruby'
       end
 
-      it "should give the expected file destination" do
+      it "should give the expected directory for this file & write_path combination" do
         @dcm.source = 'ruby/file.dcm'
         @a.write_path = 'dicom/output/'
-        @a.send(:destination, @dcm).should eql 'dicom/output/ruby/file.dcm'
+        @a.send(:destination, @dcm).should eql 'dicom/output/ruby'
       end
 
     end

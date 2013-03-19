@@ -30,6 +30,8 @@ module DICOM
     attr_accessor :enumeration
     # The logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL).
     attr_reader :logger_level
+    # A boolean that if set as true will cause all anonymized files to be written with random file names (if write_path has been specified).
+    attr_accessor :random_file_name
     # A boolean that if set as true, will cause the anonymization to run on all levels of the DICOM file tag hierarchy.
     attr_accessor :recursive
     # A boolean indicating whether or not UIDs shall be replaced when executing the anonymization.
@@ -49,6 +51,7 @@ module DICOM
     # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
     # @option options [Boolean] :enumeration toggles whether (some) elements get enumerated values (to enable post-anonymization re-identification)
     # @option options [Fixnum] :logger_level the logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL)
+    # @option options [Boolean] :random_file_name toggles whether anonymized files will be given random file names when rewritten (in combination with the :write_path option)
     # @option options [Boolean] :recursive toggles whether to anonymize on all sub-levels of the DICOM object tag hierarchies
     # @option options [Boolean] :uid toggles whether UIDs will be replaced with custom generated UIDs (beware that to preserve UID relations in studies/series, the audit_trail feature must be used)
     # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs
@@ -68,6 +71,7 @@ module DICOM
       @delete_private = options[:delete_private]
       @enumeration = options[:enumeration]
       @logger_level = options[:logger_level] || Logger::FATAL
+      @random_file_name = options[:random_file_name]
       @recursive = options[:recursive]
       @uid = options[:uid]
       @uid_root = options[:uid_root] ? options[:uid_root] : UID_ROOT
@@ -374,11 +378,10 @@ module DICOM
     # original file path and the write_path attribute.
     #
     # @param [DObject] dcm a DICOM object
-    # @return [String] the destination file path
+    # @return [String] the destination directory path
     #
     def destination(dcm)
       # Split the source path into dir and file:
-      source_file = File.basename(dcm.source)
       source_dir = File.dirname(dcm.source)
       source_folders = source_dir.split(File::SEPARATOR)
       target_folders = @write_path.split(File::SEPARATOR)
@@ -395,7 +398,7 @@ module DICOM
       end
       # Create the output path by joining the two paths together using the determined index:
       append_path = uncommon_index ? source_folders[uncommon_index..-1] : nil
-      [target_folders, append_path, source_file].compact.join(File::SEPARATOR)
+      [target_folders, append_path].compact.join(File::SEPARATOR)
     end
 
     # Extracts all parents from a DObject instance which potentially
@@ -514,6 +517,7 @@ module DICOM
       # Temporarily adjust the ruby-dicom log threshold (usually to suppress messages from the DObject class):
       @original_level = logger.level
       logger.level = @logger_level
+      require 'securerandom' if @random_file_name
       dicom
     end
 
@@ -617,7 +621,13 @@ module DICOM
         # The DICOM object is to be written to a separate directory. If the
         # original and the new directories have a common root, this is taken into
         # consideration when determining the object's write path:
-        dcm.write(destination(dcm))
+        path = destination(dcm)
+        if @random_file_name
+          file_name = "#{SecureRandom.hex(16)}.dcm"
+        else
+          file_name = File.basename(dcm.source)
+        end
+        dcm.write(File.join(path, file_name))
       else
         # The original DICOM file is overwritten with the anonymized DICOM object:
         dcm.write(dcm.source)
