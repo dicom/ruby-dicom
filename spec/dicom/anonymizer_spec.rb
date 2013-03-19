@@ -7,9 +7,13 @@ module DICOM
 
   describe Anonymizer do
 
-    before :each do
-      DICOM.logger = Logger.new(STDOUT)
+    before :all do
       DICOM.logger.level = Logger::FATAL
+    end
+
+    before :each do
+      #DICOM.logger = Logger.new(STDOUT)
+      #DICOM.logger.level = Logger::FATAL
       @a = Anonymizer.new
       # Create a couple of DICOM objects for test purposes:
       @dcm1 = DObject.new
@@ -80,6 +84,10 @@ module DICOM
         dcm.add(Element.new('0002,0016', 'RingScan'))
         dcm.add(Element.new('0002,0000', dcm.send(:meta_group_length)))
       end
+    end
+
+    after :all do
+      DICOM.logger.level = Logger::INFO
     end
 
 
@@ -269,6 +277,29 @@ module DICOM
     end
 
 
+    describe "#delete_tag" do
+
+      it "should raise an ArgumentError when a non-string is passed as an argument" do
+        a = Anonymizer.new
+        expect {a.delete_tag(42)}.to raise_error(ArgumentError)
+      end
+
+      it "should raise an ArgumentError when a non-tag string is passed as an argument" do
+        a = Anonymizer.new
+        expect {a.delete_tag('asdf,asdf')}.to raise_error(ArgumentError)
+      end
+
+      it "should add the given tag to the Anonymizer's delete attribute hash" do
+        a = Anonymizer.new
+        tag = '0010,0010'
+        a.delete[tag].should be_false
+        a.delete_tag(tag)
+        a.delete[tag].should be_true
+      end
+
+    end
+
+
     describe "#enum" do
 
       it "should raise an ArgumentError when a non-string is passed as an argument" do
@@ -324,28 +355,6 @@ module DICOM
         a.remove_tag('0010,0010')
         a.value('0010,0010').should be_nil
         a.enum('0010,0010').should be_nil
-      end
-
-    end
-
-    describe "#delete_tag" do
-
-      it "should raise an ArgumentError when a non-string is passed as an argument" do
-        a = Anonymizer.new
-        expect {a.delete_tag(42)}.to raise_error(ArgumentError)
-      end
-
-      it "should raise an ArgumentError when a non-tag string is passed as an argument" do
-        a = Anonymizer.new
-        expect {a.delete_tag('asdf,asdf')}.to raise_error(ArgumentError)
-      end
-
-      it "should add the given tag to the Anonymizer's delete attribute hash" do
-        a = Anonymizer.new
-        tag = '0010,0010'
-        a.delete[tag].should be_false
-        a.delete_tag(tag)
-        a.delete[tag].should be_true
       end
 
     end

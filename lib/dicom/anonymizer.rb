@@ -124,6 +124,8 @@ module DICOM
       else
         dicom.each do |dcm|
           anonymize_dcm(dcm)
+          # Write DICOM object to file unless it was passed to the anonymizer as an object:
+          write(dcm) unless dcm.was_dcm_on_input
         end
       end
       # Reset the ruby-dicom log threshold to its original level:
@@ -330,8 +332,6 @@ module DICOM
       replace_uids(parents) if @uid
       # Delete private tags if indicated:
       dcm.delete_private if @delete_private
-      # Write DICOM object to file unless it was passed to the anonymizer as an object:
-      write(dcm) unless dcm.was_dcm_on_input
     end
 
     # Gives the value to be used for the audit trail, which is either

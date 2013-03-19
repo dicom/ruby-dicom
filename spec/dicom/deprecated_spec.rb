@@ -7,6 +7,10 @@ module DICOM
 
   describe Anonymizer do
 
+    before :all do
+      DICOM.logger.level = Logger::FATAL
+    end
+
     before :each do
       @anon = TMPDIR + "anon"
       @anon_s = TMPDIR + "anon/"
@@ -33,6 +37,10 @@ module DICOM
       @skip2 = @skip_s + File.basename(DCM_EXPLICIT_MR_RLE_MONO2)
       @w1 = @wpath_s + File.basename(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       @w2 = @wpath_s + File.basename(DCM_EXPLICIT_MR_RLE_MONO2)
+    end
+
+    after :all do
+      DICOM.logger.level = Logger::INFO
     end
 
 
