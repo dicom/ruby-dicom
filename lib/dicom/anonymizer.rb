@@ -329,6 +329,12 @@ module DICOM
       # Add a Patient Identity Removed attribute (as per
       # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 6):
       dcm.add(Element.new('0012,0062', 'YES'))
+      # Add a De-Identification Method Code Sequence Item:
+      dcm.add(Sequence.new('0012,0064')) unless dcm.exists?('0012,0064')
+      i = dcm['0012,0064'].add_item
+      i.add(Element.new('0012,0063', 'De-identified by the ruby-dicom Anonymizer'))
+      # FIXME: At some point we should add a set of de-indentification method codes, as per
+      #   DICOM PS 3.16 CID 7050 which corresponds to the settings chosen for the anonymizer.
       # Delete the old File Meta Information group (as per
       # DICOM PS 3.15, Annex E, E.1.1 De-Identifier, point 7):
       dcm.delete_group('0002')
