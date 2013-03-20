@@ -264,6 +264,158 @@ module DICOM
         adcm.value('0008,0060').should eql original
       end
 
+      it "should not create data elements which are selected for anonymization, but not present in the actual DICOM object" do
+        a = Anonymizer.new
+        tag = '0018,1160'
+        a.set_tag(tag)
+        # Ensure the element is not originally present (as that would ruin the test):
+        @dcm1.exists?(tag).should be_false
+        res = a.anonymize(@dcm1)
+        # Ensure it is still not present in the anonymized object:
+        res[0].exists?(tag).should be_false
+      end
+
+      it "should use empty strings for anonymization when the blank attribute is set" do
+        a = Anonymizer.new(:blank => true)
+        res = a.anonymize(@dcm1)
+        res[0].value('0010,0010').should eql ''
+      end
+
+      it "should use enumerated strings when the enumeration attribute is set" do
+        @dcm1['0010,0010'].value = 'Joe Schmoe'
+        @dcm2['0010,0010'].value = 'Jack Schmack'
+        a = Anonymizer.new(:enumeration => true)
+        res = a.anonymize([@dcm1, @dcm2])
+        res[0].value('0010,0010').should eql 'Patient1'
+        res[1].value('0010,0010').should eql 'Patient2'
+      end
+
+      it "should only anonymize top level data elements when the :recursive option is unused" do
+        original = @dcm1.value('0010,0010')
+        @dcm1.add(Sequence.new('0008,0082'))
+        @dcm1['0008,0082'].add_item
+        @dcm1['0008,0082'][0].add(Element.new('0010,0010', original))
+        a = Anonymizer.new
+        res = a.anonymize(@dcm1)
+        adcm = res[0]
+        adcm['0008,0082'][0].value('0010,0010').should eql original
+      end
+
+      it "should recursively anonymize all tag levels when the :recursive option is set" do
+        original = @dcm1.value('0010,0010')
+        @dcm1.add(Sequence.new('0008,0082'))
+        @dcm1['0008,0082'].add_item
+        @dcm1['0008,0082'][0].add(Element.new('0010,0010', original))
+        a = Anonymizer.new(:recursive => true)
+        res = a.anonymize(@dcm1)
+        adcm = res[0]
+        adcm['0008,0082'][0].value('0010,0010').should_not eql original
+      end
+
+      it "should by default keep original UID values" do
+        original_sop = @dcm1.value('0008,0018')
+        original_study = @dcm1.value('0020,000D')
+        original_series = @dcm1.value('0020,000E')
+        original_frame = @dcm1.value('0020,0052')
+        a = Anonymizer.new
+        res = a.anonymize(@dcm1)
+        res[0].value('0008,0018').should eql original_sop
+        res[0].value('0020,000D').should eql original_study
+        res[0].value('0020,000E').should eql original_series
+        res[0].value('0020,0052').should eql original_frame
+      end
+
+      it "should replace the relevant (top level) UIDs when the :uid option is set" do
+        original_sop = @dcm2.value('0008,0018')
+        original_study = @dcm2.value('0020,000D')
+        original_series = @dcm2.value('0020,000E')
+        original_frame_ref = @dcm2['3006,0010'][0].value('0020,0052')
+        original_study_ref = @dcm2['3006,0010'][0]['3006,0012'][0].value('0008,1155')
+        original_series_ref = @dcm2['3006,0010'][0]['3006,0012'][0]['3006,0014'][0].value('0020,000E')
+        original_sop_ref = @dcm2['3006,0010'][0]['3006,0012'][0]['3006,0014'][0]['3006,0016'][0].value('0008,1155')
+        a = Anonymizer.new(:uid => true)
+        res = a.anonymize(@dcm2)
+        adcm = res[0]
+        adcm.value('0008,0018').should_not eql original_sop
+        adcm.value('0020,000D').should_not eql original_study
+        adcm.value('0020,000E').should_not eql original_series
+        adcm['3006,0010'][0].value('0020,0052').should eql original_frame_ref
+        adcm['3006,0010'][0]['3006,0012'][0].value('0008,1155').should eql original_study_ref
+        adcm['3006,0010'][0]['3006,0012'][0]['3006,0014'][0].value('0020,000E').should eql original_series_ref
+        adcm['3006,0010'][0]['3006,0012'][0]['3006,0014'][0]['3006,0016'][0].value('0008,1155').should eql original_sop_ref
+      end
+
+      it "should recursively replace the relevant UIDs at all tag levels when both the :uid & :recursive options are set" do
+        original_sop = @dcm2.value('0008,0018')
+        original_study = @dcm2.value('0020,000D')
+        original_series = @dcm2.value('0020,000E')
+        original_frame_ref = @dcm2['3006,0010'][0].value('0020,0052')
+        original_study_ref = @dcm2['3006,0010'][0]['3006,0012'][0].value('0008,1155')
+        original_series_ref = @dcm2['3006,0010'][0]['3006,0012'][0]['3006,0014'][0].value('0020,000E')
+        original_sop_ref = @dcm2['3006,0010'][0]['3006,0012'][0]['3006,0014'][0]['3006,0016'][0].value('0008,1155')
+        a = Anonymizer.new(:recursive => true, :uid => true)
+        res = a.anonymize(@dcm2)
+        adcm = res[0]
+        adcm.value('0008,0018').should_not eql original_sop
+        adcm.value('0020,000D').should_not eql original_study
+        adcm.value('0020,000E').should_not eql original_series
+        adcm['3006,0010'][0].value('0020,0052').should_not eql original_frame_ref
+        adcm['3006,0010'][0]['3006,0012'][0].value('0008,1155').should_not eql original_study_ref
+        adcm['3006,0010'][0]['3006,0012'][0]['3006,0014'][0].value('0020,000E').should_not eql original_series_ref
+        adcm['3006,0010'][0]['3006,0012'][0]['3006,0014'][0]['3006,0016'][0].value('0008,1155').should_not eql original_sop_ref
+      end
+
+      it "should not randomize 'static' UIDs (like e.g. Transfer Syntax and SOP Class UID) when the :uid option is set" do
+        #cge_creator_uid = Element.new('0002,0002', '1.234.99', :parent => @dcm1)
+        #cge_creator_uid = Element.new('0002,0010', '1.234.88', :parent => @dcm1)
+        static_uids = Array.new
+        static_uids << Element.new('0008,010C', '1.234.77', :parent => @dcm1)
+        static_uids << Element.new('0008,010D', '1.234.66', :parent => @dcm1)
+        static_uids << Element.new('0008,0016', '1.234.55', :parent => @dcm1)
+        static_uids << Element.new('0008,001A', '1.234.44', :parent => @dcm1)
+        static_uids << Element.new('0008,001B', '1.234.33', :parent => @dcm1)
+        static_uids << Element.new('0008,0062', '1.234.22', :parent => @dcm1)
+        static_uids << Element.new('0008,1150', '1.234.11', :parent => @dcm1)
+        static_uids << Element.new('0008,115A', '1.234.98', :parent => @dcm1)
+        static_uids << Element.new('0400,0010', '1.234.97', :parent => @dcm1)
+        static_uids << Element.new('0400,0510', '1.234.96', :parent => @dcm1)
+        a = Anonymizer.new(:uid => true)
+        res = a.anonymize(@dcm1)
+        static_uids.each do |blacklisted_uid|
+          res[0].value(blacklisted_uid.tag).should eql blacklisted_uid.value
+        end
+      end
+
+      it "should write an audit trail file when the :audit_trail (and :enumeration) option is set" do
+        file_name = File.join(TMPDIR, "anonymization/audit_trail.json")
+        a = Anonymizer.new(:audit_trail => file_name, :enumeration => true)
+        a.anonymize(@dcm1)
+        File.exists?(file_name).should be_true
+        at = AuditTrail.read(file_name)
+        at.should be_a AuditTrail
+      end
+
+      it "should use encrypted key values in the audit trail file when the :audit_trail, :encryption (and :enumeration) options are set" do
+        file_name = File.join(TMPDIR, "anonymization/encrypted_audit_trail.json")
+        a = Anonymizer.new(:audit_trail => file_name, :encryption => true, :enumeration => true)
+        @dcm2['0010,0010'].value = 'Joe Schmoe'
+        a.anonymize([@dcm1, @dcm2])
+        at = AuditTrail.read(file_name)
+        names = at.records('0010,0010').to_a
+        # MD5 hashes are 32 characters long:
+        names.first[0].length.should eql 32
+        names.last[0].length.should eql 32
+        # Values should be the ordinary, enumerated ones:
+        names.first[1].should eql 'Patient1'
+        names.last[1].should eql 'Patient2'
+      end
+
+      it "should add a Patient Identity Removed element with value 'YES' to anonymized DICOM object" do
+        a = Anonymizer.new
+        res = a.anonymize(@dcm1)
+        res[0].value('0012,0062').should eql 'YES'
+      end
+
       it "should anonymize and rewrite the DICOM file (given by its file name string)" do
         file_name = File.join(TMPDIR, "anonymization/example_01/test.dcm")
         @dcm1.write(file_name)

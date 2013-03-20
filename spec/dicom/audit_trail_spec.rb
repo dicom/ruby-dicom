@@ -194,6 +194,12 @@ module DICOM
         str_written.should eql str_original
       end
 
+      it "should be able to write to a path that contains folders that haven't been created yet" do
+        written_file = File.join(TMPDIR, "audit_trail/create_this_folder/test.json")
+        @ar.write(written_file)
+        File.exists?(written_file).should be_true
+      end
+
     end
 
   end

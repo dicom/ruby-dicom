@@ -123,17 +123,19 @@ module DICOM
     #
     def anonymize(data)
       dicom = prepare(data)
-      unless @tags.length > 0
-        logger.warn("No tags have been selected for anonymization. Aborting anonymization.")
-      else
+      if @tags.length > 0
         dicom.each do |dcm|
           anonymize_dcm(dcm)
           # Write DICOM object to file unless it was passed to the anonymizer as an object:
           write(dcm) unless dcm.was_dcm_on_input
         end
+      else
+        logger.warn("No tags have been selected for anonymization. Aborting anonymization.")
       end
       # Reset the ruby-dicom log threshold to its original level:
       logger.level = @original_level
+      # Save the audit trail (if used):
+      @audit_trail.write(@audit_trail_file) if @audit_trail
       dicom
     end
 

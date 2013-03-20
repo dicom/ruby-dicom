@@ -97,7 +97,14 @@ module DICOM
     # @param [String] file_name the path to be used for storing key/value pairs on disk
     #
     def write(file_name)
+      # Encode json string:
       str = JSON.pretty_generate(@dictionary)
+      # Create directory if needed:
+      unless File.directory?(File.dirname(file_name))
+        require 'fileutils'
+        FileUtils.mkdir_p(File.dirname(file_name))
+      end
+      # Write to file:
       File.open(file_name, 'w') {|f| f.write(str) }
     end
 
