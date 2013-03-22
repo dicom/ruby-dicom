@@ -14,6 +14,73 @@ module DICOM
     end
 
 
+    context "#add_element" do
+
+      it "should add an Element (as specified) to a DObject instance" do
+        dcm = DObject.new
+        e = dcm.add_element('0011,0011', 'Rex', :vr => 'PN')
+        e.tag.should eql '0011,0011'
+        e.value.should eql 'Rex'
+        e.vr.should eql 'PN'
+        e.parent.should eql dcm
+        dcm.exists?('0011,0011').should be_true
+      end
+
+      it "should add an Element (as specified) to the Item instance" do
+        i = Item.new
+        e = i.add_element('0011,0011', 'Rex', :name => 'Pet Name')
+        e.tag.should eql '0011,0011'
+        e.value.should eql 'Rex'
+        e.name.should eql 'Pet Name'
+        e.parent.should eql i
+        i.exists?('0011,0011').should be_true
+      end
+
+      it "should give a NoMethodError if called on a Sequence" do
+        s = Sequence.new('0008,0082')
+        expect{s.add_element('0011,0011', 'Rex')}.to raise_error(NoMethodError)
+      end
+
+      it "should give a NoMethodError if called on an Element" do
+        e = Element.new('0010,0010', 'John Doe')
+        expect{e.add_element('0011,0011', 'Rex')}.to raise_error(NoMethodError)
+      end
+
+    end
+
+
+    context "#add_sequence" do
+
+      it "should add a Sequence (as specified) to a DObject instance" do
+        dcm = DObject.new
+        e = dcm.add_sequence('0008,0082')
+        e.tag.should eql '0008,0082'
+        e.parent.should eql dcm
+        dcm.exists?('0008,0082').should be_true
+      end
+
+      it "should add a Sequence (as specified) to the Item instance" do
+        i = Item.new
+        e = i.add_sequence('0011,0011', :name => 'Pet Sequence')
+        e.tag.should eql '0011,0011'
+        e.name.should eql 'Pet Sequence'
+        e.parent.should eql i
+        i.exists?('0011,0011').should be_true
+      end
+
+      it "should give a NoMethodError if called on a Sequence" do
+        s = Sequence.new('0008,0082')
+        expect{s.add_sequence('0008,0082')}.to raise_error(NoMethodError)
+      end
+
+      it "should give a NoMethodError if called on an Element" do
+        e = Element.new('0010,0010', 'John Doe')
+        expect{e.add_sequence('0008,0082')}.to raise_error(NoMethodError)
+      end
+
+    end
+
+
     context "#color?" do
 
       it "should return false when the DICOM object has no pixel data" do

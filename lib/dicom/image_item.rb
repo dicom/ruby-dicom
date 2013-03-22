@@ -14,6 +14,27 @@ module DICOM
 
     include ImageProcessor
 
+    # Creates an Element with the given arguments and connects it to self.
+    #
+    # @param [String] tag an element tag
+    # @param [String, Integer, Float, Array, NilClass] value an element value
+    # @param [Hash] options any options used for creating the element (see Element.new documentation)
+    #
+    def add_element(tag, value, options={})
+      add(e = Element.new(tag, value, options))
+      e
+    end
+
+    # Creates a Sequence with the given arguments and connects it to self.
+    #
+    # @param [String] tag a sequence tag
+    # @param [Hash] options any options used for creating the sequence (see Sequence.new documentation)
+    #
+    def add_sequence(tag, options={})
+      add(s = Sequence.new(tag, options))
+      s
+    end
+
     # Checks if colored pixel data is present.
     #
     # @return [Boolean] true if the object contains colored pixels, and false if not
