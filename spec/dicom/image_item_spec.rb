@@ -8,7 +8,7 @@ module DICOM
 
   describe ImageItem do
 
-    before :each do
+    before :all do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end
@@ -135,13 +135,13 @@ module DICOM
 
       it "should raise an error when the DICOM object doesn't have any of the necessary data elements needed to decode pixel data" do
         dcm = DObject.new
-        expect {dcm.decode_pixels("0000")}.to raise_error
+        expect {dcm.decode_pixels('0000')}.to raise_error
       end
 
       it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to decode pixel data" do
         dcm = DObject.new
-        dcm.add(Element.new("0028,0100", 16))
-        expect {dcm.decode_pixels("0000")}.to raise_error
+        dcm.add(Element.new('0028,0100', 16))
+        expect {dcm.decode_pixels('0000')}.to raise_error
       end
 
       it "should raise an ArgumentError when a non-string is supplied" do
@@ -151,7 +151,7 @@ module DICOM
 
       it "should return decoded pixel values in an array with a length determined by the input string length and the bit depth of the object's pixel data" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        pixels = dcm.decode_pixels("0000")
+        pixels = dcm.decode_pixels('0000')
         pixels.class.should eql Array
         pixels.length.should eql 2
       end
@@ -168,13 +168,13 @@ module DICOM
 
       it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to encode the pixel data" do
         dcm = DObject.new
-        dcm.add(Element.new("0028,0100", 16))
+        dcm.add(Element.new('0028,0100', 16))
         expect {dcm.encode_pixels([42, 42])}.to raise_error
       end
 
       it "should raise an ArgumentError when a non-array is supplied" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        expect {dcm.encode_pixels("42")}.to raise_error(ArgumentError)
+        expect {dcm.encode_pixels('42')}.to raise_error(ArgumentError)
       end
 
       it "should return encoded pixel values in a string with a length determined by the input array length and the bit depth of the object's pixel data" do
@@ -224,15 +224,15 @@ module DICOM
 
       it "should remap the pixel values according to the rescale slope and intercept values and give the expected mininum value" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        dcm.add(Element.new("0028,1052", "-72")) # intercept
-        dcm.add(Element.new("0028,1053", "3")) # slope
+        dcm.add(Element.new('0028,1052', '-72')) # intercept
+        dcm.add(Element.new('0028,1053', '3')) # slope
         dcm.pixels(:remap => true).min.should eql 3000
       end
 
       it "should remap the pixel values according to the rescale slope and intercept values and give the expected maximum value" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        dcm.add(Element.new("0028,1052", "148")) # intercept
-        dcm.add(Element.new("0028,1053", "3")) # slope
+        dcm.add(Element.new('0028,1052', '148')) # intercept
+        dcm.add(Element.new('0028,1053', '3')) # slope
         dcm.pixels(:remap => true).max.should eql 4000
       end
 
@@ -274,12 +274,12 @@ module DICOM
 
       it "should return the pixel values properly placed in the expected indices on a 3D Pixel Data volume" do
         dcm = DObject.new
-        Element.new("0002,0010", EXPLICIT_LITTLE_ENDIAN, :parent => dcm) # TS
-        Element.new("0028,0008", "2", :parent => dcm) # Frames
-        Element.new("0028,0010", 4, :parent => dcm) # Rows
-        Element.new("0028,0011", 3, :parent => dcm) # Columns
-        Element.new("0028,0100", 16, :parent => dcm) # Bit Depth
-        Element.new("0028,0103", 0, :parent => dcm) # Pixel Rep.
+        Element.new('0002,0010', EXPLICIT_LITTLE_ENDIAN, :parent => dcm) # TS
+        Element.new('0028,0008', '2', :parent => dcm) # Frames
+        Element.new('0028,0010', 4, :parent => dcm) # Rows
+        Element.new('0028,0011', 3, :parent => dcm) # Columns
+        Element.new('0028,0100', 16, :parent => dcm) # Bit Depth
+        Element.new('0028,0103', 0, :parent => dcm) # Pixel Rep.
         pixels = Array.new(24) {|i| i}
         dcm.pixels = pixels
         pixels = dcm.pixels
@@ -344,15 +344,15 @@ module DICOM
 
       it "should remap the pixel values according to the rescale slope and intercept values and give the expected mininum value" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        dcm.add(Element.new("0028,1052", "-72")) # intercept
-        dcm.add(Element.new("0028,1053", "3")) # slope
+        dcm.add(Element.new('0028,1052', '-72')) # intercept
+        dcm.add(Element.new('0028,1053', '3')) # slope
         dcm.narray(:remap => true).min.should eql 3000
       end
 
       it "should remap the pixel values according to the rescale slope and intercept values and give the expected maximum value" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        dcm.add(Element.new("0028,1052", "148")) # intercept
-        dcm.add(Element.new("0028,1053", "3")) # slope
+        dcm.add(Element.new('0028,1052', '148')) # intercept
+        dcm.add(Element.new('0028,1053', '3')) # slope
         dcm.narray(:remap => true).max.should eql 4000
       end
 
@@ -380,12 +380,12 @@ module DICOM
 
         before :each do
           dcm = DObject.new
-          Element.new("0002,0010", EXPLICIT_LITTLE_ENDIAN, :parent => dcm) # TS
-          Element.new("0028,0008", "2", :parent => dcm) # Frames
-          Element.new("0028,0010", 4, :parent => dcm) # Rows
-          Element.new("0028,0011", 3, :parent => dcm) # Columns
-          Element.new("0028,0100", 16, :parent => dcm) # Bit Depth
-          Element.new("0028,0103", 0, :parent => dcm) # Pixel Rep.
+          Element.new('0002,0010', EXPLICIT_LITTLE_ENDIAN, :parent => dcm) # TS
+          Element.new('0028,0008', '2', :parent => dcm) # Frames
+          Element.new('0028,0010', 4, :parent => dcm) # Rows
+          Element.new('0028,0011', 3, :parent => dcm) # Columns
+          Element.new('0028,0100', 16, :parent => dcm) # Bit Depth
+          Element.new('0028,0103', 0, :parent => dcm) # Pixel Rep.
           pixels = Array.new(24) {|i| i}
           dcm.pixels = pixels
           @narr = dcm.narray
@@ -425,11 +425,11 @@ module DICOM
       end
 
       it "should copy the content of the specified file to the DICOM object's pixel data element" do
-        file_string = "abcdefghijkl"
-        File.open(TMPDIR + "string.dat", 'wb') {|f| f.write(file_string) }
+        file_string = 'abcdefghijkl'
+        File.open(TMPDIR + 'string.dat', 'wb') {|f| f.write(file_string) }
         dcm = DObject.new
-        dcm.image_from_file(TMPDIR + "string.dat")
-        dcm["7FE0,0010"].bin.should eql file_string
+        dcm.image_from_file(TMPDIR + 'string.dat')
+        dcm['7FE0,0010'].bin.should eql file_string
       end
 
     end
@@ -439,13 +439,13 @@ module DICOM
 
       it "should raise an error when the 'Columns' data element is missing from the DICOM object" do
         dcm = DObject.new
-        dcm.add(Element.new("0028,0010", 512)) # Rows
+        dcm.add(Element.new('0028,0010', 512)) # Rows
         expect {dcm.image_properties}.to raise_error
       end
 
       it "should raise an error when the 'Rows' data element is missing from the DICOM object" do
         dcm = DObject.new
-        dcm.add(Element.new("0028,0011", 512)) # Columns
+        dcm.add(Element.new('0028,0011', 512)) # Columns
         expect {dcm.image_properties}.to raise_error
       end
 
@@ -459,9 +459,9 @@ module DICOM
         rows_used = 512
         columns_used = 256
         frames_used = 8
-        dcm.add(Element.new("0028,0010", rows_used))
-        dcm.add(Element.new("0028,0011", columns_used))
-        dcm.add(Element.new("0028,0008", frames_used.to_s))
+        dcm.add(Element.new('0028,0010', rows_used))
+        dcm.add(Element.new('0028,0011', columns_used))
+        dcm.add(Element.new('0028,0008', frames_used.to_s))
         dcm.num_rows.should eql rows_used
         dcm.num_cols.should eql columns_used
         dcm.num_frames.should eql frames_used
@@ -478,30 +478,30 @@ module DICOM
       end
 
       it "should write the DICOM object's pixel data string to the specified file" do
-        pixel_data = "abcdefghijkl"
+        pixel_data = 'abcdefghijkl'
         dcm = DObject.new
-        dcm.add(Element.new("7FE0,0010", pixel_data, :encoded => true))
-        dcm.image_to_file(TMPDIR + "string.dat")
-        f = File.new(TMPDIR + "string.dat", "rb")
+        dcm.add(Element.new('7FE0,0010', pixel_data, :encoded => true))
+        dcm.image_to_file(TMPDIR + 'string.dat')
+        f = File.new(TMPDIR + 'string.dat', 'rb')
         f.read.should eql pixel_data
       end
 
       it "should write multiple files as expected, when a file extension is omitted" do
         dcm = DObject.read(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME) # 8 frames
-        dcm.image_to_file(TMPDIR + "data")
-        File.readable?(TMPDIR + "data-0").should be_true
-        File.readable?(TMPDIR + "data-7").should be_true
+        dcm.image_to_file(TMPDIR + 'data')
+        File.readable?(TMPDIR + 'data-0').should be_true
+        File.readable?(TMPDIR + 'data-7').should be_true
       end
 
       it "should write multiple files, using the expected file enumeration and image fragments, when the DICOM object has multi-fragment pixel data" do
         dcm = DObject.read(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME) # 8 frames
-        dcm.image_to_file(TMPDIR + "multi.dat")
-        File.readable?(TMPDIR + "multi-0.dat").should be_true
-        File.readable?(TMPDIR + "multi-7.dat").should be_true
-        f0 = File.new(TMPDIR + "multi-0.dat", "rb")
-        f0.read.should eql dcm["7FE0,0010"][0][0].bin
-        f7 = File.new(TMPDIR + "multi-7.dat", "rb")
-        f7.read.should eql dcm["7FE0,0010"][0][7].bin
+        dcm.image_to_file(TMPDIR + 'multi.dat')
+        File.readable?(TMPDIR + 'multi-0.dat').should be_true
+        File.readable?(TMPDIR + 'multi-7.dat').should be_true
+        f0 = File.new(TMPDIR + 'multi-0.dat', 'rb')
+        f0.read.should eql dcm['7FE0,0010'][0][0].bin
+        f7 = File.new(TMPDIR + 'multi-7.dat', 'rb')
+        f7.read.should eql dcm['7FE0,0010'][0][7].bin
       end
 
     end
@@ -511,32 +511,32 @@ module DICOM
 
       it "should delete all sequences from the DICOM object" do
         dcm = DObject.new
-        dcm.add(Element.new("0010,0030", "20000101"))
-        dcm.add(Sequence.new("0008,1140"))
-        dcm.add(Sequence.new("0009,1140"))
-        dcm.add(Sequence.new("0088,0200"))
-        dcm["0008,1140"].add_item
-        dcm.add(Element.new("0011,0030", "42"))
+        dcm.add(Element.new('0010,0030', '20000101'))
+        dcm.add(Sequence.new('0008,1140'))
+        dcm.add(Sequence.new('0009,1140'))
+        dcm.add(Sequence.new('0088,0200'))
+        dcm['0008,1140'].add_item
+        dcm.add(Element.new('0011,0030', '42'))
         dcm.delete_sequences
         dcm.children.length.should eql 2
-        dcm.exists?("0008,1140").should be_false
-        dcm.exists?("0009,1140").should be_false
-        dcm.exists?("0088,0200").should be_false
+        dcm.exists?('0008,1140').should be_false
+        dcm.exists?('0009,1140').should be_false
+        dcm.exists?('0088,0200').should be_false
       end
 
       it "should delete all sequences from the Item" do
         i = Item.new
-        i.add(Element.new("0010,0030", "20000101"))
-        i.add(Sequence.new("0008,1140"))
-        i.add(Sequence.new("0009,1140"))
-        i.add(Sequence.new("0088,0200"))
-        i["0008,1140"].add_item
-        i.add(Element.new("0011,0030", "42"))
+        i.add(Element.new('0010,0030', '20000101'))
+        i.add(Sequence.new('0008,1140'))
+        i.add(Sequence.new('0009,1140'))
+        i.add(Sequence.new('0088,0200'))
+        i['0008,1140'].add_item
+        i.add(Element.new('0011,0030', '42'))
         i.delete_sequences
         i.children.length.should eql 2
-        i.exists?("0008,1140").should be_false
-        i.exists?("0009,1140").should be_false
-        i.exists?("0088,0200").should be_false
+        i.exists?('0008,1140').should be_false
+        i.exists?('0009,1140').should be_false
+        i.exists?('0088,0200').should be_false
       end
 
     end
@@ -552,41 +552,41 @@ module DICOM
       it "should encode the pixel array and write it to the DICOM object's pixel data element" do
         pixel_data = [0,42,0,42]
         dcm = DObject.new
-        dcm.add(Element.new("0028,0100", 8)) # Bit depth
-        dcm.add(Element.new("0028,0103", 0)) # Pixel Representation
+        dcm.add(Element.new('0028,0100', 8)) # Bit depth
+        dcm.add(Element.new('0028,0103', 0)) # Pixel Representation
         dcm.pixels = pixel_data
-        dcm["7FE0,0010"].bin.length.should eql 4
-        dcm.decode_pixels(dcm["7FE0,0010"].bin).should eql pixel_data
+        dcm['7FE0,0010'].bin.length.should eql 4
+        dcm.decode_pixels(dcm['7FE0,0010'].bin).should eql pixel_data
       end
 
       it "should encode the pixel array and update the DICOM object's pixel data element" do
         pixel_data = [0,42,0,42]
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
         dcm.pixels = pixel_data
-        dcm["7FE0,0010"].bin.length.should eql 8
-        dcm.decode_pixels(dcm["7FE0,0010"].bin).should eql pixel_data
+        dcm['7FE0,0010'].bin.length.should eql 8
+        dcm.decode_pixels(dcm['7FE0,0010'].bin).should eql pixel_data
       end
 
       it "should encode the pixels of the NArray and write them to the DICOM object's pixel data element" do
         pixel_data = [0,42,0,42]
         dcm = DObject.new
-        dcm.add(Element.new("0028,0100", 8)) # Bit depth
-        dcm.add(Element.new("0028,0103", 0)) # Pixel Representation
+        dcm.add(Element.new('0028,0100', 8)) # Bit depth
+        dcm.add(Element.new('0028,0103', 0)) # Pixel Representation
         dcm.pixels = NArray.to_na(pixel_data)
-        dcm["7FE0,0010"].bin.length.should eql 4
-        dcm.decode_pixels(dcm["7FE0,0010"].bin).should eql pixel_data
+        dcm['7FE0,0010'].bin.length.should eql 4
+        dcm.decode_pixels(dcm['7FE0,0010'].bin).should eql pixel_data
       end
 
       context "[on a 3D pixel volume]" do
 
         before :each do
           @dcm = DObject.new
-          Element.new("0002,0010", EXPLICIT_LITTLE_ENDIAN, :parent => @dcm) # TS
-          Element.new("0028,0008", "2", :parent => @dcm) # Frames
-          Element.new("0028,0010", 4, :parent => @dcm) # Rows
-          Element.new("0028,0011", 3, :parent => @dcm) # Columns
-          Element.new("0028,0100", 16, :parent => @dcm) # Bit Depth
-          Element.new("0028,0103", 0, :parent => @dcm) # Pixel Rep.
+          Element.new('0002,0010', EXPLICIT_LITTLE_ENDIAN, :parent => @dcm) # TS
+          Element.new('0028,0008', '2', :parent => @dcm) # Frames
+          Element.new('0028,0010', 4, :parent => @dcm) # Rows
+          Element.new('0028,0011', 3, :parent => @dcm) # Columns
+          Element.new('0028,0100', 16, :parent => @dcm) # Bit Depth
+          Element.new('0028,0103', 0, :parent => @dcm) # Pixel Rep.
         end
 
         it "should encode the pixels of the NArray such that the pixel values are properly placed in the expected indices for each frame" do

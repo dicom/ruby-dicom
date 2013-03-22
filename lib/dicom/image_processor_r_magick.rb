@@ -63,7 +63,7 @@ module DICOM
         # @param [String] format the image format to use
         # @return [Magick::Image] an RMagick image object
         #
-        def import_pixels(blob, columns, rows, depth, photometry, format="png")
+        def import_pixels(blob, columns, rows, depth, photometry, format='png')
           image = Magick::Image.new(columns,rows).import_pixels(0, 0, columns, rows, rm_map(photometry), blob, rm_data_type(depth))
         end
 
@@ -91,12 +91,12 @@ module DICOM
         #
         def rm_map(photometry)
           raise ArgumentError, "Expected String, got #{photometry.class}." unless photometry.is_a?(String)
-          if photometry.include?("COLOR") or photometry.include?("RGB")
-            return "RGB"
-          elsif photometry.include?("YBR")
-            return "YBR"
+          if photometry.include?('COLOR') or photometry.include?('RGB')
+            return 'RGB'
+          elsif photometry.include?('YBR')
+            return 'YBR'
           else
-            return "I" # (Assuming monochromeX - greyscale)
+            return 'I' # (Assuming monochromeX - greyscale)
           end
         end
 

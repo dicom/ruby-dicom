@@ -45,7 +45,7 @@ module DICOM
         # @param [String] format the image format to use
         # @return [Magick::Image] a mini_magick image object
         #
-        def import_pixels(blob, columns, rows, depth, photometry, format="png")
+        def import_pixels(blob, columns, rows, depth, photometry, format='png')
           image = MiniMagick::Image.import_pixels(blob, columns, rows, depth, im_map(photometry), format)
         end
 
@@ -56,12 +56,12 @@ module DICOM
         #
         def im_map(photometry)
           raise ArgumentError, "Expected String, got #{photometry.class}." unless photometry.is_a?(String)
-          if photometry.include?("COLOR") or photometry.include?("RGB")
-            return "rgb"
-          elsif photometry.include?("YBR")
-            return "ybr"
+          if photometry.include?('COLOR') or photometry.include?('RGB')
+            return 'rgb'
+          elsif photometry.include?('YBR')
+            return 'ybr'
           else
-            return "gray" # (Assuming monochromeX - greyscale)
+            return 'gray' # (Assuming monochromeX - greyscale)
           end
         end
 

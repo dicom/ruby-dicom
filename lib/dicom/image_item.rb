@@ -43,7 +43,7 @@ module DICOM
       # "Photometric Interpretation" is contained in the data element "0028,0004":
       begin
         photometric = photometry
-        if photometric.include?("COLOR") or photometric.include?("RGB") or photometric.include?("YBR")
+        if photometric.include?('COLOR') or photometric.include?('RGB') or photometric.include?('YBR')
           return true
         else
           return false
@@ -77,8 +77,8 @@ module DICOM
       raise ArgumentError, "Expected String, got #{bin.class}." unless bin.is_a?(String)
       pixels = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
-      bit_depth_element = self["0028,0100"]
-      pixel_representation_element = self["0028,0103"]
+      bit_depth_element = self['0028,0100']
+      pixel_representation_element = self['0028,0103']
       if bit_depth_element and pixel_representation_element
         # Load the binary pixel data to the Stream instance:
         stream.set_string(bin)
@@ -102,8 +102,8 @@ module DICOM
       raise ArgumentError, "Expected Array, got #{pixels.class}." unless pixels.is_a?(Array)
       bin = false
       # We need to know what kind of bith depth and integer type the pixel data is saved with:
-      bit_depth_element = self["0028,0100"]
-      pixel_representation_element = self["0028,0103"]
+      bit_depth_element = self['0028,0100']
+      pixel_representation_element = self['0028,0103']
       if bit_depth_element and pixel_representation_element
         template = template_string(bit_depth_element.value.to_i)
         bin = stream.encode(pixels, template) if template
@@ -208,7 +208,7 @@ module DICOM
     #
     def image_from_file(file)
       raise ArgumentError, "Expected #{String}, got #{file.class}." unless file.is_a?(String)
-      f = File.new(file, "rb")
+      f = File.new(file, 'rb')
       bin = f.read(f.stat.size)
       if bin.length > 0
         # Write the binary data to the Pixel Data Element:
@@ -256,18 +256,18 @@ module DICOM
       parts = file.split('.')
       if parts.length > 1
         base = parts[0..-2].join
-        extension = "." + parts.last
+        extension = '.' + parts.last
       else
         base = file
-        extension = ""
+        extension = ''
       end
       # Get the binary image strings and dump them to the file(s):
       images = image_strings
       images.each_index do |i|
         if images.length == 1
-          f = File.new(file, "wb")
+          f = File.new(file, 'wb')
         else
-          f = File.new("#{base}-#{i}#{extension}", "wb")
+          f = File.new("#{base}-#{i}#{extension}", 'wb')
         end
         f.write(images[i])
         f.close
@@ -298,7 +298,7 @@ module DICOM
     # @return [Integer, NilClass] the number of columns, or nil (if the columns value is undefined)
     #
     def num_cols
-      self["0028,0011"].value rescue nil
+      self['0028,0011'].value rescue nil
     end
 
     # Gives the number of frames in the pixel data.
@@ -307,7 +307,7 @@ module DICOM
     # @return [Integer] the number of rows
     #
     def num_frames
-      (self["0028,0008"].is_a?(Element) == true ? self["0028,0008"].value.to_i : 1)
+      (self['0028,0008'].is_a?(Element) == true ? self['0028,0008'].value.to_i : 1)
     end
 
     # Gives the number of rows in the pixel data.
@@ -315,7 +315,7 @@ module DICOM
     # @return [Integer, NilClass] the number of rows, or nil (if the rows value is undefined)
     #
     def num_rows
-      self["0028,0010"].value rescue nil
+      self['0028,0010'].value rescue nil
     end
 
     # Creates an NArray containing the pixel data. If the pixel data is an image
@@ -464,7 +464,7 @@ module DICOM
       raise "The 'Bits Allocated' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
       if photometry == PI_PALETTE_COLOR
       # Only one channel is checked and it is assumed that all channels have the same number of bits.
-        return self["0028,1101"].value.split("\\").last.to_i
+        return self['0028,1101'].value.split("\\").last.to_i
       else
         return bit_depth
       end
@@ -478,7 +478,7 @@ module DICOM
     #
     def bit_depth
       raise "The 'Bits Allocated' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0100")
-      return value("0028,0100")
+      return value('0028,0100')
     end
 
     # Performs a run length decoding on the input stream.
@@ -544,7 +544,7 @@ module DICOM
     #
     def photometry
       raise "The 'Photometric Interpretation' Element is missing from this DICOM instance. Unable to encode/decode pixel data." unless exists?("0028,0004")
-      return value("0028,0004").upcase
+      return value('0028,0004').upcase
     end
 
     # Processes the pixel array based on attributes defined in the DICOM object,
@@ -559,16 +559,16 @@ module DICOM
       proper_rgb = false
       photometric = photometry()
       # (With RLE COLOR PALETTE the Planar Configuration is not set)
-      planar = self["0028,0006"].is_a?(Element) ? self["0028,0006"].value : 0
+      planar = self['0028,0006'].is_a?(Element) ? self['0028,0006'].value : 0
       # Step 1: Produce an array with RGB values. At this time, YBR is not supported in ruby-dicom,
       # so this leaves us with a possible conversion from PALETTE COLOR:
-      if photometric.include?("COLOR")
+      if photometric.include?('COLOR')
         # Pseudo colors (rgb values grabbed from a lookup table):
         rgb = Array.new(pixels.length*3)
         # Prepare the lookup data arrays:
-        lookup_binaries = [self["0028,1201"].bin, self["0028,1202"].bin, self["0028,1203"].bin]
+        lookup_binaries = [self['0028,1201'].bin, self['0028,1202'].bin, self['0028,1203'].bin]
         lookup_values = Array.new
-        nr_bits = self["0028,1101"].value.split("\\").last.to_i
+        nr_bits = self['0028,1101'].value.split("\\").last.to_i
         template = template_string(nr_bits)
         lookup_binaries.each do |bin|
           stream.set_string(bin)
@@ -581,7 +581,7 @@ module DICOM
         end
         # As we have now ordered the pixels in RGB order, modify planar configuration to reflect this:
         planar = 0
-      elsif photometric.include?("YBR")
+      elsif photometric.include?('YBR')
         rgb = false
       else
         rgb = pixels
@@ -759,13 +759,13 @@ module DICOM
     #
     def signed_pixels?
       raise "The 'Pixel Representation' data element is missing from this DICOM instance. Unable to process pixel data." unless exists?("0028,0103")
-      case value("0028,0103")
+      case value('0028,0103')
       when 1
         return true
       when 0
         return false
       else
-        raise "Invalid value encountered (#{value("0028,0103")}) in the 'Pixel Representation' data element. Expected 0 or 1."
+        raise "Invalid value encountered (#{value('0028,0103')}) in the 'Pixel Representation' data element. Expected 0 or 1."
       end
     end
 
@@ -777,22 +777,22 @@ module DICOM
     #
     def template_string(depth)
       template = false
-      pixel_representation = self["0028,0103"].value.to_i
+      pixel_representation = self['0028,0103'].value.to_i
       # Number of bytes used per pixel will determine how to unpack this:
       case depth
       when 8 # (1 byte)
-        template = "BY" # Byte/Character/Fixnum
+        template = 'BY' # Byte/Character/Fixnum
       when 16 # (2 bytes)
         if pixel_representation == 1
-         template = "SS" # Signed short
+         template = 'SS' # Signed short
         else
-          template = "US" # Unsigned short
+          template = 'US' # Unsigned short
         end
       when 32 # (4 bytes)
         if pixel_representation == 1
-          template = "SL" # Signed long
+          template = 'SL' # Signed long
         else
-          template = "UL" # Unsigned long
+          template = 'UL' # Unsigned long
         end
       when 12
         # 12 BIT SIMPLY NOT IMPLEMENTED YET!
@@ -813,10 +813,10 @@ module DICOM
     # @return [Array<Integer, NilClass>] center, width, intercept and slope
     #
     def window_level_values
-      center = (self["0028,1050"].is_a?(Element) == true ? self["0028,1050"].value.to_i : nil)
-      width = (self["0028,1051"].is_a?(Element) == true ? self["0028,1051"].value.to_i : nil)
-      intercept = (self["0028,1052"].is_a?(Element) == true ? self["0028,1052"].value.to_i : 0)
-      slope = (self["0028,1053"].is_a?(Element) == true ? self["0028,1053"].value.to_i : 1)
+      center = (self['0028,1050'].is_a?(Element) == true ? self['0028,1050'].value.to_i : nil)
+      width = (self['0028,1051'].is_a?(Element) == true ? self['0028,1051'].value.to_i : nil)
+      intercept = (self['0028,1052'].is_a?(Element) == true ? self['0028,1052'].value.to_i : 0)
+      slope = (self['0028,1053'].is_a?(Element) == true ? self['0028,1053'].value.to_i : 1)
       return center, width, intercept, slope
     end
 
