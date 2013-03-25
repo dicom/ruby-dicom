@@ -366,8 +366,6 @@ module DICOM
       end
 
       it "should not randomize 'static' UIDs (like e.g. Transfer Syntax and SOP Class UID) when the :uid option is set" do
-        #cge_creator_uid = Element.new('0002,0002', '1.234.99', :parent => @dcm1)
-        #cge_creator_uid = Element.new('0002,0010', '1.234.88', :parent => @dcm1)
         static_uids = Array.new
         static_uids << Element.new('0008,010C', '1.234.77', :parent => @dcm1)
         static_uids << Element.new('0008,010D', '1.234.66', :parent => @dcm1)
@@ -384,6 +382,27 @@ module DICOM
         static_uids.each do |blacklisted_uid|
           res[0].value(blacklisted_uid.tag).should eql blacklisted_uid.value
         end
+      end
+
+      it "should preserve inter-file relationships of equally tagged UIDs (keeping references valid in series & studies), when the :uid, :audit_trail (& :recursive) options are set" do
+        file_name = File.join(TMPDIR, "anonymization/uid_relations_equal_tags.json")
+        original_study = @dcm1.value('0020,000D')
+        a = Anonymizer.new(:audit_trail => file_name, :recursive => true, :uid => true)
+        res = a.anonymize([@dcm1, @dcm2])
+        res[1].value('0020,000D').should_not eql original_study
+        res[1].value('0020,000D').should eql res[0].value('0020,000D')
+        res[1]['3006,0010'][0].value('0020,0052').should eql res[0].value('0020,0052')
+        res[1]['3006,0010'][0]['3006,0012'][0]['3006,0014'][0].value('0020,000E').should eql res[0].value('0020,000E')
+      end
+
+      it "should preserve inter-file relationships of differently tagged UIDs (keeping references valid in series & studies), when the :uid, :audit_trail (& :recursive) options are set" do
+        file_name = File.join(TMPDIR, "anonymization/uid_relations_different_tags.json")
+        original_study = @dcm1.value('0020,000D')
+        a = Anonymizer.new(:audit_trail => file_name, :recursive => true, :uid => true)
+        res = a.anonymize([@dcm1, @dcm2])
+        res[1].value('0020,000D').should_not eql original_study
+        res[1]['3006,0010'][0]['3006,0012'][0].value('0008,1155').should eql res[0].value('0020,000D')
+        res[1]['3006,0010'][0]['3006,0012'][0]['3006,0014'][0]['3006,0016'][0].value('0008,1155').should eql res[0].value('0008,0018')
       end
 
       it "should write an audit trail file when the :audit_trail (and :enumeration) option is set" do
