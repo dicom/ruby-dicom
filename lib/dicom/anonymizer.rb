@@ -545,12 +545,12 @@ module DICOM
               # We have a UID value, go ahead and replace it:
               if @audit_trail
                 # Check if the UID has been encountered already:
-                replacement = @audit_trail.replacement(element.tag, original)
+                replacement = @audit_trail.replacement('uids', original)
                 unless replacement
                   # The UID has not been stored previously. Generate a new one:
                   replacement = DICOM.generate_uid(@uid_root, prefix(element.tag))
                   # Add this tag record to the audit trail:
-                  @audit_trail.add_record(element.tag, original, replacement)
+                  @audit_trail.add_record('uids', original, replacement)
                 end
                 # Replace the UID in the DICOM object:
                 element.value = replacement
