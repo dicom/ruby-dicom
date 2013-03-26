@@ -217,6 +217,46 @@ module DICOM
     end
 
 
+    describe "#==()" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        a1 = Anonymizer.new
+        a2 = Anonymizer.new
+        (a1 == a2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values (different children)" do
+        a1 = Anonymizer.new
+        a2 = Anonymizer.new(:blank => true)
+        (a1 == a2).should be_false
+      end
+
+      it "should be false when comparing against an instance of incompatible type" do
+        a = Anonymizer.new
+        (a == 42).should be_false
+      end
+
+    end
+
+
+    describe "#eql?" do
+
+      it "should be true when comparing two instances having the same attribute values" do
+        a1 = Anonymizer.new
+        a2 = Anonymizer.new
+        a1.eql?(a2).should be_true
+      end
+
+      it "should be false when comparing two instances having different attribute values" do
+        a1 = Anonymizer.new
+        a2 = Anonymizer.new
+        a2.set_tag('0008,0042', :value => 'Alpha')
+        a1.eql?(a2).should be_false
+      end
+
+    end
+
+
     describe "#anonymize" do
 
       it "should raise an ArgumentError when a non-string/non-dcm is passed as an argument" do
@@ -535,6 +575,24 @@ module DICOM
         a.enum('0010,0010').should be_false
         a.set_tag('0010,0010', :enum => true)
         a.enum('0010,0010').should be_true
+      end
+
+    end
+
+
+    context "#hash" do
+
+      it "should return the same Fixnum for two instances having the same attribute values" do
+        a1 = Anonymizer.new
+        a2 = Anonymizer.new
+        a1.hash.should be_a Fixnum
+        a1.hash.should eql a2.hash
+      end
+
+      it "should return a different Fixnum for two instances having different attribute values" do
+        a1 = Anonymizer.new
+        a2 = Anonymizer.new(:write_path => 'tmp')
+        a1.hash.should_not eql a2.hash
       end
 
     end

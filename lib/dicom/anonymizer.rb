@@ -116,6 +116,22 @@ module DICOM
       set_defaults
     end
 
+    # Checks for equality.
+    #
+    # Other and self are considered equivalent if they are
+    # of compatible types and their attributes are equivalent.
+    #
+    # @param other an object to be compared with self.
+    # @return [Boolean] true if self and other are considered equivalent
+    #
+    def ==(other)
+      if other.respond_to?(:to_anonymizer)
+        other.send(:state) == state
+      end
+    end
+
+    alias_method :eql?, :==
+
     # Anonymizes the given DICOM data with the settings of this Anonymizer instance.
     #
     # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (directories, file paths, binary strings, DICOM objects)
@@ -168,6 +184,16 @@ module DICOM
         logger.warn("The specified tag (#{tag}) was not found in the list of tags to be anonymized.")
         return nil
       end
+    end
+
+    # Computes a hash code for this object.
+    #
+    # @note Two objects with the same attributes will have the same hash code.
+    #
+    # @return [Fixnum] the object's hash code
+    #
+    def hash
+      state.hash
     end
 
     # Prints to screen a list of which tags are currently selected for anonymization along with
@@ -637,6 +663,18 @@ module DICOM
       @enumerations = data[2]
       # Tags to be deleted completely during anonymization:
       @delete = Hash.new
+    end
+
+    # Collects the attributes of this instance.
+    #
+    # @return [Array] an array of attributes
+    #
+    def state
+       [
+        @tags, @values, @enumerations, @delete, @blank,
+        @delete_private, @enumeration, @logger_level,
+        @random_file_name, @recursive, @uid, @uid_root, @write_path
+       ]
     end
 
     # Writes a DICOM object to file.
