@@ -168,6 +168,62 @@ module DICOM
       end
     end
 
+    # Prints to screen a list of which tags are currently selected for anonymization along with
+    # the replacement values that will be used and enumeration status.
+    #
+    def print
+      logger.warn("Anonymizer#print is deprecated.")
+      # Extract the string lengths which are needed to make the formatting nice:
+      names = Array.new
+      types = Array.new
+      tag_lengths = Array.new
+      name_lengths = Array.new
+      type_lengths = Array.new
+      value_lengths = Array.new
+      @tags.each_index do |i|
+        name, vr = LIBRARY.name_and_vr(@tags[i])
+        names << name
+        types << vr
+        tag_lengths[i] = @tags[i].length
+        name_lengths[i] = names[i].length
+        type_lengths[i] = types[i].length
+        value_lengths[i] = @values[i].to_s.length unless @blank
+        value_lengths[i] = '' if @blank
+      end
+      # To give the printed output a nice format we need to check the string lengths of some of these arrays:
+      tag_maxL = tag_lengths.max
+      name_maxL = name_lengths.max
+      type_maxL = type_lengths.max
+      value_maxL = value_lengths.max
+      # Format string array for print output:
+      lines = Array.new
+      @tags.each_index do |i|
+        # Configure empty spaces:
+        s = ' '
+        f1 = ' '*(tag_maxL-@tags[i].length+1)
+        f2 = ' '*(name_maxL-names[i].length+1)
+        f3 = ' '*(type_maxL-types[i].length+1)
+        f4 = ' ' if @blank
+        f4 = ' '*(value_maxL-@values[i].to_s.length+1) unless @blank
+        if @enumeration
+          enum = @enumerations[i]
+        else
+          enum = ''
+        end
+        if @blank
+          value = ''
+        else
+          value = @values[i]
+        end
+        tag = @tags[i]
+        lines << tag + f1 + names[i] + f2 + types[i] + f3 + value.to_s + f4 + enum.to_s
+      end
+      # Print to screen:
+      lines.each do |line|
+        puts line
+      end
+    end
+
 
     private
 
