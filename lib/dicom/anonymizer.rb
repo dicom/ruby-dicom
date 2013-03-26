@@ -56,9 +56,9 @@ module DICOM
     # @option options [Boolean] :uid toggles whether UIDs will be replaced with custom generated UIDs (beware that to preserve UID relations in studies/series, the audit_trail feature must be used)
     # @option options [String] :uid_root an organization (or custom) UID root to use when replacing UIDs
     # @option options [String] :write_path a directory where the anonymized files are re-written (if not specified, files are overwritten)
-    # @example Create an Anonymizer instance and restrict the log output
+    # @example Create an Anonymizer instance and increase the log output
     #   a = Anonymizer.new
-    #   a.logger.level = Logger::ERROR
+    #   a.logger.level = Logger::INFO
     # @example Perform anonymization using the audit trail feature
     #   a = Anonymizer.new(:audit_trail => 'trail.json')
     #   a.enumeration = true
@@ -136,6 +136,7 @@ module DICOM
       logger.level = @original_level
       # Save the audit trail (if used):
       @audit_trail.write(@audit_trail_file) if @audit_trail
+      logger.info("Anonymization complete.")
       dicom
     end
 
@@ -518,13 +519,16 @@ module DICOM
     # @return [Array] the original data (wrapped in an array) as well as an array of loaded DObject instances
     #
     def prepare(data)
-      dicom = DICOM.load(data)
-      logger.info("#{dicom.length} DICOM objects have been prepared for anonymization.")
-      # Set up enumeration if requested:
-      create_enum_hash if @enumeration
+      logger.info("Loading DICOM data.")
       # Temporarily adjust the ruby-dicom log threshold (usually to suppress messages from the DObject class):
       @original_level = logger.level
       logger.level = @logger_level
+      dicom = DICOM.load(data)
+      logger.level = @original_level
+      logger.info("#{dicom.length} DICOM objects have been prepared for anonymization.")
+      logger.level = @logger_level
+      # Set up enumeration if requested:
+      create_enum_hash if @enumeration
       require 'securerandom' if @random_file_name
       dicom
     end
