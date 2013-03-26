@@ -1,9 +1,45 @@
-= [In development]
+= 0.9.5
 
-=== (Unreleased)
+=== 26th March, 2013
 
-* Defaults to ignoring duplicate data elements and sequences instead of replacing the original element.
-* Added the :overwrite option to DObject#read and #parse which makes ruby-dicom overwrite elements when duplicates are encountered.
+* DICOM module:
+  * Use hyphen instead of underscore in ruby-dicom application title.
+  * Added the DICOM load module method, a flexible method for loading DICOM data:
+    * Accepts one or more directories (in which all files are scanned).
+    * Accepts one or more file paths (which are loaded as DICOM objects).
+    * Accepts one or more DICOM objects, which are called with #to_dcm and returned.
+* Network:
+  * Bind the DServer to '0.0.0.0' by default to avoid Econnrefused issues.
+  * Significantly improved network receive performance.
+  * Enable adding private UIDs to ruby-dicom's DICOM library.
+  * Read element and UID dictionaries with UTF-8 encoding.
+* DObject (/Item):
+  * Added DObject#anonymize for easy anonymization of a single DICOM object.
+  * Added add_element and add_sequence methods for conveniently creating new elements/sequences belonging to a specific DObject or Item.
+  * Fixed an issue where the NArray library where needed when trying to pass an array to the pixels= method.
+  * Fixed an issue where both Magick libraries where needed when trying to pass an image object to the image= method.
+  * Added DObject#was_dcm_on_input attribute to separate between file and DObject elements given to DICOM::load.
+  * Added option :include_empty_parents to DObject#write.
+  * Removed the deprecated DObjet#write :add_meta option.
+  * Added DObject#source attribute for keeping track of a DICOM object's origin.
+  * Defaults to ignoring duplicate data elements and sequences instead of replacing the original element.
+  * Added the :overwrite option to DObject#read and #parse which makes ruby-dicom overwrite elements when duplicates are encountered.
+* Anonymizer:
+  * Added Anonymizer#to_anonymizer, as well as equality and state methods.
+  * Use 'O' instead of 'N' as the default replacement value for Patient's Sex.
+  * Added :random_file_name option for increased security in the case of sensitive file name information.
+  * Make all Anonymizer attributes accessible through options with Anonymizer#new.
+  * Removed the deprecated identity_file feature.
+  * Deprecated Anonymizer#execute, along with its accompanying methods.
+  * Added the Anonymizer#anonymize method, which is intended to replace the execute method.
+  * Improved the Anonymizer's conformance with the guidelines in the DICOM standard:
+    * Delete the File Meta Information group (0002) on anonymization.
+    * Add the Patient Identity Removed element with value 'YES'.
+    * Add de-identification method code sequence.
+    * Added 7 new elements to the default anonymization list.
+  * Enabled complete remapping of UIDs in the Anonymizer (keeping all references between files/series/studies valid).
+  * Added Anonymizer :recursive option, for anonymizing entire element trees (not just the top level).
+  * Added Anonymizer :encryption option, which allows the simulatenous preservation of privacy and key/value relations in the audit file.
 
 
 = 0.9.4
