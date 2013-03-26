@@ -61,7 +61,7 @@ module DICOM
     context "::parse" do
 
       it "should successfully parse the encoded DICOM string" do
-        str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, 'rb') { |f| f.read }
+        str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, "rb") { |f| f.read }
         dcm = DObject.parse(str)
         dcm.read?.should be_true
         dcm.children.length.should eql 85 # (This file is known to have 85 top level data elements)
@@ -70,29 +70,29 @@ module DICOM
       it "should apply the specified transfer syntax to the DICOM object, when parsing a header-less DICOM binary string" do
         dcm = DObject.read(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
         syntax = dcm.transfer_syntax
-        dcm.delete_group('0002')
+        dcm.delete_group("0002")
         parts = dcm.encode_segments(16384)
         dcm_from_bin = DObject.parse(parts.join, :bin => true, :no_meta => true, :syntax => syntax)
         dcm_from_bin.transfer_syntax.should eql syntax
       end
 
       it "should fail to read this DICOM file when an incorrect transfer syntax option is supplied" do
-        str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
+        str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, "rb") { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
         dcm.read?.should be_false
       end
 
       it "should register one or more errors/warnings/debugs in the log when failing to successfully parse a DICOM string" do
-        DICOM.logger = mock('Logger')
+        DICOM.logger = mock("Logger")
         DICOM.logger.expects(:warn).at_least_once
         DICOM.logger.expects(:debug).at_least_once
         DICOM.logger.expects(:error).at_least_once
-        str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
+        str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, "rb") { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
       end
 
       it "should return the data elements that were successfully read before a failure occured (the file meta header elements in this case)" do
-        str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
+        str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, "rb") { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
         dcm.read?.should be_false
         dcm.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
@@ -117,18 +117,18 @@ module DICOM
 
       it "should register an error when an invalid file is supplied" do
         DICOM.logger.expects(:error).at_least_once
-        dcm = DObject.read('foo')
+        dcm = DObject.read("foo")
       end
 
       it "should fail gracefully when a small, non-dicom file is passed as an argument" do
-        File.open(TMPDIR + 'small_invalid.dcm', 'wb') {|f| f.write('fail'*20) }
-        dcm = DObject.read(TMPDIR + 'small_invalid.dcm')
+        File.open(TMPDIR + "small_invalid.dcm", 'wb') {|f| f.write("fail"*20) }
+        dcm = DObject.read(TMPDIR + "small_invalid.dcm")
         dcm.read?.should be_false
       end
 
       it "should fail gracefully when a tiny, non-dicom file is passed as an argument" do
-        File.open(TMPDIR + 'tiny_invalid.dcm', 'wb') {|f| f.write('fail') }
-        dcm = DObject.read(TMPDIR + 'tiny_invalid.dcm')
+        File.open(TMPDIR + "tiny_invalid.dcm", 'wb') {|f| f.write("fail") }
+        dcm = DObject.read(TMPDIR + "tiny_invalid.dcm")
         dcm.read?.should be_false
       end
 
@@ -156,7 +156,7 @@ module DICOM
       it "should be false when comparing two instances having different attribute values (different children)" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        dcm2.add(Sequence.new('0008,0006'))
+        dcm2.add(Sequence.new("0008,0006"))
         (dcm1 == dcm2).should be_false
       end
 
@@ -179,53 +179,8 @@ module DICOM
       it "should be false when comparing two instances having different attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        dcm2.add(Sequence.new('0008,0006'))
+        dcm2.add(Sequence.new("0008,0006"))
         dcm1.eql?(dcm2).should be_false
-      end
-
-    end
-
-
-    describe "#anonymize" do
-
-      it "should raise an error if given a non-Anonymizer as argument" do
-        dcm = DObject.new
-        expect {dcm.anonymize(42)}.to raise_error
-      end
-
-      it "should create a default Anonymizer instance to use for anonymization when called without argument" do
-        a= Anonymizer.new
-        dcm = DObject.new
-        Anonymizer.expects(:new).with(nil).returns(a)
-        a.expects(:anonymize).with(dcm)
-        dcm.anonymize
-      end
-
-      it "should use the anonymizer instance passed as argument for the anonymization" do
-        a = Anonymizer.new
-        dcm = DObject.new
-        a.expects(:anonymize).with(dcm)
-        dcm.anonymize(a)
-      end
-
-      it "should replace values to be anonymized and leave untouched values not to be anonymized" do
-        dcm = DObject.new
-        encoding = 'ISO_IR 100'
-        date = '20113007'
-        time = '123300'
-        name = 'John Doe'
-        slice_thickness = '3'
-        dcm.add(Element.new('0008,0005', encoding))
-        dcm.add(Element.new('0008,0012', date))
-        dcm.add(Element.new('0008,0013', time))
-        dcm.add(Element.new('0010,0010', name))
-        dcm.add(Element.new('0018,0050', slice_thickness))
-        dcm.anonymize
-        dcm.value('0008,0005').should eql encoding
-        dcm.value('0008,0012').should_not eql date
-        dcm.value('0008,0013').should_not eql time
-        dcm.value('0010,0010').should_not eql name
-        dcm.value('0018,0050').should eql slice_thickness
       end
 
     end
@@ -282,7 +237,7 @@ module DICOM
       it "should return a different Fixnum for two instances having different attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        dcm2.add(Sequence.new('0008,0006'))
+        dcm2.add(Sequence.new("0008,0006"))
         dcm1.hash.should_not eql dcm2.hash
       end
 
@@ -371,24 +326,24 @@ module DICOM
 
       it "should change the encoding of the data element's binary when switching endianness" do
         dcm = DObject.new
-        dcm.add(Element.new('0018,1310', 500)) # This should give the binary string "\364\001"
+        dcm.add(Element.new("0018,1310", 500)) # This should give the binary string "\364\001"
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm['0018,1310'].bin.should eql "\001\364"
+        dcm["0018,1310"].bin.should eql "\001\364"
       end
 
       it "should not change the encoding of any meta group data element's binaries when switching endianness" do
         dcm = DObject.new
-        dcm.add(Element.new('0002,9999', 500, :vr => 'US')) # This should give the binary string "\364\001"
-        dcm.add(Element.new('0018,1310', 500))
+        dcm.add(Element.new("0002,9999", 500, :vr => "US")) # This should give the binary string "\364\001"
+        dcm.add(Element.new("0018,1310", 500))
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm['0002,9999'].bin.should eql "\364\001"
+        dcm["0002,9999"].bin.should eql "\364\001"
       end
 
       it "should change the encoding of pixel data binary when switching endianness" do
         dcm = DObject.new
-        dcm.add(Element.new('0018,1310', 500)) # This should give the binary string "\364\001"
+        dcm.add(Element.new("0018,1310", 500)) # This should give the binary string "\364\001"
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm['0018,1310'].bin.should eql "\001\364"
+        dcm["0018,1310"].bin.should eql "\001\364"
       end
 
     end
@@ -418,7 +373,7 @@ module DICOM
       end
 
       it "should create non-existing directories that are part of the file path, and write the file successfully" do
-        path = File.join(TMPDIR, 'create/these/directories', 'test-directory-create.dcm')
+        path = TMPDIR + "create/these/directories/" + "test-directory-create.dcm"
         @dcm.write(path)
         @dcm.written?.should be_true
         File.exists?(path).should be_true
