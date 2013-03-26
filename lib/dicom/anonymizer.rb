@@ -268,6 +268,14 @@ module DICOM
       end
     end
 
+    # Returns self.
+    #
+    # @return [Anonymizer] self
+    #
+    def to_anonymizer
+      self
+    end
+
     # Gives the value which will be used when anonymizing this tag.
     #
     # @note If enumeration is selected for a string type tag, a number will be
