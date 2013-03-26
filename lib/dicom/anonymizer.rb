@@ -603,13 +603,16 @@ module DICOM
         ['0008,0012', '20000101', false], # Instance Creation Date
         ['0008,0013', '000000.00', false], # Instance Creation Time
         ['0008,0020', '20000101', false], # Study Date
+        ['0008,0021', '20000101', false], # Series Date
         ['0008,0023', '20000101', false], # Image Date
         ['0008,0030', '000000.00', false], # Study Time
+        ['0008,0031', '000000.00', false], # Series Time
         ['0008,0033', '000000.00', false], # Image Time
         ['0008,0050', '', true], # Accession Number
         ['0008,0080', 'Institution', true], # Institution name
         ['0008,0090', 'Physician', true], # Referring Physician's name
         ['0008,1010', 'Station', true], # Station name
+        ['0008,1040', 'Department', true], # Institutional Department name
         ['0008,1070', 'Operator', true], # Operator's Name
         ['0010,0010', 'Patient', true], # Patient's name
         ['0010,0020', 'ID', true], # Patient's ID

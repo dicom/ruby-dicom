@@ -209,6 +209,14 @@ module DICOM
 
     alias_method :eql?, :==
 
+    # Performs de-identification (anonymization) on the DICOM object.
+    #
+    # @param [Anonymizer] a an Anonymizer instance to use for the anonymization
+    #
+    def anonymize(a=Anonymizer.new)
+      a.to_anonymizer.anonymize(self)
+    end
+
     # Encodes the DICOM object into a series of binary string segments with a specified maximum length.
     #
     # Returns the encoded binary strings in an array.
