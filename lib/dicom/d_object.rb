@@ -49,7 +49,7 @@ module DICOM
     # @note Designed for the HTTP protocol only.
     # @note Whether this method should be included or removed from ruby-dicom is up for debate.
     #
-    # @param [String] link a hyperlink string which specifies remote location of the DICOM file to be loaded.
+    # @param [String] link a hyperlink string which specifies remote location of the DICOM file to be loaded
     # @return [DObject] the created DObject instance
     #
     def self.get(link)
