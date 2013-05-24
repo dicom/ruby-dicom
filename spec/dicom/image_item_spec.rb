@@ -606,6 +606,46 @@ module DICOM
 
     end
 
+
+    # Note: Private method.
+    context "#window_level_values" do
+
+      it "should return the expected window level related values" do
+        center = 300
+        width = 600
+        intercept = -1024
+        slope = 1
+        dcm = DObject.new
+        dcm.add_element('0028,1050', center.to_s)
+        dcm.add_element('0028,1051', width.to_s)
+        dcm.add_element('0028,1052', intercept.to_s)
+        dcm.add_element('0028,1053', slope.to_s)
+        c, w, i, s = dcm.send(:window_level_values)
+        c.should eql center
+        w.should eql width
+        i.should eql intercept
+        s.should eql slope
+      end
+
+      it "should return the expected window level related values for this case of multiple center/width values" do
+        center = 30
+        width = 200
+        intercept = -1000
+        slope = 2
+        dcm = DObject.new
+        dcm.add_element('0028,1050', "#{center}\\500")
+        dcm.add_element('0028,1051', "#{width}\\2000")
+        dcm.add_element('0028,1052', intercept.to_s)
+        dcm.add_element('0028,1053', slope.to_s)
+        c, w, i, s = dcm.send(:window_level_values)
+        c.should eql center
+        w.should eql width
+        i.should eql intercept
+        s.should eql slope
+      end
+
+    end
+
   end
 
 end
