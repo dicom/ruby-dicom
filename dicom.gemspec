@@ -17,11 +17,11 @@ Gem::Specification.new do |s|
   s.files = Dir["{lib}/**/*", "[A-Z]*"]
   s.rubyforge_project = 'dicom'
 
-  s.required_ruby_version = '>= 1.9.2'
+  s.required_ruby_version = '>= 1.9.3'
 
   s.add_development_dependency('bundler', '~> 1.3')
-  s.add_development_dependency('mocha', '~> 0.13')
   s.add_development_dependency('mini_magick', '~> 3.5')
+  s.add_development_dependency('mocha', '~> 0.13')
   s.add_development_dependency('narray', '~> 0.6.0.8')
   s.add_development_dependency('rake', '~> 0.9.6')
   s.add_development_dependency('rmagick', '~> 2.13.2')
