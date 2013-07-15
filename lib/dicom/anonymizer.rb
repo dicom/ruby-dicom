@@ -369,8 +369,13 @@ module DICOM
     # @return [String] the destination directory path
     #
     def destination(dcm)
-      # Split the source path into dir and file:
-      source_dir = File.dirname(dcm.source)
+      # Separate the path from the source file string:
+      file_start = dcm.source.rindex(File.basename(dcm.source))
+      if file_start == 0
+        source_dir = "."
+      else
+        source_dir = dcm.source[0..(file_start-1)]
+      end
       source_folders = source_dir.split(File::SEPARATOR)
       target_folders = @write_path.split(File::SEPARATOR)
       # If the first element is the current dir symbol, get rid of it:
