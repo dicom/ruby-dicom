@@ -24,9 +24,9 @@ module DICOM
       @methods_from_names = Hash.new
       @names_from_methods = Hash.new
       # Load the elements dictionary:
-      add_element_dictionary("#{ROOT_DIR}/dictionary/elements.txt")
+      add_element_dictionary("#{ROOT_DIR}/dictionary/elements.tsv")
       # Load the unique identifiers dictionary:
-      add_uid_dictionary("#{ROOT_DIR}/dictionary/uids.txt")
+      add_uid_dictionary("#{ROOT_DIR}/dictionary/uids.tsv")
     end
 
     # Adds a custom DictionaryElement to the ruby-dicom element dictionary.
