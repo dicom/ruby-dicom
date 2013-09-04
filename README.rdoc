@@ -15,7 +15,7 @@ communication modalities like querying, moving, sending and receiving files.
 
 == REQUIREMENTS
 
-* Ruby 1.9.2 (if you are still on Ruby 1.8, gems up to version 0.9.1 can be used)
+* Ruby 1.9.3 (if you are still on Ruby 1.8, gems up to version 0.9.1 can be used)
 
 
 == BASIC USAGE
