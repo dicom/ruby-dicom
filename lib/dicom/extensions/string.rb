@@ -6,10 +6,6 @@
 #
 class String
 
-  # Renames the original unpack method.
-  #
-  alias __original_unpack__ unpack
-
   # Checks if a string value LOOKS like a DICOM name - it may still not be valid one.
   #
   # @return [Boolean] true if a string looks like a DICOM name, and false if not
@@ -125,31 +121,6 @@ class String
   #
   def to_element_method
     self.gsub(/^3/,'three_').gsub(/[#*?!]/,' ').gsub(', ',' ').gsub('&','and').gsub(' - ','_').gsub(' / ','_').gsub(/[\s\-\.\,\/\\]/,'_').gsub(/[\(\)\']/,'').gsub(/\_+/, '_').downcase.to_sym
-  end
-
-  # Redefines the core library unpack method, adding
-  # the ability to decode signed integers in big endian.
-  #
-  # @param [String] format a format string which decides the decoding scheme to use
-  # @return [Array<String, Integer, Float>] the decoded values
-  #
-  def unpack(format)
-    # Check for some custom unpack strings that we've invented:
-    case format
-      when "k*" # SS
-        # Unpack BE US, repack LE US, then finally unpack LE SS:
-        wrongly_unpacked = self.__original_unpack__('n*')
-        repacked = wrongly_unpacked.__original_pack__('S*')
-        correct = repacked.__original_unpack__('s*')
-      when 'r*' # SL
-        # Unpack BE UL, repack LE UL, then finally unpack LE SL:
-        wrongly_unpacked = self.__original_unpack__('N*')
-        repacked = wrongly_unpacked.__original_pack__('I*')
-        correct = repacked.__original_unpack__('l*')
-      else
-        # Call the original method for all other (normal) cases:
-        self.__original_unpack__(format)
-    end
   end
 
 end

@@ -447,34 +447,27 @@ module DICOM
     # Some of these depends on the endianness of the system and the encoded string.
     #
     def set_string_formats
-      # FIXME:
-      # Surprisingly the Ruby pack/unpack methods lack a format for signed short
-      # and signed long in the network byte order. A hack has been implemented to to ensure
-      # correct behaviour in this case, but it is slower (~4 times slower than a normal pack/unpack).
-      # Update: This seems to have been fixed in Ruby 1.9.3, so when we are able to bump the Ruby
-      # dependency eventually, this situation can finally be cleaned up.
-      #
       if @equal_endian
-        # Native byte order:
-        @us = "S*" # Unsigned short (2 bytes)
-        @ss = "s*" # Signed short (2 bytes)
-        @ul = "I*" # Unsigned long (4 bytes)
-        @sl = "l*" # Signed long (4 bytes)
-        @fs = "e*" # Floating point single (4 bytes)
-        @fd = "E*" # Floating point double ( 8 bytes)
+        # Little endian byte order:
+        @us = 'S<*' # Unsigned short (2 bytes)
+        @ss = 's<*' # Signed short (2 bytes)
+        @ul = 'L<*' # Unsigned long (4 bytes)
+        @sl = 'l<*' # Signed long (4 bytes)
+        @fs = 'e*' # Floating point single (4 bytes)
+        @fd = 'E*' # Floating point double ( 8 bytes)
       else
-        # Network byte order:
-        @us = "n*"
-        @ss = CUSTOM_SS # Custom string for our redefined pack/unpack.
-        @ul = "N*"
-        @sl = CUSTOM_SL # Custom string for our redefined pack/unpack.
-        @fs = "g*"
-        @fd = "G*"
+        # Network (big endian) byte order:
+        @us = 'S>*'
+        @ss = 's>*'
+        @ul = 'L>*'
+        @sl = 'l>'
+        @fs = 'g*'
+        @fd = 'G*'
       end
       # Format strings that are not dependent on endianness:
-      @by = "C*" # Unsigned char (1 byte)
-      @str = "a*"
-      @hex = "H*" # (this may be dependent on endianness(?))
+      @by = 'C*' # Unsigned char (1 byte)
+      @str = 'a*'
+      @hex = 'H*' # (this may be dependent on endianness(?))
     end
 
   end
