@@ -28,9 +28,13 @@ module DICOM
               # The remaining part of the string is bigger than the max limit, fill up more segments:
               # How many full segments will this string fill?
               number = (segment.length/@max_size.to_f).floor
-              number.times {@segments << segment.slice!(0, @max_size)}
+              start_index = 0
+              number.times {
+                @segments << segment.slice(start_index, @max_size)
+                start_index += @max_size
+              }
               # The remaining part is added to the stream:
-              @stream.add_last(segment)
+              @stream.add_last(segment.slice(start_index, segment.length - start_index))
             else
               # The rest of the string is small enough that it can be added to the stream:
               @stream.add_last(segment)
