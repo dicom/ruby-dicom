@@ -1,6 +1,16 @@
-= 0.9.5
+# 0.9.6
 
-=== 26th March, 2013
+## (Unreleased)
+
+* Performance improvement when writing DICOM string segments.
+* Changed element and uid dictionaries from .txt to .tsv.
+* Bumped required Ruby version to 1.9.3.
+* Replaced the custom encoding/decoding of big endian numbers with the Ruby standard library
+
+
+# 0.9.5
+
+## 26th March, 2013
 
 * DICOM module:
   * Use hyphen instead of underscore in ruby-dicom application title.
@@ -42,9 +52,9 @@
   * Added Anonymizer :encryption option, which allows the simulatenous preservation of privacy and key/value relations in the audit file.
 
 
-= 0.9.4
+# 0.9.4
 
-=== 10th September, 2012
+## 10th September, 2012
 
 * Converted the documentation format from RDOC to YARD.
 * Removed deprecated remove_* methods (use the delete_* versions instead).
@@ -64,9 +74,9 @@
 * Refactored read and write code to get rid of the 'private' DRead and DWrite classes.
 
 
-= 0.9.3
+# 0.9.3
 
-=== 6th May, 2012
+## 6th May, 2012
 
 * Deprecated all #remove* methods (replaced with #delete*) to increase consistency with Ruby.
 * Changed preferred DObject variable name from obj to dcm for all examples.
@@ -83,9 +93,9 @@
 * Optimizations and code cleanups allowed by the introduced Ruby 1.9 requirement.
 
 
-= 0.9.2
+# 0.9.2
 
-=== 10th Oct, 2011
+## 10th Oct, 2011
 
 * Enabled the use of lower case tag letters in methods which previously required the use of upper case letters.
 * Added new DObject class methods to offload DObject#new:
@@ -99,16 +109,16 @@
   * Supports information levels, logging to file, and more as available in the Ruby Logger.
 
 
-= 0.9.1
+# 0.9.1
 
-=== 27th May, 2011
+## 27th May, 2011
 
 * Fixed a regression in 0.9 where ruby-dicom would cause a Rails application to crash.
 
 
-= 0.9
+# 0.9
 
-=== 17th May, 2011
+## 17th May, 2011
 
 * Fixed an issue where data elements added to a DObject didn't get their endianness updated.
 * Added the ability to encode/decode 32 bit pixel data.
@@ -164,9 +174,9 @@
 * Various bug fixes.
 
 
-= 0.8
+# 0.8
 
-=== 1st August, 2010
+## 1st August, 2010
 
 * Overall changes:
   * A complete rewrite of data element handling has resulted in a substantially different syntax and significantly cleaner and simpler code.
@@ -219,9 +229,9 @@
   * Properly receives and responds to a C-ECHO-RQ.
 
 
-= 0.7
+# 0.7
 
-=== 28th February, 2010
+## 28th February, 2010
 
 * Added set_image() and set_image_narray() methods to write pixel data to the DICOM object, complementing set_image_magick().
 * Added method get_image() which retrieves pixel data to a standard Ruby Array.
@@ -251,9 +261,9 @@
 * Various "under the hood" improvements and code cleanups.
 
 
-= 0.6.1
+# 0.6.1
 
-=== 23rd August, 2009
+## 23rd August, 2009
 
 * Fixed a bug (introduced in version 0.6) where the creation of new data elements caused an error.
 * Fixed a bug (introduced in version 0.6) where compressed pixel data were no longer detected correctly.
@@ -262,9 +272,9 @@
 * Fixed a bug where retrieving a RMagick image from DICOM files containing two sets of image data failed.
 
 
-= 0.6
+# 0.6
 
-=== 13th August, 2009
+## 13th August, 2009
 
 * Complete rewrite of encoding/decoding to reduce code duplication and simplify the code.
 * General optimizations to improve speed and reduce code complexity.
@@ -275,9 +285,9 @@
 * The new DServer class presents the ability to set up a simple storage server (Service Class Provider).
 
 
-= 0.5
+# 0.5
 
-=== 4th May, 2009
+## 4th May, 2009
 
 * Several small changes have been made to achieve compatibility with both Ruby versions 1.8 and 1.9.
 * Implemented a change in syntax for several methods with a goal of simplification.
@@ -295,9 +305,9 @@
 * Fixed a bug where exception folders where ignored in the Anonymizer class.
 
 
-= 0.4
+# 0.4
 
-=== 3rd February, 2009
+## 3rd February, 2009
 
 * Change of syntax: Options are now supplied as hash.
 * Method below() renamed to children().
@@ -320,9 +330,9 @@
   to offer a fairly powerful and customizable tool for anonymizing your DICOM files.
 
 
-= 0.3
+# 0.3
 
-=== 12th October, 2008
+## 12th October, 2008
 
 * The DRead class is now able to keep track of the position of the tags inside the hierarchy of sequences and items.
 * DObject class has seen a number of improvements to allow taking advantage of this hierarchy awareness:
@@ -335,9 +345,9 @@
 * Method print_properties() have been updated to display more information about the DICOM object.
 
 
-= 0.2
+# 0.2
 
-=== 10th August, 2008
+## 10th August, 2008
 
 * Data dictionary has been upgraded and is now compliant to the official standard.
 * New DLibrary class which handles all interaction with the dictionary.
@@ -347,9 +357,9 @@
 * Added option to load DICOM object in verbose or silent mode.
 
 
-= 0.1
+# 0.1
 
-=== 20th July, 2008
+## 20th July, 2008
 
 First public release.
 The library does have several known issues and lacks some features I would like it to have, but it does
