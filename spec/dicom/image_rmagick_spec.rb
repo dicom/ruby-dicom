@@ -18,7 +18,7 @@ module DICOM
 
       it "should return nil if no pixel data is present" do
         dcm = DObject.new
-        dcm.image.should be_nil
+        expect(dcm.image).to be_nil
       end
 
       it "should log a warning when it fails to decompress compressed pixel data" do
@@ -29,7 +29,7 @@ module DICOM
 
       it "should return false when it fails to decompress compressed pixel data" do
         dcm = DObject.read(DCM_INVALID_COMPRESSION)
-        dcm.image.should be_false
+        expect(dcm.image).to be_false
       end
 
       it "should raise an ArgumentError when an unsupported bit depth is used" do
@@ -47,37 +47,37 @@ module DICOM
       it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return an image object" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
         image = dcm.image
-        image.should be_a(Magick::Image)
+        expect(image).to be_a(Magick::Image)
       end
 
       it "should decompress the RLE encoded pixel data of this DICOM file and return an image object" do
         dcm = DObject.read(DCM_EXPLICIT_MR_RLE_MONO2)
         image = dcm.image
-        image.should be_a(Magick::Image)
+        expect(image).to be_a(Magick::Image)
       end
 
       it "should return false when not suceeding in decompressing the pixel data of this DICOM file" do
         dcm = DObject.read(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
         image = dcm.image
-        image.should eql false
+        expect(image).to eql false
       end
 
       it "should read the pixel data of this DICOM file and return an image object" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
         image = dcm.image
-        image.should be_a(Magick::Image)
+        expect(image).to be_a(Magick::Image)
       end
 
       it "should process the pixel data according to the :level parameter and return an image object" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
         image = dcm.image(:level => true)
-        image.should be_a(Magick::Image)
+        expect(image).to be_a(Magick::Image)
       end
 
       it "should read the RGP colored pixel data of this DICOM file and return an image object" do
         dcm = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
         image = dcm.image
-        image.should be_a(Magick::Image)
+        expect(image).to be_a(Magick::Image)
         # Visual test:
         image.normalize.write(TMPDIR + "visual_test_rgb_color.png")
       end
@@ -85,7 +85,7 @@ module DICOM
       it "should read the palette colored pixel data of this DICOM file and return an image object" do
         dcm = DObject.read(DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL)
         image = dcm.image
-        image.should be_a(Magick::Image)
+        expect(image).to be_a(Magick::Image)
         # Visual test:
         image.normalize.write(TMPDIR + "visual_test_palette_color.png")
       end
@@ -102,8 +102,8 @@ module DICOM
       it "should return an emtpy array if no pixel data is present" do
         dcm = DObject.new
         images = dcm.images
-        images.should be_an(Array)
-        images.length.should eql 0
+        expect(images).to be_an(Array)
+        expect(images.length).to eql 0
       end
 
       it "should return an empty array if it is not able to decompress compressed pixel data" do
@@ -112,48 +112,48 @@ module DICOM
         dcm.stubs(:compression?).returns(true)
         dcm.stubs(:decompress).returns(false)
         images = dcm.images
-        images.should be_an(Array)
-        images.length.should eql 0
+        expect(images).to be_an(Array)
+        expect(images.length).to eql 0
       end
 
       it "should return an empty array when not suceeding in decompressing the pixel data of this DICOM file" do
         dcm = DObject.read(DCM_EXPLICIT_CT_JPEG_LOSSLESS_NH_MONO2)
         images = dcm.images
-        images.should be_an(Array)
-        images.length.should eql 0
+        expect(images).to be_an(Array)
+        expect(images.length).to eql 0
       end
 
       it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return the image object in an array" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
         images = dcm.images
-        images.should be_a(Array)
-        images.length.should eql 1
-        images.first.should be_a(Magick::Image)
+        expect(images).to be_a(Array)
+        expect(images.length).to eql 1
+        expect(images.first).to be_a(Magick::Image)
       end
 
       it "should decompress the RLE encoded pixel data of this DICOM file and return the image object in an array" do
         dcm = DObject.read(DCM_EXPLICIT_MR_RLE_MONO2)
         images = dcm.images
-        images.should be_a(Array)
-        images.length.should eql 1
-        images.first.should be_a(Magick::Image)
+        expect(images).to be_a(Array)
+        expect(images.length).to eql 1
+        expect(images.first).to be_a(Magick::Image)
       end
 
       it "should decompress the JPEG2K encoded multiframe pixel data of this DICOM file and return the image objects in an array" do
         dcm = DObject.read(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME)
         images = dcm.images
-        images.should be_a(Array)
-        images.length.should eql 8
-        images.first.should be_a(Magick::Image)
-        images.last.should be_a(Magick::Image)
+        expect(images).to be_a(Array)
+        expect(images.length).to eql 8
+        expect(images.first).to be_a(Magick::Image)
+        expect(images.last).to be_a(Magick::Image)
       end
 
       it "should read the pixel data of this DICOM file and return the image object in an array" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
         images = dcm.images
-        images.should be_a(Array)
-        images.length.should eql 1
-        images.first.should be_a(Magick::Image)
+        expect(images).to be_a(Array)
+        expect(images.length).to eql 1
+        expect(images.first).to be_a(Magick::Image)
       end
 
     end
@@ -176,7 +176,7 @@ module DICOM
         dcm2.add(Element.new("0028,0100", 16)) # Bit depth
         dcm2.add(Element.new("0028,0103", 1)) # Pixel Representation
         dcm2.image = image
-        dcm2["7FE0,0010"].bin.length.should eql dcm1["7FE0,0010"].bin.length
+        expect(dcm2["7FE0,0010"].bin.length).to eql dcm1["7FE0,0010"].bin.length
         # Save a set of images to disk for visual comparison:
         image_full = dcm1.image
         image_full.normalize.write(TMPDIR + "visual_test1_" + "full_range.png")

@@ -16,11 +16,11 @@ module DICOM
     context "::new" do
 
       it "should create an AuditTrail instance" do
-        AuditTrail.new.should be_an AuditTrail
+        expect(AuditTrail.new).to be_an AuditTrail
       end
 
       it "should by default set an empty hash for the dictionary attribute" do
-        @a.dictionary.should eql Hash.new
+        expect(@a.dictionary).to eql Hash.new
       end
 
     end
@@ -33,39 +33,39 @@ module DICOM
       end
 
       it "should return an AuditTrail instance" do
-        @ar.should be_an AuditTrail
+        expect(@ar).to be_an AuditTrail
       end
 
       it "should load the dictionary with the tags specified in this json" do
-        @ar.dictionary.length.should eql 5
+        expect(@ar.dictionary.length).to eql 5
         tags = @ar.dictionary.keys
-        tags.include?("0008,0080").should be_true
-        tags.include?("0008,0090").should be_true
-        tags.include?("0008,1010").should be_true
-        tags.include?("0010,0010").should be_true
-        tags.include?("0010,0020").should be_true
+        expect(tags.include?("0008,0080")).to be_true
+        expect(tags.include?("0008,0090")).to be_true
+        expect(tags.include?("0008,1010")).to be_true
+        expect(tags.include?("0010,0010")).to be_true
+        expect(tags.include?("0010,0020")).to be_true
       end
 
       it "should load the tag records specified in this json" do
-        @ar.dictionary["0008,0080"].length.should eql 2
-        @ar.dictionary["0008,0080"]["Salt Lake Clinic"].should eql "Institution1"
-        @ar.dictionary["0008,0080"]["Chicago Hope"].should eql "Institution2"
-        @ar.dictionary["0008,0090"].length.should eql 3
-        @ar.dictionary["0008,0090"]["Dr. Smith"].should eql "Physician1"
-        @ar.dictionary["0008,0090"]["Dr. Feelgood"].should eql "Physician2"
-        @ar.dictionary["0008,0090"]["Dr.Evil"].should eql "Physician3"
-        @ar.dictionary["0008,1010"].length.should eql 1
-        @ar.dictionary["0008,1010"]["E-Scan"].should eql "Station1"
-        @ar.dictionary["0010,0010"].length.should eql 4
-        @ar.dictionary["0010,0010"]["John Doe"].should eql "Patient1"
-        @ar.dictionary["0010,0010"]["Ruby^Rocket"].should eql "Patient2"
-        @ar.dictionary["0010,0010"]["Donny Dicom"].should eql "Patient3"
-        @ar.dictionary["0010,0010"]["Carl Catscan"].should eql "Patient4"
-        @ar.dictionary["0010,0020"].length.should eql 4
-        @ar.dictionary["0010,0020"]["12345"].should eql "ID1"
-        @ar.dictionary["0010,0020"]["67890"].should eql "ID2"
-        @ar.dictionary["0010,0020"]["010101"].should eql "ID3"
-        @ar.dictionary["0010,0020"]["111111"].should eql "ID4"
+        expect(@ar.dictionary["0008,0080"].length).to eql 2
+        expect(@ar.dictionary["0008,0080"]["Salt Lake Clinic"]).to eql "Institution1"
+        expect(@ar.dictionary["0008,0080"]["Chicago Hope"]).to eql "Institution2"
+        expect(@ar.dictionary["0008,0090"].length).to eql 3
+        expect(@ar.dictionary["0008,0090"]["Dr. Smith"]).to eql "Physician1"
+        expect(@ar.dictionary["0008,0090"]["Dr. Feelgood"]).to eql "Physician2"
+        expect(@ar.dictionary["0008,0090"]["Dr.Evil"]).to eql "Physician3"
+        expect(@ar.dictionary["0008,1010"].length).to eql 1
+        expect(@ar.dictionary["0008,1010"]["E-Scan"]).to eql "Station1"
+        expect(@ar.dictionary["0010,0010"].length).to eql 4
+        expect(@ar.dictionary["0010,0010"]["John Doe"]).to eql "Patient1"
+        expect(@ar.dictionary["0010,0010"]["Ruby^Rocket"]).to eql "Patient2"
+        expect(@ar.dictionary["0010,0010"]["Donny Dicom"]).to eql "Patient3"
+        expect(@ar.dictionary["0010,0010"]["Carl Catscan"]).to eql "Patient4"
+        expect(@ar.dictionary["0010,0020"].length).to eql 4
+        expect(@ar.dictionary["0010,0020"]["12345"]).to eql "ID1"
+        expect(@ar.dictionary["0010,0020"]["67890"]).to eql "ID2"
+        expect(@ar.dictionary["0010,0020"]["010101"]).to eql "ID3"
+        expect(@ar.dictionary["0010,0020"]["111111"]).to eql "ID4"
       end
 
     end
@@ -78,9 +78,9 @@ module DICOM
         original = "John"
         replacement = "Patient1"
         @a.add_record(tag, original, replacement)
-        @a.dictionary.length.should eql 1
-        @a.dictionary[tag].length.should eql 1
-        @a.dictionary[tag][original].should eql replacement
+        expect(@a.dictionary.length).to eql 1
+        expect(@a.dictionary[tag].length).to eql 1
+        expect(@a.dictionary[tag][original]).to eql replacement
       end
 
       it "should add the tag record to a dictionary already containing a record with this tag" do
@@ -91,10 +91,10 @@ module DICOM
         replacement2 = "Patient2"
         @a.add_record(tag, original1, replacement1)
         @a.add_record(tag, original2, replacement2)
-        @a.dictionary.length.should eql 1
-        @a.dictionary[tag].length.should eql 2
-        @a.dictionary[tag][original1].should eql replacement1
-        @a.dictionary[tag][original2].should eql replacement2
+        expect(@a.dictionary.length).to eql 1
+        expect(@a.dictionary[tag].length).to eql 2
+        expect(@a.dictionary[tag][original1]).to eql replacement1
+        expect(@a.dictionary[tag][original2]).to eql replacement2
       end
 
       it "should add the tag record to a dictionary already containing a record with another tag" do
@@ -106,11 +106,11 @@ module DICOM
         replacement2 = "ID1"
         @a.add_record(tag1, original1, replacement1)
         @a.add_record(tag2, original2, replacement2)
-        @a.dictionary.length.should eql 2
-        @a.dictionary[tag1].length.should eql 1
-        @a.dictionary[tag2].length.should eql 1
-        @a.dictionary[tag1][original1].should eql replacement1
-        @a.dictionary[tag2][original2].should eql replacement2
+        expect(@a.dictionary.length).to eql 2
+        expect(@a.dictionary[tag1].length).to eql 1
+        expect(@a.dictionary[tag2].length).to eql 1
+        expect(@a.dictionary[tag1][original1]).to eql replacement1
+        expect(@a.dictionary[tag2][original2]).to eql replacement2
       end
 
     end
@@ -124,7 +124,7 @@ module DICOM
 
       it "should load the dictionary with the tags specified in this json" do
         @a.load(JSON_AUDIT_TRAIL)
-        @a.dictionary.length.should eql 5
+        expect(@a.dictionary.length).to eql 5
       end
 
     end
@@ -133,16 +133,16 @@ module DICOM
     context "#original" do
 
       it "should return nil when queried with a non-existing tag" do
-        @ar.original("ffff,aaaa", "Patient3").should be_nil
+        expect(@ar.original("ffff,aaaa", "Patient3")).to be_nil
       end
 
       it "should return nil when queried with a non-existing replacement value" do
-        @ar.original("0010,0010", "Patient99").should be_nil
+        expect(@ar.original("0010,0010", "Patient99")).to be_nil
       end
 
       it "should return the original element value" do
-        @ar.original("0008,0080", "Institution1").should eql "Salt Lake Clinic"
-        @ar.original("0010,0010", "Patient3").should eql "Donny Dicom"
+        expect(@ar.original("0008,0080", "Institution1")).to eql "Salt Lake Clinic"
+        expect(@ar.original("0010,0010", "Patient3")).to eql "Donny Dicom"
       end
 
     end
@@ -151,15 +151,15 @@ module DICOM
     context "#records" do
 
       it "should return an empty hash when called with a non-existing tag" do
-        @ar.records("ffff,aaaa").should eql Hash.new
+        expect(@ar.records("ffff,aaaa")).to eql Hash.new
       end
 
       it "should return the expected records" do
-        @ar.records("0008,0080").should eql @ar.dictionary["0008,0080"]
-        @ar.records("0008,0090").should eql @ar.dictionary["0008,0090"]
-        @ar.records("0008,1010").should eql @ar.dictionary["0008,1010"]
-        @ar.records("0010,0010").should eql @ar.dictionary["0010,0010"]
-        @ar.records("0010,0020").should eql @ar.dictionary["0010,0020"]
+        expect(@ar.records("0008,0080")).to eql @ar.dictionary["0008,0080"]
+        expect(@ar.records("0008,0090")).to eql @ar.dictionary["0008,0090"]
+        expect(@ar.records("0008,1010")).to eql @ar.dictionary["0008,1010"]
+        expect(@ar.records("0010,0010")).to eql @ar.dictionary["0010,0010"]
+        expect(@ar.records("0010,0020")).to eql @ar.dictionary["0010,0020"]
       end
 
     end
@@ -168,16 +168,16 @@ module DICOM
     context "#replacement" do
 
       it "should return nil when queried with a non-existing tag" do
-        @ar.replacement("ffff,aaaa", "Donny Dicom").should be_nil
+        expect(@ar.replacement("ffff,aaaa", "Donny Dicom")).to be_nil
       end
 
       it "should return nil when queried with a non-existing replacement value" do
-        @ar.replacement("0010,0010", "No-name").should be_nil
+        expect(@ar.replacement("0010,0010", "No-name")).to be_nil
       end
 
       it "should return the original element value" do
-        @ar.replacement("0008,0080", "Salt Lake Clinic").should eql "Institution1"
-        @ar.replacement("0010,0010", "Donny Dicom").should eql "Patient3"
+        expect(@ar.replacement("0008,0080", "Salt Lake Clinic")).to eql "Institution1"
+        expect(@ar.replacement("0010,0010", "Donny Dicom")).to eql "Patient3"
       end
 
     end
@@ -190,14 +190,14 @@ module DICOM
         @ar.write(written_file)
         str_original = File.open(JSON_AUDIT_TRAIL, 'r') { |f| f.read }
         str_written = File.open(written_file, 'r') { |f| f.read }
-        str_written.length.should > 2
-        str_written.should eql str_original
+        expect(str_written.length).to be > 2
+        expect(str_written).to eql str_original
       end
 
       it "should be able to write to a path that contains folders that haven't been created yet" do
         written_file = File.join(TMPDIR, "audit_trail/create_this_folder/test.json")
         @ar.write(written_file)
-        File.exists?(written_file).should be_true
+        expect(File.exists?(written_file)).to be_true
       end
 
     end

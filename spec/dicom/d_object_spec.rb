@@ -16,43 +16,43 @@ module DICOM
 
       it "should create an empty DICOM object" do
         dcm = DObject.new
-        dcm.class.should eql DObject
-        dcm.count.should eql 0
+        expect(dcm.class).to eql DObject
+        expect(dcm.count).to eql 0
       end
 
       it "should set the parent attribute as nil, as a DObject intance doesn't have a parent" do
         dcm = DObject.new
-        dcm.parent.should be_nil
+        expect(dcm.parent).to be_nil
       end
 
       it "should set the read success attribute as nil when initializing an empty DICOM object" do
         dcm = DObject.new
-        dcm.read?.should be_nil
+        expect(dcm.read?).to be_nil
       end
 
       it "should set the write success attribute as nil when initializing an empty DICOM object" do
         dcm = DObject.new
-        dcm.written?.should be_nil
+        expect(dcm.written?).to be_nil
       end
 
       it "should set the source attribute as nil when initializing an empty DICOM object" do
         dcm = DObject.new
-        dcm.source.should be_nil
+        expect(dcm.source).to be_nil
       end
 
       it "should set the :was_dcm_on_input attribute as false when initializing an empty DICOM object" do
         dcm = DObject.new
-        dcm.was_dcm_on_input.should be_false
+        expect(dcm.was_dcm_on_input).to be_false
       end
 
       it "should store a Stream instance in the stream attribute" do
         dcm = DObject.new
-        dcm.stream.class.should eql Stream
+        expect(dcm.stream.class).to eql Stream
       end
 
       it "should use little endian as default string endianness for the Stream instance used in an empty DICOM object" do
         dcm = DObject.new
-        dcm.stream.str_endian.should be_false
+        expect(dcm.stream.str_endian).to be_false
       end
 
     end
@@ -63,8 +63,8 @@ module DICOM
       it "should successfully parse the encoded DICOM string" do
         str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, 'rb') { |f| f.read }
         dcm = DObject.parse(str)
-        dcm.read?.should be_true
-        dcm.children.length.should eql 85 # (This file is known to have 85 top level data elements)
+        expect(dcm.read?).to be_true
+        expect(dcm.children.length).to eql 85 # (This file is known to have 85 top level data elements)
       end
 
       it "should apply the specified transfer syntax to the DICOM object, when parsing a header-less DICOM binary string" do
@@ -73,13 +73,13 @@ module DICOM
         dcm.delete_group('0002')
         parts = dcm.encode_segments(16384)
         dcm_from_bin = DObject.parse(parts.join, :bin => true, :no_meta => true, :syntax => syntax)
-        dcm_from_bin.transfer_syntax.should eql syntax
+        expect(dcm_from_bin.transfer_syntax).to eql syntax
       end
 
       it "should fail to read this DICOM file when an incorrect transfer syntax option is supplied" do
         str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
-        dcm.read?.should be_false
+        expect(dcm.read?).to be_false
       end
 
       it "should register one or more errors/warnings/debugs in the log when failing to successfully parse a DICOM string" do
@@ -94,14 +94,14 @@ module DICOM
       it "should return the data elements that were successfully read before a failure occured (the file meta header elements in this case)" do
         str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
-        dcm.read?.should be_false
-        dcm.children.length.should eql 8 # (Only its 8 meta header data elements should be read correctly)
+        expect(dcm.read?).to be_false
+        expect(dcm.children.length).to eql 8 # (Only its 8 meta header data elements should be read correctly)
       end
 
       it "should set :str as the 'source' attribute" do
         str = File.open(DCM_ISO8859_1, 'rb') { |f| f.read }
         dcm = DObject.parse(str, :syntax => EXPLICIT_LITTLE_ENDIAN)
-        dcm.source.should eql :str
+        expect(dcm.source).to eql :str
       end
 
     end
@@ -111,8 +111,8 @@ module DICOM
 
       it "should successfully read this DICOM file" do
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
-        dcm.read?.should be_true
-        dcm.children.length.should eql 85 # (This file is known to have 85 top level data elements)
+        expect(dcm.read?).to be_true
+        expect(dcm.children.length).to eql 85 # (This file is known to have 85 top level data elements)
       end
 
       it "should register an error when an invalid file is supplied" do
@@ -123,23 +123,23 @@ module DICOM
       it "should fail gracefully when a small, non-dicom file is passed as an argument" do
         File.open(TMPDIR + 'small_invalid.dcm', 'wb') {|f| f.write('fail'*20) }
         dcm = DObject.read(TMPDIR + 'small_invalid.dcm')
-        dcm.read?.should be_false
+        expect(dcm.read?).to be_false
       end
 
       it "should fail gracefully when a tiny, non-dicom file is passed as an argument" do
         File.open(TMPDIR + 'tiny_invalid.dcm', 'wb') {|f| f.write('fail') }
         dcm = DObject.read(TMPDIR + 'tiny_invalid.dcm')
-        dcm.read?.should be_false
+        expect(dcm.read?).to be_false
       end
 
       it "should fail gracefully when a directory is passed as an argument" do
         dcm = DObject.read(TMPDIR)
-        dcm.read?.should be_false
+        expect(dcm.read?).to be_false
       end
 
       it "should set the file name string as the 'source' attribute" do
         dcm = DObject.read(DCM_ISO8859_1)
-        dcm.source.should eql DCM_ISO8859_1
+        expect(dcm.source).to eql DCM_ISO8859_1
       end
 
     end
@@ -150,19 +150,19 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        (dcm1 == dcm2).should be_true
+        expect(dcm1 == dcm2).to be_true
       end
 
       it "should be false when comparing two instances having different attribute values (different children)" do
         dcm1 = DObject.new
         dcm2 = DObject.new
         dcm2.add(Sequence.new('0008,0006'))
-        (dcm1 == dcm2).should be_false
+        expect(dcm1 == dcm2).to be_false
       end
 
       it "should be false when comparing against an instance of incompatible type" do
         dcm = DObject.new
-        (dcm == 42).should be_false
+        expect(dcm == 42).to be_false
       end
 
     end
@@ -173,14 +173,14 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        dcm1.eql?(dcm2).should be_true
+        expect(dcm1.eql?(dcm2)).to be_true
       end
 
       it "should be false when comparing two instances having different attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
         dcm2.add(Sequence.new('0008,0006'))
-        dcm1.eql?(dcm2).should be_false
+        expect(dcm1.eql?(dcm2)).to be_false
       end
 
     end
@@ -221,11 +221,11 @@ module DICOM
         dcm.add(Element.new('0010,0010', name))
         dcm.add(Element.new('0018,0050', slice_thickness))
         dcm.anonymize
-        dcm.value('0008,0005').should eql encoding
-        dcm.value('0008,0012').should_not eql date
-        dcm.value('0008,0013').should_not eql time
-        dcm.value('0010,0010').should_not eql name
-        dcm.value('0018,0050').should eql slice_thickness
+        expect(dcm.value('0008,0005')).to eql encoding
+        expect(dcm.value('0008,0012')).not_to eql date
+        expect(dcm.value('0008,0013')).not_to eql time
+        expect(dcm.value('0010,0010')).not_to eql name
+        expect(dcm.value('0018,0050')).to eql slice_thickness
       end
 
     end
@@ -258,14 +258,14 @@ module DICOM
         binaries << dcm.encode_segments(4096).join
         binaries << dcm.encode_segments(2048).join
         binaries << dcm.encode_segments(1024).join
-        binaries.uniq.length.should eql 1
+        expect(binaries.uniq.length).to eql 1
       end
 
       it "should should have its rejoined, segmented binary be successfully read to a DICOM object" do
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
         binary = dcm.encode_segments(16384).join
         dcm_reloaded = DObject.parse(binary, :bin => true)
-        dcm_reloaded.read?.should be_true
+        expect(dcm_reloaded.read?).to be_true
       end
 
     end
@@ -276,14 +276,14 @@ module DICOM
       it "should return the same Fixnum for two instances having the same attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        dcm1.hash.should eql dcm2.hash
+        expect(dcm1.hash).to eql dcm2.hash
       end
 
       it "should return a different Fixnum for two instances having different attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
         dcm2.add(Sequence.new('0008,0006'))
-        dcm1.hash.should_not eql dcm2.hash
+        expect(dcm1.hash).not_to eql dcm2.hash
       end
 
     end
@@ -313,13 +313,13 @@ module DICOM
       it "should print the summary to the screen and return an array of information when called on a full DICOM object" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
         dcm.expects(:puts).at_least_once
-        dcm.summary.should be_an(Array)
+        expect(dcm.summary).to be_an(Array)
       end
 
       it "should print the summary to the screen and return an array of information when called on an empty DICOM object" do
         dcm = DObject.new
         dcm.expects(:puts).at_least_once
-        dcm.summary.should be_an(Array)
+        expect(dcm.summary).to be_an(Array)
       end
 
     end
@@ -329,7 +329,7 @@ module DICOM
 
       it "should return itself" do
         dcm = DObject.new
-        dcm.to_dcm.equal?(dcm).should be_true
+        expect(dcm.to_dcm.equal?(dcm)).to be_true
       end
 
     end
@@ -339,17 +339,17 @@ module DICOM
 
       it "should return the default transfer syntax (Implicit, little endian) when the DICOM object has no transfer syntax tag" do
         dcm = DObject.new
-        dcm.transfer_syntax.should eql IMPLICIT_LITTLE_ENDIAN
+        expect(dcm.transfer_syntax).to eql IMPLICIT_LITTLE_ENDIAN
       end
 
       it "should return the value of the transfer syntax tag of the DICOM object" do
         dcm = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
-        dcm.transfer_syntax.should eql EXPLICIT_BIG_ENDIAN
+        expect(dcm.transfer_syntax).to eql EXPLICIT_BIG_ENDIAN
       end
 
       it "should set the determined transfer syntax (Explicit Little Endian) when loading a DICOM file (lacking transfer syntax) using two passes" do
         dcm = DObject.read(DCM_EXPLICIT_NO_HEADER)
-        dcm.transfer_syntax.should eql EXPLICIT_LITTLE_ENDIAN
+        expect(dcm.transfer_syntax).to eql EXPLICIT_LITTLE_ENDIAN
       end
 
     end
@@ -360,20 +360,20 @@ module DICOM
       it "should change the transfer syntax of the empty DICOM object" do
         dcm = DObject.new
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm.transfer_syntax.should eql EXPLICIT_BIG_ENDIAN
+        expect(dcm.transfer_syntax).to eql EXPLICIT_BIG_ENDIAN
       end
 
       it "should change the transfer syntax of the DICOM object which has been read from file" do
         dcm = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
         dcm.transfer_syntax = IMPLICIT_LITTLE_ENDIAN
-        dcm.transfer_syntax.should eql IMPLICIT_LITTLE_ENDIAN
+        expect(dcm.transfer_syntax).to eql IMPLICIT_LITTLE_ENDIAN
       end
 
       it "should change the encoding of the data element's binary when switching endianness" do
         dcm = DObject.new
         dcm.add(Element.new('0018,1310', 500)) # This should give the binary string "\364\001"
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm['0018,1310'].bin.should eql "\001\364"
+        expect(dcm['0018,1310'].bin).to eql "\001\364"
       end
 
       it "should not change the encoding of any meta group data element's binaries when switching endianness" do
@@ -381,14 +381,14 @@ module DICOM
         dcm.add(Element.new('0002,9999', 500, :vr => 'US')) # This should give the binary string "\364\001"
         dcm.add(Element.new('0018,1310', 500))
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm['0002,9999'].bin.should eql "\364\001"
+        expect(dcm['0002,9999'].bin).to eql "\364\001"
       end
 
       it "should change the encoding of pixel data binary when switching endianness" do
         dcm = DObject.new
         dcm.add(Element.new('0018,1310', 500)) # This should give the binary string "\364\001"
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm['0018,1310'].bin.should eql "\001\364"
+        expect(dcm['0018,1310'].bin).to eql "\001\364"
       end
 
     end
@@ -408,20 +408,20 @@ module DICOM
 
       it "should set the written? attribute as true after successfully writing this DICOM object to file" do
         @dcm.write(@output)
-        @dcm.written?.should be_true
+        expect(@dcm.written?).to be_true
       end
 
       it "should be able to successfully read the written DICOM file if it was written correctly" do
         @dcm.write(@output)
         dcm_reloaded = DObject.read(@output)
-        dcm_reloaded.read?.should be_true
+        expect(dcm_reloaded.read?).to be_true
       end
 
       it "should create non-existing directories that are part of the file path, and write the file successfully" do
         path = File.join(TMPDIR, 'create/these/directories', 'test-directory-create.dcm')
         @dcm.write(path)
-        @dcm.written?.should be_true
-        File.exists?(path).should be_true
+        expect(@dcm.written?).to be_true
+        expect(File.exists?(path)).to be_true
       end
 
     end
@@ -439,63 +439,63 @@ module DICOM
 
       it "should succeed in writing a limited DICOM object, created from scratch" do
         @dcm.write(@path)
-        @dcm.written?.should be_true
-        File.exists?(@path).should be_true
+        expect(@dcm.written?).to be_true
+        expect(File.exists?(@path)).to be_true
       end
 
       it "should add the File Meta Information Version to the File Meta Group, when it is undefined" do
         @dcm.write(@path)
-        @dcm.exists?('0002,0001').should be_true
+        expect(@dcm.exists?('0002,0001')).to be_true
       end
 
       it "should use the SOP Class UID to create the Media Storage SOP Class UID of the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value('0002,0002').should eql @dcm.value('0008,0016')
+        expect(@dcm.value('0002,0002')).to eql @dcm.value('0008,0016')
       end
 
       it "should use the SOP Instance UID to create the Media Storage SOP Instance UID of the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value('0002,0003').should eql @dcm.value('0008,0018')
+        expect(@dcm.value('0002,0003')).to eql @dcm.value('0008,0018')
       end
 
       it "should add (the default) Transfer Syntax UID to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value('0002,0010').should eql IMPLICIT_LITTLE_ENDIAN
+        expect(@dcm.value('0002,0010')).to eql IMPLICIT_LITTLE_ENDIAN
       end
 
       it "should add the Implementation Class UID to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value('0002,0012').should eql UID_ROOT
+        expect(@dcm.value('0002,0012')).to eql UID_ROOT
       end
 
       it "should add the Implementation Version Name to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value('0002,0013').should eql NAME
+        expect(@dcm.value('0002,0013')).to eql NAME
       end
 
       it "should add the Source Application Entity Title to the File Meta Group when it is undefined" do
         @dcm.write(@path)
-        @dcm.value('0002,0016').should eql DICOM.source_app_title
+        expect(@dcm.value('0002,0016')).to eql DICOM.source_app_title
       end
 
       it "should add a user-defined Source Application Entity Title to the File Meta Group when it is undefined (in the DObject)" do
         original_title = DICOM.source_app_title
         DICOM.source_app_title = 'MY_TITLE'
         @dcm.write(@path)
-        @dcm.value('0002,0016').should eql 'MY_TITLE'
+        expect(@dcm.value('0002,0016')).to eql 'MY_TITLE'
         DICOM.source_app_title = original_title
       end
 
       it "should not add the Implementation Class UID to the File Meta Group, when (it is undefined and) the Implementation Version Name is defined" do
         @dcm.add(Element.new('0002,0013', 'SomeProgram'))
         @dcm.write(@path)
-        @dcm.exists?('0002,0012').should be_false
+        expect(@dcm.exists?('0002,0012')).to be_false
       end
 
       it "should not add the Implementation Version Name to the File Meta Group, when (it is undefined and) the Implementation Class UID is defined" do
         @dcm.add(Element.new('0002,0012', '1.2.54321'))
         @dcm.write(@path)
-        @dcm.exists?('0002,0013').should be_false
+        expect(@dcm.exists?('0002,0013')).to be_false
       end
 
       it "should not touch the meta group when the :ignore_meta option is passed" do
@@ -517,9 +517,9 @@ module DICOM
         @dcm.write(@path)
         r_dcm = DObject.read(@path)
         # The empty sequence should have been removed:
-        r_dcm.exists?('0008,2112').should be_false
+        expect(r_dcm.exists?('0008,2112')).to be_false
         # Only one item should remain beneath this sequence, when the empty one is removed:
-        r_dcm['0008,1140'].children.length.should eql 1
+        expect(r_dcm['0008,1140'].children.length).to eql 1
       end
 
       it "should write empty parents when the :include_empty_parents option is used" do
@@ -531,9 +531,9 @@ module DICOM
         @dcm.write(@path, :include_empty_parents => true)
         r_dcm = DObject.read(@path)
         # The empty sequence should remain:
-        r_dcm.exists?('0008,2112').should be_true
+        expect(r_dcm.exists?('0008,2112')).to be_true
         # Both items should remain beneath this sequence:
-        r_dcm['0008,1140'].children.length.should eql 2
+        expect(r_dcm['0008,1140'].children.length).to eql 2
       end
 
     end

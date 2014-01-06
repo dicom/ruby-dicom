@@ -73,16 +73,16 @@ module DICOM
 
       it "should raise an ArgumentError if a non-string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_images( {42 => "this is no string"} )
-        }.should raise_error(ArgumentError, /42/)
+        }.to raise_error(ArgumentError, /42/)
       end
 
       it "should raise an ArgumentError if an invalid tag string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_images( {"asdf,asdf" => "this is not a valid string"} )
-        }.should raise_error(ArgumentError, /asdf,asdf/)
+        }.to raise_error(ArgumentError, /asdf,asdf/)
       end
 
       it "should reset parameters from previous queries" do
@@ -170,16 +170,16 @@ module DICOM
 
       it "should raise an ArgumentError if a non-string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_patients( {42 => "this is no string"} )
-        }.should raise_error(ArgumentError, /42/)
+        }.to raise_error(ArgumentError, /42/)
       end
 
       it "should raise an ArgumentError if an invalid tag string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_patients( {"asdf,asdf" => "this is not a valid string"} )
-        }.should raise_error(ArgumentError, /asdf,asdf/)
+        }.to raise_error(ArgumentError, /asdf,asdf/)
       end
 
       it "should reset parameters from previous queries" do
@@ -264,16 +264,16 @@ module DICOM
 
       it "should raise an ArgumentError if a non-string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_series( {42 => "this is no string"} )
-        }.should raise_error(ArgumentError, /42/)
+        }.to raise_error(ArgumentError, /42/)
       end
 
       it "should raise an ArgumentError if an invalid tag string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_series( {"asdf,asdf" => "this is not a valid string"} )
-        }.should raise_error(ArgumentError, /asdf,asdf/)
+        }.to raise_error(ArgumentError, /asdf,asdf/)
       end
 
       it "should reset parameters from previous queries" do
@@ -398,16 +398,16 @@ module DICOM
 
       it "should raise an ArgumentError if a non-string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_studies( {42 => "this is no string"} )
-        }.should raise_error(ArgumentError, /42/)
+        }.to raise_error(ArgumentError, /42/)
       end
 
       it "should raise an ArgumentError if an invalid tag string parameter is given" do
         @link.stubs(:build_data_fragment)
-        lambda {
+        expect {
           @node.find_studies( {"asdf,asdf" => "this is not a valid string"} )
-        }.should raise_error(ArgumentError, /asdf,asdf/)
+        }.to raise_error(ArgumentError, /asdf,asdf/)
       end
 
       it "should reset parameters from previous queries" do

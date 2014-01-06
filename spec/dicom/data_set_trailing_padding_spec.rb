@@ -18,13 +18,13 @@ module DICOM
       it "should add itself to a DObject" do
         dcm = DObject.new
         padding = Element.new('FFFC,FFFC', 0, :parent => dcm)
-        dcm.exists?('FFFC,FFFC').should be_true
+        expect(dcm.exists?('FFFC,FFFC')).to be_true
       end
 
       it "should add itself to an Item" do
         item = Item.new
         padding = Element.new('FFFC,FFFC', 0, :parent => item)
-        item.exists?('FFFC,FFFC').should be_true
+        expect(item.exists?('FFFC,FFFC')).to be_true
       end
 
       it "should not raise an error when trying to add itself to a Sequence" do

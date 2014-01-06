@@ -35,12 +35,12 @@ module DICOM
 
       it "should by default set the timeout to 10 seconds" do
         s = DServer.new
-        s.timeout.should eql 10
+        expect(s.timeout).to eql 10
       end
 
       it "should set the timeout equal to the parameter in the options hash" do
         s = DServer.new(104, :timeout => 100)
-        s.timeout.should eql 100
+        expect(s.timeout).to eql 100
       end
 
     end

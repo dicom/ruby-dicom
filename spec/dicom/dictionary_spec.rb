@@ -21,12 +21,12 @@ module DICOM
         de = DictionaryElement.new(tag, name, vrs, vm, retired)
         LIBRARY.add_element(de)
         e = LIBRARY.element(tag)
-        e.tag.should eql tag
-        e.name.should eql name
-        e.vrs.should eql vrs
-        e.vm.should eql vm
-        e.retired.should eql retired
-        e.retired?.should be_true
+        expect(e.tag).to eql tag
+        expect(e.name).to eql name
+        expect(e.vrs).to eql vrs
+        expect(e.vm).to eql vm
+        expect(e.retired).to eql retired
+        expect(e.retired?).to be_true
       end
 
     end
@@ -36,25 +36,25 @@ module DICOM
       it "should add this dictionary to ruby-dicom's element dictionary" do
         LIBRARY.add_element_dictionary(DICT_ELEMENTS)
         e1 = LIBRARY.element('0009,010C')
-        e1.name.should eql 'World Domination Scheme UID'
-        e1.vr.should eql 'UI'
-        e1.vm.should eql '1'
-        e1.retired?.should be_false
+        expect(e1.name).to eql 'World Domination Scheme UID'
+        expect(e1.vr).to eql 'UI'
+        expect(e1.vm).to eql '1'
+        expect(e1.retired?).to be_false
         e2 = LIBRARY.element('2027,010F')
-        e2.name.should eql 'Code Smell Context Identifier'
-        e2.vr.should eql 'CS'
-        e2.vm.should eql '1'
-        e2.retired?.should be_true
+        expect(e2.name).to eql 'Code Smell Context Identifier'
+        expect(e2.vr).to eql 'CS'
+        expect(e2.vm).to eql '1'
+        expect(e2.retired?).to be_true
         e3 = LIBRARY.element('AAAB,0110')
-        e3.name.should eql 'Github Commit Sequence'
-        e3.vr.should eql 'SQ'
-        e3.vm.should eql '1'
-        e3.retired?.should be_false
+        expect(e3.name).to eql 'Github Commit Sequence'
+        expect(e3.vr).to eql 'SQ'
+        expect(e3.vm).to eql '1'
+        expect(e3.retired?).to be_false
         e4 = LIBRARY.element('FFFF,0112')
-        e4.name.should eql 'Bug Registry'
-        e4.vr.should eql 'UL'
-        e4.vm.should eql '1-n'
-        e4.retired?.should be_false
+        expect(e4.name).to eql 'Bug Registry'
+        expect(e4.vr).to eql 'UL'
+        expect(e4.vm).to eql '1-n'
+        expect(e4.retired?).to be_false
       end
 
     end
@@ -74,11 +74,11 @@ module DICOM
         uid = UID.new(value, name, type, retired)
         LIBRARY.add_uid(uid)
         u = LIBRARY.uid(value)
-        u.value.should eql value
-        u.name.should eql name
-        u.type.should eql type
-        u.retired.should eql retired
-        u.retired?.should be_true
+        expect(u.value).to eql value
+        expect(u.name).to eql name
+        expect(u.type).to eql type
+        expect(u.retired).to eql retired
+        expect(u.retired?).to be_true
       end
 
     end
@@ -88,15 +88,15 @@ module DICOM
       it "should add this dictionary to ruby-dicom's uid dictionary" do
         LIBRARY.add_uid_dictionary(DICT_UIDS)
         u1 = LIBRARY.uid('1.2.840.10008.1.1.333')
-        u1.value.should eql '1.2.840.10008.1.1.333'
-        u1.name.should eql 'Custom SOP Class'
-        u1.type.should eql 'SOP Class'
-        u1.retired?.should be_false
+        expect(u1.value).to eql '1.2.840.10008.1.1.333'
+        expect(u1.name).to eql 'Custom SOP Class'
+        expect(u1.type).to eql 'SOP Class'
+        expect(u1.retired?).to be_false
         u2 = LIBRARY.uid('1.2.840.10008.1.1.555')
-        u2.value.should eql '1.2.840.10008.1.1.555'
-        u2.name.should eql 'Custom TS Syntax'
-        u2.type.should eql 'Transfer Syntax'
-        u2.retired?.should be_true
+        expect(u2.value).to eql '1.2.840.10008.1.1.555'
+        expect(u2.name).to eql 'Custom TS Syntax'
+        expect(u2.type).to eql 'Transfer Syntax'
+        expect(u2.retired?).to be_true
       end
 
     end
@@ -107,63 +107,63 @@ module DICOM
       it "should return the matching DictionaryElement" do
         tag = '0010,0010'
         element = LIBRARY.element(tag)
-        element.should be_a DictionaryElement
-        element.tag.should eql tag
-        element.retired?.should be_false
+        expect(element).to be_a DictionaryElement
+        expect(element.tag).to eql tag
+        expect(element.retired?).to be_false
       end
 
       it "should return the matching (retired) DictionaryElement" do
         tag = '0000,51B0' # Retired
         element = LIBRARY.element(tag)
-        element.should be_a DictionaryElement
-        element.tag.should eql tag
-        element.retired?.should be_true
+        expect(element).to be_a DictionaryElement
+        expect(element.tag).to eql tag
+        expect(element.retired?).to be_true
       end
 
       it "should create a 'group length element' when given a group length type tag" do
         element = LIBRARY.element('0010,0000')
-        element.name.should eql 'Group Length'
-        element.vr.should eql 'UL'
-        element.retired?.should be_false
+        expect(element.name).to eql 'Group Length'
+        expect(element.vr).to eql 'UL'
+        expect(element.retired?).to be_false
       end
 
       it "should create a 'group length element' when given a private group length type tag" do
         element = LIBRARY.element('0011,0000')
-        element.name.should eql 'Group Length'
-        element.vr.should eql 'UL'
-        element.retired?.should be_false
+        expect(element.name).to eql 'Group Length'
+        expect(element.vr).to eql 'UL'
+        expect(element.retired?).to be_false
       end
 
       it "should create a 'private element' when given a private type tag" do
         element = LIBRARY.element('0011,ABCD')
-        element.name.should eql 'Private'
-        element.vr.should eql 'UN'
-        element.retired?.should be_false
+        expect(element.name).to eql 'Private'
+        expect(element.vr).to eql 'UN'
+        expect(element.retired?).to be_false
       end
 
       it "should create an 'unknown element' when no match is made" do
         element = LIBRARY.element('EEEE,ABCD')
-        element.name.should eql 'Unknown'
-        element.vr.should eql 'UN'
-        element.retired?.should be_false
+        expect(element.name).to eql 'Unknown'
+        expect(element.vr).to eql 'UN'
+        expect(element.retired?).to be_false
       end
 
       it "should give the expected name when it contains an apostrophe" do
         tag = '0010,0010'
         element = LIBRARY.element(tag)
-        element.name.should eql "Patient's Name"
+        expect(element.name).to eql "Patient's Name"
       end
 
       it "should give the name of this tag encoded as UTF-8" do
         tag = '0018,1153'
         element = LIBRARY.element(tag)
-        element.name.encoding.should eql Encoding::UTF_8
+        expect(element.name.encoding).to eql Encoding::UTF_8
       end
 
       it "should give the proper UTF-8 name string of this tag" do
         tag = '0018,1153'
         element = LIBRARY.element(tag)
-        element.name.should eql 'Exposure in µAs'
+        expect(element.name).to eql 'Exposure in µAs'
       end
 
     end
@@ -173,20 +173,20 @@ module DICOM
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0000,0000')
-        name.should eql 'Command Group Length'
-        vr.should eql 'UL'
+        expect(name).to eql 'Command Group Length'
+        expect(vr).to eql 'UL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0000,1005')
-        name.should eql 'Attribute Identifier List'
-        vr.should eql 'AT'
+        expect(name).to eql 'Attribute Identifier List'
+        expect(vr).to eql 'AT'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0000,51B0') # Retired command element
-        name.should eql 'Overlays'
-        vr.should eql 'US'
+        expect(name).to eql 'Overlays'
+        expect(vr).to eql 'US'
       end
 
     end
@@ -196,20 +196,20 @@ module DICOM
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0002,0000')
-        name.should eql 'File Meta Information Group Length'
-        vr.should eql 'UL'
+        expect(name).to eql 'File Meta Information Group Length'
+        expect(vr).to eql 'UL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0002,0010')
-        name.should eql 'Transfer Syntax UID'
-        vr.should eql 'UI'
+        expect(name).to eql 'Transfer Syntax UID'
+        expect(vr).to eql 'UI'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0002,0102')
-        name.should eql 'Private Information'
-        vr.should eql 'OB'
+        expect(name).to eql 'Private Information'
+        expect(vr).to eql 'OB'
       end
 
     end
@@ -219,20 +219,20 @@ module DICOM
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0004,1130')
-        name.should eql 'File-set ID'
-        vr.should eql 'CS'
+        expect(name).to eql 'File-set ID'
+        expect(vr).to eql 'CS'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0004,1220')
-        name.should eql 'Directory Record Sequence'
-        vr.should eql 'SQ'
+        expect(name).to eql 'Directory Record Sequence'
+        expect(vr).to eql 'SQ'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0004,1600')
-        name.should eql 'Number of References'
-        vr.should eql 'UL'
+        expect(name).to eql 'Number of References'
+        expect(vr).to eql 'UL'
       end
 
     end
@@ -242,152 +242,152 @@ module DICOM
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0008,0001')
-        name.should eql 'Length to End'
-        vr.should eql 'UL'
+        expect(name).to eql 'Length to End'
+        expect(vr).to eql 'UL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0008,0018')
-        name.should eql 'SOP Instance UID'
-        vr.should eql 'UI'
+        expect(name).to eql 'SOP Instance UID'
+        expect(vr).to eql 'UI'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0008,0034')
-        name.should eql 'Overlay Time'
-        vr.should eql 'TM'
+        expect(name).to eql 'Overlay Time'
+        expect(vr).to eql 'TM'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0018,9511')
-        name.should eql 'Secondary Positioner Scan Start Angle'
-        vr.should eql 'FL'
+        expect(name).to eql 'Secondary Positioner Scan Start Angle'
+        expect(vr).to eql 'FL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0054,0039')
-        name.should eql 'Phase Description'
-        vr.should eql 'CS'
+        expect(name).to eql 'Phase Description'
+        expect(vr).to eql 'CS'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('3002,0022')
-        name.should eql 'Radiation Machine SAD'
-        vr.should eql 'DS'
+        expect(name).to eql 'Radiation Machine SAD'
+        expect(vr).to eql 'DS'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0014,4056') # New tag in the 2011 edition
-        name.should eql 'Coupling Medium'
-        vr.should eql 'ST'
+        expect(name).to eql 'Coupling Medium'
+        expect(vr).to eql 'ST'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0028,0453') # (0028,04x3)
-        name.should eql 'Coefficient Coding Pointers'
-        vr.should eql 'AT'
+        expect(name).to eql 'Coefficient Coding Pointers'
+        expect(vr).to eql 'AT'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0028,08A8') # (0028,08x8)
-        name.should eql 'Image Data Location'
-        vr.should eql 'AT'
+        expect(name).to eql 'Image Data Location'
+        expect(vr).to eql 'AT'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('1000,ABC0') # (1000,xxx0)
-        name.should eql 'Escape Triplet'
-        vr.should eql 'US'
+        expect(name).to eql 'Escape Triplet'
+        expect(vr).to eql 'US'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('1000,DEF5') # (1000,xxx5)
-        name.should eql 'Shift Table Triplet'
-        vr.should eql 'US'
+        expect(name).to eql 'Shift Table Triplet'
+        expect(vr).to eql 'US'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('1010,1234') # (1010,xxxx)
-        name.should eql 'Zonal Map'
-        vr.should eql 'US'
+        expect(name).to eql 'Zonal Map'
+        expect(vr).to eql 'US'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('5012,2600') # (50xx,2600)
-        name.should eql 'Curve Referenced Overlay Sequence'
-        vr.should eql 'SQ'
+        expect(name).to eql 'Curve Referenced Overlay Sequence'
+        expect(vr).to eql 'SQ'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('60CC,0011') # (60xx,0011)
-        name.should eql 'Overlay Columns'
-        vr.should eql 'US'
+        expect(name).to eql 'Overlay Columns'
+        expect(vr).to eql 'US'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('60EE,0110') # (60xx,0110)
-        name.should eql 'Overlay Format'
-        vr.should eql 'CS'
+        expect(name).to eql 'Overlay Format'
+        expect(vr).to eql 'CS'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('7FAA,0020') # (7Fxx,0020)
-        name.should eql 'Variable Coefficients SDVN'
-        vr.should eql 'OW'
+        expect(name).to eql 'Variable Coefficients SDVN'
+        expect(vr).to eql 'OW'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('7FE0,0010')
-        name.should eql 'Pixel Data'
-        vr.should eql 'OW' # (OW or OB)
+        expect(name).to eql 'Pixel Data'
+        expect(vr).to eql 'OW' # (OW or OB)
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('FFFE,E000')
-        name.should eql 'Item'
-        vr.should eql '  ' # (not defined)
+        expect(name).to eql 'Item'
+        expect(vr).to eql '  ' # (not defined)
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('FFFE,E00D')
-        name.should eql 'Item Delimitation Item'
-        vr.should eql '  ' # (not defined)
+        expect(name).to eql 'Item Delimitation Item'
+        expect(vr).to eql '  ' # (not defined)
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('FFFE,E0DD')
-        name.should eql 'Sequence Delimitation Item'
-        vr.should eql '  ' # (not defined)
+        expect(name).to eql 'Sequence Delimitation Item'
+        expect(vr).to eql '  ' # (not defined)
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('0008,0000') # (Group Length)
-        name.should eql 'Group Length'
-        vr.should eql 'UL'
+        expect(name).to eql 'Group Length'
+        expect(vr).to eql 'UL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('7FE0,0000') # (Group Length)
-        name.should eql 'Group Length'
-        vr.should eql 'UL'
+        expect(name).to eql 'Group Length'
+        expect(vr).to eql 'UL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('1111,0000') # (Private Group Length)
-        name.should eql 'Group Length'
-        vr.should eql 'UL'
+        expect(name).to eql 'Group Length'
+        expect(vr).to eql 'UL'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('AAAA,FFFF') # (An undefined, but not private tag)
-        name.should eql 'Unknown'
-        vr.should eql 'UN'
+        expect(name).to eql 'Unknown'
+        expect(vr).to eql 'UN'
       end
 
       it "should return the expected Name and VR for this tag" do
         name, vr = LIBRARY.name_and_vr('1111,2222') # (A private tag)
-        name.should eql 'Private'
-        vr.should eql 'UN'
+        expect(name).to eql 'Private'
+        expect(vr).to eql 'UN'
       end
 
     end
@@ -398,40 +398,40 @@ module DICOM
       it "should return the nil when no matching UID instance exists" do
         value = '1.999.9999.1234.56789.999999'
         uid = LIBRARY.uid(value)
-        uid.should be_nil
+        expect(uid).to be_nil
       end
 
       it "should return the matching UID instance" do
         value = '1.2.840.10008.1.1'
         uid = LIBRARY.uid(value)
-        uid.should be_a UID
-        uid.value.should eql value
-        uid.name.should eql 'Verification SOP Class'
-        uid.retired?.should be_false
+        expect(uid).to be_a UID
+        expect(uid.value).to eql value
+        expect(uid.name).to eql 'Verification SOP Class'
+        expect(uid.retired?).to be_false
       end
 
       it "should return the matching UID instance" do
         value = '1.2.840.10008.1.2.4.52' # Retired
         uid = LIBRARY.uid(value)
-        uid.should be_a UID
-        uid.value.should eql value
-        uid.name.should eql 'JPEG Extended (Process 3 & 5) (Retired)'
-        uid.retired?.should be_true
+        expect(uid).to be_a UID
+        expect(uid.value).to eql value
+        expect(uid.name).to eql 'JPEG Extended (Process 3 & 5) (Retired)'
+        expect(uid.retired?).to be_true
       end
 
       it "should return the matching (retired) UID instance" do
         value = '1.2.840.10008.15.1.1' # New uid in the 2011 edition
         uid = LIBRARY.uid(value)
-        uid.should be_a UID
-        uid.value.should eql value
-        uid.name.should eql 'Universal Coordinated Time'
-        uid.retired?.should be_false
+        expect(uid).to be_a UID
+        expect(uid.value).to eql value
+        expect(uid.name).to eql 'Universal Coordinated Time'
+        expect(uid.retired?).to be_false
       end
 
       it "should return the name of the UID encoded as UTF-8" do
         value = '1.2.840.10008.1.2.4.100'
         uid = LIBRARY.uid(value)
-        uid.name.encoding.should eql Encoding::UTF_8
+        expect(uid.name.encoding).to eql Encoding::UTF_8
       end
 
     end

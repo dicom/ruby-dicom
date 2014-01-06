@@ -18,28 +18,28 @@ module DICOM
 
       it "should by default keep the original instance(s) when duplicate element(s)/sequence(s) occurs" do
         dcm = DObject.read(DCM_DUPLICATES)
-        dcm.value('0010,0010').should eql 'First'
-        dcm['3006,0010'][0].value('0020,0052').should eql '11'
-        dcm['3006,0010'][0]['3006,0012'][0].value('0008,1150').should eql '11'
-        dcm['3006,0020'][0].value('3006,0026').should eql 'First SQ'
+        expect(dcm.value('0010,0010')).to eql 'First'
+        expect(dcm['3006,0010'][0].value('0020,0052')).to eql '11'
+        expect(dcm['3006,0010'][0]['3006,0012'][0].value('0008,1150')).to eql '11'
+        expect(dcm['3006,0020'][0].value('3006,0026')).to eql 'First SQ'
       end
 
       it "should overwrite the original instance(s) when duplicate element(s)/sequence(s) occurs and the :overwrite option is true" do
         dcm = DObject.read(DCM_DUPLICATES, :overwrite => true)
-        dcm.value('0010,0010').should eql 'Latest'
-        dcm['3006,0010'][0].value('0020,0052').should eql '12'
-        dcm['3006,0010'][0]['3006,0012'][0].value('0008,1150').should eql '12'
-        dcm['3006,0020'][0].value('3006,0026').should eql 'LatestSQ'
+        expect(dcm.value('0010,0010')).to eql 'Latest'
+        expect(dcm['3006,0010'][0].value('0020,0052')).to eql '12'
+        expect(dcm['3006,0010'][0]['3006,0012'][0].value('0008,1150')).to eql '12'
+        expect(dcm['3006,0020'][0].value('3006,0026')).to eql 'LatestSQ'
       end
 
       it "should properly register the top level element that follows the (duplicate) sequence (in default read mode)" do
         dcm = DObject.read(DCM_DUPLICATES)
-        dcm.exists?('7200,0100').should be_true
+        expect(dcm.exists?('7200,0100')).to be_true
       end
 
       it "should properly register the top level element that follows the (duplicate) sequence (in overwrite read mode)" do
         dcm = DObject.read(DCM_DUPLICATES, :overwrite => true)
-        dcm.exists?('7200,0100').should be_true
+        expect(dcm.exists?('7200,0100')).to be_true
       end
 
       it "should log a warning when encountering duplicate elements" do

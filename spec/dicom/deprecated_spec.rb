@@ -60,10 +60,10 @@ module DICOM
         a2 = DObject.read(@anon2)
         s1 = DObject.read(@skip1)
         s2 = DObject.read(@skip2)
-        a1.value("0010,0010").should eql a.value("0010,0010")
-        a2.value("0010,0010").should eql a.value("0010,0010")
-        s1.value("0010,0010").should_not eql a.value("0010,0010")
-        s2.value("0010,0010").should_not eql a.value("0010,0010")
+        expect(a1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a2.value("0010,0010")).to eql a.value("0010,0010")
+        expect(s1.value("0010,0010")).not_to eql a.value("0010,0010")
+        expect(s2.value("0010,0010")).not_to eql a.value("0010,0010")
       end
 
       it "should not anonymize files in the exception directory, but still anonymize the other files (with the given paths not ending with a separator)" do
@@ -75,10 +75,10 @@ module DICOM
         a2 = DObject.read(@anon2)
         s1 = DObject.read(@skip1)
         s2 = DObject.read(@skip2)
-        a1.value("0010,0010").should eql a.value("0010,0010")
-        a2.value("0010,0010").should eql a.value("0010,0010")
-        s1.value("0010,0010").should_not eql a.value("0010,0010")
-        s2.value("0010,0010").should_not eql a.value("0010,0010")
+        expect(a1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a2.value("0010,0010")).to eql a.value("0010,0010")
+        expect(s1.value("0010,0010")).not_to eql a.value("0010,0010")
+        expect(s2.value("0010,0010")).not_to eql a.value("0010,0010")
       end
 
     end
@@ -99,10 +99,10 @@ module DICOM
         a2 = DObject.read(@anon2)
         s1 = DObject.read(@skip1)
         s2 = DObject.read(@skip2)
-        a1.value("0010,0010").should eql a.value("0010,0010")
-        a2.value("0010,0010").should eql a.value("0010,0010")
-        s1.value("0010,0010").should eql a.value("0010,0010")
-        s2.value("0010,0010").should eql a.value("0010,0010")
+        expect(a1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a2.value("0010,0010")).to eql a.value("0010,0010")
+        expect(s1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(s2.value("0010,0010")).to eql a.value("0010,0010")
       end
 
       it "should anonymize files in the specified folder as well as any sub-folders (with the given path ending without a separator)" do
@@ -113,10 +113,10 @@ module DICOM
         a2 = DObject.read(@anon2)
         s1 = DObject.read(@skip1)
         s2 = DObject.read(@skip2)
-        a1.value("0010,0010").should eql a.value("0010,0010")
-        a2.value("0010,0010").should eql a.value("0010,0010")
-        s1.value("0010,0010").should eql a.value("0010,0010")
-        s2.value("0010,0010").should eql a.value("0010,0010")
+        expect(a1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a2.value("0010,0010")).to eql a.value("0010,0010")
+        expect(s1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(s2.value("0010,0010")).to eql a.value("0010,0010")
       end
 
       it "should anonymize files in all specified folders, when multiple folders are added" do
@@ -128,10 +128,10 @@ module DICOM
         a2 = DObject.read(@anon2)
         a3 = DObject.read(@anon3)
         a4 = DObject.read(@anon4)
-        a1.value("0010,0010").should eql a.value("0010,0010")
-        a2.value("0010,0010").should eql a.value("0010,0010")
-        a3.value("0010,0010").should eql a.value("0010,0010")
-        a4.value("0010,0010").should eql a.value("0010,0010")
+        expect(a1.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a2.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a3.value("0010,0010")).to eql a.value("0010,0010")
+        expect(a4.value("0010,0010")).to eql a.value("0010,0010")
       end
 
     end
@@ -145,7 +145,7 @@ module DICOM
         a.logger.level = Logger::DEBUG
         a.add_folder(@anon_other)
         a.execute
-        File.open(LOGDIR + 'anonymizer1.log').readlines.length.should be > 1
+        expect(File.open(LOGDIR + 'anonymizer1.log').readlines.length).to be > 1
       end
 
       it "should not print information when the logger has been set to a non-verbose mode" do
@@ -154,7 +154,7 @@ module DICOM
         a.logger.level = Logger::UNKNOWN
         a.add_folder(@anon_other)
         a.execute
-        File.open(LOGDIR + 'anonymizer2.log').readlines.length.should be <= 1
+        expect(File.open(LOGDIR + 'anonymizer2.log').readlines.length).to be <= 1
       end
 
       it "should anonymize the folder's files according to the list of tags in the anonymization instance" do
@@ -162,8 +162,8 @@ module DICOM
         a.add_folder(@anon_other)
         a.execute
         dcm = DObject.read(@anon3)
-        dcm.value("0010,0010").should eql a.value("0010,0010")
-        dcm.value("0008,0020").should eql a.value("0008,0020")
+        expect(dcm.value("0010,0010")).to eql a.value("0010,0010")
+        expect(dcm.value("0008,0020")).to eql a.value("0008,0020")
       end
 
       it "should not create data elements which are present on the 'list to be anonymized' but not in the target file" do
@@ -171,8 +171,8 @@ module DICOM
         a.add_folder(@anon_other)
         a.execute
         dcm = DObject.read(@anon3) # the tag we are testing is not originally present in this file
-        a.value("0008,0012").should be_true # make sure the tag we are testing is defined
-        dcm.exists?("0008,0012").should be_false
+        expect(a.value("0008,0012")).to be_true # make sure the tag we are testing is defined
+        expect(dcm.exists?("0008,0012")).to be_false
       end
 
       it "should fill the log with information" do
@@ -188,8 +188,8 @@ module DICOM
         a.blank = true
         a.execute
         dcm = DObject.read(@anon3)
-        dcm.value("0010,0010").should_not eql a.value("0010,0010")
-        dcm.value("0010,0010").to_s.length.should eql 0
+        expect(dcm.value("0010,0010")).not_to eql a.value("0010,0010")
+        expect(dcm.value("0010,0010").to_s.length).to eql 0
       end
 
       it "should use enumerated strings for anonymization when we have set the enumeration attribute as true" do
@@ -201,13 +201,13 @@ module DICOM
         a2 = DObject.read(@anon2)
         s1 = DObject.read(@skip1)
         s2 = DObject.read(@skip2)
-        a1.value("0010,0010").should_not eql a.value("0010,0010")
-        a1.value("0010,0010").should eql s1.value("0010,0010")
-        a2.value("0010,0010").should eql s2.value("0010,0010")
-        a1.value("0010,0010").should_not eql a2.value("0010,0010")
-        s1.value("0010,0010").should_not eql s2.value("0010,0010")
-        a1.value("0010,0010").include?(a.value("0010,0010")).should be_true
-        a1.value("0010,0010")[-1..-1].to_i.should_not eql a2.value("0010,0010")[-1..-1].to_i
+        expect(a1.value("0010,0010")).not_to eql a.value("0010,0010")
+        expect(a1.value("0010,0010")).to eql s1.value("0010,0010")
+        expect(a2.value("0010,0010")).to eql s2.value("0010,0010")
+        expect(a1.value("0010,0010")).not_to eql a2.value("0010,0010")
+        expect(s1.value("0010,0010")).not_to eql s2.value("0010,0010")
+        expect(a1.value("0010,0010").include?(a.value("0010,0010"))).to be_true
+        expect(a1.value("0010,0010")[-1..-1].to_i).not_to eql a2.value("0010,0010")[-1..-1].to_i
       end
 
       it "should not recursively anonymize the tag hierarchies of the DICOM files when the :recursive option is unused" do
@@ -216,8 +216,8 @@ module DICOM
         a.set_tag('0008,0104', :value => 'Recursive')
         a.execute
         dcm = DObject.read(@anon1)
-        dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104').should_not eql 'Recursive'
-        dcm['0008,9215'][0].value('0008,0104').should_not eql 'Recursive'
+        expect(dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104')).not_to eql 'Recursive'
+        expect(dcm['0008,9215'][0].value('0008,0104')).not_to eql 'Recursive'
       end
 
       it "should recursively anonymize the tag hierarchies of the DICOM files when the :recursive option is used" do
@@ -226,8 +226,8 @@ module DICOM
         a.set_tag('0008,0104', :value => 'Recursive')
         a.execute
         dcm = DObject.read(@anon1)
-        dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104').should eql 'Recursive'
-        dcm['0008,9215'][0].value('0008,0104').should eql 'Recursive'
+        expect(dcm['0008,2112'][0]['0040,A170'][0].value('0008,0104')).to eql 'Recursive'
+        expect(dcm['0008,9215'][0].value('0008,0104')).to eql 'Recursive'
       end
 
       it "should add a Patient Identity Removed element with value 'YES' to anonymized DICOM objects" do
@@ -235,7 +235,7 @@ module DICOM
         a.add_folder(@anon)
         a.execute
         dcm = DObject.read(@anon1)
-        dcm.value('0012,0062').should eql 'YES'
+        expect(dcm.value('0012,0062')).to eql 'YES'
       end
 
       it "should write the anonymized files to the specified folder and leave the original DICOM files untouched, when the write_path attribute is specified (with the path not ending with a file separator)" do
@@ -247,9 +247,9 @@ module DICOM
         a.execute
         dcm = DObject.read(@anon3)
         after_value = dcm.value("0010,0010")
-        after_value.should eql old_value
+        expect(after_value).to eql old_value
         w = DObject.read(@w1)
-        w.value("0010,0010").should eql a.value("0010,0010")
+        expect(w.value("0010,0010")).to eql a.value("0010,0010")
       end
 
       it "should write the anonymized files to the specified folder (with the path ending with a separator)" do
@@ -258,7 +258,7 @@ module DICOM
         a.write_path = @wpath_s
         a.execute
         w = DObject.read(@w1)
-        w.value("0010,0010").should eql a.value("0010,0010")
+        expect(w.value("0010,0010")).to eql a.value("0010,0010")
       end
 
 
@@ -300,12 +300,12 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0008,0016').should eql @dcm.value('0008,0016')
-          dcm.value('0008,0018').should eql @dcm.value('0008,0018')
-          rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
-          rdcm.value('0008,0018').should eql @rdcm.value('0008,0018')
-          rdcm['0008,1140'][0].value('0008,1150').should eql @rdcm['0008,1140'][0].value('0008,1150')
-          rdcm['0008,1140'][0].value('0008,1155').should eql @rdcm['0008,1140'][0].value('0008,1155')
+          expect(dcm.value('0008,0016')).to eql @dcm.value('0008,0016')
+          expect(dcm.value('0008,0018')).to eql @dcm.value('0008,0018')
+          expect(rdcm.value('0008,0016')).to eql @rdcm.value('0008,0016')
+          expect(rdcm.value('0008,0018')).to eql @rdcm.value('0008,0018')
+          expect(rdcm['0008,1140'][0].value('0008,1150')).to eql @rdcm['0008,1140'][0].value('0008,1150')
+          expect(rdcm['0008,1140'][0].value('0008,1155')).to eql @rdcm['0008,1140'][0].value('0008,1155')
         end
 
         it "should produce a valid Transfer Syntax UID (i.e. not replace it with a random UID), when the :uid option is used" do
@@ -315,8 +315,8 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          LIBRARY.uid(dcm.value('0002,0010')).transfer_syntax?.should be_true
-          LIBRARY.uid(rdcm.value('0002,0010')).transfer_syntax?.should be_true
+          expect(LIBRARY.uid(dcm.value('0002,0010')).transfer_syntax?).to be_true
+          expect(LIBRARY.uid(rdcm.value('0002,0010')).transfer_syntax?).to be_true
         end
 
         it "should not touch the SOP Class UID when the :uid option is used" do
@@ -326,8 +326,8 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0008,0016').should eql @dcm.value('0008,0016')
-          rdcm.value('0008,0016').should eql @rdcm.value('0008,0016')
+          expect(dcm.value('0008,0016')).to eql @dcm.value('0008,0016')
+          expect(rdcm.value('0008,0016')).to eql @rdcm.value('0008,0016')
         end
 
 =begin
@@ -362,15 +362,15 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          dcm.value('0008,0018').should_not eql @dcm.value('0008,0018')
-          dcm.value('0020,000D').should_not eql @dcm.value('0020,000D')
-          dcm.value('0020,000E').should_not eql @dcm.value('0020,000E')
-          dcm.value('0020,0052').should_not eql @dcm.value('0020,0052')
-          rdcm.value('0008,0018').should_not eql @rdcm.value('0008,0018')
-          rdcm.value('0020,000D').should_not eql @rdcm.value('0020,000D')
-          rdcm.value('0020,000E').should_not eql @rdcm.value('0020,000E')
-          rdcm.value('0020,0052').should_not eql @rdcm.value('0020,0052')
-          rdcm['0008,1140'][0].value('0008,1155').should_not eql @rdcm['0008,1140'][0].value('0008,1155')
+          expect(dcm.value('0008,0018')).not_to eql @dcm.value('0008,0018')
+          expect(dcm.value('0020,000D')).not_to eql @dcm.value('0020,000D')
+          expect(dcm.value('0020,000E')).not_to eql @dcm.value('0020,000E')
+          expect(dcm.value('0020,0052')).not_to eql @dcm.value('0020,0052')
+          expect(rdcm.value('0008,0018')).not_to eql @rdcm.value('0008,0018')
+          expect(rdcm.value('0020,000D')).not_to eql @rdcm.value('0020,000D')
+          expect(rdcm.value('0020,000E')).not_to eql @rdcm.value('0020,000E')
+          expect(rdcm.value('0020,0052')).not_to eql @rdcm.value('0020,0052')
+          expect(rdcm['0008,1140'][0].value('0008,1155')).not_to eql @rdcm['0008,1140'][0].value('0008,1155')
         end
 
       end
@@ -384,9 +384,9 @@ module DICOM
           a.write_path = @wpath_s
           a.enumeration = true
           a.execute
-          File.exists?(audit_file).should be_true
+          expect(File.exists?(audit_file)).to be_true
           at = AuditTrail.read(audit_file)
-          at.should be_a AuditTrail
+          expect(at).to be_a AuditTrail
         end
 
         it "should encrypt the values stored in the audit trail file" do
@@ -399,11 +399,11 @@ module DICOM
           at = AuditTrail.read(audit_file)
           names = at.records('0010,0010').to_a
           # MD5 hashes are 32 characters long:
-          names.first[0].length.should eql 32
-          names.last[0].length.should eql 32
+          expect(names.first[0].length).to eql 32
+          expect(names.last[0].length).to eql 32
           # Values should be the ordinary, enumerated ones:
-          names.first[1].should eql 'Patient1'
-          names.last[1].should eql 'Patient2'
+          expect(names.first[1]).to eql 'Patient1'
+          expect(names.last[1]).to eql 'Patient2'
         end
 
       end
@@ -416,12 +416,12 @@ module DICOM
       it "should delete tags marked for deletion during anonymization" do
         a = Anonymizer.new
         dcm = DObject.read(@anon3)
-        dcm.exists?("0010,0010").should be_true
+        expect(dcm.exists?("0010,0010")).to be_true
         a.add_folder(@anon_other)
         a.delete_tag("0010,0010")
         a.execute
         dcm = DObject.read(@anon3)
-        dcm.exists?("0010,0010").should be_false
+        expect(dcm.exists?("0010,0010")).to be_false
       end
 
     end

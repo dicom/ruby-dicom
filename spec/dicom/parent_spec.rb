@@ -15,18 +15,18 @@ module DICOM
         name = Element.new("0010,0010", "John_Doe", :parent => dcm)
         id = Element.new(id_tag, "12345", :parent => dcm)
         birth = Element.new("0010,0030", "20000101", :parent => dcm)
-        dcm[id_tag].should eql id
+        expect(dcm[id_tag]).to eql id
       end
 
       it "should return nil when a non-present tag is specified" do
         dcm = DObject.new
         name = Element.new("0010,0010", "John_Doe", :parent => dcm)
-        dcm["0010,0020"].should be_nil
+        expect(dcm["0010,0020"]).to be_nil
       end
 
       it "should return nil when called on an empty object" do
         dcm = DObject.new
-        dcm["0010,0020"].should be_nil
+        expect(dcm["0010,0020"]).to be_nil
       end
 
     end
@@ -39,7 +39,7 @@ module DICOM
         name_tag = "0010,0010"
         name = Element.new(name_tag, "John_Doe")
         dcm.add(name)
-        dcm[name_tag].should eql name
+        expect(dcm[name_tag]).to eql name
       end
 
       it "should add a Sequence to the DICOM object" do
@@ -47,7 +47,7 @@ module DICOM
         seq_tag = "0008,1140"
         seq = Sequence.new(seq_tag)
         dcm.add(seq)
-        dcm[seq_tag].should eql seq
+        expect(dcm[seq_tag]).to eql seq
       end
 
       it "should have two children, when adding a Element and a Sequence to the empty DICOM object" do
@@ -56,21 +56,21 @@ module DICOM
         dcm.add(seq)
         name = Element.new("0010,0010", "John_Doe")
         dcm.add(name)
-        dcm.count.should eql 2
+        expect(dcm.count).to eql 2
       end
 
       it "should update the parent attribute of the Element when it is added to a parent" do
         dcm = DObject.new
         name = Element.new("0010,0010", "John_Doe")
         dcm.add(name)
-        name.parent.should eql dcm
+        expect(name.parent).to eql dcm
       end
 
       it "should update the parent attribute of the Sequence when it is added to a parent" do
         dcm = DObject.new
         seq = Sequence.new("0008,1140")
         dcm.add(seq)
-        seq.parent.should eql dcm
+        expect(seq.parent).to eql dcm
       end
 
       it "should raise ArgumentError when it is called with an Item" do
@@ -110,24 +110,24 @@ module DICOM
 
       it "should add an empty Item when it is called without a parameter" do
         @dcm["0008,1140"].add_item
-        @dcm["0008,1140"].children.first.should be_an(Item)
+        expect(@dcm["0008,1140"].children.first).to be_an(Item)
       end
 
       it "should add the Item specified as a parameter" do
         item = Item.new
         @dcm["0008,1140"].add_item(item)
-        @dcm["0008,1140"].children.first.should eql item
+        expect(@dcm["0008,1140"].children.first).to eql item
       end
 
       it "should update the parent attribute of the Item when it is added to a parent" do
         item = Item.new
         @dcm["0008,1140"].add_item(item)
-        item.parent.should eql @dcm["0008,1140"]
+        expect(item.parent).to eql @dcm["0008,1140"]
       end
 
       it "should set the parent attribute of the Item that is created when the method is used without an argument" do
         @dcm["0008,1140"].add_item
-        @dcm["0008,1140"].children.last.parent.should eql @dcm["0008,1140"]
+        expect(@dcm["0008,1140"].children.last.parent).to eql @dcm["0008,1140"]
       end
 
       it "should raise ArgumentError if a non-positive integer is specified as an option" do
@@ -144,14 +144,14 @@ module DICOM
 
       it "should set the Item's index to zero when it is added to an empty Sequence" do
         @dcm["0008,1140"].add_item
-        @dcm["0008,1140"].children.first.index.should eql 0
+        expect(@dcm["0008,1140"].children.first.index).to eql 0
       end
 
       it "should set the Item's index to one when it is added to a Sequence which already contains one Item" do
         @dcm["0008,1140"].add_item
         item = Item.new
         @dcm["0008,1140"].add_item(item)
-        item.index.should eql 1
+        expect(item.index).to eql 1
       end
 
       it "should set the Item's index to one when it is specified with the :index option while being added to a Sequence which already contains two items" do
@@ -159,14 +159,14 @@ module DICOM
         @dcm["0008,1140"].add_item
         item = Item.new
         @dcm["0008,1140"].add_item(item, :index => 1)
-        item.index.should eql 1
+        expect(item.index).to eql 1
       end
 
       it "should set the Item's index one higher than the existing max index when a 'too big' :index option is used" do
         @dcm["0008,1140"].add_item
         item = Item.new
         @dcm["0008,1140"].add_item(item, :index => 5)
-        item.index.should eql 1
+        expect(item.index).to eql 1
       end
 
       it "should increase the following Item's index by one when an Item is placed in front of another Item by using the :index option" do
@@ -174,14 +174,14 @@ module DICOM
         bumped_item = Item.new
         @dcm["0008,1140"].add_item(bumped_item)
         @dcm["0008,1140"].add_item(Item.new, :index => 1)
-        bumped_item.index.should eql 2
+        expect(bumped_item.index).to eql 2
       end
 
       it "should use the expected index as key in the children's hash (when the :index option is not used)" do
         @dcm["0008,1140"].add_item
         item = Item.new
         @dcm["0008,1140"].add_item(item)
-        @dcm["0008,1140"][1].should eql item
+        expect(@dcm["0008,1140"][1]).to eql item
       end
 
       it "should use the expected index as key in the children's hash (when the :index option is used)" do
@@ -189,7 +189,7 @@ module DICOM
         @dcm["0008,1140"].add_item
         item = Item.new
         @dcm["0008,1140"].add_item(item, :index => 1)
-        @dcm["0008,1140"][1].should eql item
+        expect(@dcm["0008,1140"][1]).to eql item
       end
 
     end
@@ -202,24 +202,24 @@ module DICOM
       end
 
       it "should return an empty array when called on a parent with no children" do
-        @dcm.children.should be_an(Array)
-        @dcm.children.length.should eql 0
+        expect(@dcm.children).to be_an(Array)
+        expect(@dcm.children.length).to eql 0
       end
 
       it "should return an array with length equal to the number of children connected to the parent" do
         @dcm.add(Element.new("0010,0010", "John_Doe"))
         @dcm.add(Element.new("0010,0020", "12345"))
-        @dcm.children.should be_an(Array)
-        @dcm.children.length.should eql 2
+        expect(@dcm.children).to be_an(Array)
+        expect(@dcm.children.length).to eql 2
       end
 
       it "should return an array where the child elements are sorted by tag" do
         @dcm.add(Element.new("0010,0030", "20000101"))
         @dcm.add(Element.new("0010,0010", "John_Doe"))
         @dcm.add(Sequence.new("0008,1140"))
-        @dcm.children.first.tag.should eql "0008,1140"
-        @dcm.children[1].tag.should eql "0010,0010"
-        @dcm.children.last.tag.should eql "0010,0030"
+        expect(@dcm.children.first.tag).to eql "0008,1140"
+        expect(@dcm.children[1].tag).to eql "0010,0010"
+        expect(@dcm.children.last.tag).to eql "0010,0030"
       end
 
       it "should return an array where the child elements are sorted by index when the parent is a Sequence" do
@@ -227,9 +227,9 @@ module DICOM
         @dcm["0008,1140"].add_item
         @dcm["0008,1140"].add_item
         @dcm["0008,1140"].add_item
-        @dcm["0008,1140"].children.first.index.should eql 0
-        @dcm["0008,1140"].children[1].index.should eql 1
-        @dcm["0008,1140"].children.last.index.should eql 2
+        expect(@dcm["0008,1140"].children.first.index).to eql 0
+        expect(@dcm["0008,1140"].children[1].index).to eql 1
+        expect(@dcm["0008,1140"].children.last.index).to eql 2
       end
 
     end
@@ -243,17 +243,17 @@ module DICOM
 
       it "should return true when the parent has child elements" do
         @dcm.add(Sequence.new("0008,1140"))
-        @dcm.children?.should be_true
+        expect(@dcm.children?).to be_true
       end
 
       it "should return false on a child-less parent" do
-        @dcm.children?.should be_false
+        expect(@dcm.children?).to be_false
       end
 
       it "should return false on a parent who's children have been deleted" do
         @dcm.add(Sequence.new("0008,1140"))
         @dcm.delete("0008,1140")
-        @dcm.children?.should be_false
+        expect(@dcm.children?).to be_false
       end
 
     end
@@ -266,7 +266,7 @@ module DICOM
       end
 
       it "should return zero when the parent has no children" do
-        @dcm.count.should eql 0
+        expect(@dcm.count).to eql 0
       end
 
       it "should return an integer equal to the number of children added to this parent" do
@@ -274,7 +274,7 @@ module DICOM
         @dcm.add(Element.new("0010,0010", "John_Doe"))
         @dcm.add(Sequence.new("0008,1140"))
         @dcm["0008,1140"].add_item # (this should not be counted as it is not a direct parent of dcm)
-        @dcm.count.should eql 3
+        expect(@dcm.count).to eql 3
       end
 
     end
@@ -287,7 +287,7 @@ module DICOM
       end
 
       it "should return zero when the parent has no children" do
-        @dcm.count_all.should eql 0
+        expect(@dcm.count_all).to eql 0
       end
 
       it "should return an integer equal to the total number of children added to this parent and its child parents" do
@@ -295,7 +295,7 @@ module DICOM
         @dcm.add(Element.new("0010,0010", "John_Doe"))
         @dcm.add(Sequence.new("0008,1140"))
         @dcm["0008,1140"].add_item # (this should be counted as we are now counting all sub-children)
-        @dcm.count_all.should eql 4
+        expect(@dcm.count_all).to eql 4
       end
 
     end
@@ -308,12 +308,12 @@ module DICOM
       end
 
       it "should return false when the parent does not contain the queried element" do
-        @dcm.exists?("0010,0010").should be_false
+        expect(@dcm.exists?("0010,0010")).to be_false
       end
 
       it "should return true when the parent contains the queried element" do
         @dcm.add(Element.new("0010,0010", "John_Doe"))
-        @dcm.exists?("0010,0010").should be_true
+        expect(@dcm.exists?("0010,0010")).to be_true
       end
 
     end
@@ -330,13 +330,13 @@ module DICOM
       end
 
       it "should return an empty array when called on an empty parent" do
-        @dcm.group("0010").should eql Array.new
+        expect(@dcm.group("0010")).to eql Array.new
       end
 
       it "should return an empty array when the parent contains only elements of other groups" do
         @dcm.add(Element.new("0010,0030", "20000101"))
         @dcm.add(Sequence.new("0008,1140"))
-        @dcm.group("0020").should eql Array.new
+        expect(@dcm.group("0020")).to eql Array.new
       end
 
       it "should return the elements that match the specified group" do
@@ -345,9 +345,9 @@ module DICOM
         @dcm.add(Sequence.new("0008,1140"))
         @dcm.add(match1)
         @dcm.add(match2)
-        @dcm.group("0010").length.should eql 2
-        @dcm.group("0010").include?(match1).should be_true
-        @dcm.group("0010").include?(match2).should be_true
+        expect(@dcm.group("0010").length).to eql 2
+        expect(@dcm.group("0010").include?(match1)).to be_true
+        expect(@dcm.group("0010").include?(match2)).to be_true
       end
 
     end
@@ -356,19 +356,19 @@ module DICOM
     describe "#is_parent?" do
 
       it "should return true when called on a DObject" do
-        DObject.new.is_parent?.should be_true
+        expect(DObject.new.is_parent?).to be_true
       end
 
       it "should return true when called on a Sequence" do
-        Sequence.new("0008,1140").is_parent?.should be_true
+        expect(Sequence.new("0008,1140").is_parent?).to be_true
       end
 
       it "should return true when called on an Item" do
-        Item.new.is_parent?.should be_true
+        expect(Item.new.is_parent?).to be_true
       end
 
       it "should return false when called on a Element" do
-        Element.new("0010,0010", "John_Doe").is_parent?.should be_false
+        expect(Element.new("0010,0010", "John_Doe").is_parent?).to be_false
       end
 
     end
@@ -383,13 +383,13 @@ module DICOM
       it "should change the length attribute of the Sequence to the specified value" do
         s = Sequence.new("0008,1140")
         s.length = 42
-        s.length.should eql 42
+        expect(s.length).to eql 42
       end
 
       it "should change the length attribute of the Item to the specified value" do
         i = Item.new
         i.length = 42
-        i.length.should eql 42
+        expect(i.length).to eql 42
       end
 
     end
@@ -426,10 +426,10 @@ module DICOM
         @dcm.add(Element.new("0010,0010", "John_Doe"))
         file = "#{TMPDIR}print.txt"
         @dcm.print(:file => file)
-        File.exist?(file).should be_true
+        expect(File.exist?(file)).to be_true
         f = File.new(file, "rb")
         line = f.gets
-        line.include?("John_Doe").should be_true
+        expect(line.include?("John_Doe")).to be_true
         f.close
       end
 
@@ -439,18 +439,18 @@ module DICOM
         @dcm.print(:file => file, :value_max => 4)
         f = File.new(file, "rb")
         line = f.gets
-        line.include?("John_Doe").should be_false
+        expect(line.include?("John_Doe")).to be_false
         f.close
       end
 
       it "should return an Array" do
         @dcm.expects(:puts).at_least_once
-        @dcm.print.should be_an(Array)
+        expect(@dcm.print).to be_an(Array)
       end
 
       it "should return an empty array when the parent has no children" do
         @dcm.expects(:puts).at_least_once
-        @dcm.print.length.should eql 0
+        expect(@dcm.print.length).to eql 0
       end
 
       it "should return an array of length equal to the number of children of the parent" do
@@ -459,7 +459,7 @@ module DICOM
         @dcm.add(Sequence.new("0008,1140"))
         @dcm["0008,1140"].add_item
         @dcm.expects(:puts).at_least_once
-        @dcm.print.length.should eql 4
+        expect(@dcm.print.length).to eql 4
       end
 
     end
@@ -492,40 +492,40 @@ module DICOM
 
       it "should not delete any elements when the specified tag is not part of the parent's children" do
         @dcm.delete("0010,0013")
-        @dcm.children.length.should eql @number_of_elements_before
+        expect(@dcm.children.length).to eql @number_of_elements_before
       end
 
       it "should delete the Element when the tag is part of the parent's children" do
         @dcm.delete("0010,0030")
-        @dcm.exists?("0010,0030").should be_false
-        @dcm.children.length.should eql @number_of_elements_before - 1
+        expect(@dcm.exists?("0010,0030")).to be_false
+        expect(@dcm.children.length).to eql @number_of_elements_before - 1
       end
 
       it "should delete the Sequence when the tag is part of the parent's children" do
         @dcm.delete("0008,1140")
-        @dcm.exists?("0008,1140").should be_false
-        @dcm.children.length.should eql @number_of_elements_before - 1
+        expect(@dcm.exists?("0008,1140")).to be_false
+        expect(@dcm.children.length).to eql @number_of_elements_before - 1
       end
 
       it "should delete the Item from the parent Sequence" do
         @dcm["0008,1140"].delete(0)
-        @dcm["0008,1140"].exists?(1).should be_false
-        @dcm["0008,1140"].children.length.should eql 0
+        expect(@dcm["0008,1140"].exists?(1)).to be_false
+        expect(@dcm["0008,1140"].children.length).to eql 0
       end
 
       it "should reset the parent reference from the Element when it is deleted" do
         @dcm.delete("0010,0030")
-        @d.parent.should be_nil
+        expect(@d.parent).to be_nil
       end
 
       it "should reset the parent reference from the Sequence when it is deleted" do
         @dcm.delete("0008,1140")
-        @s.parent.should be_nil
+        expect(@s.parent).to be_nil
       end
 
       it "should reset the parent reference from the Item when it is deleted" do
         @dcm["0008,1140"].delete(0)
-        @i.parent.should be_nil
+        expect(@i.parent).to be_nil
       end
 
     end
@@ -542,7 +542,7 @@ module DICOM
         dcm.add(Sequence.new("0008,1140"))
         dcm["0008,1140"].add_item
         dcm.delete_children
-        dcm.children.length.should eql 0
+        expect(dcm.children.length).to eql 0
       end
 
     end
@@ -559,7 +559,7 @@ module DICOM
         dcm.add(Sequence.new("0008,1140"))
         dcm["0008,1140"].add_item
         dcm.delete_group("0010")
-        dcm.children.length.should eql 2
+        expect(dcm.children.length).to eql 2
       end
 
     end
@@ -576,7 +576,7 @@ module DICOM
         dcm.add(Sequence.new("0008,1140"))
         dcm["0008,1140"].add_item
         dcm.delete_private
-        dcm.children.length.should eql 2
+        expect(dcm.children.length).to eql 2
       end
 
     end
@@ -597,15 +597,15 @@ module DICOM
         dcm['0008,1145'].add_item
         dcm['0008,1145'][0].add(Element.new('0008,0070', 'ACME'))
         dcm.delete_retired
-        dcm.count.should eql 3
-        dcm.count_all.should eql 4
-        dcm.exists?('0010,0010').should be_true
-        dcm.exists?('5600,0020').should be_true
-        dcm.exists?('0008,1140').should be_true
-        dcm['0008,1140'][0].exists?('0008,0042').should be_false
-        dcm.exists?('0008,0041').should be_false
-        dcm.exists?('4008,0100').should be_false
-        dcm.exists?('0008,1145').should be_false
+        expect(dcm.count).to eql 3
+        expect(dcm.count_all).to eql 4
+        expect(dcm.exists?('0010,0010')).to be_true
+        expect(dcm.exists?('5600,0020')).to be_true
+        expect(dcm.exists?('0008,1140')).to be_true
+        expect(dcm['0008,1140'][0].exists?('0008,0042')).to be_false
+        expect(dcm.exists?('0008,0041')).to be_false
+        expect(dcm.exists?('4008,0100')).to be_false
+        expect(dcm.exists?('0008,1145')).to be_false
       end
 
     end
@@ -626,12 +626,12 @@ module DICOM
 
       it "should set the length of the Sequence to -1 (UNDEFINED)" do
         @s.reset_length
-        @s.length.should eql -1
+        expect(@s.length).to eql -1
       end
 
       it "should set the length of the Item to -1 (UNDEFINED)" do
         @i.reset_length
-        @i.length.should eql -1
+        expect(@i.length).to eql -1
       end
 
     end
@@ -664,23 +664,23 @@ module DICOM
       end
 
       it "should return nil when the specified tag is not part of the parent's children" do
-        @dcm.value("1234,5678").should be_nil
+        expect(@dcm.value("1234,5678")).to be_nil
       end
 
       it "should return the expected string value from the Element" do
-        @dcm.value("0010,0010").should eql "Anonymized"
+        expect(@dcm.value("0010,0010")).to eql "Anonymized"
       end
 
       it "should return a properly right-stripped string when the Element originally has had a string of odd length that has been padded" do
-        @dcm.value("0018,0022").should eql "PFP"
+        expect(@dcm.value("0018,0022")).to eql "PFP"
       end
 
       it "should return the expected integer (unsigned short)" do
-        @dcm.value("0028,0010").should eql 256
+        expect(@dcm.value("0028,0010")).to eql 256
       end
 
       it "should return the numbers in a backslash separated string when the Element contains multiple numbers in its value field" do
-        @dcm.value("0018,1310").should eql "0\\256\\208\\0"
+        expect(@dcm.value("0018,1310")).to eql "0\\256\\208\\0"
       end
 
     end

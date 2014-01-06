@@ -12,13 +12,13 @@ module DICOM
       it "should be able to read a file containing a blank 'AT' tag, and set its value as nil" do
         dcm = DObject.read(DCM_AT_NO_VALUE)
         at_element = dcm["0028,0009"]
-        at_element.value.should be_nil
+        expect(at_element.value).to be_nil
       end
 
       it "should be able to read a file containing an invalid 'AT' tag, handling the deviation by setting its value as nil" do
         dcm = DObject.read(DCM_AT_INVALID)
         at_element = dcm["0028,0009"]
-        at_element.value.should be_nil
+        expect(at_element.value).to be_nil
       end
 
     end
@@ -27,7 +27,7 @@ module DICOM
 
       it "should return the proper tag string" do
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
-        dcm.value("0020,5000").should eql "0010,0010"
+        expect(dcm.value("0020,5000")).to eql "0010,0010"
       end
 
     end
@@ -37,7 +37,7 @@ module DICOM
       it "should encode the value as a proper binary tag, for a little endian DICOM object" do
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
         dcm["0020,5000"].value = "10B0,C0A0"
-        dcm["0020,5000"].bin.should eql "\260\020\240\300"
+        expect(dcm["0020,5000"].bin).to eql "\260\020\240\300"
       end
 
     end
@@ -46,19 +46,19 @@ module DICOM
 
       it "should properly encode its value as a binary tag in, using default (little endian) encoding" do
         element = Element.new("0020,5000", "10B0,C0A0")
-        element.bin.should eql "\260\020\240\300"
+        expect(element.bin).to eql "\260\020\240\300"
       end
 
       it "should accept the creation of an empty (nil-valued) AT element" do
         element = Element.new("0020,5000", nil)
-        element.bin.should eql ''
-        element.value.should be_nil
+        expect(element.bin).to eql ''
+        expect(element.value).to be_nil
       end
 
       it "should accept the creation of an empty-stringed AT element" do
         element = Element.new("0020,5000", '')
-        element.bin.should eql ''
-        element.value.should eql ''
+        expect(element.bin).to eql ''
+        expect(element.value).to eql ''
       end
 
     end
@@ -68,14 +68,14 @@ module DICOM
       it "should add the Data Element with its value properly encoded as a binary tag, for an empty (little endian) DICOM object" do
         dcm = DObject.new
         dcm.add(Element.new("0020,5000", "10B0,C0A0"))
-        dcm["0020,5000"].bin.should eql "\260\020\240\300"
+        expect(dcm["0020,5000"].bin).to eql "\260\020\240\300"
       end
 
       it "should add the Data Element with its value properly encoded as a binary tag, for an empty (big endian) DICOM object" do
         dcm = DObject.new
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
         dcm.add(Element.new("0020,5000", "10B0,C0A0"))
-        dcm["0020,5000"].bin.should eql "\020\260\300\240"
+        expect(dcm["0020,5000"].bin).to eql "\020\260\300\240"
       end
 
     end
@@ -86,7 +86,7 @@ module DICOM
         dcm = DObject.new
         dcm.add(Element.new("0020,5000", "10B0,C0A0"))
         dcm.transfer_syntax = EXPLICIT_BIG_ENDIAN
-        dcm["0020,5000"].bin.should eql "\020\260\300\240"
+        expect(dcm["0020,5000"].bin).to eql "\020\260\300\240"
       end
 
     end
@@ -100,12 +100,12 @@ module DICOM
 
       it "should have properly decoded this File Meta Header tag (from a DICOM file with big endian TS), using little endian byte order" do
         dcm = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
-        dcm.exists?("0002,0010").should eql true
+        expect(dcm.exists?("0002,0010")).to eql true
       end
 
       it "should have properly decoded the DICOM tag (from a DICOM file with big endian TS), using big endian byte order" do
         dcm = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
-        dcm.exists?("0008,0060").should eql true
+        expect(dcm.exists?("0008,0060")).to eql true
       end
 
     end
@@ -121,21 +121,21 @@ module DICOM
         @dcm.add(Element.new("0002,0100", "1.234.567"))
         @dcm.write(@output)
         dcm = DObject.read(@output)
-        dcm.exists?("0002,0100").should eql true
+        expect(dcm.exists?("0002,0100")).to eql true
       end
 
       it "should properly encode the DICOM tag (to a DICOM file with big endian TS), using big endian byte order" do
         @dcm.add(Element.new("0010,0021", "Man"))
         @dcm.write(@output)
         dcm = DObject.read(@output)
-        dcm.exists?("0010,0021").should eql true
+        expect(dcm.exists?("0010,0021")).to eql true
       end
 
       it "should properly re-encode the DICOM tag when switching from a big endian TS to a little endian TS" do
         @dcm.transfer_syntax = IMPLICIT_LITTLE_ENDIAN
         @dcm.write(@output)
         dcm = DObject.read(@output)
-        dcm.exists?("0008,0060").should eql true
+        expect(dcm.exists?("0008,0060")).to eql true
       end
 
       after :each do
@@ -154,8 +154,8 @@ module DICOM
       it "should always save tags using upper case letters (but accept tags specified with lower case letters)" do
         dcm = DObject.new
         dcm.add(e = Element.new("0020,000d", "1.234.567"))
-        e.tag.should eql "0020,000D"
-        dcm.exists?("0020,000D").should eql true
+        expect(e.tag).to eql "0020,000D"
+        expect(dcm.exists?("0020,000D")).to eql true
       end
 
     end
@@ -166,8 +166,8 @@ module DICOM
       it "should always save tags using upper case letters (but accept tags specified with lower case letters)" do
         dcm = DObject.new
         dcm.add(s = Sequence.new("300a,0040"))
-        s.tag.should eql "300A,0040"
-        dcm.exists?("300A,0040").should eql true
+        expect(s.tag).to eql "300A,0040"
+        expect(dcm.exists?("300A,0040")).to eql true
       end
 
     end
@@ -180,13 +180,13 @@ module DICOM
         it "should accept upper cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("0020,000D", "1.234.567"))
-          dcm["0020,000D"].should be_an Element
+          expect(dcm["0020,000D"]).to be_an Element
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("0020,000D", "1.234.567"))
-          dcm["0020,000d"].should be_an Element
+          expect(dcm["0020,000d"]).to be_an Element
         end
 
       end
@@ -196,13 +196,13 @@ module DICOM
         it "should accept upper cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("0020,000D", "1.234.567"))
-          dcm.exists?("0020,000D").should eql true
+          expect(dcm.exists?("0020,000D")).to eql true
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("0020,000D", "1.234.567"))
-          dcm.exists?("0020,000d").should eql true
+          expect(dcm.exists?("0020,000d")).to eql true
         end
 
       end
@@ -212,13 +212,13 @@ module DICOM
         it "should accept upper cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.group("300A").length.should eql 1
+          expect(dcm.group("300A").length).to eql 1
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.group("300a").length.should eql 1
+          expect(dcm.group("300a").length).to eql 1
         end
 
       end
@@ -229,14 +229,14 @@ module DICOM
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete("300A,000A")
-          dcm.exists?("300A,000A").should be_false
+          expect(dcm.exists?("300A,000A")).to be_false
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete("300a,000a")
-          dcm.exists?("300A,000A").should be_false
+          expect(dcm.exists?("300A,000A")).to be_false
         end
 
       end
@@ -247,14 +247,14 @@ module DICOM
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete_group("300A")
-          dcm.exists?("300A,000A").should be_false
+          expect(dcm.exists?("300A,000A")).to be_false
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete_group("300a")
-          dcm.exists?("300A,000A").should be_false
+          expect(dcm.exists?("300A,000A")).to be_false
         end
 
       end
@@ -264,13 +264,13 @@ module DICOM
         it "should accept upper cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.value("300A,000A").should be_a String
+          expect(dcm.value("300A,000A")).to be_a String
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
-          dcm.value("300a,000a").should be_a String
+          expect(dcm.value("300a,000a")).to be_a String
         end
 
       end
