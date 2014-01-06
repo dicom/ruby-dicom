@@ -15,6 +15,9 @@ Thumbs.db
 # Bundler gem dependency snapshot:
 Gemfile.lock
 
+# Bundler log:
+.bundle
+
 # Temporary spec generated files:
 tmp
 
