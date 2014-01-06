@@ -48,17 +48,17 @@ class String
   # @return [Array<String>] the divided sub-strings
   #
   def divide(parts)
-    raise ArgumentError, "Expected an integer (Fixnum). Got #{parts.class}." unless parts.is_a?(Fixnum)
+    parts = parts.to_i
     raise ArgumentError, "Argument must be in the range <1 - self.length (#{self.length})>. Got #{parts}." if parts < 1 or parts > self.length
-    raise ArgumentError, "Length of self (#{self.length}) must be a multiple of parts (#{parts})." unless (self.length/parts).to_f == self.length/parts.to_f
-    if parts > 1
-      sub_strings = Array.new
-      sub_length = self.length/parts
-      parts.times { sub_strings << self.slice!(0..(sub_length-1)) }
-      return sub_strings
-    else
-      return [self]
-    end
+    raise ArgumentError, "Length of self (#{self.length}) must be a multiple of parts (#{parts})." if (self.length/parts.to_f % 1) != 0
+    sub_strings = Array.new
+    sub_length = self.length/parts
+    start_index = 0
+    parts.times {
+      sub_strings <<  self.slice(start_index, sub_length)
+      start_index += sub_length
+    }
+    sub_strings
   end
 
   # Extracts the element part of the tag string: The last 4 characters.
