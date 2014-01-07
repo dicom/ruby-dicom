@@ -63,12 +63,9 @@ module DICOM
     def decode(length, type)
       raise ArgumentError, "Invalid argument length. Expected Fixnum, got #{length.class}" unless length.is_a?(Fixnum)
       raise ArgumentError, "Invalid argument type. Expected string, got #{type.class}" unless type.is_a?(String)
-      # Check if values are valid:
-      if (@index + length) > @string.length
-        # The index number is bigger then the length of the binary string.
-        # We have reached the end and will return nil.
-        value = nil
-      else
+      value = nil
+      if (@index + length) <= @string.length
+        # There are sufficient bytes remaining to extract the value:
         if type == 'AT'
           # We need to guard ourselves against the case where a string contains an invalid 'AT' value:
           if length == 4
@@ -76,7 +73,6 @@ module DICOM
           else
             # Invalid. Just return nil.
             skip(length)
-            value = nil
           end
         else
           # Decode the binary string and return value:
@@ -92,7 +88,7 @@ module DICOM
           skip(length)
         end
       end
-      return value
+      value
     end
 
     # Decodes the entire instance string (typically used for decoding image data).
