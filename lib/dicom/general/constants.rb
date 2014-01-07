@@ -173,36 +173,38 @@ module DICOM
     'GB18030'    => 'GB18030',
     'ISO_IR 192' => 'UTF-8'
   }
+  ENCODING_NAME.default = 'ASCII-8BIT'
 
   # The type conversion (method) used for the various value representations.
   VALUE_CONVERSION = {
-        'BY' => :to_i,
-        'US' => :to_i,
-        'SS' => :to_i,
-        'UL' => :to_i,
-        'SL' => :to_i,
-        'OB' => :to_i,
-        'OW' => :to_i,
-        'OF' => :to_f,
-        'FL' => :to_f,
-        'FD' => :to_f,
-        'AT' => :to_s,
-        'AE' => :to_s,
-        'AS' => :to_s,
-        'CS' => :to_s,
-        'DA' => :to_s,
-        'DS' => :to_s,
-        'DT' => :to_s,
-        'IS' => :to_s,
-        'LO' => :to_s,
-        'LT' => :to_s,
-        'PN' => :to_s,
-        'SH' => :to_s,
-        'ST' => :to_s,
-        'TM' => :to_s,
-        'UI' => :to_s,
-        'UT' => :to_s
-      }
+    'BY' => :to_i,
+    'US' => :to_i,
+    'SS' => :to_i,
+    'UL' => :to_i,
+    'SL' => :to_i,
+    'OB' => :to_i,
+    'OW' => :to_i,
+    'OF' => :to_f,
+    'FL' => :to_f,
+    'FD' => :to_f,
+    'AT' => :to_s,
+    'AE' => :to_s,
+    'AS' => :to_s,
+    'CS' => :to_s,
+    'DA' => :to_s,
+    'DS' => :to_s,
+    'DT' => :to_s,
+    'IS' => :to_s,
+    'LO' => :to_s,
+    'LT' => :to_s,
+    'PN' => :to_s,
+    'SH' => :to_s,
+    'ST' => :to_s,
+    'TM' => :to_s,
+    'UI' => :to_s,
+    'UT' => :to_s
+  }
+  VALUE_CONVERSION.default = :to_s
 
 end
 

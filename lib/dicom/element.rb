@@ -212,9 +212,9 @@ module DICOM
         # In most cases the original encoding is IS0-8859-1 (ISO_IR 100), but if
         # it is not specified in the DICOM object, or if the specified string
         # is not recognized, ASCII-8BIT is assumed.
-        @value.encode('UTF-8', ENCODING_NAME[character_set] || 'ASCII-8BIT')
+        @value.encode('UTF-8', ENCODING_NAME[character_set])
         # If unpleasant encoding exceptions occur, the below version may be considered:
-        #@value.encode('UTF-8', ENCODING_NAME[character_set] || 'ASCII-8BIT', :invalid => :replace, :undef => :replace)
+        #@value.encode('UTF-8', ENCODING_NAME[character_set], :invalid => :replace, :undef => :replace)
       else
         @value
       end
@@ -229,8 +229,7 @@ module DICOM
     # @param [String, Integer, Float, Array] new_value a formatted value that is assigned to the element
     #
     def value=(new_value)
-      conversion = VALUE_CONVERSION[@vr] || :to_s
-      if conversion == :to_s
+      if VALUE_CONVERSION[@vr] == :to_s
         # Unless this is actually the Character Set data element,
         # get the character set (note that it may not be available):
         character_set = (@tag != '0008,0005' && top_parent.is_a?(DObject)) ? top_parent.value('0008,0005') : nil
@@ -238,7 +237,7 @@ module DICOM
         # In most cases the DObject encoding is IS0-8859-1 (ISO_IR 100), but if
         # it is not specified in the DICOM object, or if the specified string
         # is not recognized, ASCII-8BIT is assumed.
-        @value = new_value.to_s.encode(ENCODING_NAME[character_set] || 'ASCII-8BIT', new_value.to_s.encoding.name)
+        @value = new_value.to_s.encode(ENCODING_NAME[character_set], new_value.to_s.encoding.name)
         @bin = encode(@value)
       else
         # We may have an array (of numbers) which needs to be passed directly to
@@ -247,7 +246,7 @@ module DICOM
           @value = new_value
           @bin = encode(@value)
         else
-          @value = new_value.send(conversion)
+          @value = new_value.send(VALUE_CONVERSION[@vr])
           @bin = encode(@value)
         end
       end

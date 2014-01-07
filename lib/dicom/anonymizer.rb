@@ -352,7 +352,7 @@ module DICOM
     #
     def default_value(tag)
       name, vr = LIBRARY.name_and_vr(tag)
-      conversion = VALUE_CONVERSION[vr] || :to_s
+      conversion = VALUE_CONVERSION[vr]
       case conversion
       when :to_i then return 0
       when :to_f then return 0.0
