@@ -35,7 +35,7 @@ module DICOM
       raise ArgumentError, "The supplied tag (#{tag}) is not valid. The tag must be a string of the form 'GGGG,EEEE'." unless tag.is_a?(String) && tag.tag?
       # Set instance variables:
       @tag = tag.upcase
-      # We may beed to retrieve name and vr from the library:
+      # We may need to retrieve name and vr from the library:
       if options[:name] and options[:vr]
         @name = options[:name]
         @vr = options[:vr].upcase
