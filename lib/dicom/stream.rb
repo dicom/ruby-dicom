@@ -114,23 +114,19 @@ module DICOM
     #
     def decode_tag
       length = 4
-      # Check if values are valid:
-      if (@index + length) > @string.length
-        # The index number is bigger then the length of the binary string.
-        # We have reached the end and will return nil.
-        tag = nil
-      else
-        # Decode and process:
-        string = @string.slice(@index, length).unpack(@hex)[0].upcase
+      tag = nil
+      if (@index + length) <= @string.length
+        # There are sufficient bytes remaining to extract a full tag:
+        str = @string.slice(@index, length).unpack(@hex)[0].upcase
         if @equal_endian
-          tag = string[2..3] + string[0..1] + ',' + string[6..7] + string[4..5]
+          tag = "#{str[2..3]}#{str[0..1]},#{str[6..7]}#{str[4..5]}"
         else
-          tag = string[0..3] + ',' + string[4..7]
+          tag = "#{str[0..3]},#{str[4..7]}"
         end
         # Update our position in the string:
         skip(length)
       end
-      return tag
+      tag
     end
 
     # Encodes a given value to a binary string.
