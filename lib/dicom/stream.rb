@@ -41,7 +41,7 @@ module DICOM
     # @param [String] binary a binary string
     #
     def add_first(binary)
-      @string = binary + @string if binary
+      @string = "#{binary}#{@string}" if binary
     end
 
     # Appends a pre-encoded string to the instance string (inserts at the end).
@@ -49,7 +49,7 @@ module DICOM
     # @param [String] binary a binary string
     #
     def add_last(binary)
-      @string = @string + binary if binary
+      @string = "#{@string}#{binary}" if binary
     end
 
     # Decodes a section of the instance string.
@@ -144,8 +144,7 @@ module DICOM
     #
     def encode_first(value, type)
       value = [value] unless value.is_a?(Array)
-      bin = value.pack(vr_to_str(type))
-      @string = bin + @string
+      @string = "#{value.pack(vr_to_str(type))}#{@string}"
     end
 
     # Encodes a value to a binary string and appends it to the instance string.
@@ -155,8 +154,7 @@ module DICOM
     #
     def encode_last(value, type)
       value = [value] unless value.is_a?(Array)
-      bin = value.pack(vr_to_str(type))
-      @string = @string + bin
+      @string = "#{@string}#{value.pack(vr_to_str(type))}"
     end
 
     # Appends a string with trailling spaces to achieve a target length, and encodes it to a binary string.
@@ -168,7 +166,7 @@ module DICOM
     def encode_string_with_trailing_spaces(string, target_length)
       length = string.length
       if length < target_length
-        return [string].pack(@str)+['20'*(target_length-length)].pack(@hex)
+        return "#{[string].pack(@str)}#{['20'*(target_length-length)].pack(@hex)}"
       elsif length == target_length
         return [string].pack(@str)
       else
@@ -205,7 +203,7 @@ module DICOM
         # Encode:
         bin = value.pack(type)
         # Add an empty byte if the resulting binary has an odd length:
-        bin = bin + @pad_byte[vr] if bin.length.odd?
+        bin = "#{bin}#{@pad_byte[vr]}" if bin.length.odd?
       end
       return bin
     end
