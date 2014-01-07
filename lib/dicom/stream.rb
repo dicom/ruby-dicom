@@ -361,36 +361,36 @@ module DICOM
     #
     def set_format_hash
       @format = {
-        "BY" => @by, # Byte/Character (1-byte integers)
-        "US" => @us, # Unsigned short (2 bytes)
-        "SS" => @ss, # Signed short (2 bytes)
-        "UL" => @ul, # Unsigned long (4 bytes)
-        "SL" => @sl, # Signed long (4 bytes)
-        "FL" => @fs, # Floating point single (4 bytes)
-        "FD" => @fd, # Floating point double (8 bytes)
-        "OB" => @by, # Other byte string (1-byte integers)
-        "OF" => @fs, # Other float string (4-byte floating point numbers)
-        "OW" => @us, # Other word string (2-byte integers)
-        "AT" => @hex, # Tag reference (4 bytes) NB: For tags the spesialized encode_tag/decode_tag methods are used instead of this lookup table.
-        "UN" => @hex, # Unknown information (header element is not recognized from local database)
-        "HEX" => @hex, # HEX
+        'BY' => @by, # Byte/Character (1-byte integers)
+        'US' => @us, # Unsigned short (2 bytes)
+        'SS' => @ss, # Signed short (2 bytes)
+        'UL' => @ul, # Unsigned long (4 bytes)
+        'SL' => @sl, # Signed long (4 bytes)
+        'FL' => @fs, # Floating point single (4 bytes)
+        'FD' => @fd, # Floating point double (8 bytes)
+        'OB' => @by, # Other byte string (1-byte integers)
+        'OF' => @fs, # Other float string (4-byte floating point numbers)
+        'OW' => @us, # Other word string (2-byte integers)
+        'AT' => @hex, # Tag reference (4 bytes) NB: For tags the spesialized encode_tag/decode_tag methods are used instead of this lookup table.
+        'UN' => @hex, # Unknown information (header element is not recognized from local database)
+        'HEX' => @hex, # HEX
         # We have a number of VRs that are decoded as string:
-        "AE" => @str,
-        "AS" => @str,
-        "CS" => @str,
-        "DA" => @str,
-        "DS" => @str,
-        "DT" => @str,
-        "IS" => @str,
-        "LO" => @str,
-        "LT" => @str,
-        "PN" => @str,
-        "SH" => @str,
-        "ST" => @str,
-        "TM" => @str,
-        "UI" => @str,
-        "UT" => @str,
-        "STR" => @str
+        'AE' => @str,
+        'AS' => @str,
+        'CS' => @str,
+        'DA' => @str,
+        'DS' => @str,
+        'DT' => @str,
+        'IS' => @str,
+        'LO' => @str,
+        'LT' => @str,
+        'PN' => @str,
+        'SH' => @str,
+        'ST' => @str,
+        'TM' => @str,
+        'UI' => @str,
+        'UT' => @str,
+        'STR' => @str
       }
     end
 
@@ -400,35 +400,35 @@ module DICOM
     def set_pad_byte
       @pad_byte = {
         # Space character:
-        "AE" => "\x20",
-        "AS" => "\x20",
-        "CS" => "\x20",
-        "DA" => "\x20",
-        "DS" => "\x20",
-        "DT" => "\x20",
-        "IS" => "\x20",
-        "LO" => "\x20",
-        "LT" => "\x20",
-        "PN" => "\x20",
-        "SH" => "\x20",
-        "ST" => "\x20",
-        "TM" => "\x20",
-        "UT" => "\x20",
+        'AE' => "\x20",
+        'AS' => "\x20",
+        'CS' => "\x20",
+        'DA' => "\x20",
+        'DS' => "\x20",
+        'DT' => "\x20",
+        'IS' => "\x20",
+        'LO' => "\x20",
+        'LT' => "\x20",
+        'PN' => "\x20",
+        'SH' => "\x20",
+        'ST' => "\x20",
+        'TM' => "\x20",
+        'UT' => "\x20",
         # Zero byte:
-        "AT" => "\x00",
-        "BY" => "\x00",
-        "FL" => "\x00",
-        "FD" => "\x00",
-        "OB" => "\x00",
-        "OF" => "\x00",
-        "OW" => "\x00",
-        "SL" => "\x00",
-        "SQ" => "\x00",
-        "SS" => "\x00",
-        "UI" => "\x00",
-        "UL" => "\x00",
-        "UN" => "\x00",
-        "US" => "\x00"
+        'AT' => "\x00",
+        'BY' => "\x00",
+        'FL' => "\x00",
+        'FD' => "\x00",
+        'OB' => "\x00",
+        'OF' => "\x00",
+        'OW' => "\x00",
+        'SL' => "\x00",
+        'SQ' => "\x00",
+        'SS' => "\x00",
+        'UI' => "\x00",
+        'UL' => "\x00",
+        'UN' => "\x00",
+        'US' => "\x00"
       }
     end
 
