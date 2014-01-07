@@ -153,22 +153,11 @@ module DICOM
           if tag.private?
             element = DictionaryElement.new(tag, 'Private', ['UN'], '1', '')
           else
-            if !(de = @elements["#{tag[0..3]},xxx#{tag[8]}"]).nil? # 1000,xxxh
-              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            elsif !(de = @elements["#{tag[0..3]},xxxx"]).nil? # 1010,xxxx
-              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            elsif !(de = @elements["#{tag[0..1]}xx,#{tag[5..8]}"]).nil? # hhxx,hhhh
-              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            elsif !(de = @elements["#{tag[0..6]}x#{tag[8]}"]).nil? # 0028,hhxh
-              element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
-            else
-              # We are facing an unknown (but not private) tag:
-              element = DictionaryElement.new(tag, 'Unknown', ['UN'], '1', '')
-            end
+            element = unknown_or_range_element(tag)
           end
         end
       end
-      return element
+      element
     end
 
     # Extracts, and returns, all transfer syntaxes and SOP Classes from the dictionary.
@@ -228,6 +217,47 @@ module DICOM
     #
     def uid(value)
       @uids[value]
+    end
+
+
+    private
+
+
+    # Creates a list of possible 'range' tag candidates based on the given tag.
+    # Usually tags are uniquely defined in the DICOM dictionary, and the given
+    # tag can be matched directly. However, for a small set of known tags, the
+    # dictionary allows a range of tags to be associated with a specific
+    # entry. This method creates an array of candidate tags which are processed
+    # in order to match against these ranges.
+    #
+    # @param [String] tag the element tag
+    # @return [Array<String>] processed candidate tags
+    #
+    def range_candidates(tag)
+      [
+        "#{tag[0..3]},xxx#{tag[8]}", # 1000,xxxh
+        "#{tag[0..3]},xxxx", # 1010,xxxx
+        "#{tag[0..1]}xx,#{tag[5..8]}", # hhxx,hhhh
+        "#{tag[0..6]}x#{tag[8]}" # 0028,hhxh
+      ]
+    end
+
+    # Matches a tag against the possible range tag candidates, and if no match
+    # is found, returns a dictionary element representing an unknown tag.
+    #
+    # @param [String] tag the element tag
+    # @return [DictionaryElement] a matched range element or an unknown element
+    #
+    def unknown_or_range_element(tag)
+      element = nil
+      range_candidates(tag).each do |range_candidate_tag|
+        if de = @elements[range_candidate_tag]
+          element = DictionaryElement.new(tag, de.name, de.vrs, de.vm, de.retired)
+          break
+        end
+      end
+      # If nothing was matched, we are facing an unknown (but not private) tag:
+      element ||= DictionaryElement.new(tag, 'Unknown', ['UN'], '1', '')
     end
 
   end
