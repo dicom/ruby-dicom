@@ -182,12 +182,9 @@ module DICOM
     # @return [String] an encoded binary string
     #
     def encode_tag(tag)
-      if @equal_endian
-        clean_tag = tag[2..3] + tag[0..1] + tag[7..8] + tag[5..6]
-      else
-        clean_tag = tag[0..3] + tag[5..8]
-      end
-      return [clean_tag].pack(@hex)
+      [
+        @equal_endian ? "#{tag[2..3]}#{tag[0..1]}#{tag[7..8]}#{tag[5..6]}" : "#{tag[0..3]}#{tag[5..8]}"
+      ].pack(@hex)
     end
 
     # Encodes a value, and if the the resulting binary string has an
