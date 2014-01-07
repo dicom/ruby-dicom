@@ -27,13 +27,13 @@ class Array
   # @return [Array<Integer>] an array of signed integers
   #
   def to_signed(depth)
-    raise ArgumentError, "Expected Integer, got #{depth.class}" unless depth.is_a?(Integer)
-    raise ArgumentError, "Unsupported bit depth #{depth}." unless [8,16].include?(depth)
     case depth
     when 8
-      return self.collect {|i| i - 128}
+      self.collect {|i| i - 128}
     when 16
-      return self.collect {|i| i - 32768}
+      self.collect {|i| i - 32768}
+    else
+      raise ArgumentError, "Unknown or unsupported bit depth: #{depth}"
     end
   end
 
@@ -44,13 +44,13 @@ class Array
   # @return [Array<Integer>] an array of unsigned integers
   #
   def to_unsigned(depth)
-    raise ArgumentError, "Expected Integer, got #{depth.class}" unless depth.is_a?(Integer)
-    raise ArgumentError, "Unsupported bit depth #{depth}." unless [8,16].include?(depth)
     case depth
     when 8
-      return self.collect {|i| i + 128}
+      self.collect {|i| i + 128}
     when 16
-      return self.collect {|i| i + 32768}
+      self.collect {|i| i + 32768}
+    else
+      raise ArgumentError, "Unknown or unsupported bit depth: #{depth}"
     end
   end
 
