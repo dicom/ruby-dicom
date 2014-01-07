@@ -211,6 +211,20 @@ module DICOM
     end
 
 
+    describe "#parse" do
+
+      it "should parse and attach the item" do
+        bin = "\xFE\xFF\x00\xE0\xA6\x00\x00\x00"
+        s = Sequence.new('0008,0006')
+        s.parse(bin, '1.2.840.10008.1.2')
+        expect(s.count).to eql 1
+        expect(s.items.length).to eql 1
+        expect(s[0].parent).to eql s
+      end
+
+    end
+
+
     describe "#to_sequence" do
 
       it "should return itself" do

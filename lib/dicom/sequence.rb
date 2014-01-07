@@ -74,18 +74,6 @@ module DICOM
       state.hash
     end
 
-    # Loads data from an encoded DICOM string and creates
-    # items and elements which are linked to this instance.
-    #
-    # @param [String] bin an encoded binary string containing DICOM information
-    # @param [String] syntax the transfer syntax to use when decoding the DICOM string
-    #
-    def parse(bin, syntax)
-      raise ArgumentError, "Invalid argument 'bin'. Expected String, got #{bin.class}." unless bin.is_a?(String)
-      raise ArgumentError, "Invalid argument 'syntax'. Expected String, got #{syntax.class}." unless syntax.is_a?(String)
-      read(bin, signature=false, :syntax => syntax)
-    end
-
     # Returns self.
     #
     # @return [Sequence] self

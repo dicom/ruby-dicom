@@ -259,6 +259,21 @@ module DICOM
     end
 
 
+    describe "#parse" do
+
+      it "should parse and attach the data element" do
+        bin = "\x0A\x30\x14\x00\x04\x00\x00\x00\x53\x49\x54\x45"
+        i = Item.new
+        i.parse(bin, '1.2.840.10008.1.2')
+        expect(i.count).to eql 1
+        expect(i.elements.length).to eql 1
+        expect(i['300A,0014'].parent).to eql i
+        expect(i.value('300A,0014')).to eql 'SITE'
+      end
+
+    end
+
+
     describe "#to_item" do
 
       it "should return itself" do
