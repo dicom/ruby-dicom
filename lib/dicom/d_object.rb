@@ -411,24 +411,24 @@ module DICOM
     #
     def insert_missing_meta
       # File Meta Information Version:
-      Element.new("0002,0001", [0,1], :parent => self) unless exists?("0002,0001")
+      add_element("0002,0001", [0,1]) unless exists?("0002,0001")
       # Media Storage SOP Class UID:
-      Element.new("0002,0002", value("0008,0016"), :parent => self) unless exists?("0002,0002")
+      add_element("0002,0002", value("0008,0016")) unless exists?("0002,0002")
       # Media Storage SOP Instance UID:
-      Element.new("0002,0003", value("0008,0018"), :parent => self) unless exists?("0002,0003")
+      add_element("0002,0003", value("0008,0018")) unless exists?("0002,0003")
       # Transfer Syntax UID:
-      Element.new("0002,0010", transfer_syntax, :parent => self) unless exists?("0002,0010")
+      add_element("0002,0010", transfer_syntax) unless exists?("0002,0010")
       if !exists?("0002,0012") and !exists?("0002,0013")
         # Implementation Class UID:
-        Element.new("0002,0012", UID_ROOT, :parent => self)
+        add_element("0002,0012", UID_ROOT)
         # Implementation Version Name:
-        Element.new("0002,0013", NAME, :parent => self)
+        add_element("0002,0013", NAME)
       end
       # Source Application Entity Title:
-      Element.new("0002,0016", DICOM.source_app_title, :parent => self) unless exists?("0002,0016")
+      add_element("0002,0016", DICOM.source_app_title) unless exists?("0002,0016")
       # Group Length: Delete the old one (if it exists) before creating a new one.
       delete("0002,0000")
-      Element.new("0002,0000", meta_group_length, :parent => self)
+      add_element("0002,0000", meta_group_length)
     end
 
     # Determines the length of the meta group in the DObject instance.
