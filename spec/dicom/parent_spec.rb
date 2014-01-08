@@ -478,16 +478,19 @@ module DICOM
         @number_of_elements_before = @dcm.children.length
       end
 
-      it "should raise ArgumentError when the argument is not a string or integer" do
-        expect {@dcm.delete(3.55)}.to raise_error(ArgumentError)
+      it "should log a warning when the argument is not a string or integer" do
+        DICOM.logger.expects(:warn).once
+        @dcm.delete(3.55)
       end
 
-      it "should raise ArgumentError when the argument is not a valid tag" do
-        expect {@dcm.delete("asdf,asdf")}.to raise_error(ArgumentError)
+      it "should log a warning when the argument is not a valid tag" do
+        DICOM.logger.expects(:warn).once
+        @dcm.delete("asdf,asdf")
       end
 
-      it "should raise ArgumentError when the argument is a negative integer" do
-        expect {@dcm.delete(-1)}.to raise_error(ArgumentError)
+      it "should log a warning when the argument is a negative integer" do
+        DICOM.logger.expects(:warn).once
+        @dcm.delete(-1)
       end
 
       it "should not delete any elements when the specified tag is not part of the parent's children" do
@@ -661,16 +664,19 @@ module DICOM
         @dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       end
 
-      it "should raise ArgumentError when the argument is not a string or integer" do
-        expect {@dcm.value(3.55)}.to raise_error(ArgumentError)
+      it "should log a warning when the argument is not a string or integer" do
+        DICOM.logger.expects(:warn).once
+        @dcm.value(3.55)
       end
 
-      it "should raise ArgumentError when the argument is not a valid tag" do
-        expect {@dcm.value("asdf,asdf")}.to raise_error(ArgumentError)
+      it "should log a warning when the argument is not a valid tag" do
+        DICOM.logger.expects(:warn).once
+        @dcm.value("asdf,asdf")
       end
 
-      it "should raise ArgumentError when the argument is a negative integer" do
-        expect {@dcm.value(-1)}.to raise_error(ArgumentError)
+      it "should log a warning when the argument is a negative integer" do
+        DICOM.logger.expects(:warn).once
+        @dcm.value(-1)
       end
 
       it "should raise ArgumentError when the argument is a Sequence (as parent elements by our definition don't have a value)" do

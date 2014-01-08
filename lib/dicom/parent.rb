@@ -196,12 +196,7 @@ module DICOM
     #   dcm["3006,0020"].delete(1)
     #
     def delete(tag_or_index, options={})
-      if tag_or_index.is_a?(String) or tag_or_index.is_a?(Integer)
-        raise ArgumentError, "Argument (#{tag_or_index}) is not a valid tag string." if tag_or_index.is_a?(String) && !tag_or_index.tag?
-        raise ArgumentError, "Negative Integer argument (#{tag_or_index}) is not allowed." if tag_or_index.is_a?(Integer) && tag_or_index < 0
-      else
-        raise ArgumentError, "Expected String or Integer, got #{tag_or_index.class}."
-      end
+      check_key(tag_or_index, :delete)
       # We need to delete the specified child element's parent reference in addition to removing it from the tag Hash.
       element = self[tag_or_index]
       if element
@@ -711,12 +706,7 @@ module DICOM
     #   uid = dcm["3006,0010"][0].value("0020,0052")
     #
     def value(tag)
-      if tag.is_a?(String) or tag.is_a?(Integer)
-        raise ArgumentError, "Argument (#{tag}) is not a valid tag string." if tag.is_a?(String) && !tag.tag?
-        raise ArgumentError, "Negative Integer argument (#{tag}) is not allowed." if tag.is_a?(Integer) && tag < 0
-      else
-        raise ArgumentError, "Expected String or Integer, got #{tag.class}."
-      end
+      check_key(tag, :value)
       if exists?(tag)
         if self[tag].is_parent?
           raise ArgumentError, "Illegal parameter '#{tag}'. Parent elements, like the referenced '#{@tags[tag].class}', have no value. Only Element tags are valid."
@@ -731,6 +721,22 @@ module DICOM
 
     private
 
+
+    # Checks the given key argument and logs a warning if an obviously
+    # incorrect key argument is used.
+    #
+    # @param [String, Integer] tag_or_index the tag string or item index indentifying a given elemental
+    # @param [Symbol] method a representation of the method calling this method
+    #
+    def check_key(tag_or_index, method)
+      if tag_or_index.is_a?(String)
+        logger.warn("Parent##{method} called with an invalid tag argument: #{tag_or_index}") unless tag_or_index.tag?
+      elsif tag_or_index.is_a?(Integer)
+        logger.warn("Parent##{method} called with a negative Integer argument: #{tag_or_index}") if tag_or_index < 0
+      else
+        logger.warn("Parent##{method} called with an unexpected argument. Expected String or Integer, got: #{tag_or_index.class}")
+      end
+    end
 
     # Re-encodes the value of a child Element (but only if the
     # Element encoding is influenced by a shift in endianness).
