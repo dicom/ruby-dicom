@@ -18,6 +18,19 @@ module DICOM
     private
 
 
+    # Checks whether the given tag is a duplicate of an existing tag with this parent.
+    #
+    # @param [String] tag the tag of the candidate duplicate elemental
+    # @param [String] elemental the duplicate elemental type (e.g. Sequence, Element)
+    #
+    def check_duplicate(tag, elemental)
+      if @current_parent[tag]
+        gp = @current_parent.parent ? "#{@current_parent.parent.representation} => " : ''
+        p = @current_parent.representation
+        logger.warn("Duplicate #{elemental} (#{tag}) detected at level: #{gp}#{p}")
+      end
+    end
+
     # Checks for the official DICOM header signature.
     #
     # @return [Boolean] true if the proper signature is present, false if not, and nil if the string was shorter then the length of the DICOM signature
@@ -101,8 +114,7 @@ module DICOM
       # Create an Element from the gathered data:
       if level_vr == "SQ" or tag == ITEM_TAG
         if level_vr == "SQ"
-          # Check for duplicate and create sequence:
-          logger.warn("Duplicate Sequence (#{tag}) detected at level #{@current_parent.parent.is_a?(DObject) ? 'DObject' : @current_parent.parent.tag + ' => ' if @current_parent.parent}#{@current_parent.is_a?(DObject) ? 'DObject' : @current_parent.tag}") if @current_parent[tag]
+          check_duplicate(tag, 'Sequence')
           unless @current_parent[tag] and !@overwrite
             @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
           else
@@ -140,8 +152,7 @@ module DICOM
         # The occurance of such a tag indicates that a sequence or item has ended, and the parent must be changed:
         @current_parent = @current_parent.parent
       else
-        # Check for duplicate and create an ordinary data element:
-        logger.warn("Duplicate Element (#{tag}) detected at level #{@current_parent.parent.is_a?(DObject) ? 'DObject' : @current_parent.parent.tag + ' => ' if @current_parent.parent}#{@current_parent.is_a?(DObject) ? 'DObject' : @current_parent.tag}") if @current_parent[tag]
+        check_duplicate(tag, 'Element')
         unless @current_parent[tag] and !@overwrite
           @current_element = Element.new(tag, value, :bin => bin, :name => name, :parent => @current_parent, :vr => vr)
           # Check that the data stream didn't end abruptly:

@@ -611,6 +611,24 @@ module DICOM
     end
 
 
+    describe "#representation" do
+
+      it "should give 'DObject' when called on a DObject instance" do
+        expect(DObject.new.representation).to eql 'DObject'
+      end
+
+      it "should give the item tag when called on an Item" do
+        expect(Item.new.representation).to eql 'FFFE,E000'
+      end
+
+      it "should give the sequence tag when called on a Sequence" do
+        tag = '300A,0010'
+        expect(Sequence.new(tag).representation).to eql tag
+      end
+
+    end
+
+
     describe "#reset_length" do
 
       before :each do

@@ -595,6 +595,16 @@ module DICOM
       return elements
     end
 
+    # Gives a string which represents this DICOM parent. The DOBject is
+    # is represented by its class name, whereas elemental parents (Sequence,
+    # Item) is represented by their tags.
+    #
+    # @return [String] a representation of the DICOM parent
+    #
+    def representation
+      self.is_a?(DObject) ? 'DObject' : self.tag
+    end
+
     # Resets the length of a Sequence or Item to -1, which is the number used for 'undefined' length.
     #
     def reset_length
