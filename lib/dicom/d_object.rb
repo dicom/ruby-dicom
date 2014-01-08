@@ -410,23 +410,23 @@ module DICOM
     # to ensure that a valid DICOM object is encoded.
     #
     def insert_missing_meta
-      # File Meta Information Version:
-      add_element("0002,0001", [0,1]) unless exists?("0002,0001")
-      # Media Storage SOP Class UID:
-      add_element("0002,0002", value("0008,0016")) unless exists?("0002,0002")
-      # Media Storage SOP Instance UID:
-      add_element("0002,0003", value("0008,0018")) unless exists?("0002,0003")
-      # Transfer Syntax UID:
-      add_element("0002,0010", transfer_syntax) unless exists?("0002,0010")
-      if !exists?("0002,0012") and !exists?("0002,0013")
+      {
+        '0002,0001' => [0,1], # File Meta Information Version
+        '0002,0002' => value('0008,0016'), # Media Storage SOP Class UID
+        '0002,0003' => value('0008,0018'), # Media Storage SOP Instance UID
+        '0002,0010' => transfer_syntax, # Transfer Syntax UID
+        '0002,0016' => DICOM.source_app_title, # Source Application Entity Title
+      }.each_pair do |tag, value|
+        add_element(tag, value) unless exists?(tag)
+      end
+      if !exists?("0002,0012") && !exists?("0002,0013")
         # Implementation Class UID:
         add_element("0002,0012", UID_ROOT)
         # Implementation Version Name:
         add_element("0002,0013", NAME)
       end
-      # Source Application Entity Title:
-      add_element("0002,0016", DICOM.source_app_title) unless exists?("0002,0016")
-      # Group Length: Delete the old one (if it exists) before creating a new one.
+      # Delete the old group length first (if it exists) to avoid a miscount
+      # in the coming group length determination.
       delete("0002,0000")
       add_element("0002,0000", meta_group_length)
     end
@@ -449,7 +449,7 @@ module DICOM
         end
         group_length += tag + vr + length + element.bin.length
       end
-      return group_length
+      group_length
     end
 
     # Collects the attributes of this instance.
