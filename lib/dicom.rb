@@ -13,8 +13,9 @@
 # in principle 'private' classes, which are mainly of interest to developers.
 
 # Gem specific extensions:
-require_relative 'dicom/extensions/string'
 require_relative 'dicom/extensions/array'
+require_relative 'dicom/extensions/hash'
+require_relative 'dicom/extensions/string'
 
 # General module features/settings:
 require_relative 'dicom/general/version'

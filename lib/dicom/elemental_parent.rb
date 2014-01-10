@@ -24,33 +24,22 @@ module DICOM
     def add_item(item=nil, options={})
       if item
         if item.is_a?(Item)
-          if options[:index]
+          if index = options[:index]
             # This Item will take a specific index, and all existing Items with index higher or equal to this number will have their index increased by one.
             # Check if index is valid (must be an existing index):
-            if options[:index] >= 0
+            if index >= 0
               # If the index value is larger than the max index present, we dont need to modify the existing items.
-              if options[:index] < @tags.length
-                # Extract existing Hash entries to an array:
-                pairs = @tags.sort
-                @tags = Hash.new
-                # Change the key of those equal or larger than index and put these key,value pairs back in a new Hash:
-                pairs.each do |pair|
-                  if pair[0] < options[:index]
-                    @tags[pair[0]] = pair[1] # (Item keeps its old index)
-                  else
-                    @tags[pair[0]+1] = pair[1]
-                    pair[1].index = pair[0]+1 # (Item gets updated with its new index)
-                  end
-                end
+              if index < @tags.length
+                @tags = @tags.create_key_gap_at(index)
               else
                 # Set the index value one higher than the already existing max value:
-                options[:index] = @tags.length
+                index = @tags.length
               end
               #,Add the new Item and set its index:
-              @tags[options[:index]] = item
-              item.index = options[:index]
+              @tags[index] = item
+              item.index = index
             else
-              raise ArgumentError, "The specified index (#{options[:index]}) is out of range (must be a positive integer)."
+              raise ArgumentError, "The specified index (#{index}) is out of range (must be a positive integer)."
             end
           else
             # Add the existing Item to this Sequence:
