@@ -17,37 +17,28 @@ module DICOM
         unless @segments
           @stream.add_last(string)
         else
-          # As the encoded DICOM string will be cut in multiple, smaller pieces, we need to monitor the length of our encoded strings:
-          if (string.length + @stream.length) > @max_size
-            # Duplicate the string as not to ruin the binary of the data element with our slicing:
-            segment = string.dup
-            append = segment.slice!(0, @max_size-@stream.length)
-            # Join these strings together and add them to the segments:
-            @segments << @stream.export + append
-            if (30 + segment.length) > @max_size
-              # The remaining part of the string is bigger than the max limit, fill up more segments:
-              # How many full segments will this string fill?
-              number = (segment.length/@max_size.to_f).floor
-              start_index = 0
-              number.times {
-                @segments << segment.slice(start_index, @max_size)
-                start_index += @max_size
-              }
-              # The remaining part is added to the stream:
-              @stream.add_last(segment.slice(start_index, segment.length - start_index))
-            else
-              # The rest of the string is small enough that it can be added to the stream:
-              @stream.add_last(segment)
-            end
-          elsif (30 + @stream.length) > @max_size
-            # End the current segment, and start on a new segment for this string.
-            @segments << @stream.export
-            @stream.add_last(string)
-          else
-            # We are nowhere near the limit, simply add the string:
-            @stream.add_last(string)
-          end
+          add_with_segmentation(string)
         end
+      end
+    end
+
+    # Adds an encoded string to the output stream, while keeping track of the
+    # accumulated size of the output stream, splitting it up as necessary, and
+    # transferring the encoded string fragments to an array.
+    #
+    # @param [String] string a pre-encoded string
+    #
+    def add_with_segmentation(string)
+      # As the encoded DICOM string will be cut in multiple, smaller pieces, we need to monitor the length of our encoded strings:
+      if (string.length + @stream.length) > @max_size
+        split_and_add(string)
+      elsif (30 + @stream.length) > @max_size
+        # End the current segment, and start on a new segment for this string.
+        @segments << @stream.export
+        @stream.add_last(string)
+      else
+        # We are nowhere near the limit, simply add the string:
+        @stream.add_last(string)
       end
     end
 
@@ -125,6 +116,34 @@ module DICOM
         end
         # The path to this non-existing file is verified, and we can proceed to create the file:
         @file = File.new(file, "wb")
+      end
+    end
+
+    # Splits a pre-encoded string in parts and adds it to the segments instance
+    # array.
+    #
+    # @param [String] string a pre-encoded string
+    #
+    def split_and_add(string)
+      # Duplicate the string as not to ruin the binary of the data element with our slicing:
+      segment = string.dup
+      append = segment.slice!(0, @max_size-@stream.length)
+      # Clear out the stream along with a small part of the string:
+      @segments << @stream.export + append
+      if (30 + segment.length) > @max_size
+        # The remaining part of the string is bigger than the max limit, fill up more segments:
+        # How many full segments will this string fill?
+        number = (segment.length/@max_size.to_f).floor
+        start_index = 0
+        number.times {
+          @segments << segment.slice(start_index, @max_size)
+          start_index += @max_size
+        }
+        # The remaining part is added to the stream:
+        @stream.add_last(segment.slice(start_index, segment.length - start_index))
+      else
+        # The rest of the string is small enough that it can be added to the stream:
+        @stream.add_last(segment)
       end
     end
 
