@@ -523,13 +523,15 @@ module DICOM
     # @param [Symbol] sym a method name
     #
     def method_missing(sym, *args, &block)
+      s = sym.to_s
+      action = s[-1]
       # Try to match the method against a tag from the dictionary:
-      tag = LIBRARY.as_tag(sym.to_s) || LIBRARY.as_tag(sym.to_s[0..-2])
+      tag = LIBRARY.as_tag(s) || LIBRARY.as_tag(s[0..-2])
       if tag
-        if sym.to_s[-1..-1] == '?'
+        if action == '?'
           # Query:
           return self.exists?(tag)
-        elsif sym.to_s[-1..-1] == '='
+        elsif action == '='
           # Assignment:
           unless args.length==0 || args[0].nil?
             # What kind of element to create?
@@ -545,7 +547,7 @@ module DICOM
           end
         else
           # Retrieval:
-          return self[tag] rescue nil
+          return self[tag]
         end
       end
       # Forward to Object#method_missing:
