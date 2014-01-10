@@ -30,6 +30,7 @@ require_relative 'dicom/image_processor'
 require_relative 'dicom/parent'
 require_relative 'dicom/image_item'
 require_relative 'dicom/elemental'
+require_relative 'dicom/elemental_parent'
 # Subclasses and independent classes:
 require_relative 'dicom/d_client'
 require_relative 'dicom/d_object'

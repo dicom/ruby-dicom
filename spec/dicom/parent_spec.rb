@@ -138,8 +138,8 @@ module DICOM
         expect {@dcm["0008,1140"].add_item(Element.new("0010,0010", "John_Doe"))}.to raise_error(ArgumentError)
       end
 
-      it "should raise an error when an Item is attempted added to a DObject" do
-        expect {@dcm.add_item}.to raise_error
+      it "should raise a NoMethodError when an Item is attempted added to a DObject" do
+        expect {@dcm.add_item}.to raise_error(NoMethodError)
       end
 
       it "should set the Item's index to zero when it is added to an empty Sequence" do

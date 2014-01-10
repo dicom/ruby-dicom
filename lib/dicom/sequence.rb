@@ -4,8 +4,8 @@ module DICOM
   #
   class Sequence < Parent
 
-    # Include the Elemental mix-in module:
     include Elemental
+    include ElementalParent
 
     # Creates a Sequence instance.
     #

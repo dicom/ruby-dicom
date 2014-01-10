@@ -9,8 +9,8 @@ module DICOM
   #
   class Item < ImageItem
 
-    # Include the Elemental mix-in module:
     include Elemental
+    include ElementalParent
 
     # The index of this Item in the group of items belonging to its parent. If the Item is without parent, index is nil.
     attr_accessor :index
