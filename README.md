@@ -62,8 +62,8 @@ communication modalities like querying, moving, sending and receiving files.
     dcm.pixels
     # Load the pixel data to an numerical array (NArray):
     dcm.narray
-    # Load the pixel data to an RMagick image object and display it on the screen:
-    dcm.image.display
+    # Load the pixel data to an RMagick image object and display it on screen (X):
+    dcm.image.normalize.display
 
 ### Transmit a DICOM file
 
