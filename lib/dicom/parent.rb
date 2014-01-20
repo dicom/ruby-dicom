@@ -622,6 +622,7 @@ module DICOM
     # @return [String] a human-readable representation of this parent
     #
     def to_yaml
+      require 'yaml'
       to_hash.to_yaml
     end
 
