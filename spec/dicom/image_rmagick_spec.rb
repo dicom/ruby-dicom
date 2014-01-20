@@ -3,7 +3,6 @@
 # Specification for the image methods using the RMagick interface as the image processor.
 
 require 'spec_helper'
-require 'RMagick'
 
 
 module DICOM

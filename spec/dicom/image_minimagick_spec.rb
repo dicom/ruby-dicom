@@ -3,7 +3,6 @@
 # Specification for the image methods using the MiniMagick wrapper as the image processor.
 
 require 'spec_helper'
-require 'mini_magick'
 
 
 module DICOM

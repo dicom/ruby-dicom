@@ -119,7 +119,6 @@ module DICOM
     # image frames, the first image frame is returned, unless the :frame option is used.
     #
     # @note Creates an image object in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
-    # @note When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
     #
     # @param [Hash] options the options to use for extracting the image
     # @option options [Integer] :frame for DICOM objects containing multiple frames, this option can be used to extract a specific image frame (defaults to 0)
@@ -145,7 +144,6 @@ module DICOM
     # the image related elements in the DICOM object.
     #
     # @note Creates an array of image objects in accordance with the selected image processor. Available processors are :rmagick and :mini_magick.
-    # @note When calling this method the corresponding image processor gem must have been loaded in advance (example: require 'RMagick').
     #
     # @param [Hash] options the options to use for extracting the images
     # @option options [Integer] :frame makes the method return an array containing only the image object corresponding to the specified frame number
