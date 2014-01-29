@@ -1426,6 +1426,7 @@ module DICOM
       response = IO.select([@session], nil, nil, @timeout)
       if response.nil?
         logger.error("No answer was received within the specified timeout period. Aborting.")
+        stop_receiving
       else
         data = @session.recv(@max_receive_size)
       end
