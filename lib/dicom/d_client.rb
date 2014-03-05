@@ -624,7 +624,7 @@ module DICOM
           @link.build_data_fragment(@data_elements, presentation_context_id)
           @link.transmit
           # Receive confirmation response:
-          segments = @link.receive_single_transmission
+          segments = @link.receive_multiple_transmissions
           process_returned_data(segments)
         end
         # Close the DICOM link:
