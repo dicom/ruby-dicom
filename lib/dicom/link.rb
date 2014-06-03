@@ -1487,7 +1487,7 @@ module DICOM
         if info[:role_negotiation]
           pos = 3
           info[:role_negotiation].each do |role|
-            msg = Stream.new(message, @net_endian)
+            msg = Stream.new('', @net_endian)
             uid = role[:sop_uid]
             # Length of UID (2 bytes):
             msg.encode_first(uid.length, "US")
