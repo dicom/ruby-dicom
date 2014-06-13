@@ -14,6 +14,7 @@
 
 # Standard library dependencies:
 require 'json'
+require 'yaml'
 
 # Gem specific extensions:
 require_relative 'dicom/extensions/array'

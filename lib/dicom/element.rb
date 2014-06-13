@@ -187,7 +187,6 @@ module DICOM
     # @return [String] a string containing a key & value pair (e.g. "---\nModality: MR\n")
     #
     def to_yaml
-      require 'yaml'
       to_hash.to_yaml
     end
 
