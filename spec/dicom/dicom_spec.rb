@@ -26,7 +26,7 @@ module DICOM
 
       it "should use the UID_ROOT constant when called without parameters" do
         uid = DICOM.generate_uid
-        expect(uid.include?(UID_ROOT)).to be_true
+        expect(uid.include?(UID_ROOT)).to be_truthy
         expect(uid.index(UID_ROOT)).to eql 0
       end
 
@@ -34,7 +34,7 @@ module DICOM
         root = "1.999"
         prefix = "6"
         uid = DICOM.generate_uid(root, prefix)
-        expect(uid.include?("#{root}.#{prefix}.")).to be_true
+        expect(uid.include?("#{root}.#{prefix}.")).to be_truthy
       end
 
     end
@@ -66,7 +66,7 @@ module DICOM
       it "should not set the DObject's :was_dcm_on_input attribute as true when given a path to a DICOM file" do
         file = DCM_ISO8859_1
         ary = DICOM.load(file)
-        expect(ary.first.was_dcm_on_input).to be_false
+        expect(ary.first.was_dcm_on_input).to be_falsey
       end
 
       it "should return the DObject instance in an array when given a DObject instance" do
@@ -78,7 +78,7 @@ module DICOM
       it "should set the DObject's :was_dcm_on_input attribute as true when given a DObject instance" do
         dcm = DObject.read(DCM_ISO8859_1)
         ary = DICOM.load(dcm)
-        expect(ary.first.was_dcm_on_input).to be_true
+        expect(ary.first.was_dcm_on_input).to be_truthy
       end
 
       it "should return a DObject instance in an array when given an array with a DICOM binary string" do

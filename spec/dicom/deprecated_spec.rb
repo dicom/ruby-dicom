@@ -171,8 +171,8 @@ module DICOM
         a.add_folder(@anon_other)
         a.execute
         dcm = DObject.read(@anon3) # the tag we are testing is not originally present in this file
-        expect(a.value("0008,0012")).to be_true # make sure the tag we are testing is defined
-        expect(dcm.exists?("0008,0012")).to be_false
+        expect(a.value("0008,0012")).to be_truthy # make sure the tag we are testing is defined
+        expect(dcm.exists?("0008,0012")).to be_falsey
       end
 
       it "should fill the log with information" do
@@ -206,7 +206,7 @@ module DICOM
         expect(a2.value("0010,0010")).to eql s2.value("0010,0010")
         expect(a1.value("0010,0010")).not_to eql a2.value("0010,0010")
         expect(s1.value("0010,0010")).not_to eql s2.value("0010,0010")
-        expect(a1.value("0010,0010").include?(a.value("0010,0010"))).to be_true
+        expect(a1.value("0010,0010").include?(a.value("0010,0010"))).to be_truthy
         expect(a1.value("0010,0010")[-1..-1].to_i).not_to eql a2.value("0010,0010")[-1..-1].to_i
       end
 
@@ -315,8 +315,8 @@ module DICOM
           a.execute
           dcm = DObject.read(@path)
           rdcm = DObject.read(@rpath)
-          expect(LIBRARY.uid(dcm.value('0002,0010')).transfer_syntax?).to be_true
-          expect(LIBRARY.uid(rdcm.value('0002,0010')).transfer_syntax?).to be_true
+          expect(LIBRARY.uid(dcm.value('0002,0010')).transfer_syntax?).to be_truthy
+          expect(LIBRARY.uid(rdcm.value('0002,0010')).transfer_syntax?).to be_truthy
         end
 
         it "should not touch the SOP Class UID when the :uid option is used" do
@@ -384,7 +384,7 @@ module DICOM
           a.write_path = @wpath_s
           a.enumeration = true
           a.execute
-          expect(File.exists?(audit_file)).to be_true
+          expect(File.exists?(audit_file)).to be_truthy
           at = AuditTrail.read(audit_file)
           expect(at).to be_a AuditTrail
         end
@@ -416,12 +416,12 @@ module DICOM
       it "should delete tags marked for deletion during anonymization" do
         a = Anonymizer.new
         dcm = DObject.read(@anon3)
-        expect(dcm.exists?("0010,0010")).to be_true
+        expect(dcm.exists?("0010,0010")).to be_truthy
         a.add_folder(@anon_other)
         a.delete_tag("0010,0010")
         a.execute
         dcm = DObject.read(@anon3)
-        expect(dcm.exists?("0010,0010")).to be_false
+        expect(dcm.exists?("0010,0010")).to be_falsey
       end
 
     end

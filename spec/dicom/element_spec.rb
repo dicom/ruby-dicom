@@ -87,7 +87,7 @@ module DICOM
         d = Element.new("3006,0084", "1", :parent => i_old)
         i_new = Item.new
         d.parent = i_new
-        expect(i_old.children?).to be_false
+        expect(i_old.children?).to be_falsey
       end
 
       it "should add itself as a child of the new parent element when a new parent is set to a child which already has a parent" do
@@ -95,14 +95,14 @@ module DICOM
         d = Element.new("3006,0084", "1", :parent => i_old)
         i_new = Item.new
         d.parent = i_new
-        expect(i_new.children?).to be_true
+        expect(i_new.children?).to be_truthy
       end
 
       it "should remove itself as a child of the old parent element when parent is set as nil" do
         i = Item.new
         d = Element.new("3006,0084", "1", :parent => i)
         d.parent = nil
-        expect(i.children?).to be_false
+        expect(i.children?).to be_falsey
       end
 
       it "should keep its parent and the parent should keep its child if the existing parent is set with the parent=() method" do
@@ -245,17 +245,17 @@ module DICOM
 
       it "should return false when the children? method is called as an Element do not have child elements" do
         d = Element.new("0028,0010", 512)
-        expect(d.children?).to be_false
+        expect(d.children?).to be_falsey
       end
 
       it "should return false when the is_parent? method is called as an Element is never a parent element" do
         d = Element.new("0028,0010", 512)
-        expect(d.is_parent?).to be_false
+        expect(d.is_parent?).to be_falsey
       end
 
       it "should use little endian as default encoding, and report this as false when the endian method is called" do
         d = Element.new("0028,0010", 512)
-        expect(d.endian).to be_false
+        expect(d.endian).to be_falsey
       end
 
       it "should convert the value of an Element of value representation 'BY' to Integer" do
@@ -402,24 +402,24 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         e1 = Element.new("0028,0010", 512)
         e2 = Element.new("0028,0010", 512)
-        expect(e1 == e2).to be_true
+        expect(e1 == e2).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values (same tag but different values)" do
         e1 = Element.new("0028,0010", 512)
         e2 = Element.new("0028,0010", 510)
-        expect(e1 == e2).to be_false
+        expect(e1 == e2).to be_falsey
       end
 
       it "should be false when comparing two instances having different attribute values (different tag but same value/vr)" do
         e1 = Element.new("0028,0010", 512)
         e2 = Element.new("0028,0011", 512)
-        expect(e1 == e2).to be_false
+        expect(e1 == e2).to be_falsey
       end
 
       it "should be false when comparing against an instance of incompatible type" do
         e = Element.new("0028,0010", 512)
-        expect(e == 42).to be_false
+        expect(e == 42).to be_falsey
       end
 
     end
@@ -430,13 +430,13 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         e1 = Element.new("0028,0010", 512)
         e2 = Element.new("0028,0010", 512)
-        expect(e1.eql?(e2)).to be_true
+        expect(e1.eql?(e2)).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values" do
         e1 = Element.new("0028,0010", 512)
         e2 = Element.new("0028,0010", 510)
-        expect(e1.eql?(e2)).to be_false
+        expect(e1.eql?(e2)).to be_falsey
       end
 
     end
@@ -463,7 +463,7 @@ module DICOM
 
       it "should return itself" do
         e = Element.new("0028,0010", 512)
-        expect(e.to_element.equal?(e)).to be_true
+        expect(e.to_element.equal?(e)).to be_truthy
       end
 
     end

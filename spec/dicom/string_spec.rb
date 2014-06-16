@@ -16,20 +16,20 @@ module DICOM
     end
 
     it "should return false for any string that deviates from the ruby-dicom tag definition of 'GGGG,EEEE', where G and E are hexadecimals" do
-      expect("0000".tag?).to be_false
-      expect("0010,00000".tag?).to be_false
-      expect("F00E,".tag?).to be_false
-      expect(",0000".tag?).to be_false
-      expect("000G,0000".tag?).to be_false
-      expect("0000,000H".tag?).to be_false
-      expect("AAA,ACCCC".tag?).to be_false
-      expect(",AAAACCCC".tag?).to be_false
-      expect("AAAACCCC,".tag?).to be_false
-      expect("tyui;pqwx,".tag?).to be_false
-      expect("-000,0000".tag?).to be_false
-      expect("-0000,0000".tag?).to be_false
-      expect("0000.0000".tag?).to be_false
-      expect("00000000".tag?).to be_false
+      expect("0000".tag?).to be_falsey
+      expect("0010,00000".tag?).to be_falsey
+      expect("F00E,".tag?).to be_falsey
+      expect(",0000".tag?).to be_falsey
+      expect("000G,0000".tag?).to be_falsey
+      expect("0000,000H".tag?).to be_falsey
+      expect("AAA,ACCCC".tag?).to be_falsey
+      expect(",AAAACCCC".tag?).to be_falsey
+      expect("AAAACCCC,".tag?).to be_falsey
+      expect("tyui;pqwx,".tag?).to be_falsey
+      expect("-000,0000".tag?).to be_falsey
+      expect("-0000,0000".tag?).to be_falsey
+      expect("0000.0000".tag?).to be_falsey
+      expect("00000000".tag?).to be_falsey
     end
 
   end
@@ -48,15 +48,15 @@ module DICOM
     end
 
     it "should return false for any string that is not a private tag" do
-      expect("0000,0000".private?).to be_false
-      expect("1110,1111".private?).to be_false
-      expect("0002,0003".private?).to be_false
-      expect("0004,0055".private?).to be_false
-      expect("0006,0707".private?).to be_false
-      expect("0008,9009".private?).to be_false
-      expect("00BA,000B".private?).to be_false
-      expect("0D0C,000D".private?).to be_false
-      expect("F00E,000F".private?).to be_false
+      expect("0000,0000".private?).to be_falsey
+      expect("1110,1111".private?).to be_falsey
+      expect("0002,0003".private?).to be_falsey
+      expect("0004,0055".private?).to be_falsey
+      expect("0006,0707".private?).to be_falsey
+      expect("0008,9009".private?).to be_falsey
+      expect("00BA,000B".private?).to be_falsey
+      expect("0D0C,000D".private?).to be_falsey
+      expect("F00E,000F".private?).to be_falsey
     end
 
   end
@@ -97,8 +97,8 @@ module DICOM
     end
 
     it "should return false when the string is not a valid group length tag" do
-      expect("0010,0020".group_length?).to be_false
-      expect("0010".group_length?).to be_false
+      expect("0010,0020".group_length?).to be_falsey
+      expect("0010".group_length?).to be_falsey
     end
 
   end

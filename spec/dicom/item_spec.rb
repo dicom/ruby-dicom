@@ -93,7 +93,7 @@ module DICOM
         i = Item.new(:parent => s_old)
         s_new = Sequence.new("3006,0039")
         i.parent = s_new
-        expect(s_old.children?).to be_false
+        expect(s_old.children?).to be_falsey
       end
 
       it "should set a correct index value when an Item is added to a Sequence which is already occupied by several items" do
@@ -183,7 +183,7 @@ module DICOM
 
       it "should return false when the children? method is called as a newly created Item do not have child elements" do
         i = Item.new
-        expect(i.children?).to be_false
+        expect(i.children?).to be_falsey
       end
 
       it "should return true when the is_parent? method is called as a Item by definition is a parent" do
@@ -199,25 +199,25 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         i1 = Item.new
         i2 = Item.new
-        expect(i1 == i2).to be_true
+        expect(i1 == i2).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values (different children)" do
         i1 = Item.new
         i2 = Item.new
         i2.add(Sequence.new("0008,0006"))
-        expect(i1 == i2).to be_false
+        expect(i1 == i2).to be_falsey
       end
 
       it "should be false when comparing two instances having different attribute values (different vr but both no children)" do
         i1 = Item.new
         i2 = Item.new(:vr => "OB")
-        expect(i1 == i2).to be_false
+        expect(i1 == i2).to be_falsey
       end
 
       it "should be false when comparing against an instance of incompatible type" do
         i = Item.new
-        expect(i == 42).to be_false
+        expect(i == 42).to be_falsey
       end
 
     end
@@ -228,14 +228,14 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         i1 = Item.new
         i2 = Item.new
-        expect(i1.eql?(i2)).to be_true
+        expect(i1.eql?(i2)).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values" do
         i1 = Item.new
         i2 = Item.new
         i2.add(Sequence.new("0008,0006"))
-        expect(i1.eql?(i2)).to be_false
+        expect(i1.eql?(i2)).to be_falsey
       end
 
     end
@@ -278,7 +278,7 @@ module DICOM
 
       it "should return itself" do
         i = Item.new
-        expect(i.to_item.equal?(i)).to be_true
+        expect(i.to_item.equal?(i)).to be_truthy
       end
 
     end

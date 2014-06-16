@@ -92,7 +92,7 @@ module DICOM
         seq = Sequence.new('0008,1140')
         padding = Element.new('FFFC,FFFC', 0)
         seq.add(padding)
-        seq.exists?('FFFC,FFFC').should be_true
+        seq.exists?('FFFC,FFFC').should be_truthy
         seq.children.length.should eql 1
         seq['FFFC,FFFC'].should eql padding
       end
@@ -243,17 +243,17 @@ module DICOM
 
       it "should return true when the parent has child elements" do
         @dcm.add(Sequence.new("0008,1140"))
-        expect(@dcm.children?).to be_true
+        expect(@dcm.children?).to be_truthy
       end
 
       it "should return false on a child-less parent" do
-        expect(@dcm.children?).to be_false
+        expect(@dcm.children?).to be_falsey
       end
 
       it "should return false on a parent who's children have been deleted" do
         @dcm.add(Sequence.new("0008,1140"))
         @dcm.delete("0008,1140")
-        expect(@dcm.children?).to be_false
+        expect(@dcm.children?).to be_falsey
       end
 
     end
@@ -308,12 +308,12 @@ module DICOM
       end
 
       it "should return false when the parent does not contain the queried element" do
-        expect(@dcm.exists?("0010,0010")).to be_false
+        expect(@dcm.exists?("0010,0010")).to be_falsey
       end
 
       it "should return true when the parent contains the queried element" do
         @dcm.add(Element.new("0010,0010", "John_Doe"))
-        expect(@dcm.exists?("0010,0010")).to be_true
+        expect(@dcm.exists?("0010,0010")).to be_truthy
       end
 
     end
@@ -346,8 +346,8 @@ module DICOM
         @dcm.add(match1)
         @dcm.add(match2)
         expect(@dcm.group("0010").length).to eql 2
-        expect(@dcm.group("0010").include?(match1)).to be_true
-        expect(@dcm.group("0010").include?(match2)).to be_true
+        expect(@dcm.group("0010").include?(match1)).to be_truthy
+        expect(@dcm.group("0010").include?(match2)).to be_truthy
       end
 
     end
@@ -356,19 +356,19 @@ module DICOM
     describe "#is_parent?" do
 
       it "should return true when called on a DObject" do
-        expect(DObject.new.is_parent?).to be_true
+        expect(DObject.new.is_parent?).to be_truthy
       end
 
       it "should return true when called on a Sequence" do
-        expect(Sequence.new("0008,1140").is_parent?).to be_true
+        expect(Sequence.new("0008,1140").is_parent?).to be_truthy
       end
 
       it "should return true when called on an Item" do
-        expect(Item.new.is_parent?).to be_true
+        expect(Item.new.is_parent?).to be_truthy
       end
 
       it "should return false when called on a Element" do
-        expect(Element.new("0010,0010", "John_Doe").is_parent?).to be_false
+        expect(Element.new("0010,0010", "John_Doe").is_parent?).to be_falsey
       end
 
     end
@@ -426,10 +426,10 @@ module DICOM
         @dcm.add(Element.new("0010,0010", "John_Doe"))
         file = "#{TMPDIR}print.txt"
         @dcm.print(:file => file)
-        expect(File.exist?(file)).to be_true
+        expect(File.exist?(file)).to be_truthy
         f = File.new(file, "rb")
         line = f.gets
-        expect(line.include?("John_Doe")).to be_true
+        expect(line.include?("John_Doe")).to be_truthy
         f.close
       end
 
@@ -439,7 +439,7 @@ module DICOM
         @dcm.print(:file => file, :value_max => 4)
         f = File.new(file, "rb")
         line = f.gets
-        expect(line.include?("John_Doe")).to be_false
+        expect(line.include?("John_Doe")).to be_falsey
         f.close
       end
 
@@ -500,19 +500,19 @@ module DICOM
 
       it "should delete the Element when the tag is part of the parent's children" do
         @dcm.delete("0010,0030")
-        expect(@dcm.exists?("0010,0030")).to be_false
+        expect(@dcm.exists?("0010,0030")).to be_falsey
         expect(@dcm.children.length).to eql @number_of_elements_before - 1
       end
 
       it "should delete the Sequence when the tag is part of the parent's children" do
         @dcm.delete("0008,1140")
-        expect(@dcm.exists?("0008,1140")).to be_false
+        expect(@dcm.exists?("0008,1140")).to be_falsey
         expect(@dcm.children.length).to eql @number_of_elements_before - 1
       end
 
       it "should delete the Item from the parent Sequence" do
         @dcm["0008,1140"].delete(0)
-        expect(@dcm["0008,1140"].exists?(1)).to be_false
+        expect(@dcm["0008,1140"].exists?(1)).to be_falsey
         expect(@dcm["0008,1140"].children.length).to eql 0
       end
 
@@ -602,13 +602,13 @@ module DICOM
         dcm.delete_retired
         expect(dcm.count).to eql 3
         expect(dcm.count_all).to eql 4
-        expect(dcm.exists?('0010,0010')).to be_true
-        expect(dcm.exists?('5600,0020')).to be_true
-        expect(dcm.exists?('0008,1140')).to be_true
-        expect(dcm['0008,1140'][0].exists?('0008,0042')).to be_false
-        expect(dcm.exists?('0008,0041')).to be_false
-        expect(dcm.exists?('4008,0100')).to be_false
-        expect(dcm.exists?('0008,1145')).to be_false
+        expect(dcm.exists?('0010,0010')).to be_truthy
+        expect(dcm.exists?('5600,0020')).to be_truthy
+        expect(dcm.exists?('0008,1140')).to be_truthy
+        expect(dcm['0008,1140'][0].exists?('0008,0042')).to be_falsey
+        expect(dcm.exists?('0008,0041')).to be_falsey
+        expect(dcm.exists?('4008,0100')).to be_falsey
+        expect(dcm.exists?('0008,1145')).to be_falsey
       end
 
     end

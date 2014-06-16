@@ -31,17 +31,17 @@ module DICOM
     end
 
     it "should query the DICOM object for the existence of a tag using <methodized-name>? returning true if it exists" do
-       expect(@dcm.sop_instance_uid?).to be_true
+       expect(@dcm.sop_instance_uid?).to be_truthy
     end
 
     it "should query the DICOM object for the existence of a tag using <methodized-name>? returning false if it doesnt exist" do
       @dcm.sop_instance_uid = nil
-      expect(@dcm.sop_instance_uid?).to be_false
+      expect(@dcm.sop_instance_uid?).to be_falsey
     end
 
     it "should query the DICOM object for the existence of a tag using <methodized-name>? returning true if it exists" do
       @dcm.sop_instance_uid = "1.2.3.4.5.6"
-      expect(@dcm.sop_instance_uid?).to be_true
+      expect(@dcm.sop_instance_uid?).to be_truthy
     end
 
     it "should set the sop_instance_uid to '1.2.3.4.5'" do
@@ -51,7 +51,7 @@ module DICOM
 
     it "should delete the sop_instance_uid" do
       @dcm.sop_instance_uid = nil
-      expect(@dcm.sop_instance_uid?).to be_false
+      expect(@dcm.sop_instance_uid?).to be_falsey
     end
 
     it "should set file_meta_information_group_length from an integer value" do
@@ -116,17 +116,17 @@ module DICOM
 
     it "should create a hash with DICOM names as keys" do
       DICOM.key_use_names
-      expect(@dcm.to_hash.key?("File Meta Information Group Length")).to be_true
+      expect(@dcm.to_hash.key?("File Meta Information Group Length")).to be_truthy
     end
 
     it "should create a hash with DICOM method symbols as keys" do
       DICOM.key_use_method_names
-      expect(@dcm.to_hash.key?(:file_meta_information_group_length)).to be_true
+      expect(@dcm.to_hash.key?(:file_meta_information_group_length)).to be_truthy
     end
 
     it "should create a hash with DICOM tags as keys" do
       DICOM.key_use_tags
-      expect(@dcm.to_hash.key?("0002,0000")).to be_true
+      expect(@dcm.to_hash.key?("0002,0000")).to be_truthy
     end
 
   end
@@ -141,14 +141,14 @@ module DICOM
         e = Element.new("0018,1310", 512)
         expect(e.to_hash).to be_a Hash
         expect(e.to_hash.length).to eql 1
-        expect(e.to_hash.key?("Acquisition Matrix")).to be_true
+        expect(e.to_hash.key?("Acquisition Matrix")).to be_truthy
       end
 
       it "should create a hash with its value as the hash value" do
         DICOM.key_use_names
         value = 512
         e = Element.new("0018,1310", value)
-        expect(e.to_hash.value?(value)).to be_true
+        expect(e.to_hash.value?(value)).to be_truthy
       end
 
     end
@@ -280,15 +280,15 @@ module DICOM
     context "".method(:dicom_name?) do
 
       it "should return true if the string looks like a DICOM element name" do
-        expect("This Looks Like A Name".dicom_name?).to be_true
+        expect("This Looks Like A Name".dicom_name?).to be_truthy
       end
 
       it "should return false if the string doesnt look like a DICOM element name" do
-        expect("this Doesnt Look like a name".dicom_name?).to be_false
+        expect("this Doesnt Look like a name".dicom_name?).to be_falsey
       end
 
       it "should return false if the string looks like a DICOM method name" do
-        expect("this_looks_like_a_method_name".dicom_name?).to be_false
+        expect("this_looks_like_a_method_name".dicom_name?).to be_falsey
       end
 
     end
@@ -296,15 +296,15 @@ module DICOM
     context "".method(:dicom_method?) do
 
       it "should return true if the string looks like a DICOM method name" do
-        expect("this_looks_like_a_method_name".dicom_method?).to be_true
+        expect("this_looks_like_a_method_name".dicom_method?).to be_truthy
       end
 
       it "should return false if the string doesnt look like a DICOM method name" do
-        expect("This_doesnt look_like a MethodName".dicom_method?).to be_false
+        expect("This_doesnt look_like a MethodName".dicom_method?).to be_falsey
       end
 
       it "should return false if the string looks like a DICOM element name" do
-        expect("This Looks Like A Name".dicom_method?).to be_false
+        expect("This Looks Like A Name".dicom_method?).to be_falsey
       end
 
     end

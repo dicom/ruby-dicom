@@ -55,7 +55,7 @@ module DICOM
       DICOM.logger.info("Information")
       DICOM.logger.warn("Warning")
       DICOM.logger.error("Errors")
-      expect(File.open(LOGDIR + 'logfile6.log').readlines.last.include?('DICOM')).to be_false
+      expect(File.open(LOGDIR + 'logfile6.log').readlines.last.include?('DICOM')).to be_falsey
     end
 
     it "should print messages when a verbose mode has been set (Logger::DEBUG)" do
@@ -65,7 +65,7 @@ module DICOM
       DICOM.logger.info("Information")
       DICOM.logger.warn("Warning")
       DICOM.logger.error("Errors")
-      expect(File.open(LOGDIR + 'logfile7.log').readlines.last.include?('DICOM')).to be_true
+      expect(File.open(LOGDIR + 'logfile7.log').readlines.last.include?('DICOM')).to be_truthy
     end
 
   end

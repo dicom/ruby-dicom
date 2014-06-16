@@ -77,7 +77,7 @@ module DICOM
         s = Sequence.new("3006,0040", :parent => i_old)
         i_new = Item.new
         s.parent = i_new
-        expect(i_old.children?).to be_false
+        expect(i_old.children?).to be_falsey
       end
 
       it "should return an empty array when the parents method is called and no parent has been specified" do
@@ -135,7 +135,7 @@ module DICOM
 
       it "should return false when the children? method is called as a newly created Sequence do not have child elements" do
         s = Sequence.new("0008,0006")
-        expect(s.children?).to be_false
+        expect(s.children?).to be_falsey
       end
 
       it "should return true when the is_parent? method is called as a Sequence by definition is a parent" do
@@ -151,25 +151,25 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         s1 = Sequence.new("0008,0006")
         s2 = Sequence.new("0008,0006")
-        expect(s1 == s2).to be_true
+        expect(s1 == s2).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values (same tag but different children)" do
         s1 = Sequence.new("0008,0006")
         s2 = Sequence.new("0008,0006")
         s2.add_item
-        expect(s1 == s2).to be_false
+        expect(s1 == s2).to be_falsey
       end
 
       it "should be false when comparing two instances having different attribute values (different tag but both no children)" do
         s1 = Sequence.new("0008,0006")
         s2 = Sequence.new("3006,0040")
-        expect(s1 == s2).to be_false
+        expect(s1 == s2).to be_falsey
       end
 
       it "should be false when comparing against an instance of incompatible type" do
         s = Sequence.new("0008,0006")
-        expect(s == 42).to be_false
+        expect(s == 42).to be_falsey
       end
 
     end
@@ -180,14 +180,14 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         s1 = Sequence.new("0008,0006")
         s2 = Sequence.new("0008,0006")
-        expect(s1.eql?(s2)).to be_true
+        expect(s1.eql?(s2)).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values" do
         s1 = Sequence.new("0008,0006")
         s2 = Sequence.new("0008,0006")
         s2.add_item
-        expect(s1.eql?(s2)).to be_false
+        expect(s1.eql?(s2)).to be_falsey
       end
 
     end
@@ -229,7 +229,7 @@ module DICOM
 
       it "should return itself" do
         s = Sequence.new("0008,0006")
-        expect(s.to_sequence.equal?(s)).to be_true
+        expect(s.to_sequence.equal?(s)).to be_truthy
       end
 
     end

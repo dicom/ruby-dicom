@@ -26,7 +26,7 @@ module DICOM
         expect(e.vrs).to eql vrs
         expect(e.vm).to eql vm
         expect(e.retired).to eql retired
-        expect(e.retired?).to be_true
+        expect(e.retired?).to be_truthy
       end
 
     end
@@ -39,22 +39,22 @@ module DICOM
         expect(e1.name).to eql 'World Domination Scheme UID'
         expect(e1.vr).to eql 'UI'
         expect(e1.vm).to eql '1'
-        expect(e1.retired?).to be_false
+        expect(e1.retired?).to be_falsey
         e2 = LIBRARY.element('2027,010F')
         expect(e2.name).to eql 'Code Smell Context Identifier'
         expect(e2.vr).to eql 'CS'
         expect(e2.vm).to eql '1'
-        expect(e2.retired?).to be_true
+        expect(e2.retired?).to be_truthy
         e3 = LIBRARY.element('AAAB,0110')
         expect(e3.name).to eql 'Github Commit Sequence'
         expect(e3.vr).to eql 'SQ'
         expect(e3.vm).to eql '1'
-        expect(e3.retired?).to be_false
+        expect(e3.retired?).to be_falsey
         e4 = LIBRARY.element('FFFF,0112')
         expect(e4.name).to eql 'Bug Registry'
         expect(e4.vr).to eql 'UL'
         expect(e4.vm).to eql '1-n'
-        expect(e4.retired?).to be_false
+        expect(e4.retired?).to be_falsey
       end
 
     end
@@ -78,7 +78,7 @@ module DICOM
         expect(u.name).to eql name
         expect(u.type).to eql type
         expect(u.retired).to eql retired
-        expect(u.retired?).to be_true
+        expect(u.retired?).to be_truthy
       end
 
     end
@@ -91,12 +91,12 @@ module DICOM
         expect(u1.value).to eql '1.2.840.10008.1.1.333'
         expect(u1.name).to eql 'Custom SOP Class'
         expect(u1.type).to eql 'SOP Class'
-        expect(u1.retired?).to be_false
+        expect(u1.retired?).to be_falsey
         u2 = LIBRARY.uid('1.2.840.10008.1.1.555')
         expect(u2.value).to eql '1.2.840.10008.1.1.555'
         expect(u2.name).to eql 'Custom TS Syntax'
         expect(u2.type).to eql 'Transfer Syntax'
-        expect(u2.retired?).to be_true
+        expect(u2.retired?).to be_truthy
       end
 
     end
@@ -109,7 +109,7 @@ module DICOM
         element = LIBRARY.element(tag)
         expect(element).to be_a DictionaryElement
         expect(element.tag).to eql tag
-        expect(element.retired?).to be_false
+        expect(element.retired?).to be_falsey
       end
 
       it "should return the matching (retired) DictionaryElement" do
@@ -117,35 +117,35 @@ module DICOM
         element = LIBRARY.element(tag)
         expect(element).to be_a DictionaryElement
         expect(element.tag).to eql tag
-        expect(element.retired?).to be_true
+        expect(element.retired?).to be_truthy
       end
 
       it "should create a 'group length element' when given a group length type tag" do
         element = LIBRARY.element('0010,0000')
         expect(element.name).to eql 'Group Length'
         expect(element.vr).to eql 'UL'
-        expect(element.retired?).to be_false
+        expect(element.retired?).to be_falsey
       end
 
       it "should create a 'group length element' when given a private group length type tag" do
         element = LIBRARY.element('0011,0000')
         expect(element.name).to eql 'Group Length'
         expect(element.vr).to eql 'UL'
-        expect(element.retired?).to be_false
+        expect(element.retired?).to be_falsey
       end
 
       it "should create a 'private element' when given a private type tag" do
         element = LIBRARY.element('0011,ABCD')
         expect(element.name).to eql 'Private'
         expect(element.vr).to eql 'UN'
-        expect(element.retired?).to be_false
+        expect(element.retired?).to be_falsey
       end
 
       it "should create an 'unknown element' when no match is made" do
         element = LIBRARY.element('EEEE,ABCD')
         expect(element.name).to eql 'Unknown'
         expect(element.vr).to eql 'UN'
-        expect(element.retired?).to be_false
+        expect(element.retired?).to be_falsey
       end
 
       it "should give the expected name when it contains an apostrophe" do
@@ -407,7 +407,7 @@ module DICOM
         expect(uid).to be_a UID
         expect(uid.value).to eql value
         expect(uid.name).to eql 'Verification SOP Class'
-        expect(uid.retired?).to be_false
+        expect(uid.retired?).to be_falsey
       end
 
       it "should return the matching UID instance" do
@@ -416,7 +416,7 @@ module DICOM
         expect(uid).to be_a UID
         expect(uid.value).to eql value
         expect(uid.name).to eql 'JPEG Extended (Process 3 & 5) (Retired)'
-        expect(uid.retired?).to be_true
+        expect(uid.retired?).to be_truthy
       end
 
       it "should return the matching (retired) UID instance" do
@@ -425,7 +425,7 @@ module DICOM
         expect(uid).to be_a UID
         expect(uid.value).to eql value
         expect(uid.name).to eql 'Universal Coordinated Time'
-        expect(uid.retired?).to be_false
+        expect(uid.retired?).to be_falsey
       end
 
       it "should return the name of the UID encoded as UTF-8" do

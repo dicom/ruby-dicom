@@ -42,7 +42,7 @@ module DICOM
 
       it "should set the :was_dcm_on_input attribute as false when initializing an empty DICOM object" do
         dcm = DObject.new
-        expect(dcm.was_dcm_on_input).to be_false
+        expect(dcm.was_dcm_on_input).to be_falsey
       end
 
       it "should store a Stream instance in the stream attribute" do
@@ -52,7 +52,7 @@ module DICOM
 
       it "should use little endian as default string endianness for the Stream instance used in an empty DICOM object" do
         dcm = DObject.new
-        expect(dcm.stream.str_endian).to be_false
+        expect(dcm.stream.str_endian).to be_falsey
       end
 
     end
@@ -63,7 +63,7 @@ module DICOM
       it "should successfully parse the encoded DICOM string" do
         str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, 'rb') { |f| f.read }
         dcm = DObject.parse(str)
-        expect(dcm.read?).to be_true
+        expect(dcm.read?).to be_truthy
         expect(dcm.children.length).to eql 85 # (This file is known to have 85 top level data elements)
       end
 
@@ -79,7 +79,7 @@ module DICOM
       it "should fail to read this DICOM file when an incorrect transfer syntax option is supplied" do
         str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
-        expect(dcm.read?).to be_false
+        expect(dcm.read?).to be_falsey
       end
 
       it "should register one or more errors/warnings/debugs in the log when failing to successfully parse a DICOM string" do
@@ -94,7 +94,7 @@ module DICOM
       it "should return the data elements that were successfully read before a failure occured (the file meta header elements in this case)" do
         str = File.open(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2, 'rb') { |f| f.read }
         dcm = DObject.parse(str, :syntax => IMPLICIT_LITTLE_ENDIAN)
-        expect(dcm.read?).to be_false
+        expect(dcm.read?).to be_falsey
         expect(dcm.children.length).to eql 8 # (Only its 8 meta header data elements should be read correctly)
       end
 
@@ -111,7 +111,7 @@ module DICOM
 
       it "should successfully read this DICOM file" do
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
-        expect(dcm.read?).to be_true
+        expect(dcm.read?).to be_truthy
         expect(dcm.children.length).to eql 85 # (This file is known to have 85 top level data elements)
       end
 
@@ -123,18 +123,18 @@ module DICOM
       it "should fail gracefully when a small, non-dicom file is passed as an argument" do
         File.open(TMPDIR + 'small_invalid.dcm', 'wb') {|f| f.write('fail'*20) }
         dcm = DObject.read(TMPDIR + 'small_invalid.dcm')
-        expect(dcm.read?).to be_false
+        expect(dcm.read?).to be_falsey
       end
 
       it "should fail gracefully when a tiny, non-dicom file is passed as an argument" do
         File.open(TMPDIR + 'tiny_invalid.dcm', 'wb') {|f| f.write('fail') }
         dcm = DObject.read(TMPDIR + 'tiny_invalid.dcm')
-        expect(dcm.read?).to be_false
+        expect(dcm.read?).to be_falsey
       end
 
       it "should fail gracefully when a directory is passed as an argument" do
         dcm = DObject.read(TMPDIR)
-        expect(dcm.read?).to be_false
+        expect(dcm.read?).to be_falsey
       end
 
       it "should set the file name string as the 'source' attribute" do
@@ -150,19 +150,19 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        expect(dcm1 == dcm2).to be_true
+        expect(dcm1 == dcm2).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values (different children)" do
         dcm1 = DObject.new
         dcm2 = DObject.new
         dcm2.add(Sequence.new('0008,0006'))
-        expect(dcm1 == dcm2).to be_false
+        expect(dcm1 == dcm2).to be_falsey
       end
 
       it "should be false when comparing against an instance of incompatible type" do
         dcm = DObject.new
-        expect(dcm == 42).to be_false
+        expect(dcm == 42).to be_falsey
       end
 
     end
@@ -173,14 +173,14 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
-        expect(dcm1.eql?(dcm2)).to be_true
+        expect(dcm1.eql?(dcm2)).to be_truthy
       end
 
       it "should be false when comparing two instances having different attribute values" do
         dcm1 = DObject.new
         dcm2 = DObject.new
         dcm2.add(Sequence.new('0008,0006'))
-        expect(dcm1.eql?(dcm2)).to be_false
+        expect(dcm1.eql?(dcm2)).to be_falsey
       end
 
     end
@@ -265,7 +265,7 @@ module DICOM
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
         binary = dcm.encode_segments(16384).join
         dcm_reloaded = DObject.parse(binary, :bin => true)
-        expect(dcm_reloaded.read?).to be_true
+        expect(dcm_reloaded.read?).to be_truthy
       end
 
     end
@@ -329,7 +329,7 @@ module DICOM
 
       it "should return itself" do
         dcm = DObject.new
-        expect(dcm.to_dcm.equal?(dcm)).to be_true
+        expect(dcm.to_dcm.equal?(dcm)).to be_truthy
       end
 
     end
@@ -408,20 +408,20 @@ module DICOM
 
       it "should set the written? attribute as true after successfully writing this DICOM object to file" do
         @dcm.write(@output)
-        expect(@dcm.written?).to be_true
+        expect(@dcm.written?).to be_truthy
       end
 
       it "should be able to successfully read the written DICOM file if it was written correctly" do
         @dcm.write(@output)
         dcm_reloaded = DObject.read(@output)
-        expect(dcm_reloaded.read?).to be_true
+        expect(dcm_reloaded.read?).to be_truthy
       end
 
       it "should create non-existing directories that are part of the file path, and write the file successfully" do
         path = File.join(TMPDIR, 'create/these/directories', 'test-directory-create.dcm')
         @dcm.write(path)
-        expect(@dcm.written?).to be_true
-        expect(File.exists?(path)).to be_true
+        expect(@dcm.written?).to be_truthy
+        expect(File.exists?(path)).to be_truthy
       end
 
     end
@@ -439,13 +439,13 @@ module DICOM
 
       it "should succeed in writing a limited DICOM object, created from scratch" do
         @dcm.write(@path)
-        expect(@dcm.written?).to be_true
-        expect(File.exists?(@path)).to be_true
+        expect(@dcm.written?).to be_truthy
+        expect(File.exists?(@path)).to be_truthy
       end
 
       it "should add the File Meta Information Version to the File Meta Group, when it is undefined" do
         @dcm.write(@path)
-        expect(@dcm.exists?('0002,0001')).to be_true
+        expect(@dcm.exists?('0002,0001')).to be_truthy
       end
 
       it "should use the SOP Class UID to create the Media Storage SOP Class UID of the File Meta Group when it is undefined" do
@@ -489,13 +489,13 @@ module DICOM
       it "should not add the Implementation Class UID to the File Meta Group, when (it is undefined and) the Implementation Version Name is defined" do
         @dcm.add(Element.new('0002,0013', 'SomeProgram'))
         @dcm.write(@path)
-        expect(@dcm.exists?('0002,0012')).to be_false
+        expect(@dcm.exists?('0002,0012')).to be_falsey
       end
 
       it "should not add the Implementation Version Name to the File Meta Group, when (it is undefined and) the Implementation Class UID is defined" do
         @dcm.add(Element.new('0002,0012', '1.2.54321'))
         @dcm.write(@path)
-        expect(@dcm.exists?('0002,0013')).to be_false
+        expect(@dcm.exists?('0002,0013')).to be_falsey
       end
 
       it "should not touch the meta group when the :ignore_meta option is passed" do
@@ -517,7 +517,7 @@ module DICOM
         @dcm.write(@path)
         r_dcm = DObject.read(@path)
         # The empty sequence should have been removed:
-        expect(r_dcm.exists?('0008,2112')).to be_false
+        expect(r_dcm.exists?('0008,2112')).to be_falsey
         # Only one item should remain beneath this sequence, when the empty one is removed:
         expect(r_dcm['0008,1140'].children.length).to eql 1
       end
@@ -531,7 +531,7 @@ module DICOM
         @dcm.write(@path, :include_empty_parents => true)
         r_dcm = DObject.read(@path)
         # The empty sequence should remain:
-        expect(r_dcm.exists?('0008,2112')).to be_true
+        expect(r_dcm.exists?('0008,2112')).to be_truthy
         # Both items should remain beneath this sequence:
         expect(r_dcm['0008,1140'].children.length).to eql 2
       end

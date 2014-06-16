@@ -28,7 +28,7 @@ module DICOM
 
       it "should return false when it fails to decompress compressed pixel data" do
         dcm = DObject.read(DCM_INVALID_COMPRESSION)
-        expect(dcm.image).to be_false
+        expect(dcm.image).to be_falsey
       end
 
       it "should raise an ArgumentError when an unsupported bit depth is used" do

@@ -23,7 +23,7 @@ module DICOM
         expect(e.value).to eql 'Rex'
         expect(e.vr).to eql 'PN'
         expect(e.parent).to eql dcm
-        expect(dcm.exists?('0011,0011')).to be_true
+        expect(dcm.exists?('0011,0011')).to be_truthy
       end
 
       it "should add an Element (as specified) to the Item instance" do
@@ -33,7 +33,7 @@ module DICOM
         expect(e.value).to eql 'Rex'
         expect(e.name).to eql 'Pet Name'
         expect(e.parent).to eql i
-        expect(i.exists?('0011,0011')).to be_true
+        expect(i.exists?('0011,0011')).to be_truthy
       end
 
       it "should give a NoMethodError if called on a Sequence" do
@@ -56,7 +56,7 @@ module DICOM
         e = dcm.add_sequence('0008,0082')
         expect(e.tag).to eql '0008,0082'
         expect(e.parent).to eql dcm
-        expect(dcm.exists?('0008,0082')).to be_true
+        expect(dcm.exists?('0008,0082')).to be_truthy
       end
 
       it "should add a Sequence (as specified) to the Item instance" do
@@ -65,7 +65,7 @@ module DICOM
         expect(e.tag).to eql '0011,0011'
         expect(e.name).to eql 'Pet Sequence'
         expect(e.parent).to eql i
-        expect(i.exists?('0011,0011')).to be_true
+        expect(i.exists?('0011,0011')).to be_truthy
       end
 
       it "should give a NoMethodError if called on a Sequence" do
@@ -85,22 +85,22 @@ module DICOM
 
       it "should return false when the DICOM object has no pixel data" do
         dcm = DObject.new
-        expect(dcm.color?).to be_false
+        expect(dcm.color?).to be_falsey
       end
 
       it "should return false when the DICOM object has greyscale pixel data" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
-        expect(dcm.color?).to be_false
+        expect(dcm.color?).to be_falsey
       end
 
       it "should return true when the DICOM object has RGB pixel data" do
         dcm = DObject.read(DCM_EXPLICIT_BIG_ENDIAN_US_8BIT_RBG)
-        expect(dcm.color?).to be_true
+        expect(dcm.color?).to be_truthy
       end
 
       it "should return true when the DICOM object has palette color pixel data" do
         dcm = DObject.read(DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL)
-        expect(dcm.color?).to be_true
+        expect(dcm.color?).to be_truthy
       end
 
     end
@@ -110,22 +110,22 @@ module DICOM
 
       it "should return false when the DICOM object has no pixel data" do
         dcm = DObject.new
-        expect(dcm.compression?).to be_false
+        expect(dcm.compression?).to be_falsey
       end
 
       it "should return false when the DICOM object has ordinary, uncompressed pixel data" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        expect(dcm.compression?).to be_false
+        expect(dcm.compression?).to be_falsey
       end
 
       it "should return true when the DICOM object has JPG compressed pixel data" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
-        expect(dcm.compression?).to be_true
+        expect(dcm.compression?).to be_truthy
       end
 
       it "should return true when the DICOM object has RLE compressed pixel data" do
         dcm = DObject.read(DCM_EXPLICIT_US_RLE_PAL_MULTIFRAME)
-        expect(dcm.compression?).to be_true
+        expect(dcm.compression?).to be_truthy
       end
 
     end
@@ -199,7 +199,7 @@ module DICOM
         dcm.stubs(:exists?).returns(true)
         dcm.stubs(:compression?).returns(true)
         dcm.stubs(:decompress).returns(false)
-        expect(dcm.pixels).to be_false
+        expect(dcm.pixels).to be_falsey
       end
 
       it "should return pixel data in an array" do
@@ -302,7 +302,7 @@ module DICOM
         dcm.stubs(:exists?).returns(true)
         dcm.stubs(:compression?).returns(true)
         dcm.stubs(:decompress).returns(false)
-        expect(dcm.narray).to be_false
+        expect(dcm.narray).to be_falsey
       end
 
       it "should return pixel data in an NArray" do
@@ -408,8 +408,8 @@ module DICOM
         end
 
         it "should return an NArray with the pixel values properly placed in the expected indices for each frame" do
-          expect(@narr[0, true, true] == NArray.int(3, 4).indgen).to be_true
-          expect(@narr[1, true, true] == NArray.int(3, 4).indgen + 12).to be_true
+          expect(@narr[0, true, true] == NArray.int(3, 4).indgen).to be_truthy
+          expect(@narr[1, true, true] == NArray.int(3, 4).indgen + 12).to be_truthy
         end
 
       end
@@ -489,15 +489,15 @@ module DICOM
       it "should write multiple files as expected, when a file extension is omitted" do
         dcm = DObject.read(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME) # 8 frames
         dcm.image_to_file(TMPDIR + 'data')
-        expect(File.readable?(TMPDIR + 'data-0')).to be_true
-        expect(File.readable?(TMPDIR + 'data-7')).to be_true
+        expect(File.readable?(TMPDIR + 'data-0')).to be_truthy
+        expect(File.readable?(TMPDIR + 'data-7')).to be_truthy
       end
 
       it "should write multiple files, using the expected file enumeration and image fragments, when the DICOM object has multi-fragment pixel data" do
         dcm = DObject.read(DCM_IMPLICIT_US_JPEG2K_LOSSLESS_MONO2_MULTIFRAME) # 8 frames
         dcm.image_to_file(TMPDIR + 'multi.dat')
-        expect(File.readable?(TMPDIR + 'multi-0.dat')).to be_true
-        expect(File.readable?(TMPDIR + 'multi-7.dat')).to be_true
+        expect(File.readable?(TMPDIR + 'multi-0.dat')).to be_truthy
+        expect(File.readable?(TMPDIR + 'multi-7.dat')).to be_truthy
         f0 = File.new(TMPDIR + 'multi-0.dat', 'rb')
         expect(f0.read).to eql dcm['7FE0,0010'][0][0].bin
         f7 = File.new(TMPDIR + 'multi-7.dat', 'rb')
@@ -519,9 +519,9 @@ module DICOM
         dcm.add(Element.new('0011,0030', '42'))
         dcm.delete_sequences
         expect(dcm.children.length).to eql 2
-        expect(dcm.exists?('0008,1140')).to be_false
-        expect(dcm.exists?('0009,1140')).to be_false
-        expect(dcm.exists?('0088,0200')).to be_false
+        expect(dcm.exists?('0008,1140')).to be_falsey
+        expect(dcm.exists?('0009,1140')).to be_falsey
+        expect(dcm.exists?('0088,0200')).to be_falsey
       end
 
       it "should delete all sequences from the Item" do
@@ -534,9 +534,9 @@ module DICOM
         i.add(Element.new('0011,0030', '42'))
         i.delete_sequences
         expect(i.children.length).to eql 2
-        expect(i.exists?('0008,1140')).to be_false
-        expect(i.exists?('0009,1140')).to be_false
-        expect(i.exists?('0088,0200')).to be_false
+        expect(i.exists?('0008,1140')).to be_falsey
+        expect(i.exists?('0009,1140')).to be_falsey
+        expect(i.exists?('0088,0200')).to be_falsey
       end
 
     end

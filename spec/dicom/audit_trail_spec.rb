@@ -39,11 +39,11 @@ module DICOM
       it "should load the dictionary with the tags specified in this json" do
         expect(@ar.dictionary.length).to eql 5
         tags = @ar.dictionary.keys
-        expect(tags.include?("0008,0080")).to be_true
-        expect(tags.include?("0008,0090")).to be_true
-        expect(tags.include?("0008,1010")).to be_true
-        expect(tags.include?("0010,0010")).to be_true
-        expect(tags.include?("0010,0020")).to be_true
+        expect(tags.include?("0008,0080")).to be_truthy
+        expect(tags.include?("0008,0090")).to be_truthy
+        expect(tags.include?("0008,1010")).to be_truthy
+        expect(tags.include?("0010,0010")).to be_truthy
+        expect(tags.include?("0010,0020")).to be_truthy
       end
 
       it "should load the tag records specified in this json" do
@@ -197,7 +197,7 @@ module DICOM
       it "should be able to write to a path that contains folders that haven't been created yet" do
         written_file = File.join(TMPDIR, "audit_trail/create_this_folder/test.json")
         @ar.write(written_file)
-        expect(File.exists?(written_file)).to be_true
+        expect(File.exists?(written_file)).to be_truthy
       end
 
     end

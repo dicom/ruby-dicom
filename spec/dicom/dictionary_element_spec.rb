@@ -47,12 +47,12 @@ module DICOM
     context "#private?" do
 
       it "should return false when the element is not private" do
-        expect(@element.private?).to be_false
+        expect(@element.private?).to be_falsey
       end
 
       it "should return true when the element is private" do
         element = DictionaryElement.new('0011,0010', @name, @vrs, @vm, @retired)
-        expect(element.private?).to be_true
+        expect(element.private?).to be_truthy
       end
 
     end
@@ -61,12 +61,12 @@ module DICOM
     context "#retired?" do
 
       it "should return false when the element is not retired" do
-        expect(@element.retired?).to be_false
+        expect(@element.retired?).to be_falsey
       end
 
       it "should return true when the element is retired" do
         element = DictionaryElement.new(@tag, @name, @vrs, @vm, 'R')
-        expect(element.retired?).to be_true
+        expect(element.retired?).to be_truthy
       end
 
     end

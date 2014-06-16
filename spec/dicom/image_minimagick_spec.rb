@@ -23,7 +23,7 @@ module DICOM
 
       it "should return false when it fails to decompress compressed pixel data" do
         dcm = DObject.read(DCM_INVALID_COMPRESSION)
-        expect(dcm.image).to be_false
+        expect(dcm.image).to be_falsey
       end
 
       it "should read the pixel data of this DICOM file and return an image object" do

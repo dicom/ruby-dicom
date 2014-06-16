@@ -103,7 +103,7 @@ module DICOM
       end
 
       it "should by default set the blank attribute as false" do
-        expect(@a.blank).to be_false
+        expect(@a.blank).to be_falsey
       end
 
       it "should by default set the delete attribute as an empty hash" do
@@ -111,7 +111,7 @@ module DICOM
       end
 
       it "should by default set the delete_private attribute as false" do
-        expect(@a.delete_private).to be_false
+        expect(@a.delete_private).to be_falsey
       end
 
       it "should by default set the encryption attribute as nil" do
@@ -119,7 +119,7 @@ module DICOM
       end
 
       it "should by default set the enumeration attribute as false" do
-        expect(@a.enumeration).to be_false
+        expect(@a.enumeration).to be_falsey
       end
 
       it "should by default set the logger_level attribute as Logger::FATAL" do
@@ -154,12 +154,12 @@ module DICOM
 
       it "should pass the :blank option to the 'blank' attribute" do
         a = Anonymizer.new(:blank => true)
-        expect(a.blank).to be_true
+        expect(a.blank).to be_truthy
       end
 
       it "should pass the :delete_private option to the 'delete_private' attribute" do
         a = Anonymizer.new(:delete_private => true)
-        expect(a.delete_private).to be_true
+        expect(a.delete_private).to be_truthy
       end
 
       it "should pass the :encryption option to the 'encryption' attribute when a Digest class is passed (along with the :audit_trail option)" do
@@ -170,7 +170,7 @@ module DICOM
 
       it "should pass the :enumeration option to the 'enumeration' attribute" do
         a = Anonymizer.new(:enumeration => true)
-        expect(a.enumeration).to be_true
+        expect(a.enumeration).to be_truthy
       end
 
       it "should pass the :logger_level option to the 'logger_level' attribute" do
@@ -180,17 +180,17 @@ module DICOM
 
       it "should pass the :random_file_name option to the 'random_file_name' attribute" do
         a = Anonymizer.new(:random_file_name => true)
-        expect(a.random_file_name).to be_true
+        expect(a.random_file_name).to be_truthy
       end
 
       it "should pass the :recursive option to the 'recursive' attribute" do
         a = Anonymizer.new(:recursive => true)
-        expect(a.recursive).to be_true
+        expect(a.recursive).to be_truthy
       end
 
       it "should pass the :uid option to the 'uid' attribute" do
         a = Anonymizer.new(:uid => true)
-        expect(a.uid).to be_true
+        expect(a.uid).to be_truthy
       end
 
       it "should pass the :uid_root option to the 'uid_root' attribute" do
@@ -201,7 +201,7 @@ module DICOM
 
       it "should pass the :write_path option to the 'write_path' attribute" do
         a = Anonymizer.new(:write_path => true)
-        expect(a.write_path).to be_true
+        expect(a.write_path).to be_truthy
       end
 
       it "should set MD5 as the default Digest class when an :encryption option that is not a Digest class is given (along with the :audit_trail option)" do
@@ -222,18 +222,18 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         a1 = Anonymizer.new
         a2 = Anonymizer.new
-        expect(a1 == a2).to be_true
+        expect(a1 == a2).to be true
       end
 
       it "should be false when comparing two instances having different attribute values (different children)" do
         a1 = Anonymizer.new
         a2 = Anonymizer.new(:blank => true)
-        expect(a1 == a2).to be_false
+        expect(a1 == a2).to be_falsey
       end
 
       it "should be false when comparing against an instance of incompatible type" do
         a = Anonymizer.new
-        expect(a == 42).to be_false
+        expect(a == 42).to be_falsey
       end
 
     end
@@ -244,14 +244,14 @@ module DICOM
       it "should be true when comparing two instances having the same attribute values" do
         a1 = Anonymizer.new
         a2 = Anonymizer.new
-        expect(a1.eql?(a2)).to be_true
+        expect(a1.eql?(a2)).to be true
       end
 
       it "should be false when comparing two instances having different attribute values" do
         a1 = Anonymizer.new
         a2 = Anonymizer.new
         a2.set_tag('0008,0042', :value => 'Alpha')
-        expect(a1.eql?(a2)).to be_false
+        expect(a1.eql?(a2)).to be_falsey
       end
 
     end
@@ -309,10 +309,10 @@ module DICOM
         tag = '0018,1160'
         a.set_tag(tag)
         # Ensure the element is not originally present (as that would ruin the test):
-        expect(@dcm1.exists?(tag)).to be_false
+        expect(@dcm1.exists?(tag)).to be_falsey
         res = a.anonymize(@dcm1)
         # Ensure it is still not present in the anonymized object:
-        expect(res[0].exists?(tag)).to be_false
+        expect(res[0].exists?(tag)).to be_falsey
       end
 
       it "should use empty strings for anonymization when the blank attribute is set" do
@@ -449,7 +449,7 @@ module DICOM
         file_name = File.join(TMPDIR, "anonymization/audit_trail.json")
         a = Anonymizer.new(:audit_trail => file_name, :enumeration => true)
         a.anonymize(@dcm1)
-        expect(File.exists?(file_name)).to be_true
+        expect(File.exists?(file_name)).to be_truthy
         at = AuditTrail.read(file_name)
         expect(at).to be_a AuditTrail
       end
@@ -514,7 +514,7 @@ module DICOM
         @dcm1.write(file_name)
         a = Anonymizer.new(:write_path => write_path)
         a.anonymize(file_name)
-        expect(File.exists?(File.join(write_path, File.basename(file_name)))).to be_true
+        expect(File.exists?(File.join(write_path, File.basename(file_name)))).to be_truthy
       end
 
       it "should use a random file name (but still with a .dcm extension) when the :random_file_name option is used" do
@@ -526,7 +526,7 @@ module DICOM
         files = Dir[File.join(write_path, '**/*')]
         expect(files.length).to eql 1
         expect(File.extname(files[0])).to eql '.dcm'
-        expect(File.exists?(File.join(write_path, File.basename(file_name)))).to be_false
+        expect(File.exists?(File.join(write_path, File.basename(file_name)))).to be_falsey
       end
 
     end
@@ -547,9 +547,9 @@ module DICOM
       it "should add the given tag to the Anonymizer's delete attribute hash" do
         a = Anonymizer.new
         tag = '0010,0010'
-        expect(a.delete[tag]).to be_false
+        expect(a.delete[tag]).to be_falsey
         a.delete_tag(tag)
-        expect(a.delete[tag]).to be_true
+        expect(a.delete[tag]).to be_truthy
       end
 
     end
@@ -570,11 +570,11 @@ module DICOM
       it "should return the enumeration boolean for the specified tag" do
         a = Anonymizer.new
         a.set_tag('0010,0010', :enum => true)
-        expect(a.enum('0010,0010')).to be_true
+        expect(a.enum('0010,0010')).to be_truthy
         a.set_tag('0010,0010', :enum => false)
-        expect(a.enum('0010,0010')).to be_false
+        expect(a.enum('0010,0010')).to be_falsey
         a.set_tag('0010,0010', :enum => true)
-        expect(a.enum('0010,0010')).to be_true
+        expect(a.enum('0010,0010')).to be_truthy
       end
 
     end
@@ -685,33 +685,33 @@ module DICOM
       it "should update the enumeration status of the pre-listed tag, when specified" do
         a = Anonymizer.new
         a.set_tag('0010,0010', :enum => true)
-        expect(a.enum('0010,0010')).to be_true
+        expect(a.enum('0010,0010')).to be_truthy
       end
 
       it "should set the enumeration status for the newly created tag entry, when specified" do
         a = Anonymizer.new
         a.set_tag('0040,2008', :enum => true)
-        expect(a.enum('0040,2008')).to be_true
+        expect(a.enum('0040,2008')).to be_truthy
       end
 
       it "should not change the enumeration status of a tag who's old value is true, when enumeration is not specified" do
         a = Anonymizer.new
         a.set_tag('0010,0010', :enum => true)
         a.set_tag('0010,0010')
-        expect(a.enum('0010,0010')).to be_true
+        expect(a.enum('0010,0010')).to be_truthy
       end
 
       it "should not change the enumeration status of a tag who's old value is false, when enumeration is not specified" do
         a = Anonymizer.new
         a.set_tag('0010,0010', :enum => false)
         a.set_tag('0010,0010')
-        expect(a.enum('0010,0010')).to be_false
+        expect(a.enum('0010,0010')).to be_falsey
       end
 
       it "should set the enumeration status for the newly created tag entry as false, when enumeration not specified" do
         a = Anonymizer.new
         a.set_tag('0040,2008')
-        expect(a.enum('0040,2008')).to be_false
+        expect(a.enum('0040,2008')).to be_falsey
       end
 
     end

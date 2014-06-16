@@ -34,12 +34,12 @@ module DICOM
 
       it "should properly register the top level element that follows the (duplicate) sequence (in default read mode)" do
         dcm = DObject.read(DCM_DUPLICATES)
-        expect(dcm.exists?('7200,0100')).to be_true
+        expect(dcm.exists?('7200,0100')).to be_truthy
       end
 
       it "should properly register the top level element that follows the (duplicate) sequence (in overwrite read mode)" do
         dcm = DObject.read(DCM_DUPLICATES, :overwrite => true)
-        expect(dcm.exists?('7200,0100')).to be_true
+        expect(dcm.exists?('7200,0100')).to be_truthy
       end
 
       it "should log a warning when encountering duplicate elements" do
@@ -52,13 +52,13 @@ module DICOM
       end
 
     end
-    
-    
+
+
     after :all do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end
 
   end
-  
+
 end

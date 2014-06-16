@@ -43,32 +43,32 @@ module DICOM
 
       it "should return false for this non-transfer syntax (SOP Class) value" do
         uid = LIBRARY.uid('1.2.840.10008.1.1')
-        expect(uid.big_endian?).to be_false
+        expect(uid.big_endian?).to be_falsey
       end
 
       it "should return false for the default implicit little endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2')
-        expect(uid.big_endian?).to be_false
+        expect(uid.big_endian?).to be_falsey
       end
 
       it "should return false for the explicit little endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.1')
-        expect(uid.big_endian?).to be_false
+        expect(uid.big_endian?).to be_falsey
       end
 
       it "should return false for the deflated explicit little endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.1.99')
-        expect(uid.big_endian?).to be_false
+        expect(uid.big_endian?).to be_falsey
       end
 
       it "should return true for the explicit big endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.2')
-        expect(uid.big_endian?).to be_true
+        expect(uid.big_endian?).to be_truthy
       end
 
       it "should return false for a compressed pixel data transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.4.58')
-        expect(uid.big_endian?).to be_false
+        expect(uid.big_endian?).to be_falsey
       end
 
     end
@@ -78,22 +78,22 @@ module DICOM
 
       it "should return false for this non-transfer syntax (SOP Class) value" do
         uid = LIBRARY.uid('1.2.840.10008.1.1')
-        expect(uid.compressed_pixels?).to be_false
+        expect(uid.compressed_pixels?).to be_falsey
       end
 
       it "should return false for this uncompressed transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2')
-        expect(uid.compressed_pixels?).to be_false
+        expect(uid.compressed_pixels?).to be_falsey
       end
 
       it "should return true for this compressed transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.4.64')
-        expect(uid.compressed_pixels?).to be_true
+        expect(uid.compressed_pixels?).to be_truthy
       end
 
       it "should return false for this transfer syntax where the dicom file itself, not the pixel data, is compressed" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.1.99')
-        expect(uid.compressed_pixels?).to be_false
+        expect(uid.compressed_pixels?).to be_falsey
       end
 
     end
@@ -103,32 +103,32 @@ module DICOM
 
       it "should return false for this non-transfer syntax (SOP Class) value" do
         uid = LIBRARY.uid('1.2.840.10008.1.1')
-        expect(uid.explicit?).to be_false
+        expect(uid.explicit?).to be_falsey
       end
 
       it "should return false for the default implicit little endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2')
-        expect(uid.explicit?).to be_false
+        expect(uid.explicit?).to be_falsey
       end
 
       it "should return true for the explicit little endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.1')
-        expect(uid.explicit?).to be_true
+        expect(uid.explicit?).to be_truthy
       end
 
       it "should return true for the deflated explicit little endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.1.99')
-        expect(uid.explicit?).to be_true
+        expect(uid.explicit?).to be_truthy
       end
 
       it "should return true for the explicit big endian transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.2')
-        expect(uid.explicit?).to be_true
+        expect(uid.explicit?).to be_truthy
       end
 
       it "should return true for a compressed pixel data transfer syntax" do
         uid = LIBRARY.uid('1.2.840.10008.1.2.4.58')
-        expect(uid.explicit?).to be_true
+        expect(uid.explicit?).to be_truthy
       end
 
     end
@@ -137,12 +137,12 @@ module DICOM
     context "#retired?" do
 
       it "should return false when the UID is not retired" do
-        expect(@uid.retired?).to be_false
+        expect(@uid.retired?).to be_falsey
       end
 
       it "should return true when the uid is retired" do
         uid = UID.new(@value, @name, @type, 'R')
-        expect(uid.retired?).to be_true
+        expect(uid.retired?).to be_truthy
       end
 
     end
@@ -152,11 +152,11 @@ module DICOM
 
       it "should return false when the UID is not a SOP Class" do
         uid = UID.new('1.2.840.10008.1.2.1', 'Explicit VR Little Endian', 'Transfer Syntax', '')
-        expect(uid.sop_class?).to be_false
+        expect(uid.sop_class?).to be_falsey
       end
 
       it "should return true when the UID is a SOP Class" do
-        expect(@uid.sop_class?).to be_true
+        expect(@uid.sop_class?).to be_truthy
       end
 
     end
@@ -165,12 +165,12 @@ module DICOM
     context "#transfer_syntax?" do
 
       it "should return false when the UID is not a Transfer Syntax" do
-        expect(@uid.transfer_syntax?).to be_false
+        expect(@uid.transfer_syntax?).to be_falsey
       end
 
       it "should return true when the UID is a Transfer Syntax" do
         uid = UID.new('1.2.840.10008.1.2.1', 'Explicit VR Little Endian', 'Transfer Syntax', '')
-        expect(uid.transfer_syntax?).to be_true
+        expect(uid.transfer_syntax?).to be_truthy
       end
 
     end

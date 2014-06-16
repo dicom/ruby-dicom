@@ -229,14 +229,14 @@ module DICOM
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete("300A,000A")
-          expect(dcm.exists?("300A,000A")).to be_false
+          expect(dcm.exists?("300A,000A")).to be_falsey
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete("300a,000a")
-          expect(dcm.exists?("300A,000A")).to be_false
+          expect(dcm.exists?("300A,000A")).to be_falsey
         end
 
       end
@@ -247,14 +247,14 @@ module DICOM
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete_group("300A")
-          expect(dcm.exists?("300A,000A")).to be_false
+          expect(dcm.exists?("300A,000A")).to be_falsey
         end
 
         it "should accept lower cased tag letters" do
           dcm = DObject.new
           dcm.add(Element.new("300A,000A", "Palliative"))
           dcm.delete_group("300a")
-          expect(dcm.exists?("300A,000A")).to be_false
+          expect(dcm.exists?("300A,000A")).to be_falsey
         end
 
       end
