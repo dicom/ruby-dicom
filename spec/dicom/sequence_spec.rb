@@ -146,7 +146,7 @@ module DICOM
     end
 
 
-    describe "#==()" do
+    describe "#==" do
 
       it "should be true when comparing two instances having the same attribute values" do
         s1 = Sequence.new("0008,0006")

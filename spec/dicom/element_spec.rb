@@ -7,7 +7,7 @@ module DICOM
 
   describe Element do
 
-    context "::new" do
+    describe "::new" do
 
       it "should raise ArgumentError when creation is attempted with an invalid tag string" do
         expect {Element.new("asdf,asdf", 42)}.to raise_error(ArgumentError)
@@ -397,7 +397,7 @@ module DICOM
     end
 
 
-    describe "#==()" do
+    describe "#==" do
 
       it "should be true when comparing two instances having the same attribute values" do
         e1 = Element.new("0028,0010", 512)

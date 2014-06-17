@@ -11,28 +11,33 @@ module DICOM
   # this padding element as well. As a quick fix though, we choose to disallow the adding
   # of a padding element to a Sequence on creation.
   #
-  describe "With respect to the special Data Set Trailing Padding element" do
+  context "With respect to the special Data Set Trailing Padding element" do
 
-    context "Element::new" do
+    describe Element do
 
-      it "should add itself to a DObject" do
-        dcm = DObject.new
-        padding = Element.new('FFFC,FFFC', 0, :parent => dcm)
-        expect(dcm.exists?('FFFC,FFFC')).to be_truthy
-      end
+      describe "::new" do
 
-      it "should add itself to an Item" do
-        item = Item.new
-        padding = Element.new('FFFC,FFFC', 0, :parent => item)
-        expect(item.exists?('FFFC,FFFC')).to be_truthy
-      end
+        it "should add itself to a DObject" do
+          dcm = DObject.new
+          padding = Element.new('FFFC,FFFC', 0, :parent => dcm)
+          expect(dcm.exists?('FFFC,FFFC')).to be_truthy
+        end
 
-      it "should not raise an error when trying to add itself to a Sequence" do
-        sequence = Sequence.new('0028,3000')
-        padding = Element.new('FFFC,FFFC', 0, :parent => sequence)
+        it "should add itself to an Item" do
+          item = Item.new
+          padding = Element.new('FFFC,FFFC', 0, :parent => item)
+          expect(item.exists?('FFFC,FFFC')).to be_truthy
+        end
+
+        it "should not raise an error when trying to add itself to a Sequence" do
+          sequence = Sequence.new('0028,3000')
+          padding = Element.new('FFFC,FFFC', 0, :parent => sequence)
+        end
+
       end
 
     end
 
   end
+
 end

@@ -4,19 +4,23 @@ require 'spec_helper'
 
 module DICOM
 
-  describe self do
+  describe DICOM do
 
-    it "should have defined a default image processor" do
-      expect(DICOM.image_processor).to eql :rmagick
+    describe "::image_processor" do
+
+      it "should have give the default image processor" do
+        expect(DICOM.image_processor).to eql :rmagick
+      end
+
+      it "should allow alternative image processors to be defined" do
+        DICOM.image_processor = :mini_magick
+        expect(DICOM.image_processor).to eql :mini_magick
+      end
+
     end
 
-    it "should allow alternative image processors to be defined" do
-      DICOM.image_processor = :mini_magick
-      expect(DICOM.image_processor).to eql :mini_magick
-    end
 
-
-    context "#generate_uid" do
+    describe "::generate_uid" do
 
       it "should return a UID string" do
         uid = DICOM.generate_uid
@@ -40,7 +44,7 @@ module DICOM
     end
 
 
-    context "#load" do
+    describe "::load" do
 
       it "should raise an ArgumentError when a non-string/non-dcm is passed as an argument" do
         expect {DICOM.load(42.0)}.to raise_error(ArgumentError)
@@ -126,4 +130,5 @@ module DICOM
     end
 
   end
+
 end

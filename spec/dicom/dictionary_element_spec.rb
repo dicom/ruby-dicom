@@ -6,7 +6,7 @@ module DICOM
 
   describe DictionaryElement do
 
-    before :each do
+    before :example do
       @tag = '0010,0010'
       @name = 'Patient’s Name'
       @vrs = ['PN']
@@ -15,7 +15,7 @@ module DICOM
       @element = DictionaryElement.new(@tag, @name, @vrs, @vm, @retired)
     end
 
-    context "::new" do
+    describe "::new" do
 
       it "should successfully create a new instance" do
         expect(@element).to be_a DictionaryElement
@@ -44,7 +44,7 @@ module DICOM
     end
 
 
-    context "#private?" do
+    describe "#private?" do
 
       it "should return false when the element is not private" do
         expect(@element.private?).to be_falsey
@@ -58,7 +58,7 @@ module DICOM
     end
 
 
-    context "#retired?" do
+    describe "#retired?" do
 
       it "should return false when the element is not retired" do
         expect(@element.retired?).to be_falsey
@@ -72,7 +72,7 @@ module DICOM
     end
 
 
-    context "#vr" do
+    describe "#vr" do
 
       it "should return the single VR string when called on an element with only one VR" do
         expect(@element.vr).to eql @vrs[0]

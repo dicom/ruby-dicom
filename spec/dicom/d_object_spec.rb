@@ -7,12 +7,12 @@ module DICOM
 
   describe DObject do
 
-    before :each do
+    before :example do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end
 
-    context "::new" do
+    describe "::new" do
 
       it "should create an empty DICOM object" do
         dcm = DObject.new
@@ -58,7 +58,7 @@ module DICOM
     end
 
 
-    context "::parse" do
+    describe "::parse" do
 
       it "should successfully parse the encoded DICOM string" do
         str = File.open(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2, 'rb') { |f| f.read }
@@ -107,7 +107,7 @@ module DICOM
     end
 
 
-    context "::read" do
+    describe "::read" do
 
       it "should successfully read this DICOM file" do
         dcm = DObject.read(DCM_NO_HEADER_IMPLICIT_MR_16BIT_MONO2)
@@ -145,7 +145,7 @@ module DICOM
     end
 
 
-    describe "#==()" do
+    describe "#==" do
 
       it "should be true when comparing two instances having the same attribute values" do
         dcm1 = DObject.new
@@ -231,7 +231,7 @@ module DICOM
     end
 
 
-    context "#encode_segments" do
+    describe "#encode_segments" do
 
       it "should raise ArgumentError when a non-integer argument is used" do
         dcm = DObject.new
@@ -289,7 +289,7 @@ module DICOM
     end
 
 
-    context "#print_all" do
+    describe "#print_all" do
 
       it "should successfully print information to the screen" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
@@ -308,7 +308,7 @@ module DICOM
 
     # FIXME? Currently there is no specification for the format of the summary printout.
     #
-    context "#summary" do
+    describe "#summary" do
 
       it "should print the summary to the screen and return an array of information when called on a full DICOM object" do
         dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
@@ -335,7 +335,7 @@ module DICOM
     end
 
 
-    context "#transfer_syntax" do
+    describe "#transfer_syntax" do
 
       it "should return the default transfer syntax (Implicit, little endian) when the DICOM object has no transfer syntax tag" do
         dcm = DObject.new
@@ -355,7 +355,7 @@ module DICOM
     end
 
 
-    context "#transfer_syntax=()" do
+    describe "#transfer_syntax=" do
 
       it "should change the transfer syntax of the empty DICOM object" do
         dcm = DObject.new
@@ -395,9 +395,9 @@ module DICOM
 
 
     # Writing a full DObject which has been read from file.
-    context "#write" do
+    describe "#write" do
 
-      before :each do
+      before :example do
         @dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
         @output = TMPDIR + File.basename(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       end
@@ -428,9 +428,9 @@ module DICOM
 
 
     # Writing a limited DObject created from scratch.
-    context "#write" do
+    describe "#write" do
 
-      before :each do
+      before :example do
         @path = TMPDIR + 'write.dcm'
         @dcm = DObject.new
         @dcm.add(Element.new('0008,0016', '1.2.34567'))
@@ -539,7 +539,7 @@ module DICOM
     end
 
 
-    after :all do
+    after :context do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end

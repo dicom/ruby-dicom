@@ -6,7 +6,7 @@ module DICOM
 
   describe UID do
 
-    before :each do
+    before :example do
       @value = '1.2.840.10008.1.1'
       @name = 'Verification SOP Class'
       @type = 'SOP Class'
@@ -14,7 +14,7 @@ module DICOM
       @uid = UID.new(@value, @name, @type, @retired)
     end
 
-    context "::new" do
+    describe "::new" do
 
       it "should successfully create a new instance" do
         expect(@uid).to be_a UID
@@ -39,7 +39,7 @@ module DICOM
     end
 
 
-    context "#big_endian?" do
+    describe "#big_endian?" do
 
       it "should return false for this non-transfer syntax (SOP Class) value" do
         uid = LIBRARY.uid('1.2.840.10008.1.1')
@@ -74,7 +74,7 @@ module DICOM
     end
 
 
-    context "#compressed_pixels?" do
+    describe "#compressed_pixels?" do
 
       it "should return false for this non-transfer syntax (SOP Class) value" do
         uid = LIBRARY.uid('1.2.840.10008.1.1')
@@ -99,7 +99,7 @@ module DICOM
     end
 
 
-    context "#explicit?" do
+    describe "#explicit?" do
 
       it "should return false for this non-transfer syntax (SOP Class) value" do
         uid = LIBRARY.uid('1.2.840.10008.1.1')
@@ -134,7 +134,7 @@ module DICOM
     end
 
 
-    context "#retired?" do
+    describe "#retired?" do
 
       it "should return false when the UID is not retired" do
         expect(@uid.retired?).to be_falsey
@@ -148,7 +148,7 @@ module DICOM
     end
 
 
-    context "#sop_class?" do
+    describe "#sop_class?" do
 
       it "should return false when the UID is not a SOP Class" do
         uid = UID.new('1.2.840.10008.1.2.1', 'Explicit VR Little Endian', 'Transfer Syntax', '')
@@ -162,7 +162,7 @@ module DICOM
     end
 
 
-    context "#transfer_syntax?" do
+    describe "#transfer_syntax?" do
 
       it "should return false when the UID is not a Transfer Syntax" do
         expect(@uid.transfer_syntax?).to be_falsey

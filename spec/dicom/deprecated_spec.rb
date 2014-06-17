@@ -7,11 +7,11 @@ module DICOM
 
   describe Anonymizer do
 
-    before :all do
+    before :context do
       DICOM.logger.level = Logger::FATAL
     end
 
-    before :each do
+    before :example do
       @anon = TMPDIR + "anon"
       @anon_s = TMPDIR + "anon/"
       @anon_other = TMPDIR + "anon2/"
@@ -39,7 +39,7 @@ module DICOM
       @w2 = @wpath_s + File.basename(DCM_EXPLICIT_MR_RLE_MONO2)
     end
 
-    after :all do
+    after :context do
       DICOM.logger.level = Logger::INFO
     end
 
@@ -262,9 +262,9 @@ module DICOM
       end
 
 
-      context " [:uid]" do
+      context "with uid" do
 
-        before :each do
+        before :example do
           @dcm = DObject.new
           @dcm.add(Element.new('0010,0010', 'John Doe'))
           @dcm.add(Element.new('0002,0010', '1.2.840.10008.1.2.1'))
@@ -375,7 +375,7 @@ module DICOM
 
       end
 
-      context " [:audit_trail]" do
+      context "with audit_trail" do
 
         it "should write an audit trail file" do
           audit_file = TMPDIR + "anonymization1.json"

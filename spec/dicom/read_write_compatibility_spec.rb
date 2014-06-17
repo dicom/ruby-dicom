@@ -10,7 +10,7 @@ module DICOM
 
   describe DObject do
 
-    before :each do
+    before :example do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end

@@ -103,7 +103,7 @@ module DICOM
 
     describe "#add_item" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
         @dcm.add(Sequence.new("0008,1140"))
       end
@@ -197,7 +197,7 @@ module DICOM
 
     describe "#children" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -237,7 +237,7 @@ module DICOM
 
     describe "#children?" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -261,7 +261,7 @@ module DICOM
 
     describe "#count" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -282,7 +282,7 @@ module DICOM
 
     describe "#count_all" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -303,7 +303,7 @@ module DICOM
 
     describe "#exists?" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -321,7 +321,7 @@ module DICOM
 
     describe "#group" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -374,7 +374,7 @@ module DICOM
     end
 
 
-    describe "#length=()" do
+    describe "#length=" do
 
       it "should raise an error when called on a DObject" do
         expect {DObject.new.length = 42}.to raise_error
@@ -399,7 +399,7 @@ module DICOM
     #
     describe "#print" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
       end
 
@@ -467,7 +467,7 @@ module DICOM
 
     describe "#delete" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
         @d = Element.new("0010,0030", "20000101")
         @s = Sequence.new("0008,1140")
@@ -634,7 +634,7 @@ module DICOM
 
     describe "#reset_length" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
         @s = Sequence.new("0008,1140", :parent => @dcm)
         @i = Item.new(:parent => @s)
@@ -660,7 +660,7 @@ module DICOM
 
     describe "#value" do
 
-      before :each do
+      before :example do
         @dcm = DObject.read(DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2)
       end
 

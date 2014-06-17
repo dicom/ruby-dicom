@@ -7,11 +7,11 @@ module DICOM
 
   describe Anonymizer do
 
-    before :all do
+    before :context do
       DICOM.logger.level = Logger::FATAL
     end
 
-    before :each do
+    before :example do
       #DICOM.logger = Logger.new(STDOUT)
       #DICOM.logger.level = Logger::FATAL
       @a = Anonymizer.new
@@ -87,7 +87,7 @@ module DICOM
       end
     end
 
-    after :all do
+    after :context do
       DICOM.logger.level = Logger::INFO
     end
 
@@ -217,7 +217,7 @@ module DICOM
     end
 
 
-    describe "#==()" do
+    describe "#==" do
 
       it "should be true when comparing two instances having the same attribute values" do
         a1 = Anonymizer.new
@@ -741,7 +741,7 @@ module DICOM
     # NB! This method is private.
     describe "#destination" do
 
-      before :each do
+      before :example do
         @dcm = DObject.new
         @a = Anonymizer.new
       end

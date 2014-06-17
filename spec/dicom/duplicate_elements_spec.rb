@@ -14,7 +14,7 @@ module DICOM
   #
   describe DObject do
 
-    context "::read" do
+    describe "::read" do
 
       it "should by default keep the original instance(s) when duplicate element(s)/sequence(s) occurs" do
         dcm = DObject.read(DCM_DUPLICATES)
@@ -54,7 +54,7 @@ module DICOM
     end
 
 
-    after :all do
+    after :context do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end

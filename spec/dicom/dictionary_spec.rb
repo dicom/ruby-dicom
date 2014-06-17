@@ -6,7 +6,7 @@ module DICOM
 
   describe DLibrary do
 
-    context "#add_element" do
+    describe "#add_element" do
 
       it "should raise an ArgumentError when a non-DictionaryElement is passed as an argument" do
         expect {LIBRARY.add_element('0011,0013')}.to raise_error(ArgumentError)
@@ -31,7 +31,7 @@ module DICOM
 
     end
 
-    context "#add_element_dictionary" do
+    describe "#add_element_dictionary" do
 
       it "should add this dictionary to ruby-dicom's element dictionary" do
         LIBRARY.add_element_dictionary(DICT_ELEMENTS)
@@ -60,7 +60,7 @@ module DICOM
     end
 
 
-    context "#add_uid" do
+    describe "#add_uid" do
 
       it "should raise an ArgumentError when a non-DictionaryElement is passed as an argument" do
         expect {LIBRARY.add_uid('1.2.840.10008.1.1.333')}.to raise_error(ArgumentError)
@@ -83,7 +83,7 @@ module DICOM
 
     end
 
-    context "#add_uid_dictionary" do
+    describe "#add_uid_dictionary" do
 
       it "should add this dictionary to ruby-dicom's uid dictionary" do
         LIBRARY.add_uid_dictionary(DICT_UIDS)
@@ -102,7 +102,7 @@ module DICOM
     end
 
 
-    context "#element" do
+    describe "#element" do
 
       it "should return the matching DictionaryElement" do
         tag = '0010,0010'
@@ -169,231 +169,232 @@ module DICOM
     end
 
 
-    context "#name_and_vr [Command Elements]" do
+    describe "#name_and_vr" do
 
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0000,0000')
-        expect(name).to eql 'Command Group Length'
-        expect(vr).to eql 'UL'
+      context "with command elements" do
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0000,0000')
+          expect(name).to eql 'Command Group Length'
+          expect(vr).to eql 'UL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0000,1005')
+          expect(name).to eql 'Attribute Identifier List'
+          expect(vr).to eql 'AT'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0000,51B0') # Retired command element
+          expect(name).to eql 'Overlays'
+          expect(vr).to eql 'US'
+        end
+
       end
 
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0000,1005')
-        expect(name).to eql 'Attribute Identifier List'
-        expect(vr).to eql 'AT'
+      context "with file meta elements" do
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0002,0000')
+          expect(name).to eql 'File Meta Information Group Length'
+          expect(vr).to eql 'UL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0002,0010')
+          expect(name).to eql 'Transfer Syntax UID'
+          expect(vr).to eql 'UI'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0002,0102')
+          expect(name).to eql 'Private Information'
+          expect(vr).to eql 'OB'
+        end
+
       end
 
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0000,51B0') # Retired command element
-        expect(name).to eql 'Overlays'
-        expect(vr).to eql 'US'
+      context " with directory structuring elements" do
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0004,1130')
+          expect(name).to eql 'File-set ID'
+          expect(vr).to eql 'CS'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0004,1220')
+          expect(name).to eql 'Directory Record Sequence'
+          expect(vr).to eql 'SQ'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0004,1600')
+          expect(name).to eql 'Number of References'
+          expect(vr).to eql 'UL'
+        end
+
+      end
+
+      context "with data elements" do
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0008,0001')
+          expect(name).to eql 'Length to End'
+          expect(vr).to eql 'UL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0008,0018')
+          expect(name).to eql 'SOP Instance UID'
+          expect(vr).to eql 'UI'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0008,0034')
+          expect(name).to eql 'Overlay Time'
+          expect(vr).to eql 'TM'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0018,9511')
+          expect(name).to eql 'Secondary Positioner Scan Start Angle'
+          expect(vr).to eql 'FL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0054,0039')
+          expect(name).to eql 'Phase Description'
+          expect(vr).to eql 'CS'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('3002,0022')
+          expect(name).to eql 'Radiation Machine SAD'
+          expect(vr).to eql 'DS'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0014,4056') # New tag in the 2011 edition
+          expect(name).to eql 'Coupling Medium'
+          expect(vr).to eql 'ST'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0028,0453') # (0028,04x3)
+          expect(name).to eql 'Coefficient Coding Pointers'
+          expect(vr).to eql 'AT'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0028,08A8') # (0028,08x8)
+          expect(name).to eql 'Image Data Location'
+          expect(vr).to eql 'AT'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('1000,ABC0') # (1000,xxx0)
+          expect(name).to eql 'Escape Triplet'
+          expect(vr).to eql 'US'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('1000,DEF5') # (1000,xxx5)
+          expect(name).to eql 'Shift Table Triplet'
+          expect(vr).to eql 'US'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('1010,1234') # (1010,xxxx)
+          expect(name).to eql 'Zonal Map'
+          expect(vr).to eql 'US'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('5012,2600') # (50xx,2600)
+          expect(name).to eql 'Curve Referenced Overlay Sequence'
+          expect(vr).to eql 'SQ'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('60CC,0011') # (60xx,0011)
+          expect(name).to eql 'Overlay Columns'
+          expect(vr).to eql 'US'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('60EE,0110') # (60xx,0110)
+          expect(name).to eql 'Overlay Format'
+          expect(vr).to eql 'CS'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('7FAA,0020') # (7Fxx,0020)
+          expect(name).to eql 'Variable Coefficients SDVN'
+          expect(vr).to eql 'OW'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('7FE0,0010')
+          expect(name).to eql 'Pixel Data'
+          expect(vr).to eql 'OW' # (OW or OB)
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('FFFE,E000')
+          expect(name).to eql 'Item'
+          expect(vr).to eql '  ' # (not defined)
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('FFFE,E00D')
+          expect(name).to eql 'Item Delimitation Item'
+          expect(vr).to eql '  ' # (not defined)
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('FFFE,E0DD')
+          expect(name).to eql 'Sequence Delimitation Item'
+          expect(vr).to eql '  ' # (not defined)
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0008,0000') # (Group Length)
+          expect(name).to eql 'Group Length'
+          expect(vr).to eql 'UL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('7FE0,0000') # (Group Length)
+          expect(name).to eql 'Group Length'
+          expect(vr).to eql 'UL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('1111,0000') # (Private Group Length)
+          expect(name).to eql 'Group Length'
+          expect(vr).to eql 'UL'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('AAAA,FFFF') # (An undefined, but not private tag)
+          expect(name).to eql 'Unknown'
+          expect(vr).to eql 'UN'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('1111,2222') # (A private tag)
+          expect(name).to eql 'Private'
+          expect(vr).to eql 'UN'
+        end
+
       end
 
     end
 
 
-    context "#name_and_vr [File Meta Elements]" do
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0002,0000')
-        expect(name).to eql 'File Meta Information Group Length'
-        expect(vr).to eql 'UL'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0002,0010')
-        expect(name).to eql 'Transfer Syntax UID'
-        expect(vr).to eql 'UI'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0002,0102')
-        expect(name).to eql 'Private Information'
-        expect(vr).to eql 'OB'
-      end
-
-    end
-
-
-    context "#name_and_vr [Directory Structuring Elements]" do
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0004,1130')
-        expect(name).to eql 'File-set ID'
-        expect(vr).to eql 'CS'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0004,1220')
-        expect(name).to eql 'Directory Record Sequence'
-        expect(vr).to eql 'SQ'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0004,1600')
-        expect(name).to eql 'Number of References'
-        expect(vr).to eql 'UL'
-      end
-
-    end
-
-
-    context "#name_and_vr [Data Elements]" do
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0008,0001')
-        expect(name).to eql 'Length to End'
-        expect(vr).to eql 'UL'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0008,0018')
-        expect(name).to eql 'SOP Instance UID'
-        expect(vr).to eql 'UI'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0008,0034')
-        expect(name).to eql 'Overlay Time'
-        expect(vr).to eql 'TM'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0018,9511')
-        expect(name).to eql 'Secondary Positioner Scan Start Angle'
-        expect(vr).to eql 'FL'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0054,0039')
-        expect(name).to eql 'Phase Description'
-        expect(vr).to eql 'CS'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('3002,0022')
-        expect(name).to eql 'Radiation Machine SAD'
-        expect(vr).to eql 'DS'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0014,4056') # New tag in the 2011 edition
-        expect(name).to eql 'Coupling Medium'
-        expect(vr).to eql 'ST'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0028,0453') # (0028,04x3)
-        expect(name).to eql 'Coefficient Coding Pointers'
-        expect(vr).to eql 'AT'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0028,08A8') # (0028,08x8)
-        expect(name).to eql 'Image Data Location'
-        expect(vr).to eql 'AT'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('1000,ABC0') # (1000,xxx0)
-        expect(name).to eql 'Escape Triplet'
-        expect(vr).to eql 'US'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('1000,DEF5') # (1000,xxx5)
-        expect(name).to eql 'Shift Table Triplet'
-        expect(vr).to eql 'US'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('1010,1234') # (1010,xxxx)
-        expect(name).to eql 'Zonal Map'
-        expect(vr).to eql 'US'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('5012,2600') # (50xx,2600)
-        expect(name).to eql 'Curve Referenced Overlay Sequence'
-        expect(vr).to eql 'SQ'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('60CC,0011') # (60xx,0011)
-        expect(name).to eql 'Overlay Columns'
-        expect(vr).to eql 'US'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('60EE,0110') # (60xx,0110)
-        expect(name).to eql 'Overlay Format'
-        expect(vr).to eql 'CS'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('7FAA,0020') # (7Fxx,0020)
-        expect(name).to eql 'Variable Coefficients SDVN'
-        expect(vr).to eql 'OW'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('7FE0,0010')
-        expect(name).to eql 'Pixel Data'
-        expect(vr).to eql 'OW' # (OW or OB)
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('FFFE,E000')
-        expect(name).to eql 'Item'
-        expect(vr).to eql '  ' # (not defined)
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('FFFE,E00D')
-        expect(name).to eql 'Item Delimitation Item'
-        expect(vr).to eql '  ' # (not defined)
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('FFFE,E0DD')
-        expect(name).to eql 'Sequence Delimitation Item'
-        expect(vr).to eql '  ' # (not defined)
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('0008,0000') # (Group Length)
-        expect(name).to eql 'Group Length'
-        expect(vr).to eql 'UL'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('7FE0,0000') # (Group Length)
-        expect(name).to eql 'Group Length'
-        expect(vr).to eql 'UL'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('1111,0000') # (Private Group Length)
-        expect(name).to eql 'Group Length'
-        expect(vr).to eql 'UL'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('AAAA,FFFF') # (An undefined, but not private tag)
-        expect(name).to eql 'Unknown'
-        expect(vr).to eql 'UN'
-      end
-
-      it "should return the expected Name and VR for this tag" do
-        name, vr = LIBRARY.name_and_vr('1111,2222') # (A private tag)
-        expect(name).to eql 'Private'
-        expect(vr).to eql 'UN'
-      end
-
-    end
-
-
-    context "#uid" do
+    describe "#uid" do
 
       it "should return the nil when no matching UID instance exists" do
         value = '1.999.9999.1234.56789.999999'
@@ -437,4 +438,5 @@ module DICOM
     end
 
   end
+
 end

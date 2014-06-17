@@ -7,13 +7,13 @@ module DICOM
 
   describe AuditTrail do
 
-    before :each do
+    before :example do
       @a = AuditTrail.new
       @ar = AuditTrail.read(JSON_AUDIT_TRAIL)
     end
 
 
-    context "::new" do
+    describe "::new" do
 
       it "should create an AuditTrail instance" do
         expect(AuditTrail.new).to be_an AuditTrail
@@ -26,7 +26,7 @@ module DICOM
     end
 
 
-    context "::read" do
+    describe "::read" do
 
       it "should raise an Error when given an invalid file as argument" do
         expect {AuditTrail.read("not-a-file")}.to raise_error
@@ -71,7 +71,7 @@ module DICOM
     end
 
 
-    context "#add_record" do
+    describe "#add_record" do
 
       it "should add the tag record to the empty dictionary" do
         tag = "0010,0010"
@@ -116,7 +116,7 @@ module DICOM
     end
 
 
-    context "#load" do
+    describe "#load" do
 
       it "should raise an Error when given an invalid file as argument" do
         expect {@a.load("not-a-file")}.to raise_error
@@ -130,7 +130,7 @@ module DICOM
     end
 
 
-    context "#original" do
+    describe "#original" do
 
       it "should return nil when queried with a non-existing tag" do
         expect(@ar.original("ffff,aaaa", "Patient3")).to be_nil
@@ -148,7 +148,7 @@ module DICOM
     end
 
 
-    context "#records" do
+    describe "#records" do
 
       it "should return an empty hash when called with a non-existing tag" do
         expect(@ar.records("ffff,aaaa")).to eql Hash.new
@@ -165,7 +165,7 @@ module DICOM
     end
 
 
-    context "#replacement" do
+    describe "#replacement" do
 
       it "should return nil when queried with a non-existing tag" do
         expect(@ar.replacement("ffff,aaaa", "Donny Dicom")).to be_nil
@@ -183,7 +183,7 @@ module DICOM
     end
 
 
-    context "#write" do
+    describe "#write" do
 
       it "should write the content of the dictionary attribute to the given file as a json string" do
         written_file = TMPDIR + "audit_trail.json"

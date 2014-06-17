@@ -8,7 +8,7 @@ module DICOM
 
     describe '#find_images' do
 
-      before :each do
+      before :example do
         @link = mock("link")
         @link.stubs(:build_command_fragment)
         @link.stubs(:transmit)
@@ -100,7 +100,7 @@ module DICOM
 
     describe '#find_patients' do
 
-      before :each do
+      before :example do
         @link = mock("link")
         @link.stubs(:build_command_fragment)
         @link.stubs(:transmit)
@@ -197,7 +197,7 @@ module DICOM
 
     describe '#find_series' do
 
-      before :each do
+      before :example do
         @link = mock("link")
         @link.stubs(:build_command_fragment)
         @link.stubs(:transmit)
@@ -292,7 +292,7 @@ module DICOM
 
     describe '#find_studies' do
 
-      before :each do
+      before :example do
         @link = mock("link")
         @link.stubs(:build_command_fragment)
         @link.stubs(:transmit)

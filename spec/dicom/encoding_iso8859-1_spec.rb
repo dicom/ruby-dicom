@@ -7,7 +7,7 @@ module DICOM
 
   describe DObject do
 
-    before :each do
+    before :example do
       @dcm = DObject.read(DCM_ISO8859_1)
     end
 
@@ -42,7 +42,7 @@ module DICOM
 
   describe Element do
 
-    before :each do
+    before :example do
       @dcm = DObject.new
       Element.new('0008,0005', 'ISO_IR 192', :parent => @dcm)
     end
@@ -72,7 +72,7 @@ module DICOM
     end
 
 
-    describe "#value=()" do
+    describe "#value=" do
 
       it "should transfer the UTF8 encoded string to the data element" do
         e = Element.new('0008,1010', 'asdf', :parent => @dcm)
@@ -117,7 +117,7 @@ module DICOM
 
   describe Anonymizer do
 
-    before :each do
+    before :example do
       @a = Anonymizer.new(:audit_trail => TMPDIR + 'audit_trail_iso8859-1.json')
       @a.add_folder(TMPDIR + 'iso8859-1/')
       @a.write_path = TMPDIR + 'anon/iso8859-1/'
@@ -126,7 +126,7 @@ module DICOM
       @a.execute
     end
 
-    describe "#value=()" do
+    describe "#value=" do
 
       it "should create an audit file containing the expected utf8 and ascii values" do
         at = AuditTrail.new

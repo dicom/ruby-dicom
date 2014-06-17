@@ -7,7 +7,7 @@ module DICOM
 
   describe Item do
 
-    context "::new" do
+    describe "::new" do
 
       it "should set its name attribute as 'Item'" do
         i = Item.new
@@ -194,7 +194,7 @@ module DICOM
     end
 
 
-    describe "#==()" do
+    describe "#==" do
 
       it "should be true when comparing two instances having the same attribute values" do
         i1 = Item.new

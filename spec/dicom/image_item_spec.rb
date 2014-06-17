@@ -8,13 +8,13 @@ module DICOM
 
   describe ImageItem do
 
-    before :all do
+    before :context do
       DICOM.logger = Logger.new(STDOUT)
       DICOM.logger.level = Logger::FATAL
     end
 
 
-    context "#add_element" do
+    describe "#add_element" do
 
       it "should add an Element (as specified) to a DObject instance" do
         dcm = DObject.new
@@ -49,7 +49,7 @@ module DICOM
     end
 
 
-    context "#add_sequence" do
+    describe "#add_sequence" do
 
       it "should add a Sequence (as specified) to a DObject instance" do
         dcm = DObject.new
@@ -81,7 +81,7 @@ module DICOM
     end
 
 
-    context "#color?" do
+    describe "#color?" do
 
       it "should return false when the DICOM object has no pixel data" do
         dcm = DObject.new
@@ -106,7 +106,7 @@ module DICOM
     end
 
 
-    context "#compression?" do
+    describe "#compression?" do
 
       it "should return false when the DICOM object has no pixel data" do
         dcm = DObject.new
@@ -131,7 +131,7 @@ module DICOM
     end
 
 
-    context "#decode_pixels" do
+    describe "#decode_pixels" do
 
       it "should raise an error when the DICOM object doesn't have any of the necessary data elements needed to decode pixel data" do
         dcm = DObject.new
@@ -159,7 +159,7 @@ module DICOM
     end
 
 
-    context "#encode_pixels" do
+    describe "#encode_pixels" do
 
       it "should raise an error when the DICOM object doesn't have the necessary data elements needed to encode the pixel data" do
         dcm = DObject.new
@@ -187,7 +187,7 @@ module DICOM
     end
 
 
-    context "#pixels" do
+    describe "#pixels" do
 
       it "should return nil if no pixel data is present" do
         dcm = DObject.new
@@ -290,7 +290,7 @@ module DICOM
     end
 
 
-    context "#narray" do
+    describe "#narray" do
 
       it "should return nil if no pixel data is present" do
         dcm = DObject.new
@@ -376,9 +376,9 @@ module DICOM
         expect(dcm.narray(:level => [1100, 100]).max).to eql 1150
       end
 
-      context "[on a 3D pixel volume]" do
+      context "with a 3D pixel volume" do
 
-        before :each do
+        before :example do
           dcm = DObject.new
           Element.new('0002,0010', EXPLICIT_LITTLE_ENDIAN, :parent => dcm) # TS
           Element.new('0028,0008', '2', :parent => dcm) # Frames
@@ -417,7 +417,7 @@ module DICOM
     end
 
 
-    context "#image_from_file" do
+    describe "#image_from_file" do
 
       it "should raise an ArgumentError when a non-string argument is passed" do
         dcm = DObject.new
@@ -435,7 +435,7 @@ module DICOM
     end
 
 
-    context "#image_properties" do
+    describe "#image_properties" do
 
       it "should raise an error when the 'Columns' data element is missing from the DICOM object" do
         dcm = DObject.new
@@ -470,7 +470,7 @@ module DICOM
     end
 
 
-    context "#image_to_file" do
+    describe "#image_to_file" do
 
       it "should raise an ArgumentError when a non-string argument is passed" do
         dcm = DObject.new
@@ -507,7 +507,7 @@ module DICOM
     end
 
 
-    context "#delete_sequences" do
+    describe "#delete_sequences" do
 
       it "should delete all sequences from the DICOM object" do
         dcm = DObject.new
@@ -542,7 +542,7 @@ module DICOM
     end
 
 
-    context "#pixels=()" do
+    describe "#pixels=" do
 
       it "should raise an ArgumentError when a non-array argument is passed" do
         dcm = DObject.new
@@ -577,9 +577,9 @@ module DICOM
         expect(dcm.decode_pixels(dcm['7FE0,0010'].bin)).to eql pixel_data
       end
 
-      context "[on a 3D pixel volume]" do
+      context "with a 3D pixel volume" do
 
-        before :each do
+        before :example do
           @dcm = DObject.new
           Element.new('0002,0010', EXPLICIT_LITTLE_ENDIAN, :parent => @dcm) # TS
           Element.new('0028,0008', '2', :parent => @dcm) # Frames
@@ -608,7 +608,7 @@ module DICOM
 
 
     # Note: Private method.
-    context "#window_level_values" do
+    describe "#window_level_values" do
 
       it "should return the expected window level related values" do
         center = 300
