@@ -145,6 +145,8 @@ Please don't hesitate to email me if you have any feedback related to this proje
 * [Donnie Millar](https://github.com/dmillar)
 * [Björn Albers](https://github.com/bjoernalbers)
 * [Felix Petriconi](https://github.com/FelixPetriconi)
+* [Greg Tangey](https://github.com/Ruxton)
+* [Cian Hughes](https://github.com/cian)
 * [Steven Bedrick](https://github.com/stevenbedrick)
 * [Lars Benner](https://github.com/Maturin)
 * [Brett Goulder](https://github.com/brettgoulder)
