@@ -19,7 +19,7 @@ Gem::PackageTask.new(gem_spec) do |pkg|
   pkg.need_tar = true
 end
 
-# RSpec 2:
+# RSpec:
 RSpec::Core::RakeTask.new do |t|
   t.rspec_opts = ["-c", "-f progress", "-r ./spec/spec_helper.rb"]
   t.pattern = 'spec/**/*_spec.rb'
