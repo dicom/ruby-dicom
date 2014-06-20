@@ -1,21 +1,21 @@
 # 0.9.6
 
-## (Unreleased)
+## 20th June, 2014
 
 * Fixed an issue where role negotiation in the network code would cause an exception.
-* Fixed an issue where a C-Move request could terminate instead of properly waiting for the receipt.
+* Fixed an issue where a C-Move request could terminate instead of properly waiting for a receipt.
 * Fixed an issue where network code would hang waiting for a response when it doesn't get any.
 * Automatically load RMagick/mini_magick when using the image methods, to avoid confusing exceptions.
 * Made json and yaml gem dependencies, to avoid unexpected exceptions when using the #to_json and #to_yaml methods.
 * Give a warning instead of raising an error when Parent#delete and #value gets an obviously invalid argument.
 * Introduced Parent#representation, giving a description of the parent objects Sequence, Item & DObject.
-* Refactored various methods for the sake of code simplification.
-* Upgraded specification to use RSpec 3
+* Refactored various methods for improved code simplicity.
+* Upgraded specification to use RSpec 3.
 * Changed information files from RDoc to Markdown format.
 * Performance improvement when writing DICOM string segments.
 * Changed element and uid dictionaries from .txt to .tsv.
 * Bumped required Ruby version to 1.9.3.
-* Replaced the custom encoding/decoding of big endian numbers with the Ruby standard library
+* Replaced the custom encoding/decoding of big endian numbers with the Ruby standard library implementation.
 
 
 # 0.9.5
