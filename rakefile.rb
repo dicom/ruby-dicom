@@ -16,7 +16,6 @@ require 'yard'
 gem_spec = eval(File.read('dicom.gemspec'))
 Gem::PackageTask.new(gem_spec) do |pkg|
   pkg.gem_spec = gem_spec
-  pkg.need_tar = true
 end
 
 # RSpec:
