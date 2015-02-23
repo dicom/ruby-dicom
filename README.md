@@ -102,10 +102,10 @@ Example:
 
 ## RESOURCES
 
-* [Official home page](http://dicom.rubyforge.org/)
+* [Official home page](http://dicom.github.io/ruby-dicom/)
 * [Discussion forum](http://groups.google.com/group/ruby-dicom)
 * [Documentation](http://rubydoc.info/gems/dicom/frames)
-* [Tutorials](http://dicom.rubyforge.org/tutorials.html)
+* [Tutorials](http://dicom.github.io/ruby-dicom/tutorials.html)
 * [Source code repository](https://github.com/dicom/ruby-dicom)
 
 
