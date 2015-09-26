@@ -112,8 +112,9 @@ module DICOM
         end
       end
       # Create an Element from the gathered data:
-      if level_vr == "SQ" or tag == ITEM_TAG
-        if level_vr == "SQ"
+      # if vr is UN ("unknown") and length is -1, treat as a sequence (sec. 6.2.2 of DICOM standard)
+      if level_vr == "SQ" or tag == ITEM_TAG or (level_vr == "UN" and length == -1)
+        if level_vr == "SQ" or (level_vr == "UN" and length == -1)
           check_duplicate(tag, 'Sequence')
           unless @current_parent[tag] and !@overwrite
             @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
