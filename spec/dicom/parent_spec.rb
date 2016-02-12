@@ -81,7 +81,7 @@ module DICOM
       it "should raise an error when the it is called on a Sequence with an Element argument" do
         seq = Sequence.new("0008,1140")
         name = Element.new("0010,0010", "John_Doe")
-        expect {seq.add(name)}.to raise_error
+        expect {seq.add(name)}.to raise_error(/Sequence/)
       end
 
 # It should be possible to add Data Set Trailing Padding elements anywhere in a DICOM file, but
@@ -377,7 +377,7 @@ module DICOM
     describe "#length=" do
 
       it "should raise an error when called on a DObject" do
-        expect {DObject.new.length = 42}.to raise_error
+        expect {DObject.new.length = 42}.to raise_error(/DObject/)
       end
 
       it "should change the length attribute of the Sequence to the specified value" do
@@ -642,7 +642,7 @@ module DICOM
       end
 
       it "should raise an error when the method is executed on a DObject" do
-        expect {@dcm.reset_length}.to raise_error
+        expect {@dcm.reset_length}.to raise_error(/DObject/)
       end
 
       it "should set the length of the Sequence to -1 (UNDEFINED)" do

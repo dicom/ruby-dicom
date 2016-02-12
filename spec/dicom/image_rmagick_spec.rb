@@ -42,7 +42,7 @@ module DICOM
         it "should raise an error when an invalid Pixel Representation is set" do
           dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
           dcm["0028,0103"].value = 42
-          expect {dcm.image}.to raise_error
+          expect {dcm.image}.to raise_error(/Pixel Representation/)
         end
 
         it "should decompress the JPEG Baseline encoded pixel data of this DICOM file and return an image object" do

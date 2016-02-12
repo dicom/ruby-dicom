@@ -135,13 +135,13 @@ module DICOM
 
       it "should raise an error when the DICOM object doesn't have any of the necessary data elements needed to decode pixel data" do
         dcm = DObject.new
-        expect {dcm.decode_pixels('0000')}.to raise_error
+        expect {dcm.decode_pixels('0000')}.to raise_error(/Bit Depth/)
       end
 
       it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to decode pixel data" do
         dcm = DObject.new
         dcm.add(Element.new('0028,0100', 16))
-        expect {dcm.decode_pixels('0000')}.to raise_error
+        expect {dcm.decode_pixels('0000')}.to raise_error(/Pixel Representation/)
       end
 
       it "should raise an ArgumentError when a non-string is supplied" do
@@ -163,13 +163,13 @@ module DICOM
 
       it "should raise an error when the DICOM object doesn't have the necessary data elements needed to encode the pixel data" do
         dcm = DObject.new
-        expect {dcm.encode_pixels([42, 42])}.to raise_error
+        expect {dcm.encode_pixels([42, 42])}.to raise_error(/Bit Depth/)
       end
 
       it "should raise an error when the DICOM object is missing the 'Pixel Representation' element, needed to encode the pixel data" do
         dcm = DObject.new
         dcm.add(Element.new('0028,0100', 16))
-        expect {dcm.encode_pixels([42, 42])}.to raise_error
+        expect {dcm.encode_pixels([42, 42])}.to raise_error(/Pixel Representation/)
       end
 
       it "should raise an ArgumentError when a non-array is supplied" do
@@ -435,35 +435,55 @@ module DICOM
     end
 
 
-    describe "#image_properties" do
+    describe "#num_cols" do
 
-      it "should raise an error when the 'Columns' data element is missing from the DICOM object" do
+      it "gives nil when the 'Columns' data element is missing from the DICOM object" do
         dcm = DObject.new
         dcm.add(Element.new('0028,0010', 512)) # Rows
-        expect {dcm.image_properties}.to raise_error
+        expect(dcm.num_cols).to be_nil
       end
 
-      it "should raise an error when the 'Rows' data element is missing from the DICOM object" do
+      it "gives the expected integer when the 'Columns' data element is defined in the DICOM object" do
+        dcm = DObject.new
+        columns_used = 256
+        dcm.add(Element.new('0028,0011', columns_used))
+        expect(dcm.num_cols).to eql columns_used
+      end
+
+    end
+
+
+    describe "#num_rows" do
+
+      it "gives nil when the 'Rows' data element is missing from the DICOM object" do
         dcm = DObject.new
         dcm.add(Element.new('0028,0011', 512)) # Columns
-        expect {dcm.image_properties}.to raise_error
+        expect(dcm.num_rows).to be_nil
       end
 
-      it "should return frames (=1) when the 'Number of Frames' data element is missing from the DICOM object" do
+      it "gives the expected integer when the 'Rows' data element is defined in the DICOM object" do
         dcm = DObject.new
+        rows_used = 256
+        dcm.add(Element.new('0028,0010', rows_used))
+        expect(dcm.num_rows).to eql rows_used
+      end
+
+    end
+
+
+    describe "#num_frames" do
+
+      it "gives 1 as a default value when the 'Number of Frames' data element is missing from the DICOM object" do
+        dcm = DObject.new
+        dcm.add(Element.new('0028,0010', 512)) # Rows
+        dcm.add(Element.new('0028,0011', 512)) # Columns
         expect(dcm.num_frames).to eql 1
       end
 
-      it "should return correct integer values for rows, columns and frames when all corresponding data elements are defined in the DICOM object" do
+      it "gives the expected integer when the 'Number of Frames' data element is defined in the DICOM object" do
         dcm = DObject.new
-        rows_used = 512
-        columns_used = 256
         frames_used = 8
-        dcm.add(Element.new('0028,0010', rows_used))
-        dcm.add(Element.new('0028,0011', columns_used))
-        dcm.add(Element.new('0028,0008', frames_used.to_s))
-        expect(dcm.num_rows).to eql rows_used
-        expect(dcm.num_cols).to eql columns_used
+        dcm.add(Element.new('0028,0008', frames_used))
         expect(dcm.num_frames).to eql frames_used
       end
 

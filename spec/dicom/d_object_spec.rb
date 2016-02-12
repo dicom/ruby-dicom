@@ -190,7 +190,7 @@ module DICOM
 
       it "should raise an error if given a non-Anonymizer as argument" do
         dcm = DObject.new
-        expect {dcm.anonymize(42)}.to raise_error
+        expect {dcm.anonymize(42)}.to raise_error(/to_anonymizer/)
       end
 
       it "should create a default Anonymizer instance to use for anonymization when called without argument" do
@@ -245,7 +245,7 @@ module DICOM
 
       it "should raise an error when this method is attempted called on an empty DICOM object" do
         dcm = DObject.new
-        expect {dcm.encode_segments(512)}.to raise_error
+        expect {dcm.encode_segments(512)}.to raise_error(/empty/)
       end
 
       it "should encode exactly the same binary string regardless of the max segment length chosen" do
