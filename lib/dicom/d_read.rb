@@ -7,11 +7,12 @@ module DICOM
     #
     # @param [String] bin an encoded binary string containing DICOM information
     # @param [String] syntax the transfer syntax to use when decoding the DICOM string
+    # @param [Boolean] switched indicating whether the transfer syntax 'switch' has occured in the data stream of this object
     #
-    def parse(bin, syntax)
+    def parse(bin, syntax, switched=false, explicit=true)
       raise ArgumentError, "Invalid argument 'bin'. Expected String, got #{bin.class}." unless bin.is_a?(String)
       raise ArgumentError, "Invalid argument 'syntax'. Expected String, got #{syntax.class}." unless syntax.is_a?(String)
-      read(bin, signature=false, :syntax => syntax)
+      read(bin, signature=false, :syntax => syntax, :switched => switched, :explicit => explicit)
     end
 
 
@@ -69,6 +70,11 @@ module DICOM
     #
     def process_data_element
       # FIXME: This method has grown a bit messy and isn't very pleasant to read. Cleanup possible?
+      # After having been into a possible unknown sequence with undefined length, we may need to reset
+      # explicitness from implicit to explicit:
+      if !@original_explicit.nil? && @explicitness_reset_parent == @current_parent
+        @explicit = @original_explicit
+      end
       # STEP 1:
       # Attempt to read data element tag:
       tag = read_tag
@@ -116,6 +122,12 @@ module DICOM
       if level_vr == "SQ" or tag == ITEM_TAG or (level_vr == "UN" and length == -1)
         if level_vr == "SQ" or (level_vr == "UN" and length == -1)
           check_duplicate(tag, 'Sequence')
+          # If we get an unknown sequence with undefined length, we must switch to implicit for decoding its content:
+          if level_vr == "UN" and length == -1
+            @original_explicit = @explicit
+            @explicit = false
+            @explicitness_reset_parent = @current_parent
+          end
           unless @current_parent[tag] and !@overwrite
             @current_element = Sequence.new(tag, :length => length, :name => name, :parent => @current_parent, :vr => vr)
           else
@@ -144,7 +156,7 @@ module DICOM
         # If length is specified (no delimitation items), load a new DRead instance to read these child elements
         # and load them into the current sequence. The exception is when we have a pixel data item.
         if length > 0 and not @enc_image
-          @current_element.parse(bin, @transfer_syntax)
+          @current_element.parse(bin, @transfer_syntax, switched=@switched, @explicit)
           @current_parent = @current_parent.parent
           return false unless @read_success
         end
@@ -178,8 +190,8 @@ module DICOM
       @overwrite = options[:overwrite]
       # Presence of the official DICOM signature:
       @signature = false
-      # Default explicitness of start of DICOM string:
-      @explicit = true
+      # Default explicitness of start of DICOM string (if undefined it defaults to true):
+      @explicit = options[:explicit].nil? ? true : options[:explicit]
       # Default endianness of start of DICOM string is little endian:
       @str_endian = false
       # A switch of endianness may occur after the initial meta group, an this needs to be monitored:
@@ -189,7 +201,7 @@ module DICOM
       # Endianness of the remaining groups after the first group:
       @rest_endian = false
       # When the string switch from group 0002 to a later group we will update encoding values, and this switch will keep track of that:
-      @switched = false
+      @switched = options[:switched] ? options[:switched] : false
       # Keeping track of the data element parent status while parsing the DICOM string:
       @current_parent = self
       # Keeping track of what is the current data element:

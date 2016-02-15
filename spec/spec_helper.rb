@@ -27,6 +27,7 @@ suppress_warnings do
   DICOM::DCM_IMPLICIT_NO_HEADER_OT_8BIT_PAL = 'samples/no-header_implicit_ot_8bit_pal.dcm'
   DICOM::DCM_EXPLICIT_MR_16BIT_MONO2_NON_SQUARE_PAL_ICON = 'samples/explicit_mr_16bit_mono2_non-square_pal_icon.dcm'
   DICOM::DCM_EXPLICIT_RTDOSE_16BIT_MONO2_3D_VOLUME = 'samples/explicit_rtdose_16bit_mono2_3d-volume.dcm'
+  DICOM::DCM_EXPLICIT_PRIVATE_SEQUENCE_UNDEFINED_IMPLICIT = 'samples/explicit_with_private_sequence_having_undefined_length_and_implicit_encoding.dcm'
   # With compression:
   DICOM::DCM_EXPLICIT_MR_JPEG_LOSSY_MONO2 = 'samples/explicit_mr_jpeg-lossy_mono2.dcm'
   DICOM::DCM_EXPLICIT_US_RLE_PAL_MULTIFRAME = 'samples/explicit_us_rle_pal_multiframe.dcm'

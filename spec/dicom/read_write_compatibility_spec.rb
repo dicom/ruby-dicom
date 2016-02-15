@@ -136,6 +136,13 @@ module DICOM
         expect(dcm.count_all).to eql 20
       end
 
+      it "should parse this DICOM file and build a valid DICOM object" do
+        dcm = DObject.read(DCM_EXPLICIT_PRIVATE_SEQUENCE_UNDEFINED_IMPLICIT)
+        expect(dcm.read?).to be_truthy
+        expect(dcm.count).to eql 108
+        expect(dcm.count_all).to eql 173
+      end
+
     end
 
   end
