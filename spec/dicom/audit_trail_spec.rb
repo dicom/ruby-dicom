@@ -29,7 +29,7 @@ module DICOM
     describe "::read" do
 
       it "should raise an Error when given an invalid file as argument" do
-        expect {AuditTrail.read("not-a-file")}.to raise_error
+        expect {AuditTrail.read("not-a-file")}.to raise_error(/file/)
       end
 
       it "should return an AuditTrail instance" do
@@ -119,7 +119,7 @@ module DICOM
     describe "#load" do
 
       it "should raise an Error when given an invalid file as argument" do
-        expect {@a.load("not-a-file")}.to raise_error
+        expect {@a.load("not-a-file")}.to raise_error(/file/)
       end
 
       it "should load the dictionary with the tags specified in this json" do
