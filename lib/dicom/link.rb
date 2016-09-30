@@ -119,7 +119,8 @@ module DICOM
         @presentation_contexts[pc[:presentation_context_id]] = pc[:selected_transfer_syntax]
         # Add the information from this pc item to the p_contexts hash:
         p_contexts[pc[:abstract_syntax]] = Hash.new unless p_contexts[pc[:abstract_syntax]]
-        p_contexts[pc[:abstract_syntax]][pc[:presentation_context_id]] = {:transfer_syntaxes => [pc[:selected_transfer_syntax]], :result => pc[:result]}
+        transfer_syntaxes = pc[:selected_transfer_syntax].nil? ? [] : [ pc[:selected_transfer_syntax] ]
+        p_contexts[pc[:abstract_syntax]][pc[:presentation_context_id]] = {:transfer_syntaxes => transfer_syntaxes, :result => pc[:result]}
       end
       append_presentation_contexts(p_contexts, ITEM_PRESENTATION_CONTEXT_RESPONSE)
       append_user_information(@user_information)
