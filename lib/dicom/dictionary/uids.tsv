@@ -161,6 +161,8 @@
 1.2.840.10008.5.1.4.1.1.13.1.1	X-Ray 3D Angiographic Image Storage	SOP Class	
 1.2.840.10008.5.1.4.1.1.13.1.2	X-Ray 3D Craniofacial Image Storage	SOP Class	
 1.2.840.10008.5.1.4.1.1.13.1.3	Breast Tomosynthesis Image Storage	SOP Class	
+1.2.840.10008.5.1.4.1.1.13.1.4	Breast Projection X-Ray Image Storage - For Presentation	SOP Class	
+1.2.840.10008.5.1.4.1.1.13.1.5	Breast Projection X-Ray Image Storage - For Processing	SOP Class	
 1.2.840.10008.5.1.4.1.1.14.1	Intravascular Optical Coherence Tomography Image Storage - For Presentation	SOP Class	
 1.2.840.10008.5.1.4.1.1.14.2	Intravascular Optical Coherence Tomography Image Storage - For Processing	SOP Class	
 1.2.840.10008.5.1.4.1.1.20	Nuclear Medicine Image Storage	SOP Class	
