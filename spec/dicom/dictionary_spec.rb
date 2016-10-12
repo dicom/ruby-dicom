@@ -338,7 +338,7 @@ module DICOM
         it "should return the expected Name and VR for this tag" do
           name, vr = LIBRARY.name_and_vr('7FE0,0010')
           expect(name).to eql 'Pixel Data'
-          expect(vr).to eql 'OW' # (OW or OB)
+          expect(['OB', 'OW']).to include(vr)
         end
 
         it "should return the expected Name and VR for this tag" do
