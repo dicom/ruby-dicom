@@ -1,10 +1,73 @@
 # encoding: UTF-8
 
 require 'spec_helper'
+require 'set'
 
 module DICOM
 
   describe DLibrary do
+
+    context "with regards to its dictionary" do
+
+      it "has properly defined VR element values" do
+        valid_vrs = ["UL", "UI", "US", "AE", "AT", "LO", "SH", "LT", "CS",
+          "IS", "OB", "SQ", "DA", "TM", "DT", "ST", "PN", "UC", "UR", "FD",
+          "DS", "FL", "UT", "AS", "SL", "SS", "OF", "OW", "OL", "OD", "UN", "  "
+        ]
+        vrs = Set.new
+        LIBRARY.elements.values.each do |e|
+          vrs.add(e.vr)
+        end
+        expect(vrs).to contain_exactly(*valid_vrs)
+      end
+
+      it "has properly defined VM element values" do
+        valid_vms = ["1", "1-2", "1-3", "1-32", "1-8", "1-99", "1-n", "1-n,1",
+          "16", "2", "2-2n", "2-n", "3", "3-3n", "3-n", "4", "6", "6-n", "9"
+        ]
+        vms = Set.new
+        LIBRARY.elements.values.each do |e|
+          vms.add(e.vm)
+        end
+        expect(vms).to contain_exactly(*valid_vms)
+      end
+
+      it "has properly defined Retired element values" do
+        valid_retireds = ["R", ""]
+        retireds = Set.new
+        LIBRARY.elements.values.each do |e|
+          retireds.add(e.retired)
+        end
+        expect(retireds).to contain_exactly(*valid_retireds)
+      end
+
+      it "has properly defined Type uid values" do
+        valid_types = ["Application Context Name", "Application Hosting Model",
+          "Coding Scheme", "DICOM UIDs as a Coding Scheme", "LDAP OID",
+          "Meta SOP Class", "Query/Retrieve", "SOP Class", "Service Class",
+          "Synchronization Frame of Reference", "Transfer", "Transfer Syntax",
+          "Transfer Syntax\u00A0", "Well-known Print Queue SOP Instance",
+          "Well-known Printer SOP Instance", "Well-known SOP Instance",
+          "Well-known frame of reference",
+        ]
+        types = Set.new
+        LIBRARY.uids.values.each do |u|
+          types.add(u.type)
+          puts u.name if u.type == "\u00A0"
+        end
+        expect(types).to contain_exactly(*valid_types)
+      end
+
+      it "has properly defined Retired uid values" do
+        valid_retireds = ["R", ""]
+        retireds = Set.new
+        LIBRARY.uids.values.each do |u|
+          retireds.add(u.retired)
+        end
+        expect(retireds).to contain_exactly(*valid_retireds)
+      end
+
+    end
 
     describe "#add_element" do
 
@@ -387,6 +450,12 @@ module DICOM
           name, vr = LIBRARY.name_and_vr('1111,2222') # (A private tag)
           expect(name).to eql 'Private'
           expect(vr).to eql 'UN'
+        end
+
+        it "should return the expected Name and VR for this tag" do
+          name, vr = LIBRARY.name_and_vr('0040,1104') # (A new element in the 2016 version)
+          expect(name).to eql "Person's Telecom Information"
+          expect(vr).to eql 'LT'
         end
 
       end

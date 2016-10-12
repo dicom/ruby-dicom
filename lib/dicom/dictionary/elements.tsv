@@ -2115,7 +2115,7 @@
 0040,1101	Person Identification Code Sequence	SQ	1	
 0040,1102	Person's Address	ST	1	
 0040,1103	Person's Telephone Numbers	LO	1-n	
-0040,1104	Person's Telecom Information	PersonTelecomInformation	LT	1	
+0040,1104	Person's Telecom Information	LT	1	
 0040,1400	Requested Procedure Comments	LT	1	
 0040,2001	Reason for the Imaging Service Request	LO	1	R
 0040,2004	Issue Date of Imaging Service Request	DA	1	
@@ -2864,13 +2864,13 @@
 0070,1305	Plane	FD	4	
 0070,1306	Plane Normal	FD	3	
 0070,1309	Cropping Specification Number	US	1	
-0070,1501	Multi-Planar Reconstruction Style	MultiPlanarReconstructionStyle	CS	1	
+0070,1501	Multi-Planar Reconstruction Style	CS	1	
 0070,1502	MPR Thickness Type	CS	1	
 0070,1503	MPR Slab Thickness	FD	1	
 0070,1505	MPR Top Left Hand Corner	FD	3	
 0070,1507	MPR View Width Direction	FD	3	
 0070,1508	MPR View Width	FD	1	
-0070,150C	Number of Volumetric Curve Points	NumberOfVolumetricCurvePoints	UL	1	
+0070,150C	Number of Volumetric Curve Points	UL	1	
 0070,150D	Volumetric Curve Points	OD	1	
 0070,1511	MPR View Height Direction	FD	3	
 0070,1512	MPR View Height	FD	1	
@@ -3143,11 +3143,11 @@
 0082,0003	Assessment Summary Description	UT	1	
 0082,0004	Assessed SOP Instance Sequence	SQ	1	
 0082,0005	Referenced Comparison SOP Instance Sequence	SQ	1	
-0082,0006	Number of Assessment Observations	NumberOfAssessmentObservations	UL	1	
+0082,0006	Number of Assessment Observations	UL	1	
 0082,0007	Assessment Observations Sequence	SQ	1	
 0082,0008	Observation Significance	CS	1	
 0082,000A	Observation Description	UT	1	
-0082,000C	Structured Constraint Observation Sequence	StructuredContraintObservationSequence	SQ	1	
+0082,000C	Structured Constraint Observation Sequence	SQ	1	
 0082,0010	Assessed Attribute Value Sequence	SQ	1	
 0082,0016	Assessment Set ID	LO	1	
 0082,0017	Assessment Requester Sequence	SQ	1	
@@ -3939,8 +3939,8 @@
 300C,0102	Referenced Lateral Spreading Device Number	IS	1	
 300C,0104	Referenced Range Modulator Number	IS	1	
 300C,0111	Omitted Beam Task Sequence	SQ	1	
-300C,0112	Reason for Omission	ReasonForOmission	CS	1	
-300C,0113	Reason for Omission Description	ReasonForOmissionDescription	LO	1	
+300C,0112	Reason for Omission	CS	1	
+300C,0113	Reason for Omission Description	LO	1	
 300E,0002	Approval Status	CS	1	
 300E,0004	Review Date	DA	1	
 300E,0005	Review Time	TM	1	

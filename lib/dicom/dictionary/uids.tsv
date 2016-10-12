@@ -173,8 +173,8 @@
 1.2.840.10008.5.1.4.1.1.66.4	Segmentation Storage	SOP Class	
 1.2.840.10008.5.1.4.1.1.66.5	Surface Segmentation Storage	SOP Class	
 1.2.840.10008.5.1.4.1.1.67	Real World Value Mapping Storage	SOP Class	
-1.2.840.10008.5.1.4.1.1.77.1	VL Image Storage - Trial (Retired)	 	R
-1.2.840.10008.5.1.4.1.1.77.2	VL Multi-frame Image Storage - Trial (Retired)	 	R
+1.2.840.10008.5.1.4.1.1.77.1	VL Image Storage - Trial (Retired)	SOP Class	R
+1.2.840.10008.5.1.4.1.1.77.2	VL Multi-frame Image Storage - Trial (Retired)	SOP Class	R
 1.2.840.10008.5.1.4.1.1.77.1.1	VL Endoscopic Image Storage	SOP Class	
 1.2.840.10008.5.1.4.1.1.77.1.1.1	Video Endoscopic Image Storage	SOP Class	
 1.2.840.10008.5.1.4.1.1.77.1.2	VL Microscopic Image Storage	SOP Class	

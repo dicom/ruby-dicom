@@ -10,10 +10,14 @@ module DICOM
   #
   class DLibrary
 
+    # A hash with element tag strings as keys and DicitonaryElement instances as values.
+    attr_reader :elements
     # A hash with element name strings as key and method name symbols as value.
     attr_reader :methods_from_names
     # A hash with element method name symbols as key and name strings as value.
     attr_reader :names_from_methods
+    # A hash with uid strings as keys and UID instances as values.
+    attr_reader :uids
 
     # Creates a DLibrary instance.
     #
