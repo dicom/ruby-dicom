@@ -150,3 +150,5 @@ Please don't hesitate to email me if you have any feedback related to this proje
 * [Steven Bedrick](https://github.com/stevenbedrick)
 * [Lars Benner](https://github.com/Maturin)
 * [Brett Goulder](https://github.com/brettgoulder)
+* André Wuttke
+* Thomas Koschel
