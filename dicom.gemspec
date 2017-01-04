@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.files = Dir["{lib}/**/*", "[A-Z]*"]
   s.rubyforge_project = 'dicom'
 
-  s.required_ruby_version = '>= 1.9.3'
+  s.required_ruby_version = '>= 2.2.2'
 
   s.add_development_dependency('bundler', '~> 1.11')
   s.add_development_dependency('mini_magick', '~> 4.4')
