@@ -60,6 +60,22 @@ module DICOM
       ary
     end
 
+    # Loads DICOM files from a given path (which points to either a directory or a file).
+    #
+    # @param [String] path a file or directory path
+    # @return [Array<String>] an array of individual file paths
+    #
+    def load_files(path)
+      files = Array.new
+      if File.directory?(path)
+        files = Dir[File.join(path, '**/*')].reject {|f| File.directory?(f) }
+      else
+        # This path is presumably a file.
+        files << path
+      end
+      files
+    end
+
     # Use tags as key. Example: '0010,0010'
     #
     def key_use_tags

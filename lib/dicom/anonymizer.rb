@@ -132,28 +132,48 @@ module DICOM
 
     alias_method :eql?, :==
 
-    # Anonymizes the given DICOM data with the settings of this Anonymizer instance.
+    # Anonymizes the given DObject or array of DICOM objects with the settings
+    # of this Anonymizer instance.
     #
-    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (directories, file paths, binary strings, DICOM objects)
+    # @param [DObject, Array<DObject>] dicom single or multiple DICOM objects
     # @return [Array<DObject>] an array of the anonymized DICOM objects
     #
-    def anonymize(data)
-      dicom = prepare(data)
+    def anonymize(dicom)
+      dicom = Array[dicom] unless dicom.respond_to?(:to_ary)
       if @tags.length > 0
+        prepare_anonymization
         dicom.each do |dcm|
-          anonymize_dcm(dcm)
-          # Write DICOM object to file unless it was passed to the anonymizer as an object:
-          write(dcm) unless dcm.was_dcm_on_input
+          anonymize_dcm(dcm.to_dcm)
         end
       else
         logger.warn("No tags have been selected for anonymization. Aborting anonymization.")
       end
-      # Reset the ruby-dicom log threshold to its original level:
-      logger.level = @original_level
       # Save the audit trail (if used):
       @audit_trail.write(@audit_trail_file) if @audit_trail
       logger.info("Anonymization complete.")
       dicom
+    end
+
+    # Anonymizes any DICOM files found at the given path (file or directory)
+    # with the settings of this Anonymizer instance.
+    #
+    # @param [String] path a file or directory path
+    #
+    def anonymize_path(path)
+      if @tags.length > 0
+        prepare_anonymization
+        files = DICOM.load_files(path)
+        logger.info("#{files.length} DICOM files have been prepared for anonymization.")
+        files.each do |f|
+          dcm = anonymize_file(f)
+          write(dcm)
+        end
+      else
+        logger.warn("No tags have been selected for anonymization. Aborting anonymization.")
+      end
+      # Save the audit trail (if used):
+      @audit_trail.write(@audit_trail_file) if @audit_trail
+      logger.info("Anonymization complete.")
     end
 
     # Specifies that the given tag is to be completely deleted
@@ -324,6 +344,20 @@ module DICOM
       replace_uids(parents) if @uid
       # Delete private tags if indicated:
       dcm.delete_private if @delete_private
+    end
+
+    # Performs anonymization of a DICOM file.
+    #
+    # @param [String] file a DICOM file path
+    #
+    def anonymize_file(file)
+      # Temporarily adjust the ruby-dicom log threshold (to suppress messages from the DObject class):
+      @original_level = logger.level
+      logger.level = @logger_level
+      dcm = DObject.read(file)
+      logger.level = @original_level
+      anonymize_dcm(dcm)
+      dcm
     end
 
     # Gives the value to be used for the audit trail, which is either
@@ -497,24 +531,13 @@ module DICOM
       end
     end
 
-    # Prepares the data for anonymization.
+    # Prepares the anonymizer for anonymization.
     #
-    # @param [String, DObject, Array<String, DObject>] data single or multiple DICOM data (directories, file paths, binary strings, DICOM objects)
-    # @return [Array] the original data (wrapped in an array) as well as an array of loaded DObject instances
     #
-    def prepare(data)
-      logger.info("Loading DICOM data.")
-      # Temporarily adjust the ruby-dicom log threshold (usually to suppress messages from the DObject class):
-      @original_level = logger.level
-      logger.level = @logger_level
-      dicom = DICOM.load(data)
-      logger.level = @original_level
-      logger.info("#{dicom.length} DICOM objects have been prepared for anonymization.")
-      logger.level = @logger_level
+    def prepare_anonymization
       # Set up enumeration if requested:
       create_enum_hash if @enumeration
       require 'securerandom' if @random_file_name
-      dicom
     end
 
     # Replaces the UIDs of the given DICOM object.

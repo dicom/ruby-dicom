@@ -259,16 +259,9 @@ module DICOM
 
     describe "#anonymize" do
 
-      it "should raise an ArgumentError when a non-string/non-dcm is passed as an argument" do
+      it "should raise an error when a non-dcm object is passed as an argument" do
         a = Anonymizer.new
-        expect {a.anonymize(42)}.to raise_error(ArgumentError)
-      end
-
-      it "should return an empty array when given an invalid DICOM string" do
-        a = Anonymizer.new
-        res = a.anonymize('asdf'*20)
-        expect(res.class).to eql Array
-        expect(res.length).to eql 0
+        expect {a.anonymize("42")}.to raise_error(/to_dcm/)
       end
 
       it "should return an array with the single DObject instance" do
@@ -475,11 +468,21 @@ module DICOM
         expect(res[0].value('0012,0062')).to eql 'YES'
       end
 
+    end
+
+
+    describe "#anonymize_path" do
+
+      it "should raise an error when a non-string is passed as an argument" do
+        a = Anonymizer.new
+        expect {a.anonymize_path(@dcm1)}.to raise_error(/String/)
+      end
+
       it "should anonymize and rewrite the DICOM file (given by its file name string)" do
         file_name = File.join(TMPDIR, "anonymization/example_01/test.dcm")
         @dcm1.write(file_name)
         a = Anonymizer.new
-        a.anonymize(file_name)
+        a.anonymize_path(file_name)
         dcm1 = DObject.read(file_name)
         expect(dcm1.value('0010,0010')).not_to eql @dcm1.value('0010,0010')
         expect(dcm1.value('0010,0010')).to eql a.value('0010,0010')
@@ -489,7 +492,7 @@ module DICOM
         file_name = File.join(TMPDIR, "anonymization/example_02/test.dcm")
         @dcm1.write(file_name)
         a = Anonymizer.new
-        a.anonymize(File.dirname(file_name))
+        a.anonymize_path(File.dirname(file_name))
         dcm1 = DObject.read(file_name)
         expect(dcm1.value('0010,0010')).not_to eql @dcm1.value('0010,0010')
         expect(dcm1.value('0010,0010')).to eql a.value('0010,0010')
@@ -500,7 +503,7 @@ module DICOM
         write_path = File.join(TMPDIR, "anonymization/example_03/write")
         @dcm1.write(file_name)
         a = Anonymizer.new(:write_path => write_path)
-        a.anonymize(file_name)
+        a.anonymize_path(file_name)
         dicom = DICOM.load(write_path)
         original = DObject.read(file_name)
         expect(original.value('0010,0010')).to eql @dcm1.value('0010,0010')
@@ -513,7 +516,7 @@ module DICOM
         write_path = File.join(TMPDIR, "anonymization/example_04/write")
         @dcm1.write(file_name)
         a = Anonymizer.new(:write_path => write_path)
-        a.anonymize(file_name)
+        a.anonymize_path(file_name)
         expect(File.exists?(File.join(write_path, File.basename(file_name)))).to be_truthy
       end
 
@@ -522,7 +525,7 @@ module DICOM
         write_path = File.join(TMPDIR, "anonymization/example_05/write")
         @dcm1.write(file_name)
         a = Anonymizer.new(:random_file_name => true, :write_path => write_path)
-        a.anonymize(file_name)
+        a.anonymize_path(file_name)
         files = Dir[File.join(write_path, '**/*')]
         expect(files.length).to eql 1
         expect(File.extname(files[0])).to eql '.dcm'
