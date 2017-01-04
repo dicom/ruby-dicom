@@ -1,6 +1,6 @@
 # 0.9.7
 
-## (Unreleased)
+## 4th January, 2017
 
 * Changed: Reduced the scope of the Anonymizer#anonymize method (introduced in 0.9.5) to only DICOM objects (would previously accept files, folders, binary strings & objects).
 * Added: Anonymizer#anonymize_path method for anonymizing files or directories. This method is able to anonymize thousands of files without any memory issues.
