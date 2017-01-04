@@ -601,19 +601,6 @@ module DICOM
     end
 
 
-    # FIXME? Currently there is no specification for the format of the element printout (this method is not very important, really).
-    #
-    describe "#print" do
-
-      it "should print information to the screen" do
-        a = Anonymizer.new
-        a.expects(:puts).at_least_once
-        a.print
-      end
-
-    end
-
-
     describe "#remove_tag" do
 
       it "should raise an ArgumentError when a non-string is passed as an argument" do

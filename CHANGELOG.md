@@ -4,6 +4,7 @@
 
 * Changed: Reduced the scope of the Anonymizer#anonymize method (introduced in 0.9.5) from files, folders & objects to only DICOM objects.
 * Added: Anonymizer#anonymize_path method for anonymizing files or directories. This method is able to anonymize thousands of files without any memory issues.
+* Removed: The Anonymizer methods #add_exception, #add_folder, #execute and #print (which were deprecated in version 0.9.5).
 * Fixed: An element of VR 'UN' with length -1 is treated as a sequence.
 * Fixed: Properly handle private sequence with implicit data inside and explicit file.
 * Fixed: Set license type according to spdx.org.

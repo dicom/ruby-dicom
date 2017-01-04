@@ -119,11 +119,10 @@ module DICOM
 
     before :example do
       @a = Anonymizer.new(:audit_trail => TMPDIR + 'audit_trail_utf8.json')
-      @a.add_folder(TMPDIR + 'utf8/')
       @a.write_path = TMPDIR + 'anon/utf8/'
       @a.enumeration = true
       @a.set_tag("0008,1090", :value => "Manufacturer", :enum => true)
-      @a.execute
+      @a.anonymize_path(TMPDIR + 'utf8/')
     end
 
     describe "#value=" do
