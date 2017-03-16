@@ -61,7 +61,7 @@ module DICOM
     # @return [String, Integer, Float, Array] the formatted (decoded) data
     #
     def decode(length, type)
-      raise ArgumentError, "Invalid argument length. Expected Fixnum, got #{length.class}" unless length.is_a?(Fixnum)
+      raise ArgumentError, "Invalid argument length. Expected Integer, got #{length.class}" unless length.is_a?(Integer)
       raise ArgumentError, "Invalid argument type. Expected string, got #{type.class}" unless type.is_a?(String)
       value = nil
       if (@index + length) <= @string.length
@@ -127,7 +127,7 @@ module DICOM
 
     # Encodes a given value to a binary string.
     #
-    # @param [String, Integer, Float, Array] value a formatted value (String, Fixnum, etc..) or an array of numbers
+    # @param [String, Integer, Float, Array] value a formatted value (String, Integer, etc..) or an array of numbers
     # @param [String] type the type (vr) of data to encode
     # @return [String] an encoded binary string
     #
@@ -139,7 +139,7 @@ module DICOM
 
     # Encodes a value to a binary string and prepends it to the instance string.
     #
-    # @param [String, Integer, Float, Array] value a formatted value (String, Fixnum, etc..) or an array of numbers
+    # @param [String, Integer, Float, Array] value a formatted value (String, Integer, etc..) or an array of numbers
     # @param [String] type the type (vr) of data to encode
     #
     def encode_first(value, type)
@@ -149,7 +149,7 @@ module DICOM
 
     # Encodes a value to a binary string and appends it to the instance string.
     #
-    # @param [String, Integer, Float, Array] value a formatted value (String, Fixnum, etc..) or an array of numbers
+    # @param [String, Integer, Float, Array] value a formatted value (String, Integer, etc..) or an array of numbers
     # @param [String] type the type (vr) of data to encode
     #
     def encode_last(value, type)
@@ -188,7 +188,7 @@ module DICOM
     # Encodes a value, and if the the resulting binary string has an
     # odd length, appends a proper padding byte to make it even length.
     #
-    # @param [String, Integer, Float, Array] value a formatted value (String, Fixnum, etc..) or an array of numbers
+    # @param [String, Integer, Float, Array] value a formatted value (String, Integer, etc..) or an array of numbers
     # @param [String] vr the value representation of data to encode
     # @return [String] the encoded binary string
     #

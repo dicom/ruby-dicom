@@ -779,7 +779,7 @@ module DICOM
       # Number of bytes used per pixel will determine how to unpack this:
       case depth
       when 8 # (1 byte)
-        template = 'BY' # Byte/Character/Fixnum
+        template = 'BY' # Byte/Character/Integer
       when 16 # (2 bytes)
         if pixel_representation == 1
          template = 'SS' # Signed short

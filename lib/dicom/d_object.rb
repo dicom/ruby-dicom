@@ -238,7 +238,7 @@ module DICOM
     #
     # @note Two objects with the same attributes will have the same hash code.
     #
-    # @return [Fixnum] the object's hash code
+    # @return [Integer] the object's hash code
     #
     def hash
       state.hash

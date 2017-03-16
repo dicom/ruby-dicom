@@ -243,13 +243,13 @@ module DICOM
 
     describe "#hash" do
 
-      it "should return the same Fixnum for two instances having the same attribute values" do
+      it "should return the same Integer for two instances having the same attribute values" do
         i1 = Item.new
         i2 = Item.new
         expect(i1.hash).to eql i2.hash
       end
 
-      it "should return a different Fixnum for two instances having different attribute values" do
+      it "should return a different Integer for two instances having different attribute values" do
         i1 = Item.new
         i2 = Item.new
         i2.add(Sequence.new("0008,0006"))

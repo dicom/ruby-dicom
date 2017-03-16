@@ -26,8 +26,8 @@ module DICOM
     # * <tt>:ae</tt> -- String. The name of the client (application entity).
     # * <tt>:file_handler</tt> -- A customized FileHandler class to use instead of the default FileHandler.
     # * <tt>:host_ae</tt> -- String. The name of the server (application entity).
-    # * <tt>:max_package_size</tt> -- Fixnum. The maximum allowed size of network packages (in bytes).
-    # * <tt>:timeout</tt> -- Fixnum. The maximum period to wait for an answer before aborting the communication.
+    # * <tt>:max_package_size</tt> -- Integer. The maximum allowed size of network packages (in bytes).
+    # * <tt>:timeout</tt> -- Integer. The maximum period to wait for an answer before aborting the communication.
     #
     def initialize(options={})
       require 'socket'
@@ -1075,7 +1075,7 @@ module DICOM
     # === Parameters
     #
     # * <tt>adress</tt> -- String. The adress (IP) of the remote node.
-    # * <tt>port</tt> -- Fixnum. The network port to be used in the network communication.
+    # * <tt>port</tt> -- Integer. The network port to be used in the network communication.
     #
     def start_session(adress, port)
       @session = TCPSocket.new(adress, port)
@@ -1303,7 +1303,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>result</tt> -- Fixnum. The result code from an association response.
+    # * <tt>result</tt> -- Integer. The result code from an association response.
     #
     def process_result(result)
       unless result == 0
@@ -1350,7 +1350,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>status</tt> -- Fixnum. A status code from a command fragment.
+    # * <tt>status</tt> -- Integer. A status code from a command fragment.
     #
     def process_status(status)
       case status
@@ -1397,7 +1397,7 @@ module DICOM
     #
     # === Parameters
     #
-    # * <tt>min_length</tt> -- Fixnum. The minimum possible length of a valid incoming transmission.
+    # * <tt>min_length</tt> -- Integer. The minimum possible length of a valid incoming transmission.
     #
     def receive_transmission(min_length=0)
       data = receive_transmission_data

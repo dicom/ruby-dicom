@@ -107,7 +107,7 @@ module DICOM
 
     describe "#divide" do
 
-      it "should raise ArgumentError if argument is not a Fixnum" do
+      it "should raise ArgumentError if argument is not a Integer" do
         expect {"test".divide("error")}.to raise_error(ArgumentError)
       end
 

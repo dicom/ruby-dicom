@@ -50,7 +50,7 @@ module DICOM
     # @option options [Boolean] :delete_private toggles whether private elements are to be deleted
     # @option options [TrueClass, Digest::Class] :encryption if set as true, the default hash function (MD5) will be used for representing DICOM values in an audit file. Otherwise a Digest class can be given, e.g. Digest::SHA256
     # @option options [Boolean] :enumeration toggles whether (some) elements get enumerated values (to enable post-anonymization re-identification)
-    # @option options [Fixnum] :logger_level the logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL)
+    # @option options [Integer] :logger_level the logger level which is applied to DObject operations during anonymization (defaults to Logger::FATAL)
     # @option options [Boolean] :random_file_name toggles whether anonymized files will be given random file names when rewritten (in combination with the :write_path option)
     # @option options [Boolean] :recursive toggles whether to anonymize on all sub-levels of the DICOM object tag hierarchies
     # @option options [Boolean] :uid toggles whether UIDs will be replaced with custom generated UIDs (beware that to preserve UID relations in studies/series, the audit_trail feature must be used)
@@ -210,7 +210,7 @@ module DICOM
     #
     # @note Two objects with the same attributes will have the same hash code.
     #
-    # @return [Fixnum] the object's hash code
+    # @return [Integer] the object's hash code
     #
     def hash
       state.hash
@@ -471,7 +471,7 @@ module DICOM
     # a new enumerated replacement value is found by increasing an index by 1.
     #
     # @param [String, Integer, Float] original the original value of the tag to be anonymized
-    # @param [Fixnum] j the index of this tag in the tag-related instance arrays
+    # @param [Integer] j the index of this tag in the tag-related instance arrays
     # @return [String, Integer, Float] the replacement value which is used for the anonymization of the tag
     #
     def enumerated_value(original, j)

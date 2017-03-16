@@ -10,7 +10,7 @@ module DICOM
 
     # The encoded, binary value of the elemental (String).
     attr_reader :bin
-    # The elemental's length (Fixnum).
+    # The elemental's length (Integer).
     attr_reader :length
     # The elemental's name (String).
     attr_reader :name
