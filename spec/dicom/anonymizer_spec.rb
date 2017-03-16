@@ -585,14 +585,14 @@ module DICOM
 
     context "#hash" do
 
-      it "should return the same Fixnum for two instances having the same attribute values" do
+      it "should return the same Integer for two instances having the same attribute values" do
         a1 = Anonymizer.new
         a2 = Anonymizer.new
-        expect(a1.hash).to be_a Fixnum
+        expect(a1.hash).to be_a Integer
         expect(a1.hash).to eql a2.hash
       end
 
-      it "should return a different Fixnum for two instances having different attribute values" do
+      it "should return a different Integer for two instances having different attribute values" do
         a1 = Anonymizer.new
         a2 = Anonymizer.new(:write_path => 'tmp')
         expect(a1.hash).not_to eql a2.hash
