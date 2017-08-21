@@ -171,6 +171,7 @@ module DICOM
     'ISO_IR 13'  => 'Shift_JIS',
     'ISO 2022 IR 13' => 'Shift_JIS',
     'ISO 2022 IR 13\\ISO 2022 IR 87' => 'Shift_JIS',
+    'ISO 2022 IR 87' => 'ISO-2022-JP',
     'ISO_IR 166' => 'ISO-8859-11',
     'GB18030'    => 'GB18030',
     'ISO_IR 192' => 'UTF-8'
