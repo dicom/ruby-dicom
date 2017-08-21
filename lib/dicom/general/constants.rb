@@ -168,7 +168,9 @@ module DICOM
     'ISO_IR 126' => 'ISO-8859-7',
     'ISO_IR 138' => 'ISO-8859-8',
     'ISO_IR 148' => 'ISO-8859-9',
-    'ISO_IR 13'  => 'JIS_X0201',
+    'ISO_IR 13'  => 'Shift_JIS',
+    'ISO 2022 IR 13' => 'Shift_JIS',
+    'ISO 2022 IR 13\\ISO 2022 IR 87' => 'Shift_JIS',
     'ISO_IR 166' => 'ISO-8859-11',
     'GB18030'    => 'GB18030',
     'ISO_IR 192' => 'UTF-8'
