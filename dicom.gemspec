@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency('mini_magick', '~> 4.8')
   s.add_development_dependency('mocha', '~> 1.4')
   s.add_development_dependency('numo-narray', '~> 0.9', '>= 0.9.1.1')
-  s.add_development_dependency('rake', '~> 12.3.1')
+  s.add_development_dependency('rake','~> 12.3', '>= 12.3.1')
   s.add_development_dependency('redcarpet', '~> 3.4')
   s.add_development_dependency('rmagick', '~> 2.15')
   s.add_development_dependency('rspec', '~> 3.7')
