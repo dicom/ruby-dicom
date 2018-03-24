@@ -73,7 +73,7 @@ module DICOM
           retry
         end
       end
-      bin = File.open(file, "rb") { |f| f.read }
+      bin = File.open(file, "rb", :autoclose => 'true') { |f| f.read }
       # Parse the file contents and create the DICOM object:
       if bin
         dcm = self.parse(bin)
