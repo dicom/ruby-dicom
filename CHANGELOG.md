@@ -1,3 +1,12 @@
+# 0.9.8
+
+## 24th March, 2018
+
+* Changed: Replaced Fixnum with Integer to avoid deprecation warning in Ruby 2.4.
+* Changed: Replaced NArray with Numo/Narray.
+* Fixed: Improved compatibility with Japanese string encoding.
+
+
 # 0.9.7
 
 ## 4th January, 2017
