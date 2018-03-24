@@ -349,13 +349,13 @@ module DICOM
             raise "Missing Rows and/or Columns Element. Unable to construct pixel data array." unless num_rows and num_cols
             if num_frames > 1 or options[:volume]
               # Create an empty 3D NArray. fill it with pixels frame by frame, then reassign the pixels variable to it:
-              narr = NArray.int(num_frames, num_cols, num_rows)
+              narr = Numo::Int16.zeros(num_frames, num_cols, num_rows)
               num_frames.times do |i|
-                narr[i, true, true] = NArray.to_na(pixels[(i * num_cols * num_rows)..((i + 1) * num_cols * num_rows - 1)]).reshape!(num_cols, num_rows)
+                narr[i, true, true] = Numo::NArray[*pixels[(i * num_cols * num_rows)..((i + 1) * num_cols * num_rows - 1)]].reshape!(num_cols, num_rows)
               end
               pixels = narr
             else
-              pixels = NArray.to_na(pixels).reshape!(num_cols, num_rows)
+              pixels = Numo::NArray[*pixels].reshape!(num_cols, num_rows)
             end
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]) if options[:remap] or options[:level]
@@ -680,7 +680,7 @@ module DICOM
       end
       # Need to convert to NArray?
       if pixel_data.is_a?(Array)
-        n_arr = NArray.to_na(pixel_data)
+        n_arr = Numo::NArray[*pixel_data]
       else
         n_arr = pixel_data
       end

@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 require 'spec_helper'
-require 'narray'
+require 'numo/narray'
 
 
 module DICOM
@@ -307,7 +307,7 @@ module DICOM
 
       it "should return pixel data in an NArray" do
         dcm = DObject.read(DCM_IMPLICIT_MR_16BIT_MONO2)
-        expect(dcm.narray).to be_an(NArray)
+        expect(dcm.narray).to be_a(Numo::NArray)
       end
 
       it "should return an NArray of length equal to the number of pixels in the pixel data" do
@@ -408,8 +408,8 @@ module DICOM
         end
 
         it "should return an NArray with the pixel values properly placed in the expected indices for each frame" do
-          expect(@narr[0, true, true] == NArray.int(3, 4).indgen).to be_truthy
-          expect(@narr[1, true, true] == NArray.int(3, 4).indgen + 12).to be_truthy
+          expect(@narr[0, true, true] == Numo::Int16.new(3, 4).seq).to be_truthy
+          expect(@narr[1, true, true] == Numo::Int16.new(3, 4).seq + 12).to be_truthy
         end
 
       end
@@ -592,7 +592,7 @@ module DICOM
         dcm = DObject.new
         dcm.add(Element.new('0028,0100', 8)) # Bit depth
         dcm.add(Element.new('0028,0103', 0)) # Pixel Representation
-        dcm.pixels = NArray.to_na(pixel_data)
+        dcm.pixels = Numo::NArray[*pixel_data]
         expect(dcm['7FE0,0010'].bin.length).to eql 4
         expect(dcm.decode_pixels(dcm['7FE0,0010'].bin)).to eql pixel_data
       end
@@ -610,9 +610,9 @@ module DICOM
         end
 
         it "should encode the pixels of the NArray such that the pixel values are properly placed in the expected indices for each frame" do
-          narr = NArray.int(2, 3, 4)
-          narr[0, true, true] = NArray.int(3, 4).indgen
-          narr[1, true, true] = NArray.int(3, 4).indgen + 12
+          narr = Numo::Int16.zeros(2, 3, 4)
+          narr[0, true, true] = Numo::Int16.new(3, 4).seq
+          narr[1, true, true] = Numo::Int16.new(3, 4).seq + 12
           @dcm.pixels = narr
           expect(@dcm.pixels).to eql Array.new(24) {|i| i}
         end
