@@ -427,9 +427,9 @@ module DICOM
         if values.shape.length > 2
           # For a 3D NArray we need to rearrange to ensure that the pixels get their
           # proper order when converting to an ordinary Array instance:
-          narr = NArray.int(values.shape[1] * values.shape[2], values.shape[0])
+          narr = Numo::Int16.zeros(values.shape[0], values.shape[1] * values.shape[2])
           values.shape[0].times do |i|
-            narr[true, i] = values[i, true, true].reshape(values.shape[1] * values.shape[2])
+            narr[i, true] = values[i, true, true].reshape(values.shape[1] * values.shape[2])
           end
           values = narr
         end
