@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency('bundler', '~> 1.16')
   s.add_development_dependency('mini_magick', '~> 4.8')
-  s.add_development_dependency('mocha', '~> 1.4')
+  s.add_development_dependency('mocha', '~> 1.1')
   s.add_development_dependency('numo-narray', '~> 0.9', '>= 0.9.1.1')
   s.add_development_dependency('rake', '~> 12.3')
   s.add_development_dependency('redcarpet', '~> 3.4')
