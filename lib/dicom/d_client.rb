@@ -244,6 +244,46 @@ module DICOM
       return @data_results
     end
 
+    # Performs modality worklist find.
+    #
+    # Worklist query is performed with the following presentation context UID:
+    # Modality Worklist Information Model - FIND - 1.2.840.10008.5.1.4.31
+    #
+    # By default creates a blank query, returning all elements on the worklist.
+    # Returns an array of DObject instances, each containing information on a single patient/procedure.
+    #
+    def find_worklist()
+      # Modality Worklist Information Model - FIND:
+      set_default_presentation_context("1.2.840.10008.5.1.4.31")
+      # These query attributes will always be present in the dicom query:
+      dcm = DObject.new
+      dcm.add_element("0008,0050", "") # Accession Number
+      dcm.add_element("0010,0010", "") # Patient's Name
+      dcm.add_element("0010,0020", "") # Patient ID
+      dcm.add_element("0010,0030", "") # Patients Birth Date
+      dcm.add_element("0010,0040", "") # Patient's Sex
+      dcm.add_element("0010,2110", "") # Allergies
+      dcm.add_element("0020,000D", "") # Study Instance UID
+      dcm.add_element("0032,1032", "") # Requesting Physician
+      dcm.add_element("0032,1060", "") # Requested Procedure Description
+      s = dcm.add_sequence("0040,0100") # Scheduled Procedure Step Sequence
+      i = s.add_item
+      i.add_element("0008,0060", "") # Modality
+      i.add_element("0032,1070", "") # Requested Contrast Agent
+      i.add_element("0040,0001", "") # Scheduled  Station AE Title
+      i.add_element("0040,0002", "") # Scheduled Procedure Step Start Date
+      i.add_element("0040,0003", "") # Scheduled Procedure Step Start Time
+      i.add_element("0040,0007", "") # Scheduled Procedure Step Description
+      i.add_element("0040,0009", "") # Scheduled Procedure Step ID
+      i.add_element("0040,0010", "") # Scheduled Station Name
+      i.add_element("0040,0011", "") # Scheduled Procedure Step Location
+      i.add_element("0040,0012", "") # Pre-Medication
+      dcm.add_element("0040,1001", "") # Requested Procedure ID
+      dcm.add_element("0040,1003", "") # Pre-Medication
+      perform_worklist(dcm)
+      return @data_results
+    end
+
     # Retrieves a DICOM file from a service class provider (SCP/PACS).
     #
     # === Instance level attributes for this procedure:
@@ -678,6 +718,51 @@ module DICOM
       end
     end
 
+    # Handles the communication involved in a DICOM WORKLIST FIND.
+    # Build the necessary strings and send the command and data element that makes up the worklist request.
+    # Listens for and interpretes the incoming worklist response.
+    #
+    # Note: As opposed to the other perform_* methods, this method uses DObject instances as input
+    # and also returns query results as DObject instances!
+    #
+    def perform_worklist(dcm)
+      # Open a DICOM link:
+      establish_association
+      if association_established?
+        puts "established"
+        if request_approved?
+          puts "approved"
+          # Continue with our worklist, since the request was accepted.
+          # Set the query command elements array:
+          set_command_fragment_worklist # replace with _find
+          @link.build_command_fragment(PDU_DATA, presentation_context_id, COMMAND_LAST_FRAGMENT, @command_elements)
+          @link.transmit
+          #@link.build_data_fragment(@data_elements, presentation_context_id)
+          @link.build_data_fragment_dcm(dcm, presentation_context_id)
+          @link.transmit
+          # A query response will typically be sent in multiple, separate packets.
+          # Listen for incoming responses and interpret them individually, until we have received the last command fragment.
+          #segments = @link.receive_multiple_transmissions
+          segments = @link.receive_multiple_transmissions(file=true)
+          #process_returned_data(segments)
+          # Process the results (extracting command and data information):
+          @data_results = Array.new
+          segments.each do |s|
+            if s[:valid]
+              # Determine if it is command or data:
+              if s[:presentation_context_flag] == COMMAND_LAST_FRAGMENT
+                @command_results << s[:results]
+              elsif s[:bin]
+                @data_results << DObject.parse(s[:bin], signature: false, syntax: @link.presentation_contexts[presentation_context_id]) # transfer syntax???
+              end
+            end
+          end
+        end
+        # Close the DICOM link:
+        establish_release
+      end
+    end
+
     # Processes the presentation contexts that are received in the association response
     # to extract the transfer syntaxes which have been accepted for the various abstract syntaxes.
     #
@@ -811,6 +896,22 @@ module DICOM
         ["0000,0700", "US", 0], # Priority: 0: medium
         ["0000,0800", "US", DATA_SET_PRESENT],
         ["0000,1000", "UI", instance] # Affected SOP Instance UID
+      ]
+    end
+
+    # Sets the command elements used in a MODALITY WORKLIST FIND.
+    #
+    # === Notes
+    #
+    # * This setup is used for all types of queries.
+    #
+    def set_command_fragment_worklist
+      @command_elements = [
+        ["0000,0002", "UI", @presentation_contexts.keys.first], # Affected SOP Class UID
+        ["0000,0100", "US", C_FIND_RQ],
+        ["0000,0110", "US", DEFAULT_MESSAGE_ID],
+        ["0000,0700", "US", 0], # Priority: 0: medium
+        ["0000,0800", "US", DATA_SET_PRESENT]
       ]
     end
 

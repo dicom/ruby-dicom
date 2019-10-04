@@ -281,6 +281,43 @@ module DICOM
       append_header(PDU_DATA)
     end
 
+    # Builds the binary string which is sent as a data fragment.
+    #
+    # === Notes
+    #
+    # * The style of encoding will depend on whether we have an implicit or explicit transfer syntax.
+    #
+    # === Parameters
+    #
+    # * <tt>dcm</tt> -- A DObject instance containing the data parameters.
+    # * <tt>presentation_context_id</tt> -- Presentation context ID byte (references a presentation context from the association).
+    #
+    def build_data_fragment_dcm(dcm, presentation_context_id)
+      # Set the transfer syntax to be used for encoding the data fragment:
+      transfer_syntax = @presentation_contexts[presentation_context_id]
+      set_transfer_syntax(transfer_syntax)
+      data = dcm.encode_segments(65536, transfer_syntax=transfer_syntax).first
+      # Endianness of data fragment:
+      @outgoing.endian = @data_endian
+      # Clear the outgoing binary string:
+      @outgoing.reset
+      # Build the last part first, the Data items:
+      # Add it to the output:
+      @outgoing.add_last(data)
+      # The rest of the data fragment will be built in reverse, all the time
+      # putting the elements first in the outgoing binary string.
+      # Big endian encoding from now on:
+      @outgoing.endian = @net_endian
+      # Flags (1 byte)
+      @outgoing.encode_first("02", "HEX") # Data, last fragment (identifier)
+      # Presentation context ID (1 byte)
+      @outgoing.encode_first(presentation_context_id, "BY")
+      # Length (of remaining data) (4 bytes)
+      @outgoing.encode_first(@outgoing.string.length, "UL")
+      # PRESENTATION DATA VALUE (the above)
+      append_header(PDU_DATA)
+    end
+
     # Builds the binary string which is sent as the release request.
     #
     def build_release_request
@@ -948,7 +985,7 @@ module DICOM
           info[:bin] = msg.rest_string
           # If this was the last data fragment of a C-STORE, we need to send a receipt:
           # (However, for, say a C-FIND-RSP, which indicates the end of the query results, this method shall not be called) (Command Field (0000,0100) holds information on this)
-          handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT
+          handle_response if info[:presentation_context_flag] == DATA_LAST_FRAGMENT and @command_request["0000,0100"] != C_FIND_RSP
         else
           # Decode data elements:
           while msg.index < last_index do
