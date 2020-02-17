@@ -502,6 +502,7 @@ module DICOM
       @presentation_contexts.each_pair do |abstract_syntax, context_ids|
         return abstract_syntax if context_ids[id]
       end
+      return nil
     end
 
     # Loads one or more DICOM files.
@@ -516,7 +517,6 @@ module DICOM
       status = true
       message = ""
       objects = Array.new
-      abstracts = Array.new
       id = 1
       @presentation_contexts = Hash.new
       files_or_objects.each do |file_or_object|
@@ -535,8 +535,7 @@ module DICOM
             message = "Failed to read a DObject from this file: #{file_or_object}"
           end
         elsif file_or_object.is_a?(DObject)
-          # Load the DICOM object and its abstract syntax:
-          abstracts << file_or_object.value("0008,0016")
+          # Load the DICOM object:
           objects << file_or_object
         else
           status = false
@@ -566,6 +565,16 @@ module DICOM
             @presentation_contexts[sop_class][id] = {:transfer_syntaxes => [syntax]}
             id += 2
           end
+        end
+      end
+      # When loading multiple files, our presentation context may get constructued with large ids,
+      # not starting at 1, and even surpassing the 256 byte range. Therefore we post process the
+      # presentation context, to ensure that its id values start at 1:
+       ids = @presentation_contexts.values.map {|pc| pc.keys}
+       min_id = ids.flatten.min
+       @presentation_contexts.each_pair do |key, value|
+        value.keys.each do |key|
+          value[key-min_id+1] = value.delete(key)
         end
       end
       return objects, status, message
@@ -729,9 +738,7 @@ module DICOM
       # Open a DICOM link:
       establish_association
       if association_established?
-        puts "established"
         if request_approved?
-          puts "approved"
           # Continue with our worklist, since the request was accepted.
           # Set the query command elements array:
           set_command_fragment_worklist # replace with _find
@@ -802,13 +809,13 @@ module DICOM
         @request_approved = true if @approved_syntaxes.length > 0
         logger.error("One or more of your presentation contexts were denied by host #{@host_ae}!")
         @approved_syntaxes.each_pair do |key, value|
-          sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : 'Unknown UID!')
-          sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : 'Unknown UID!')
+          sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : "Unknown SOP Class UID: #{key}")
+          sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : "Unknown Transfer Syntax UID: #{value[1]}")
           logger.info("APPROVED: #{sntx_k} (#{sntx_v})")
         end
         rejected.each_pair do |key, value|
-          sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : 'Unknown UID!')
-          sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : 'Unknown UID!')
+          sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : "Unknown SOP Class UID: #{key}")
+          sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : "Unknown Transfer Syntax UID: #{value[1]}")
           logger.error("REJECTED: #{sntx_k} (#{sntx_v})")
         end
       end
