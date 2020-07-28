@@ -351,11 +351,11 @@ module DICOM
               # Create an empty 3D NArray. fill it with pixels frame by frame, then reassign the pixels variable to it:
               narr = Numo::Int16.zeros(num_frames, num_cols, num_rows)
               num_frames.times do |i|
-                narr[i, true, true] = Numo::NArray[*pixels[(i * num_cols * num_rows)..((i + 1) * num_cols * num_rows - 1)]].reshape!(num_cols, num_rows)
+                narr[i, true, true] = Numo::NArray.cast(pixels[(i * num_cols * num_rows)..((i + 1) * num_cols * num_rows - 1)]).reshape!(num_cols, num_rows)
               end
               pixels = narr
             else
-              pixels = Numo::NArray[*pixels].reshape!(num_cols, num_rows)
+              pixels = Numo::NArray.cast(pixels).reshape!(num_cols, num_rows)
             end
             # Remap the image from pixel values to presentation values if the user has requested this:
             pixels = process_presentation_values_narray(pixels, -65535, 65535, options[:level]) if options[:remap] or options[:level]
