@@ -807,7 +807,7 @@ module DICOM
       else
         # We still consider the request 'approved' if at least one context were accepted:
         @request_approved = true if @approved_syntaxes.length > 0
-        logger.error("One or more of your presentation contexts were denied by host #{@host_ae}!")
+        logger.error("One or more of your presentation contexts were rejected by host #{@host_ae}!")
         @approved_syntaxes.each_pair do |key, value|
           sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : "Unknown SOP Class UID: #{key}")
           sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : "Unknown Transfer Syntax UID: #{value[1]}")

@@ -1332,7 +1332,7 @@ module DICOM
     end
 
     # Processes the value of the result byte received in the association response.
-    # Prints an explanation if an error is indicated.
+    # Logs an explanation if an issue is indicated.
     #
     # === Notes
     #
@@ -1347,15 +1347,15 @@ module DICOM
         # Analyse the result and report what is wrong:
         case result
           when 1
-            logger.warn("DICOM Request was rejected by the host, reason: 'User-rejection'")
+            logger.warn("Presentation context was rejected by the host, reason: 'User-rejection'")
           when 2
-            logger.warn("DICOM Request was rejected by the host, reason: 'No reason (provider rejection)'")
+            logger.warn("Presentation context was rejected by the host, reason: 'No reason (provider rejection)'")
           when 3
-            logger.warn("DICOM Request was rejected by the host, reason: 'Abstract syntax not supported'")
+            logger.warn("Presentation context was rejected by the host, reason: 'Abstract syntax not supported'")
           when 4
-            logger.warn("DICOM Request was rejected by the host, reason: 'Transfer syntaxes not supported'")
+            logger.warn("Presentation context was rejected by the host, reason: 'Transfer syntax not supported'")
           else
-            logger.warn("DICOM Request was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
+            logger.warn("Presentation context was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
         end
       end
     end
