@@ -807,17 +807,26 @@ module DICOM
       else
         # We still consider the request 'approved' if at least one context were accepted:
         @request_approved = true if @approved_syntaxes.length > 0
-        logger.error("One or more of your presentation contexts were rejected by host #{@host_ae}!")
+        # Iterate and log approved syntaxes:
         @approved_syntaxes.each_pair do |key, value|
           sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : "Unknown SOP Class UID: #{key}")
           sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : "Unknown Transfer Syntax UID: #{value[1]}")
           logger.info("APPROVED: #{sntx_k} (#{sntx_v})")
         end
+        # Iterate and log rejected syntaxes:
         rejected.each_pair do |key, value|
           sntx_k = (LIBRARY.uid(key) ? LIBRARY.uid(key).name : "Unknown SOP Class UID: #{key}")
           sntx_v = (LIBRARY.uid(value[1]) ? LIBRARY.uid(value[1]).name : "Unknown Transfer Syntax UID: #{value[1]}")
-          logger.error("REJECTED: #{sntx_k} (#{sntx_v})")
+          logger.warn("REJECTED: #{sntx_k} (#{sntx_v})")
         end
+        # Determine what numbers to put in the warning (because one or more PCs were rejected):
+        if rejected.length == 1 and @approved_syntaxes.length == 0
+          prefix = "Your presentation context was"
+        else
+          prefix = @approved_syntaxes.length > 0 ? "#{rejected.length} of #{rejected.length + @approved_syntaxes.length} your presentation contexts were" : "All #{rejected.length} of your presentation contexts were"
+        end
+        # Log a summary of the presentation context approvals:
+        logger.warn("#{prefix} rejected by host #{@host_ae}!")
       end
     end
 
