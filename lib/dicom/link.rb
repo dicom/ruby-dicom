@@ -65,11 +65,9 @@ module DICOM
         else
           logger.error("Timed out while waiting for a release request. Closing the connection.")
         end
-        stop_session
-      else
-        # Properly release the association:
-        handle_release
       end
+      # Close the connection:
+      stop_session
     end
 
     # Builds the abort message which is transmitted when the server wishes to (abruptly) abort the connection.
