@@ -1345,15 +1345,15 @@ module DICOM
         # Analyse the result and report what is wrong:
         case result
           when 1
-            logger.warn("Presentation context was rejected by the host, reason: 'User-rejection'")
+            logger.warn("A presentation context was rejected by the host, reason: 'User-rejection'")
           when 2
-            logger.warn("Presentation context was rejected by the host, reason: 'No reason (provider rejection)'")
+            logger.warn("A presentation context was rejected by the host, reason: 'No reason (provider rejection)'")
           when 3
-            logger.warn("Presentation context was rejected by the host, reason: 'Abstract syntax not supported'")
+            logger.warn("A presentation context was rejected by the host, reason: 'Abstract syntax not supported'")
           when 4
-            logger.warn("Presentation context was rejected by the host, reason: 'Transfer syntax not supported'")
+            logger.warn("A presentation context was rejected by the host, reason: 'Transfer syntax not supported'")
           else
-            logger.warn("Presentation context was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
+            logger.warn("A presentation context was rejected by the host, reason: 'UNKNOWN (#{result})' (Illegal reason provided)")
         end
       end
     end
