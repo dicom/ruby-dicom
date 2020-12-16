@@ -119,7 +119,9 @@ module DICOM
         @presentation_contexts[pc[:presentation_context_id]] = pc[:selected_transfer_syntax]
         # Add the information from this pc item to the p_contexts hash:
         p_contexts[pc[:abstract_syntax]] = Hash.new unless p_contexts[pc[:abstract_syntax]]
-        transfer_syntaxes = pc[:selected_transfer_syntax].nil? ? [] : [ pc[:selected_transfer_syntax] ]
+        # On accept, give the selected transfer syntax, else (on reject), give the original (rejected) transfer syntax:
+        transfer_syntaxes = pc[:selected_transfer_syntax].nil? ? [pc[:ts][0][:transfer_syntax]] : [ pc[:selected_transfer_syntax] ]
+        # Insert transfer syntax and result to the presentation context:
         p_contexts[pc[:abstract_syntax]][pc[:presentation_context_id]] = {:transfer_syntaxes => transfer_syntaxes, :result => pc[:result]}
       end
       append_presentation_contexts(p_contexts, ITEM_PRESENTATION_CONTEXT_RESPONSE)
@@ -1238,18 +1240,16 @@ module DICOM
             # Abstract syntax (variable length)
             @outgoing.encode_last(abstract_syntax, "STR")
           end
-          ## TRANSFER SYNTAX SUB-ITEM (not included if result indicates error):
-          if result == ACCEPTANCE
-            syntax[:transfer_syntaxes].each do |t|
-              # Transfer syntax item type (1 byte)
-              @outgoing.encode_last(ITEM_TRANSFER_SYNTAX, "HEX")
-              # Reserved (1 byte)
-              @outgoing.encode_last("00", "HEX")
-              # Transfer syntax item length (2 bytes)
-              @outgoing.encode_last(t.length, "US")
-              # Transfer syntax (variable length)
-              @outgoing.encode_last(t, "STR")
-            end
+          ## TRANSFER SYNTAX SUB-ITEM:
+          syntax[:transfer_syntaxes].each do |t|
+            # Transfer syntax item type (1 byte)
+            @outgoing.encode_last(ITEM_TRANSFER_SYNTAX, "HEX")
+            # Reserved (1 byte)
+            @outgoing.encode_last("00", "HEX")
+            # Transfer syntax item length (2 bytes)
+            @outgoing.encode_last(t.length, "US")
+            # Transfer syntax (variable length)
+            @outgoing.encode_last(t, "STR")
           end
         end
       end
